@@ -1,0 +1,873 @@
+#!/usr/bin/env bash
+ME="[makemenu]:"
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run makemenu as:\ntovid menu OPTIONS"
+exit 1 ; }
+
+# version $Id$
+# makemenu
+# Part of the tovid suite
+# =======================
+# A bash script for generating menus for use with DVD, VCD, or SVCD.
+# Given a background image and a list of titles, and an optional audio
+# file to use as background music, this script produces an MPEG video
+# displaying the specified text, with subtitle-multiplexed menu
+# highlights (for DVD) or enumerated titles (for (S)VCD).
+#
+# Project homepage: http://tovid.wikia.com
+#
+# Copyright (C) 2005-2010
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+
+# Options to consider
+# font selection
+# font color, highlight color, selection color
+# font shadow, border
+# icons, graphic overlays
+# Support for full-motion video menus
+
+SCRIPT_NAME=`cat << EOF
+--------------------------------
+makemenu
+A script to generate DVD/(S)VCD menus
+Part of the tovid suite, version $TOVID_VERSION
+$TOVID_HOME_PAGE
+--------------------------------
+EOF`
+
+USAGE=`cat << EOF
+Usage: tovid menu [OPTIONS] "Title1" "Title2" ... -out {output prefix}
+
+Common options:
+
+    -pal | -ntsc | -ntscfilm            Set TV standard
+    -dvd | -vcd | -svcd                 Encode to standard format
+    -background IMAGE                   ex: -background star_field.png
+    -audio AUDIOFILE                    ex: -audio foo_fighters.mp3
+    -font "FONTNAME"                    ex: -font Courier
+
+Example:
+
+    tovid menu -background ocean.jpg "First" "Second" "Third" -out mymenu
+        Create 'mymenu.mpg' with three titles and a custom background image.
+
+See the tovid manual page ('man tovid') for additional documentation.
+
+EOF`
+
+# Defaults and function definitions
+
+# Print script name, usage notes, and optional error message, then exit.
+# Args: $@ == text string containing error message
+usage_error ()
+{
+    printf "%s\n" "$USAGE"
+    printf "%s\n" "$SEPARATOR"
+    printf "*** %s\n" "$@"
+    exit 1
+}
+
+# Clean up the temporary files
+function cleanup()
+{
+    if $DEBUG; then
+        echo "Leaving temporary files in $TMP_DIR"
+        echo "Debugging log saved to $LOG_FILE"
+    else
+        echo "Cleaning up...   "
+        rm -rf "$TMP_DIR"
+    fi
+}
+
+# Initializations
+
+# No background image or audio
+BG_IMAGE=""
+BG_AUDIO=""
+MENU_LENGTH=""
+# NTSC DVD
+TVSYS="ntsc"
+RES="dvd"
+# Use a safe area
+SAFE_AREA=:
+# Number of titles
+NUM_TITLES=0
+MAX_VCD_TITLES=9
+MAX_DVD_TITLES=36
+OVER_MAX_TITLES=false
+# Scale up and crop non-4:3 images by default
+SCALECROP="crop"
+# Colors for menu items (RGB)
+TEXT_COLOR="white"
+HIGHLIGHT_COLOR="yellow"
+SELECT_COLOR="red"
+# Default title font and point size
+TITLE_FONT="Helvetica"
+TITLE_SIZE="24"
+FONT_DECO="-stroke black -strokewidth 1"
+TEXT_ALIGN="northwest"
+# Default menu title settings
+MAKE_TITLE=false
+# Button char
+BUTTON_FONT=""
+BUTTON_CHAR=">"
+BTN_STROKE="none"
+# NTSC DVD
+SAMPRATE="48000"
+ASUF="ac3"
+VSUF="m2v"
+FPS="2997"
+MPEG2ENC_FMT="-f 8"
+MPLEX_OPTS="-V"
+MPEG2ENC_SYS="-F 4 -n n"
+# Figure out what version of ppmtoy4m is in use;
+# mjpegtools 1.6.2 seems to require 420_mpeg2
+if mplex 2>&1 | grep -q "version 1.6.2"; then
+    CHROMA_MODE="420_mpeg2"
+else
+    CHROMA_MODE="420mpeg2"
+fi
+IM_VERSION=$(convert -list configure | awk '/LIB_VERSION_NUMBER/ {print $2}')
+if test_version $IM_VERSION 6.3.5.7; then
+    IM_LISTARG='font'
+else
+    IM_LISTARG='type'
+fi
+PPM_OPTS="-S $CHROMA_MODE -A 10:11 -F 30000:1001"
+# Direct stuff to /dev/null
+REDIR="/dev/null"
+# Not doing debugging
+DEBUG=false
+QUIET=false
+# Don't overwrite output files
+OVERWRITE=false
+OUT_PREFIX=""
+LOG_FILE="makemenu.log"
+NOASK=false
+# How far to space titles and buttons
+TITLE_BOTTOM_SPACE=12
+TITLE_LEFT_SPACE=10
+
+
+# =========================================================================\
+# E X E C U T I O N   B E G I N S   H E R E
+#
+#
+
+echo "$SCRIPT_NAME"
+
+assert_dep "$magick" "You are missing dependencies required for making menus!"
+
+# Process all options
+while test $# -gt 0; do
+    case "$1" in
+        "-ntsc" | "-ntscfilm" )
+            TVSYS="ntsc"
+            MPEG2ENC_SYS="-F 4 -n n"
+            PPM_OPTS="-S $CHROMA_MODE -A 10:11 -F 30000:1001"
+            FPS="2997"
+            ;;
+        "-pal" )
+            TVSYS="pal"
+            MPEG2ENC_SYS="-F 3 -n p"
+            PPM_OPTS="-S $CHROMA_MODE -A 59:54 -F 25:1"
+            FPS="2500"
+            ;;
+        "-dvd" )
+            RES="dvd"
+            MPEG2ENC_FMT="-f 8"
+            # Variable bitrate
+            MPLEX_OPTS="-V"
+            VSUF="m2v"
+            ;;
+        "-vcd" )
+            RES="vcd"
+            MPEG2ENC_FMT="-f 1"
+            # Constant bitrate
+            MPLEX_OPTS=""
+            VSUF="m1v"
+            ;;
+        "-svcd" )
+            RES="vcd"
+            MPEG2ENC_FMT="-f 4"
+            # Variable bitrate
+            MPLEX_OPTS="-V"
+            VSUF="m2v"
+            ;;
+        "-audio" )
+            shift
+            # Make sure file exists
+            if test -f "$1"; then
+                BG_AUDIO=$1
+            else
+                usage_error "Can't find background audio file: $1"
+            fi
+            ;;
+        "-background" )
+            shift
+            # Make sure file exists
+            if test -f "$1"; then
+                BG_IMAGE=$1
+            else
+                usage_error "Can't find background image file: $1"
+            fi
+            ;;
+        "-overwrite" ) OVERWRITE=: ;;
+        "-crop" ) SCALECROP="crop" ;;
+        "-scale" ) SCALECROP="scale" ;;
+        "-nosafearea" ) SAFE_AREA=false ;;
+        "-font" )
+            shift
+            TITLE_FONT="$1"
+            ;;
+        "-fontsize" )
+            shift
+            TITLE_SIZE="$1"
+            ;;
+        "-fontdeco" )
+            shift
+            FONT_DECO="$1"
+            ;;
+        "-textcolor" )
+            shift
+            TEXT_COLOR="$1"
+            ;;
+        "-highlightcolor" )
+            shift
+            HIGHLIGHT_COLOR="$1"
+            ;;
+        "-selectcolor" )
+            shift
+            SELECT_COLOR="$1"
+            ;;
+        "-align" )
+            shift
+            case "$1" in
+                "left" ) TEXT_ALIGN="northwest" ;;
+                "right" ) TEXT_ALIGN="northeast" ;;
+                "center" ) TEXT_ALIGN="north" ;;
+                "middle" ) TEXT_ALIGN="center" ;;
+                * ) TEXT_ALIGN=$(echo "$1" | tr A-Z a-z)
+            esac
+            ;;
+        "-button" )
+            shift
+            case "$1" in
+                "play" )
+                    BUTTON_FONT="Webdings"
+                    BUTTON_CHAR=4
+                    ;;
+                "movie" )
+                    BUTTON_FONT="Webdings"
+                    OFFICIAL_PRINTF=$(which printf)
+                    BUTTON_CHAR=$($OFFICIAL_PRINTF '\u00b8')
+                    ;;
+                "utf8" )
+                    shift
+                    OFFICIAL_PRINTF=$(which printf)
+                    BUTTON_CHAR=$($OFFICIAL_PRINTF "\u$1")
+                    ;;
+                * )
+                    BUTTON_CHAR="$1"
+                    if test $(echo -n "$BUTTON_CHAR" | wc -c ) -ne 1; then
+                        usage_error "Buttons must have only _one_ characater."
+                    fi
+                    ;;
+            esac
+            ;;
+        "-debug" )
+            DEBUG=:
+            REDIR="$LOG_FILE"
+            ;;
+        "-quiet" )
+            QUIET=:
+            ;;
+        "-out" )
+            shift
+            OUT_PREFIX="$1"
+            ;;
+        "-noask" ) NOASK=: ;;
+        "-button-outline" )
+            shift
+            BTN_STROKE="$1"
+            ;;
+        "-button-font" )
+            shift
+            BUTTON_FONT="$1"
+            ;;
+        "-menu-title" )
+            shift
+            MENU_TITLE="$1"
+            MAKE_TITLE=:
+            ;;
+        "-menu-title-fontsize" )
+            shift
+            MENU_TITLE_SIZE="$1"
+            ;;
+        "-length" )
+            shift
+            MENU_LENGTH="-t $1"
+            ;;
+        # Assume anything in quotes is a video title
+        ""*"" )
+            TITLES=("${TITLES[@]}" "$1")
+            ;;
+        * )
+            test -n "$1" && usage_error "Unrecognized command-line option: $1"
+            ;;
+    esac
+
+    # Get the next argument
+    shift
+done
+
+NUM_TITLES=${#TITLES[@]}
+# If no titles were provided, exit with error
+if test $NUM_TITLES -eq 0; then
+    usage_error "Please provide at least one title string, enclosed in double-quotes."
+fi
+
+# If output prefix was not provided, exit with error
+if test -z "$OUT_PREFIX"; then
+    usage_error "Please provide an output prefix with the -out option."
+fi
+
+# Make sure we're not overwriting an existing menu
+if test -f "$OUT_PREFIX.mpg"; then
+    if $OVERWRITE; then
+        rm -f "$OUT_PREFIX.mpg"
+    else
+        echo "There is already a file named \"$OUT_PREFIX.mpg\" in this directory!"
+        echo "Use '-overwrite' to replace this file. (tovid menu -overwrite ...)"
+        echo "Exiting..."
+        exit 1
+    fi
+fi
+
+
+OUT_FILENAME="$OUT_PREFIX.mpg"
+# Temporary directory named after the given -out prefix
+OUTNAME=$(basename "$OUT_PREFIX")
+TMP_DIR=$(tempdir "$WORKING_DIR/$OUTNAME")
+$DEBUG && echo "Storing temporary files in $TMP_DIR"
+BG_CANVAS="$TMP_DIR/bg_canvas.png"
+MENU_PPM="$TMP_DIR/menu.ppm"
+MENU_MPEG="$TMP_DIR/menu.mpg"
+SPUMUX_XML="$TMP_DIR/menu_buttons.xml"
+
+SELECT_PNG="$TMP_DIR/select.png"
+HIGHLIGHT_PNG="$TMP_DIR/highlight.png"
+TILE_CANVAS="$TMP_DIR/00_tile_canvas.png"
+BUTTON_PAD="$TMP_DIR/00_button_pad.png"
+BUTTON_PLACEHOLDER="$TMP_DIR/00_button-placeholder.png"
+HIGHLIGHT_BUTTON="$TMP_DIR/00_highlight-button.png"
+SELECT_BUTTON="$TMP_DIR/00_select-button.png"
+HIGHLIGHT_TEXT="$TMP_DIR/02_highlight-text.png"
+MENU_TEXT="$TMP_DIR/02_menu-text.png"
+SAFETY_CANVAS="$TMP_DIR/02_safety-canvas.png"
+SELECT_TEXT="$TMP_DIR/02_select-text.png"
+ACTIVE_TEXT="$TMP_DIR/03_active-text.png"
+ACTIVE_HIGHLIGHT="$TMP_DIR/03_active-highlight.png"
+ACTIVE_SELECT="$TMP_DIR/03_active-select.png"
+MENU_TITLE_TEXT="$TMP_DIR/02_menu-title.png"
+MENU_TITLE_PLACEHOLDER="$TMP_DIR/02_menu-title-placeholder.png"
+
+# Use appropriate settings for DVD
+if test $RES = "dvd"; then
+    assert_dep "$dvd" "You are missing dependencies required for making DVD menus!"
+    WIDTH="720"
+    SAMPRATE="48000"
+    test $TVSYS = "ntsc" && HEIGHT="480"
+    test $TVSYS = "pal" && HEIGHT="576"
+# And for (S)VCD
+else
+    WIDTH="352"
+    SAMPRATE="44100"
+    test $TVSYS = "ntsc" && HEIGHT="240"
+    test $TVSYS = "pal" && HEIGHT="288"
+    # Reduce font size and spacing
+    TITLE_SIZE=$(expr $TITLE_SIZE \/ 2)
+fi
+
+# Set audio stream format
+if test "$RES" = "dvd"; then
+    ASUF="ac3"
+else
+    ASUF="mp2"
+fi
+VIDEO_STREAM="$TMP_DIR/video.$VSUF"
+AUDIO_STREAM="$TMP_DIR/audio.$ASUF"
+
+# Make sure there are 9 or fewer titles for VCD and 36 or fewere for DVD
+if test "$RES" = "vcd" && test "$NUM_TITLES" -gt $MAX_VCD_TITLES; then
+    OVER_MAX_TITLES=:
+    DISC_TYPE="(S)VCD"
+    MAX_TITLES=$MAX_VCD_TITLES
+elif test "$RES" = "dvd" && test "$NUM_TITLES" -gt $MAX_DVD_TITLES; then
+    OVER_MAX_TITLES=:
+    DISC_TYPE="DVD"
+    MAX_TITLES=$MAX_DVD_TITLES
+fi
+if $OVER_MAX_TITLES; then
+    echo $SEPARATOR
+    echo "I read $NUM_TITLES titles for your $DISC_TYPE menu, which is more than the maximum number"
+    echo "of titles allowed on one menu for ${DISC_TYPE}s ($MAX_TITLES is the limit)."
+    echo "Please try using fewer titles on this menu."
+    cleanup
+    exit 1
+fi
+
+# Use a foreground canvas the size of the background minus safe area
+if $SAFE_AREA; then
+    FG_WIDTH=$(expr $WIDTH \* 4 \/ 5)
+    FG_HEIGHT=$(expr $HEIGHT \* 4 \/ 5)
+else
+    FG_WIDTH=$(expr $WIDTH \- 10)
+    FG_HEIGHT=$(expr $HEIGHT \- 10)
+fi
+
+# If no button font was given with -button-font, default to the title font
+if test -z "$BUTTON_FONT"; then
+    BUTTON_FONT=$TITLE_FONT
+fi
+
+# Confirm the title font, or use a similar one
+if test -s "$TITLE_FONT"; then
+    # Using ttf font file for ImageMagick
+    USE_TITLE_FONT="$TITLE_FONT"
+else
+    # Check to see if the given font name is available in ImageMagick
+    # (only return the first exact match)
+    USE_TITLE_FONT=$( convert -list $IM_LISTARG | \
+    grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
+
+   # If not available, try to use something similar
+    if test -z $USE_TITLE_FONT ; then
+        echo $SEPARATOR
+        echo "Font: \"$TITLE_FONT\" does not appear to be either a font file or registered with ImageMagick."
+        USE_TITLE_FONT=$( convert -list $IM_LISTARG | \
+        grep -i -m 1 "${TITLE_FONT:0:20}" | awk '{print $1}' )
+
+        # If a similarly-named one does't exist, default to Helvetica
+        if test -z "$USE_TITLE_FONT"; then
+            echo "A similarly-named font was not found. Sorry!"
+            USE_TITLE_FONT="Helvetica"
+        fi
+        echo "The font \"$USE_TITLE_FONT\" will be used instead."
+        echo $SEPARATOR
+    fi
+fi
+
+# Set the title font with the one that was found/compatible
+TITLE_FONT="$USE_TITLE_FONT"
+
+# Confirm the button font and button's existance in the font
+if test $RES = 'dvd'; then
+    # Confirm the button font, or use a similar one
+    if test -s "$BUTTON_FONT"; then
+        # Using ttf font file for ImageMagick
+        USE_BUTTON_FONT="$BUTTON_FONT"
+    else
+        # Check to see if the given button font is available in ImageMagick
+        # (only return the first exact match)
+        USE_BUTTON_FONT=$( convert -list $IM_LISTARG | \
+        grep -m 1 "$BUTTON_FONT" | awk '{print $1}' )
+
+        # If not available, try to use something similar
+        if test -z $USE_BUTTON_FONT ; then
+            echo $SEPARATOR
+            echo "Button: \"$BUTTON_FONT\" does not appear to be either a font file or registered with ImageMagick."
+            USE_BUTTON_FONT=$( convert -list $IM_LISTARG | \
+            grep -i -m 1 "${BUTTON_FONT:0:20}" | awk '{print $1}' )
+
+            # If a similarly-named one does't exist, default to Helvetica
+            if test -z "$USE_BUTTON_FONT"; then
+                echo "A similarly-named font was not found. Sorry!"
+                USE_BUTTON_FONT="$TITLE_FONT"
+            fi
+            echo "The font \"$USE_BUTTON_FONT\" will be used instead."
+        echo $SEPARATOR
+        fi
+    fi
+
+# Confirm that the button character exists in the font
+    if convert -size 720x200 xc:none -fill white \
+        -font $USE_BUTTON_FONT -pointsize $TITLE_SIZE -weight bold \
+        +antialias -annotate +20+80 "$BUTTON_CHAR" -trim +repage \
+        -bordercolor none -border 10 info: >> /dev/null 2>&1; then :
+    else
+        echo $SEPARATOR
+        echo "The button \"$BUTTON_CHAR\" doesn't exist in \"$USE_BUTTON_FONT\""
+        USE_BUTTON_FONT="$TITLE_FONT"
+        echo "The font \"$USE_BUTTON_FONT\" will be used instead."
+        echo $SEPARATOR
+    fi
+fi
+
+# Set the button font with the one that was found/compatible
+BUTTON_FONT="$USE_BUTTON_FONT"
+
+# ==========================================================================\
+# M E N U   D R A W I N G
+#
+#
+
+# Measure the font's vertical height
+TILE_HEIGHT=$(convert -size 720x200 xc:none -fill white -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "Al" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
+
+let "TILE_HEIGHT=TILE_HEIGHT+TITLE_BOTTOM_SPACE"
+
+# Make text 'tiles' for each title. These will be pieced together later on.
+echo "Adding $NUM_TITLES titles to the menu:"
+for ((i=0; i<$NUM_TITLES; i++)); do
+    SEQNUM=$(printf "%02d" ${i})
+    let "j=i+1"
+    echo "    $j: ${TITLES[i]}"
+    # Enumerate (S)VCD titles
+    if test $RES = "vcd" ; then
+        ENTRY="${j}. ${TITLES[i]}"
+
+        # Get the width of text and pad it
+        TILE_WIDTH=$(convert -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "$ENTRY" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
+        let "TILE_WIDTH=TILE_WIDTH+TITLE_LEFT_SPACE"
+
+        # Draw the text, and put it on a blank tile
+        convert -size 720x100 xc:none -font $TITLE_FONT -antialias $FONT_DECO -fill $TEXT_COLOR -pointsize $TITLE_SIZE -annotate +20+80 "$ENTRY" -trim +repage "$TMP_DIR/01_entry-$SEQNUM.png"
+        convert -size ${TILE_WIDTH}x${TILE_HEIGHT} xc:none "$TILE_CANVAS"
+        composite -compose Over -gravity north "$TMP_DIR/01_entry-$SEQNUM.png" \
+            "$TILE_CANVAS" "$TMP_DIR/01_entry-$SEQNUM.png"
+
+    # Use a highlight cursor for DVD titles (drawn later, for now just text)
+    else
+        ENTRY="${TITLES[i]}"
+
+        # Get the width of the text and pad it
+        TILE_WIDTH=$(convert -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "$ENTRY" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
+        let "TILE_WIDTH=TILE_WIDTH+TITLE_LEFT_SPACE"
+
+        # Draw the text, and put it on a blank tile
+        convert -size 720x100 xc:none -font $TITLE_FONT -antialias $FONT_DECO -fill $TEXT_COLOR -pointsize $TITLE_SIZE -annotate +20+80 "$ENTRY" -trim +repage "$TMP_DIR/00_title-$SEQNUM.png"
+        convert -size ${TILE_WIDTH}x${TILE_HEIGHT} xc:none "$TILE_CANVAS"
+        composite -compose Over -gravity northeast \
+            "$TMP_DIR/00_title-$SEQNUM.png" "$TILE_CANVAS" \
+            "$TMP_DIR/00_title-$SEQNUM.png"
+
+        # Blank placeholder: no font decorations or color
+        DIMS=$(identify "$TMP_DIR/00_title-$SEQNUM.png" | grep -o -e " [0-9]\{1,\}x[0-9]\{1,\} " | tr -d ' ')
+        convert \
+            -size $DIMS xc:none "$TMP_DIR/00_title-${SEQNUM}_placeholder.png"
+    fi
+done
+
+# Finish DVD menu entries (all we have so far is text, no buttons!)
+if test $RES = "dvd"; then
+    echo "Making the DVD buttons...   "
+
+    # Get the dimensions of the button
+    TILE_WIDTH=$(convert -size 720x200 xc:none -fill white -stroke $BTN_STROKE -strokewidth 1 -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
+    BUTTON_HEIGHT=$(convert -size 720x200 xc:none -fill white -stroke $BTN_STROKE -strokewidth 1 -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
+
+    # Find how much to pad the top of the button and make the pad
+    let "BUTTON_PADDING=(TILE_HEIGHT-BUTTON_HEIGHT-TITLE_BOTTOM_SPACE)/2"
+    convert -size ${TILE_WIDTH}x${BUTTON_PADDING} xc:none "$BUTTON_PAD"
+
+    # Draw the buttons
+    convert -size 720x100 xc:none -font $BUTTON_FONT -stroke $BTN_STROKE -strokewidth 1 +antialias -weight bold -fill $HIGHLIGHT_COLOR -pointsize $TITLE_SIZE -annotate +20+80 "$BUTTON_CHAR" -trim +repage "$HIGHLIGHT_BUTTON"
+    convert -size 720x100 xc:none -font $BUTTON_FONT -stroke $BTN_STROKE -strokewidth 1 +antialias -weight bold -fill $SELECT_COLOR -pointsize $TITLE_SIZE -annotate +20+80 "$BUTTON_CHAR" -trim +repage "$SELECT_BUTTON"
+
+    # Pad the buttons so that they line up with the font's baseline
+    convert -background none "$BUTTON_PAD" "$HIGHLIGHT_BUTTON" -append \
+        "$HIGHLIGHT_BUTTON"
+    convert -background none "$BUTTON_PAD" "$SELECT_BUTTON" -append \
+        "$SELECT_BUTTON"
+
+    # Make a blank button tile according to measured dimensions
+    convert -size ${TILE_WIDTH}x${TILE_HEIGHT} xc:none "$TILE_CANVAS"
+
+    # Put padded buttons on the blank tile
+    composite -compose Over -gravity north "$HIGHLIGHT_BUTTON" \
+        "$TILE_CANVAS" "$HIGHLIGHT_BUTTON"
+    composite -compose Over -gravity north "$SELECT_BUTTON" \
+        "$TILE_CANVAS" "$SELECT_BUTTON"
+
+    # A placeholder to space the title text correctly
+    DIMS=$(identify "$HIGHLIGHT_BUTTON" | grep -o -e " [0-9]\{1,\}x[0-9]\{1,\} " | tr -d ' ')
+    convert -size $DIMS xc:none "$BUTTON_PLACEHOLDER"
+
+    # Next, join the button tiles with the title tiles:
+    i=0
+    while test $i -lt $NUM_TITLES; do
+        SEQNUM=$(printf "%02d" $i)
+        # Text entries
+        convert -background none "$BUTTON_PLACEHOLDER" \
+            "$TMP_DIR/00_title-$SEQNUM.png" +append \
+            "$TMP_DIR/01_entry-$SEQNUM.png"
+        # Highlight entries
+        convert -background none "$HIGHLIGHT_BUTTON" \
+            "$TMP_DIR/00_title-${SEQNUM}_placeholder.png" \
+            +append "$TMP_DIR/01_highlight_entry-$SEQNUM.png"
+        # Select entries
+        convert -background none "$SELECT_BUTTON" \
+            "$TMP_DIR/00_title-${SEQNUM}_placeholder.png" \
+            +append "$TMP_DIR/01_select_entry-$SEQNUM.png"
+        let "i=i+1"
+    done
+fi
+
+# Stack all 01_entry-N.png lines
+echo "Creating the text menu...   "
+convert -background none "$TMP_DIR/01_entry-*.png" -append "$MENU_TEXT"
+
+# Stack all DVD button lines
+if test $RES = "dvd"; then
+echo "Creating the DVD button overlays...   "
+    convert -background none "$TMP_DIR/01_highlight_entry-*.png" -append \
+        "$HIGHLIGHT_TEXT"
+    convert -background none "$TMP_DIR/01_select_entry-*.png" -append \
+        "$SELECT_TEXT"
+fi
+
+# If specified, add a menu title
+if $MAKE_TITLE; then
+    echo "Adding the menu title..."
+
+    # Default title font size = current text size + 4
+    if test -z "$MENU_TITLE_SIZE"; then
+        let "MENU_TITLE_SIZE=TITLE_SIZE+8"
+    fi
+
+    # Calculate number of \n characters in title, so menu title height
+    # will be set correctly
+    TITLE_LINES=$(echo "$MENU_TITLE" | sed 's/!//g;s/\\n/!/g;s/[^!]//g' | wc -c)
+    TITLE_HEIGHT=$((100 * $TITLE_LINES))
+
+    # Draw the menu title and pad the bottom with TILE_HEIGHT pixels
+    convert -size 720x$TITLE_HEIGHT xc:none -font $TITLE_FONT -antialias $FONT_DECO -fill $TEXT_COLOR -pointsize $MENU_TITLE_SIZE -annotate +20+80 "$MENU_TITLE" -trim +repage "$MENU_TITLE_TEXT"
+
+    convert "$MENU_TITLE_TEXT" -gravity south -background none -splice 0x$TILE_HEIGHT "$MENU_TITLE_TEXT"
+
+    # Put the menu title above the menu text (and buttons for DVDs)
+    convert -background none "$MENU_TITLE_TEXT" "$MENU_TEXT" -append \
+        "$MENU_TEXT"
+    if test $RES = "dvd"; then
+        # DVD menus need an empty placeholder for the buttons
+        DIMS=$(identify "$MENU_TITLE_TEXT" | grep -o -e " [0-9]\{1,\}x[0-9]\{1,\} " | tr -d ' ')
+        convert -size $DIMS xc:none "$MENU_TITLE_PLACEHOLDER"
+        convert -background none "$MENU_TITLE_PLACEHOLDER" "$HIGHLIGHT_TEXT" \
+            -append "$HIGHLIGHT_TEXT"
+        convert -background none "$MENU_TITLE_PLACEHOLDER" "$SELECT_TEXT" \
+            -append "$SELECT_TEXT"
+    fi
+
+fi
+
+# Put the text menus inside the safety area
+if $SAFE_AREA; then FRAME_TYPE="safe area"; else FRAME_TYPE="frame"; fi
+echo "Placing text menu in the $FRAME_TYPE...   "
+convert -size ${FG_WIDTH}x${FG_HEIGHT} xc:none "$SAFETY_CANVAS"
+composite -compose Over -gravity $TEXT_ALIGN \
+    "$MENU_TEXT" "$SAFETY_CANVAS" "$ACTIVE_TEXT"
+
+# Same for DVD buttons: into the safety area
+if test $RES = 'dvd'; then
+    echo "Placing DVD buttons in the $FRAME_TYPE...   "
+    composite -compose Over -gravity $TEXT_ALIGN \
+        "$HIGHLIGHT_TEXT" "$SAFETY_CANVAS" "$ACTIVE_HIGHLIGHT"
+    composite -compose Over -gravity $TEXT_ALIGN \
+        "$SELECT_TEXT" "$SAFETY_CANVAS" "$ACTIVE_SELECT"
+fi
+
+# Background image:
+# If none was provided, create a default one (blue-black gradient)
+if test -z "$BG_IMAGE"; then
+    BG_CMD="convert -size ${WIDTH}x${HEIGHT} gradient:blue-black \
+        -gravity center -matte \"$BG_CANVAS\""
+# Otherwise, scale/crop the provided image
+else
+    if test "$SCALECROP" = "crop"; then
+        SCALECROP="-resize ${WIDTH}x -resize \"x${HEIGHT}<\" -gravity center \
+            -crop ${WIDTH}x${HEIGHT}+0+0"
+    else
+        SCALECROP="-resize ${WIDTH}x${HEIGHT}!"
+    fi
+        BG_CMD="convert \"$BG_IMAGE\" $SCALECROP -matte \"$BG_CANVAS\""
+fi
+echo "Working on the background...   "
+$DEBUG && echo -e "\n\nBackground:\n$BG_CMD" >> $REDIR
+eval $BG_CMD
+
+# Put menu text over the background image
+MAGICK_CMD="composite -compose Over -gravity center \
+    \"$ACTIVE_TEXT\" \"$BG_CANVAS\" -depth 8 \"$MENU_PPM\""
+echo "Centering the $FRAME_TYPE over the background...   "
+$DEBUG && echo -e "\n\nMenu Text:\n$MAGICK_CMD" >> $REDIR
+eval $MAGICK_CMD
+
+# Same for DVDs
+if test $RES = 'dvd'; then
+    echo "Positioning the DVD button overlays on the background...   "
+    composite -compose Src -gravity center \
+        "$ACTIVE_HIGHLIGHT" "$BG_CANVAS" "$HIGHLIGHT_PNG"
+    composite -compose Src -gravity center \
+        "$ACTIVE_SELECT" "$BG_CANVAS" "$SELECT_PNG"
+fi
+
+
+# ======================================================================\
+# P R E V I E W   &   F I N I S H
+#
+#
+
+if ! $NOASK; then
+    echo "Generating preview..."
+    echo "Type 'q' to close the preview window."
+    if test "$RES" = vcd; then
+        display "$MENU_PPM"
+    else
+        composite -compose Over -gravity center "$HIGHLIGHT_PNG" \
+            "$MENU_PPM" miff: | display
+    fi
+    wait
+    echo -n "Was the preview ok [y/N]?  "
+    ANSWER="N"
+    read ANSWER
+    if ! ( test "$ANSWER" = "y" || test "$ANSWER" = "Y" ); then
+        echo "Preview was not OK, exiting..."
+        cleanup
+        echo
+        echo "Try:  -font FONT -fontsize NUM -textcolor '#RGB'"
+        echo "      -fontdeco 'ImageMagick instr' -align left|center|right"
+        echo "      -background IMAGE -audio AUDIOFILE"
+        echo "to change the appearance. More in 'man tovid'"
+        exit 0
+    else
+        echo "Preview was OK. Continuing..."
+    fi
+fi
+
+# Background audio:
+# If no background audio was provided, generate 4 seconds of silence
+if test -z "$BG_AUDIO"; then
+    if test -z "$MENU_LENGTH"; then
+        MENU_LENGTH="-t 4"
+    fi
+    echo "Creating $(echo "$MENU_LENGTH" | cut -c 4-)-second silent $ASUF audio...   "
+    AUDIO_CMD="ffmpeg -f s16le -i /dev/zero -ac 2 -ar $SAMPRATE -ab 224k \
+        $MENU_LENGTH -acodec $ASUF -y \"$AUDIO_STREAM\""
+    $DEBUG && echo -e "\n\nBG audio:\n$AUDIO_CMD" >> $REDIR
+    eval $AUDIO_CMD >> $REDIR 2>&1
+# Otherwise, convert provided audio to the target format
+else
+    echo "Converting \"$BG_AUDIO\" to $ASUF...   "
+    AUDIO_CMD="ffmpeg -i \"$BG_AUDIO\" -ac 2 -ar $SAMPRATE -ab 224k \
+        $MENU_LENGTH -acodec $ASUF -y \"$AUDIO_STREAM\""
+    $DEBUG && echo -e "\n\nBG audio:\n$AUDIO_CMD" >> $REDIR
+    eval $AUDIO_CMD >> $REDIR 2>&1
+fi
+
+# Calculate video length from length of audio
+VID_LENGTH=$(mplayer -quiet -identify -frames 0 -vo null -ao null \
+    "$AUDIO_STREAM" 2>&1 | grep '^ID_LENGTH' | awk -F '=' '{print $2}' | \
+    sed -e "s/\.[0-9]*//g")
+VID_LENGTH=$(expr $VID_LENGTH \* $FPS \/ 100)
+
+# Make sure VID_LENGTH is nonzero
+if test $VID_LENGTH -eq 0 ; then
+    # Use 30 seconds as a sensible default
+    VID_LENGTH=$(expr 30 \* $FPS \/ 100)
+fi
+
+# Make video of specified length from PPM background image
+echo "Converting menu image to video. This may take a while...   "
+VIDEO_CMD="ppmtoy4m $PPM_OPTS -n $VID_LENGTH -r \"$MENU_PPM\" 2>>$REDIR | \
+  mpeg2enc -a 2 $MPEG2ENC_FMT $MPEG2ENC_SYS -o \"$VIDEO_STREAM\" >> $REDIR 2>&1"
+$DEBUG && echo -e "\n\nTo mpeg:\n$VIDEO_CMD" >> $REDIR
+eval $VIDEO_CMD
+
+# Multiplex audio and video
+echo "Multiplexing video and audio streams...   "
+MPLEX_CMD="mplex $MPLEX_OPTS $MPEG2ENC_FMT -o \"$MENU_MPEG\" \
+  \"$VIDEO_STREAM\" \"$AUDIO_STREAM\" >> $REDIR 2>&1"
+$DEBUG && echo -e "\n\nMux:\n$MPLEX_CMD" >> $REDIR
+eval $MPLEX_CMD
+
+# For DVD, create spumux XML
+if test "$RES" = "dvd"; then
+
+(cat << EOF
+<subpictures>
+  <stream>
+  <spu force="yes" start="00:00:00.00"
+       highlight="$HIGHLIGHT_PNG"
+       select="$SELECT_PNG"
+       autooutline="infer">
+  </spu>
+  </stream>
+</subpictures>
+EOF
+) > "$SPUMUX_XML"
+    wait
+    SPUMUX_CMD="spumux \"$SPUMUX_XML\" < \"$MENU_MPEG\" > \"$OUT_FILENAME\" 2>>$REDIR"
+    echo "Adding the DVD buttons to menu...   "
+    $DEBUG && echo -e "\n\nSpumux buttons:\n$SPUMUX_CMD" >> $REDIR
+    eval $SPUMUX_CMD
+
+# Rename the output menu for VCD and SVCD
+else
+    mv "$MENU_MPEG" "$OUT_FILENAME"
+fi
+
+cleanup
+
+echo $SEPARATOR
+if test -s "$OUT_FILENAME"; then
+    if ! $QUIET; then
+        echo "Finished! Your menu should be in the file \"$OUT_FILENAME\"."
+        if test "$RES" = "vcd"; then
+            echo "You can use this menu on an SVCD or VCD disc with:"
+            echo
+            echo "  tovid xml -vcd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
+            echo "          <output name>"
+        else
+            echo "You can use this menu on a DVD disc with:"
+            echo
+            echo "  tovid xml -dvd -menu \"$OUT_FILENAME\" <title 1> <title 2> ... \\"
+            echo "          -out <output name>"
+        fi
+
+        echo
+        echo "where <title N> is an MPEG video file corresponding to title N as listed"
+        echo "on your menu. Run tovid xml' without any options for more usage information."
+    else
+        echo "Done!"
+    fi
+else
+    echo "It looks like something went wrong, because there is no output file."
+    echo "Please submit a bug report to http://code.google.com/p/tovid/issues."
+    echo "Please add -debug to your command (tovid menu -debug ...) and post the"
+    echo "log file and terminal output. Sorry for the inconvenience."
+    exit 1
+fi
+
+$QUIET || echo $SEPARATOR
+$QUIET || echo "Thanks for using makemenu!"
+exit 0
