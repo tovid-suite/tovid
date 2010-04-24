@@ -182,8 +182,7 @@ _showcase_shape = Choice('Showcase shape', '-showcase-shape', 'none',
 
 _showcase_geo = Text('Image position', '-showcase-geo', '',
     'Enter the position of the top left corner of the showcase image: '
-    'e.g. "200x80".  This value is applied to the video *before* is is scaled.',
-    width=10)
+    'e.g. "200x80".  This value is applied to the video *before* is is scaled.')
 
 _showcase_titles_align = Choice('Title alignment',
     '-showcase-titles-align', 'none',
@@ -845,7 +844,7 @@ main_menu = Tabs('Main menu',
     ),
 )
 
-submenus = Tabs('Submenus',
+submenus = Tabs('Submenus and Chapters',
     VPanel('Settings',
         Label('Enable a submenu option on the "Basic" tab to use submenus',
         'center'),
@@ -866,6 +865,10 @@ submenus = Tabs('Submenus',
     VPanel('Chapter titles',
         submenu_chapter_font,
         _chapter_titles,
+    ),
+
+    VPanel('Chapters',
+        RelatedList('Chapters', '-files', '1:1', _chapters, side='top', filter=strip_all),
     ),
 )
 
@@ -995,9 +998,6 @@ playback = Tabs("Playback",
             _select_color,
             _outlinewidth,
         ),
-    ),
-    VPanel('Chapters',
-        RelatedList('Chapters', '-files', '1:1', _chapters, side='top', filter=strip_all),
     ),
     VPanel('Grouped Videos',
         RelatedList('Grouped videos', '-files', '1:*', _group, index=True, repeat=True),
