@@ -880,7 +880,7 @@ class Number (Control):
             def popup():
                 scale = PopupScale(self)
                 if scale.result is not None:
-                    self.variable.set(p.result)
+                    self.variable.set(scale.result)
             tk.Button(self, textvariable=self.variable, command=popup).pack(side='left')
             tk.Label(self, name='units', text=self.units).pack(side='left')
 
