@@ -529,7 +529,8 @@ class PopupScale (Dialog):
     def __init__(self, parent, title=''):
         """Create the scale dialog with the given Number control as a parent.
         """
-        Dialog.__init__(self, parent, parent.label)
+        w_title=parent.label or 'Scale'
+        Dialog.__init__(self, parent, w_title)
 
 
     def body(self, master):
