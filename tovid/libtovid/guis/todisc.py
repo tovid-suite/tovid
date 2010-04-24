@@ -1026,11 +1026,11 @@ encoding = VPanel('Encoding',
 
 ### --------------------------------------------------------------------
 
-def run():
+def run(script_filename=''):
     app = Application('todisc',
         main, main_menu, submenus, thumbnails, slideshows, playback, behavior, encoding)
     gui = GUI("todiscgui", 800, 660, app)
-    gui.run()
+    gui.run(script_filename)
 
 if __name__ == '__main__':
 
@@ -1040,3 +1040,4 @@ if __name__ == '__main__':
     except:
         import traceback
         traceback.print_exc(10)
+
