@@ -41,7 +41,7 @@ from libtovid.render.drawing import Drawing, save_image
 from libtovid.render.effect import Effect
 from libtovid.render.animation import Keyframe, Tween
 from libtovid.media import MediaFile
-from libtovid import rip
+from libtovid.backend import transcode
 from libtovid import log
 
 class Layer:
@@ -113,7 +113,7 @@ class Layer:
         assert isinstance(drawing, Drawing)
         for sublayer, position in self.sublayers:
             drawing.save()
-            drawing.translate(position)
+            drawing.translate(*position)
             sublayer.draw(drawing, frame)
             drawing.restore()
 
@@ -142,15 +142,15 @@ class Layer:
 
 
 # Layer template
-# 
+#
 # Copy and paste the following code to create your own Layer.
-# 
+#
 # Layer subclasses should define two things:
-# 
+#
 #     __init__():  How to initialize the layer with parameters
 #     draw():   How do draw the layer on a Drawing
-# 
-# First, declare the layer class name. Include (Layer) to indicate that your 
+#
+# First, declare the layer class name. Include (Layer) to indicate that your
 # class is a Layer.
 
 class MyLayer (Layer):
@@ -280,7 +280,7 @@ class VideoClip (Layer):
         """Rip frames from the video file, from start to end frames."""
         log.info("VideoClip: Ripping frames %s to %s" % (start, end))
         outdir = '/tmp/%s_frames' % self.filename
-        self.frame_files = rip.rip_frames(self.mediafile, outdir,
+        self.frame_files = transcode.rip_frames(self.mediafile, outdir,
                                           [start, end])
 
     def draw(self, drawing, frame=1):
@@ -459,7 +459,7 @@ class ThumbGrid (Layer):
                  (columns, rows)=(0, 0), aspect=(4,3)):
         """Create a grid of thumbnail images or videos from a list of files,
         fitting in a space no larger than the given size, with the given number
-        of columns and rows. Use 0 to auto-layout columns or rows, or both 
+        of columns and rows. Use 0 to auto-layout columns or rows, or both
         (default).
         """
         assert files != []
