@@ -526,11 +526,10 @@ class FontChooser (Dialog):
 class PopupScale (Dialog):
     """A popup widget with a scale for choosing a number.
     """
-    def __init__(self, parent, title=''):
+    def __init__(self, parent=None):
         """Create the scale dialog with the given Number control as a parent.
         """
-        w_title=parent.label or 'Scale'
-        Dialog.__init__(self, parent, w_title)
+        Dialog.__init__(self, parent, parent.label or 'Scale')
 
 
     def body(self, master):

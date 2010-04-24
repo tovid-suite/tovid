@@ -318,6 +318,7 @@ class Application (Widget):
         try:
             self.save_script(filename)
         except:
+            showerror(title="Error", message="Failed to save '%s'" % filename)
             raise
         else:
             showinfo(title="Script saved", message="Saved '%s'" % filename)
@@ -338,9 +339,10 @@ class Application (Widget):
         try:
             self.load_script(filename)
         except:
+            showerror(title="Error", message="Failed to load '%s'" % filename)
             raise
         else:
-            showerror(title="Error", message="Failed to load '%s'" % filename)
+            showinfo(title="Script loaded", message="Loaded '%s'" % filename)
 
 
     def save_script(self, filename):
