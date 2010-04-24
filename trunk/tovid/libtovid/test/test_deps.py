@@ -10,11 +10,11 @@ class BadInput(unittest.TestCase):
 
     def testInt(self):
         """require should not accept integer input"""
-        self.assertRaises(deps.InputError, deps.require, self.I)
+        self.assertRaises(ValueError, deps.require, self.I)
 
     def testTup(self):
         """require should not accept tuple input"""
-        self.assertRaises(deps.InputError, deps.require, self.T)
+        self.assertRaises(ValueError, deps.require, self.T)
 
 
 class MissingDependency(unittest.TestCase):
@@ -27,11 +27,11 @@ class MissingDependency(unittest.TestCase):
     def testFoobar(self):
         """require should never find foo or bar!"""
         print("Testing a dictionary.\n")
-        self.assertRaises(deps.MissingError, deps.require, self.D)
+        self.assertRaises(deps.MissingDep, deps.require, self.D)
         print("\n\nTesting a list.\n")
-        self.assertRaises(deps.MissingError, deps.require, self.L)
+        self.assertRaises(deps.MissingDep, deps.require, self.L)
         print("\n\nTesting a string.\n")
-        self.assertRaises(deps.MissingError, deps.require, self.S)
+        self.assertRaises(deps.MissingDep, deps.require, self.S)
 
 if __name__ == "__main__":
     unittest.main()

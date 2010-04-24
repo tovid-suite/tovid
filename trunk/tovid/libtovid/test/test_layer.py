@@ -18,8 +18,8 @@ class TestLayer(unittest.TestCase):
         print("Creating a Thumb Layer")
         thumb = layer.Thumb('test.png', (50, 35), title='Oh yeah')
         print("Creating a Thumbgrid Layer")
-        thumb_grid = layer.ThumbGrid(['test.png', 'test.png', 'test.png'],
-                             (600, 400))
+        files = ['test.png']*3
+        thumb_grid = layer.ThumbGrid(files, files, (600, 400))
         print("Creating a SafeArea Layer")
         safe_area = layer.SafeArea(93, 'yellow')
         print("Creating an InterpolationGraph Layer")
