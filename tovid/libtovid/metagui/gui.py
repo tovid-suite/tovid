@@ -202,6 +202,7 @@ class Executor (Widget):
             outfile.close()
             self.notify("Output saved to '%s'" % filename)
 
+
 class Application (Widget):
     """Graphical frontend for a command-line program
     """
@@ -461,10 +462,20 @@ class GUI (tk.Tk):
         self.bind('<Control-q>', self.confirm_exit)
 
 
-    def run(self):
-        """Run the GUI.
+    def run(self, load_filename=''):
+        """Run the GUI and enter the main event handler.
+        This function does not return until the GUI is closed.
         """
         self.draw()
+        # Load script from the given filename if provided
+        if load_filename:
+            print("Loading script '%s'" % load_filename)
+            try:
+                self.application.load_script(load_filename)
+            except:
+                print("!!! Failed to load '%s'" % load_filename)
+            else:
+                print(":-) Successfully loaded '%s'" % load_filename)
         # Enter the main event handler
         self.mainloop()
 
