@@ -1,0 +1,218 @@
+#!/bin/bash
+
+path=$(tovid -prefix)
+PATH=$path:$PATH
+SEP=$(for i in {1..79}; do printf '='; done)
+final_script=$(mktemp -t todiscXXXXXXXX)
+
+##############################################################################
+################################## Functions #################################
+##############################################################################
+# read_script name
+read_script()
+{
+    script_exists=0
+    script_name="$1"
+    # if user just pressed enter, test that the default name exists (it should)
+    if [[ -z $script_name ]]; then
+        script_name="$PWD/todisc_commands.bash"
+        [[ -e $script_name ]] && script_exists=1
+    fi
+    # else test if the file name path passed in exists
+    while ! (( script_exists )); do
+        read script_name
+        script_name=$(readlink -f "$script_name")
+        if  [[ -e "$script_name" ]] ; then
+            script_exists=1
+        else
+            echo "Sorry, the path $script_name does not point to an existing file"
+            echo "Please re-enter the path to the script"
+            echo "You can use the full path or the path relative to `pwd`"
+        fi
+    done
+    SCRIPT="$script_name"
+}
+
+run_gui()
+{    
+    todiscgui &>/dev/null &
+    tovid_pid=$!
+    sleep 2
+    echo $SEP
+    echo "Make your selections, then save your script and exit GUI to continue..."
+    wait $tovid_pid
+    echo $SEP
+    echo "Press <ENTER> to accept the default filename."
+    echo "Or enter the relative or full path of your saved script file."
+    echo "[`pwd`/todisc_commands.bash]"
+    read script
+    read_script "$script"
+        
+    todisc_tmp=$(mktemp todisc_tmpXXXXXX)
+    mv "$SCRIPT" "$todisc_tmp"
+    echo $SEP
+    echo "Okay, the content is saved, you can overwrite this file next time."
+    echo "Press <ENTER> to continue"
+    read cont
+}
+
+# clean_script file
+clean_script()
+{
+    file="$1"
+    # remove shebang and PATH
+    sed -i '/\#\!\/usr\/bin\/env bash/d;/PATH/d' "$file"
+    # remove todisc command
+    sed -i '/^todisc \\$/d' "$file"
+    # remove opening blank lines
+    sed -i '/./,/^$/!d' "$file"
+}
+
+##############################################################################
+############################ Main body starts here ###########################
+##############################################################################
+
+############################## General Options ###############################
+cat <<EOF
+
+$SEP
+We are going to create a DVD menu with titlesets.
+
+I am going to start tovid gui.  Please enter the general
+options there that you would like to apply to every titleset.  
+"Output name" (bottom of main screen) is the only required general
+option.  When you are done, press the 'Save script' button and accept
+the default filename.  You must then close the GUI in order to continue.
+
+Press <ENTER> to continue...
+EOF
+read cont
+if [[ -e todisc_commands.bash ]]; then
+    new_name=$(TMPDIR=`pwd` mktemp -t todisc_commands.bash.XXXXXX)
+    echo "The file we will use to save options: \"todisc_commands.bash\", 
+     exists in the current directory. It will be renamed: 
+    to $new_name if you continue." |sed 's/^[ \t]*//;s/[ \t]*$//'
+    echo "press <ENTER> to continue..."
+    read cont
+fi
+[[ -e "todisc_commands.bash" ]] && mv todisc_commands.bash "$new_name"
+
+run_gui
+##############################################################################
+################################# VMGM Menu ##################################
+##############################################################################
+
+####################### Titleset Titles for VMGM menu ########################
+cat <<EOF
+
+Now we will save options for your root (VMGM) menu
+The only option you really need is the titleset titles.
+Since you can not save titles in the GUI without loading videos
+you will need to enter them here.
+These titleset names will appear as menu titles for the respective menu
+in your DVD
+EOF
+echo $SEP
+echo "Press <ENTER> to continue..."
+read cont
+cat <<EOF
+
+Enter the names of your titlesets, one per line pressing <ENTER> each time.
+No quotes are necessary.
+Type "done" when you are finished.
+EOF
+
+done=0
+while ! ((done)); do
+    read title
+    if [[ $title == "done" ]]; then
+        done=1
+    else
+        MENU_TITLES+=("$title")
+    fi
+done
+# add backslash to last line; add -vmgm and -titles; add menu titles
+sed -i "\$s/$/ \\\/" "$todisc_tmp"
+sed -i '$ a -vmgm \\' "$todisc_tmp"
+sed -i '$ a -titles \\'  "$todisc_tmp"
+printf '"%s" \\\n' "${MENU_TITLES[@]}" >> "$todisc_tmp"
+mv "$todisc_tmp" "$final_script"
+
+############################# VMGM Menu options ##############################
+cat <<EOF
+
+Now I will bring the GUI up again - enter options for your root 
+(VMGM) menu.
+Remember that this menu (VMGM) does not need video files.
+You may wish to use background (audio or video), a showcased image or
+video, or set the fonts.  When you are done save the script again
+(to the default name) and close the GUI to continue.
+EOF
+echo "Press <ENTER> to continue..."
+read cont
+((script_ind++))
+run_gui
+clean_script "$todisc_tmp"
+# add backslash to last line
+sed -i "\$s/$/ \\\/" "$todisc_tmp"
+# add -end-vmgm as last line
+sed -i '$ a -end-vmgm \\' "$todisc_tmp"
+cat "$todisc_tmp" >> "$final_script"
+rm -f "$todisc_tmp"
+done=0
+
+##############################################################################
+################################## Titlesets #################################
+##############################################################################
+
+echo "Now finally we will make your titlesets"
+message=$(
+cat <<EOF
+
+Bringing up the GUI for titleset $tset
+Make your titleset, leaving out the general options you gave earlier
+unless you wish to change them (-out can not be changed).
+Press <ENTER> to continue or type "done" if you have no more titlesets
+EOF
+)
+while ! ((done)); do
+    ((tset++))
+    echo "$message"
+    read title
+    if [[ $title == "done" ]]; then
+        done=1
+    else
+        ((script_ind++))
+        run_gui
+        clean_script "$todisc_tmp"
+        # add backslash to last line of temp file
+        echo adding backslash to "$todisc_tmp"
+        sed -i "\$s/$/ \\\/" "$todisc_tmp"
+        # add "-titleset \" as 1st line
+        sed -i '1i -titleset \\' "$todisc_tmp"
+        # add "-end-titleset" as last line
+        sed -i '$a -end-titleset \\' "$todisc_tmp"
+        # concatenate
+        cat "$todisc_tmp" >> "$final_script"
+        rm -f "$todisc_tmp"
+    fi
+done
+
+###############################################################################
+############################## Run Final Script ###############################
+###############################################################################
+
+# remove backslash on last line
+sed -i "\$s/\\\//" "$final_script"
+echo $SEP
+echo final script is $final_script
+echo "Do you want to run it now?, type yes if you do, or press <ENTER> to leave"
+read answer
+if [[ $answer == "yes" ]]; then
+    bash "$final_script"
+fi
+
+# remove backslash on last line
+# sed "\$s/\\\//"
+# remove trailing blank lines
+# sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'
