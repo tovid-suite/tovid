@@ -21,6 +21,7 @@ Where 'command' is one of the following:
     disc        Create a DVD with menus                     todisc
     gui         Start the tovid GUI                         todiscgui
     mpg         Encode videos to MPEG format                tovid
+    titlesets   Start the titleset wizard                   (new)
 
 Run 'tovid <command>' with no further arguments to get help on a command,
 and what arguments it expects.
@@ -44,6 +45,7 @@ _scripts = {
     'gui': 'todiscgui',
     'mpg': 'makempg',
     'batch': 'tovid-batch',
+    'titlesets': 'make_titlesets',
 }
 
 if __name__ == '__main__':
