@@ -472,7 +472,8 @@ Here is a list of possible options you can pass:
     Note: if you wish to make your own mask PNGS you can put them in
     $PREFIX/lib/tovid/masks/ or $HOME/.tovid/masks/ and use them on the
     command line using the filename minus the path and extension.
-    i.e ~/.tovid/masks/tux.png becomes -thumb-shape tux
+    (i.e ~/.tovid/masks/tux.png becomes -thumb-shape tux)
+    No frame is used for shaped thumbs.
 : **-thumb-frame-size** INT
     The size (thickness) of the thumb frames in pixels.  This will also set the
     thickness of the raised "frame" of thumbs when you use **-3d-thumbs**.
@@ -833,6 +834,7 @@ Here is a list of possible options you can pass:
     Note: if you wish to make your own mask PNGS you can put them in
     $PREFIX/lib/tovid/masks/ or $HOME/.tovid/masks/ and use them on the
     command line using the filename minus the path and extension.
+    No frame is used for shaped thumbs.
 : **-showcase-framestyle**  none|glass
     For -showcase-* style template only
     "none" will use the default frame method, using "convert -frame . . ."
