@@ -13,6 +13,18 @@ files to DVD-compliant MPEG format, generate simple or complex DVD menus,
 author and burn a ready-to-watch DVD, with just a few shell commands. A
 graphical interface is also provided to make the process even easier.
 
+**NOTE**: As of tovid 0.32, this is the only manual page provided by tovid.
+There is now a single executable frontend to all functionality in the suite, so
+if you were expecting to find manpages for **todisc**, **idvid**, **makemenu**
+and their kin, they can all be found in the **tovid** manpage you are reading now.
+
+And yes, this makes for a pretty large manual page. If you are viewing this
+manpage from the command-line **man** utility, which normally pages through the
+**less** utility, you can skip to a section by searching with the **/** key,
+followed by a **^** to match the given section name. For example, to skip to
+the **mpg** command, type **/^Command:mpg**. See **man less** for more on how
+to navigate.
+
 
 =Usage=
 
@@ -42,6 +54,7 @@ Where //COMMAND// is one of the following:
 
 The //OPTIONS// differ for each command; run **tovid <command>** with no
 further arguments to get help on a command, and what options it expects.
+
 
 
 =Configuration=
