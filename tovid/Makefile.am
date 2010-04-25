@@ -35,7 +35,8 @@ sh_bin = \
 	src/makempg \
 	src/tovid-batch \
 	src/tovid-init \
-	src/tovid-interactive
+	src/tovid-interactive \
+	src/make_titlesets
 # Removed from sh_bin
 #src/tovid-test
 
