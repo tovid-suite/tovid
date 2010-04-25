@@ -1355,9 +1355,14 @@ For example:
 : **-verbose**
     Print extra information from mplayer, tcprobe, and ffmpeg.
 
+: **-accurate**
+    Do lengthy play-time estimation by scanning through the entire video file.
+    Use this if the default behavior is giving you inaccurate play times.
+
 : **-fast**
-    Don't do lengthy play-time estimation; report length as reported
-    by mplayer (possibly inaccurate). Results in faster execution.
+    Skip lengthy play-time estimation, and go with what mplayer reports
+    as being the video duration. Unlike pre-0.32 versions of tovid, this
+    is now the default behavior, and the **-fast** option doesn't do anything.
 
 : **-tabular**
     Display output in a table format for easier comparison. Most useful
