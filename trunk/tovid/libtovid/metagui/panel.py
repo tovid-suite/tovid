@@ -151,6 +151,7 @@ class HPanel (Panel):
         """
         Panel.__init__(self, name, *widgets, **kwargs)
 
+
     def draw(self, master, **kwargs):
         """Draw the HPanel and its contained widgets in the given master.
         """
@@ -173,6 +174,7 @@ class VPanel (Panel):
         """Create a VPanel to show the given widgets in a vertical layout.
         """
         Panel.__init__(self, name, *widgets, **kwargs)
+
 
     def draw(self, master, **kwargs):
         """Draw the VPanel and its contained widgets in the given master.
