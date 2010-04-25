@@ -1,5 +1,39 @@
 #!/bin/bash
+# Part of the tovid suite
+# =======================
+# A bash script that calls the tovid GUI in order to allow titlesets,
+# something the GUI is not capable of on its own at the moment.
+# This script depends on the GUI, in addition to the other command
+# line scripts of the tovid suite such as todisc, makempg, and idvid.
+#
+# Project homepage: http://tovid.wikia.com
+#
+# Copyright (C) 2005-2010
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#     http://www.gnu.org/licenses/gpl.txt
 
+
+# Written by Robert ("grepper") Sohn
+# grepper at gmail dot com
+
+#############################################################################
+###############################Variables ####################################
+#############################################################################
 path=$(tovid -prefix)
 PATH=$path:$PATH
 SEP=$(for i in {1..79}; do printf '='; done)
@@ -74,7 +108,9 @@ clean_script()
 ############################ Main body starts here ###########################
 ##############################################################################
 
+##############################################################################
 ############################## General Options ###############################
+##############################################################################
 cat <<EOF
 
 $SEP
@@ -150,9 +186,11 @@ Now I will bring the GUI up again - enter options for your root
 Remember that this menu (VMGM) does not need video files.
 You still have many options, but none are strictly necessary.  For example
 you may wish to use background (audio and/or image/video), a
-showcased image/video, or set the fonts.  You should probably also set
-the menu title to a new name.  When you are done save the script again
-to $final_script and close the GUI to continue.
+showcased image/video, set the fonts, use a "Playall" button...
+You should also set the menu title to a new name.  When you are done save
+the script again to
+$final_script
+and close the GUI to continue.
 EOF
 echo "Press <ENTER> to continue..."
 read cont
@@ -219,8 +257,3 @@ read answer
 if [[ $answer == "yes" ]]; then
     bash "$final_script"
 fi
-
-# remove backslash on last line
-# sed "\$s/\\\//"
-# remove trailing blank lines
-# sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'
