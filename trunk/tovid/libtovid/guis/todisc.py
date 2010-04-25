@@ -177,6 +177,7 @@ _thumb_frame_color = Color('Frame color', '-thumb-frame-color',
 
 _showcase_shape = Choice('Showcase shape', '-showcase-shape', 'none',
     'Apply a shaped transparency mask to showcase videos or images. '
+    'No frame will be used for this option.  '
     'Leave at "none" to not use a feathered shape.',
     thumb_masks, 'dropdown')
 
@@ -436,7 +437,8 @@ _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
     'Apply a shaped transparency mask to thumbnail videos or images.  These '
     '"feathered" shapes look best against a plain background or used with '
     '**-thumb-mist** [COLOR].  To use a "mist" background behind each thumb, '
-    'see "Thumb mist" section.  Leave at "none" to not use a feathered shape.',
+    'see "Thumb mist" section.  No frame will be used for this option.  '
+    'Leave at "none" to not use a feathered shape.',
     thumb_masks, 'dropdown')
 
 _thumb_columns =  Choice('Thumb columns', '-thumb-columns', 'none',
