@@ -203,8 +203,9 @@ class Command:
         if self.error == '' and isinstance(self.proc, subprocess.Popen):
             self.error = self.proc.communicate()[1]
         return self.error
-
     get_errors = get_error
+
+
     def __str__(self):
         """Return a string representation of the Command, as it would look if
         run in a command-line shell.

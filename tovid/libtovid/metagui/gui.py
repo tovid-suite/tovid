@@ -137,6 +137,7 @@ class Executor (Widget):
         if self.command:
             self.notify("Killing command: %s" % self.command)
             self.command.kill()
+        self.outfile.close()
 
 
     def poll(self):
@@ -156,6 +157,7 @@ class Executor (Widget):
             self.kill_button.config(state='disabled')
             self.stdin_text.config(state='disabled')
             self.callback()
+            self.outfile.close()
         else:
             self.after(100, self.poll)
 
@@ -165,7 +167,6 @@ class Executor (Widget):
         Adds newlines and brackets.
         """
         self.write("\n[[ %s ]]\n" % text)
-
 
 
     def write(self, line):

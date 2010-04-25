@@ -10,6 +10,7 @@ __all__ = [
     'DragList',
     'ComboBox',
     'FontChooser',
+    'PopupScale',
     'ConfigWindow',
     'ScrolledWindow',
     'Style',
@@ -77,6 +78,7 @@ def divide_list(items, pieces):
         N = int(math.ceil(float(len(items)) / pieces))
         # For each piece p, extract N items
         return [items[N*p : N*p+N] for p in range(pieces)]
+
 
 def askyesno(title=None, message=None, **options):
     """Show a popup with Yes / No options. Return True if Yes was clicked,
@@ -218,6 +220,7 @@ class ScrollList (tk.Frame):
         index = self.listbox.nearest(event.y)
         self.select_index(index)
 
+
     def next_item(self, event):
         """Event handler when <Return> is pressed
         """
@@ -225,6 +228,7 @@ class ScrollList (tk.Frame):
         if self.linked:
             self.linked.curindex = self.curindex
         self.select_index(self.curindex)
+
 
     def select_index(self, index, select_in_linked=True):
         """Select (highlight) the list item at the given index.
@@ -357,6 +361,7 @@ class DragList (ScrollList):
         # make sure drop doesn't mess with focus_set
         self.select_index(self.curindex)
 
+
 class ComboBox (tk.Frame):
     """A dropdown menu with several choices.
     """
@@ -397,7 +402,7 @@ class ComboBox (tk.Frame):
         self.dropdown.withdraw()
 
         # List of choices
-        self.chooser = tk.Listbox(self.dropdown, background='white',
+        self.chooser = tk.Listbox(self.dropdown, background='#ffffff',
                                   listvariable=self.choices, width=_width,
                                   height=self.choices.count())
         # Use alternating white/gray for choices
@@ -530,6 +535,8 @@ class PopupScale (Dialog):
         """Create the scale dialog with the given Number control as a parent.
         """
         Dialog.__init__(self, parent, parent.label or 'Scale')
+        # Set by body()
+        self.scale = None
 
 
     def body(self, master):
@@ -561,9 +568,9 @@ class Style:
     """Generic widget style definitions.
     """
     def __init__(self,
-                 bgcolor='white',
-                 fgcolor='grey',
-                 textcolor='black',
+                 bgcolor='#ffffff',
+                 fgcolor='#d9d9d9',
+                 textcolor='#000000',
                  font=('Helvetica', 10, 'normal'),
                  relief='groove'):
         self.bgcolor = bgcolor
@@ -588,8 +595,8 @@ class Style:
         root.option_add("*Listbox.background", self.bgcolor)
         root.option_add("*Text.background", self.bgcolor)
         # Button colors
-        root.option_add("*Radiobutton.selectColor", "#8888FF")
-        root.option_add("*Checkbutton.selectColor", "#8888FF")
+        root.option_add("*Radiobutton.selectColor", "#ffffff")
+        root.option_add("*Checkbutton.selectColor", "#ffffff")
         # Relief
         root.option_add("*Entry.relief", self.relief)
         root.option_add("*Spinbox.relief", self.relief)
@@ -635,6 +642,7 @@ class Style:
         config.read(filename)
         font = dict(config.items('font'))
         self.font = (font['family'], int(font['size']), font['style'])
+
 
 class ConfigWindow (Dialog):
     """Configuration settings dialog box.
