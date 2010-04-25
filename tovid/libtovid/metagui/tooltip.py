@@ -35,7 +35,7 @@ INITIALIZATION OPTIONS:
         how multiple lines of text will be aligned, must be
         "left", "right" or "center"; default is "left"
     padx
-        extra space added to the left and right within the widget; 
+        extra space added to the left and right within the widget;
         default is 4
     pady
         extra space above and below the text; default is 2
@@ -94,8 +94,8 @@ class ToolTip:
     _defaults = {
         'anchor': 'center',
         'bd': 1,
-        'bg': 'lightyellow',
-        'fg': 'black',
+        'bg': '#ffffe0',
+        'fg': '#000000',
         'follow_mouse': 0,
         'font': None,
         'justify': 'left',
