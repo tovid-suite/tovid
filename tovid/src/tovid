@@ -68,7 +68,7 @@ if __name__ == '__main__':
         print actual_dir
         sys.exit(0)
 
-    print("DEBUG: tovid executables assumed to be in '%s'" % actual_dir)
+    print("tovid executables assumed to be in '%s'" % actual_dir)
 
     if command in _scripts:
         script = _scripts[command]
