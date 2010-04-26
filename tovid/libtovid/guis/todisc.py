@@ -291,6 +291,10 @@ _submenu_background = List('Image(s)', '-submenu-background', None,
     'Background image(s) for the submenus(s). Single value or list',
     Filename('', filetypes=image_filetypes))
 
+_submenu_bg_color = Color('Background color', '-submenu-bg-color', '#101010',
+    'Background color to use for submenu(s). Default (#101010) is '
+    'NTSC-safe black.')
+
 _submenu_titles = List('Submenu titles', '-submenu-titles', None,
         'Submenu titles for each video.  '
         'Use \\n for a new line in a multi-line title.', Text())
@@ -858,6 +862,7 @@ submenus = Tabs('Submenus',
         'center'),
         _submenu_length,
         _submenu_audio_fade,
+        _submenu_bg_color,
         HPanel('Backgrounds',
             _submenu_audio,
             _submenu_background,
