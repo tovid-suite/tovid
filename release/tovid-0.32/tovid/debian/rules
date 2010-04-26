@@ -1,0 +1,85 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# tovid debian/rules that uses debhelper.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+# These are used for cross-compiling and for saving the configure script
+# from having to guess our platform (since we know it already)
+DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+configure: configure-stamp
+configure-stamp: patch
+	dh_testdir
+	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --mandir=\$${prefix}/share/man
+	touch configure-stamp
+
+patch: patch-stamp
+patch-stamp: 
+	dpatch apply-all -v
+	dpatch cat-all > patch-stamp
+
+build: build-stamp
+build-stamp: configure-stamp
+	dh_testdir
+	$(MAKE)
+	touch build-stamp
+
+install: install-stamp
+install-stamp:
+	dh_testdir
+	dh_testroot
+	dh_clean -k -i 
+	dh_installdirs -i
+	# Add here commands to install the indep part of the package into
+	# debian/<package>-doc.
+	$(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
+	dh_install -i --sourcedir=debian/tmp
+	touch install-stamp
+
+# Must not depend on anything. This is to be called by
+# binary-indep in another 'make' thread.
+binary: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs ChangeLog
+	dh_installdocs
+	dh_installmenu
+	dh_desktop -ptovid-gui
+	dh_pysupport
+	dh_installman
+	dh_link
+	dh_compress 
+	dh_fixperms
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+clean: unpatch clean-patched
+	dh_testdir
+	dh_testroot
+	rm -fv build-stamp configure-stamp install-stamp
+	# Add here commands to clean up after the build process.
+	-$(MAKE) distclean
+ifneq "$(wildcard /usr/share/misc/config.sub)" ""
+	cp -f /usr/share/misc/config.sub config.sub
+endif
+ifneq "$(wildcard /usr/share/misc/config.guess)" ""
+	cp -f /usr/share/misc/config.guess config.guess
+endif
+	dh_clean 
+
+unpatch:
+	dpatch deapply-all -v
+
+clean-patched:
+	rm -rfv patch-stamp debian/patched
+
+#binary: binary-indep
+.PHONY: build clean binary install
