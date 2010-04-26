@@ -1,0 +1,118 @@
+Source: tovid
+Section: contrib/graphics
+Priority: optional
+Maintainer: Joe Friedrichsen <pengi.films@gmail.com>
+Build-Depends: debhelper (>= 5), autotools-dev, autoconf, automake1.10,
+ dpatch
+Build-Depends-Indep: netpbm, python-all-dev (>= 2.3.5-11),
+ python-support (>= 0.3), txt2tags (>= 2.3)
+Build-Conflicts: autoconf2.13, automake1.4
+Standards-Version: 3.7.2
+
+Package: tovid
+Architecture: all
+Section: contrib/graphics
+Priority: optional
+XB-Python-Version: ${python:Versions}
+Depends: mplayer-nogui | mplayer, mencoder, mjpegtools, normalize-audio,
+ imagemagick, ffmpeg, transcode, sox, ${python:Depends}, ${misc:Depends}
+Recommends: dvdauthor (>=0.6.11), vcdimager, lsdvd, libdvdcss2
+Suggests: cdrdao, libdvdread3, dvd+rw-tools,
+ pytovid (= ${Source-Version}), tovid-gui (= ${Source-Version}),
+ python-libtovid (= ${Source-Version})
+Description: Console utils for making (S)VCDs and DVDs (bash version)
+ Tovid can help you create your own DVDs, VCDs, and SVCDs for
+ playback on your home DVD player.
+ .
+ tovid converts arbitrary video formats into (S)VCD/DVD-compliant MPEG
+ files, and can help with menu creation and disc authoring. Other tools
+ included can:
+   * make animated menus
+   * identify audio and video codecs in nearly any file
+   * shrink MPEG videos
+ .
+ This package contains these bash CLI scripts:
+   * idvid -- identifies audio and video codecs in a video
+   * makedvd -- authors and burns DVDs
+   * makemenu -- creates menus for (S)VCDs and DVDs
+   * makevcd -- authors and burns (S)VCDs
+   * makexml -- creates xml control files for (S)VCDs and DVDs
+   * postproc -- adjusts MPEG videos: shrinking, audio synchronizing
+   * todisc -- creates SVCDs and DVDs with animated menus
+   * tovid -- converts arbitrary video files to (S)VCD or DVD MPEG files
+   * tovid-batch -- converts multiple video files for (S)VCD or DVD
+   * tovid-interactive -- a CLI wizard for tovid
+ .
+ Homepage: http://tovid.wikia.com
+
+Package: python-libtovid
+Architecture: all
+Section: contrib/python
+Priority: optional
+XS-Python-Version: >= 2.4
+XB-Python-Version: ${python:Versions}
+Depends: ${python:Depends}, python-cairo, python-dev, python-imaging
+Provides: ${python:Provides}
+Recommends: tovid (= ${Source-Version})
+Suggests:
+Description: Python modules for tovid and tovidgui
+ Tovid can help you create your own DVDs, VCDs, and SVCDs for
+ playback on your home DVD player.
+ .
+ tovid converts arbitrary video formats into (S)VCD/DVD-compliant MPEG
+ files, and can help with menu creation and disc authoring.
+ ,
+ This package contains the python modules that support pytovid and
+ tovidgui.
+ .
+ Homepage: http://tovid.wikia.com
+
+Package: pytovid
+Architecture: all
+Section: contrib/graphics
+Priority: optional
+XS-Python-Version: >= 2.4
+XB-Python-Version: ${python:Versions}
+Depends: python (>= 2.4), python-libtovid (= ${Source-Version})
+Recommends: tovid (= ${Source-Version})
+Suggests:
+Description: Console utils for making (S)VCDs and DVDs (python version)
+ Tovid can help you create your own DVDs, VCDs, and SVCDs for
+ playback on your home DVD player.
+ .
+ tovid converts arbitrary video formats into (S)VCD/DVD-compliant MPEG
+ files, and can help with menu creation and disc authoring.
+ .
+ This package contains these python implementations of the tovid bash
+ scripts:
+   * pyidvid -- identifies audio and video codecs in a video
+   * pymakemenu -- creates menus for (S)VCDs and DVDs
+   * pymakexml -- creates xml control files for (S)VCDs and DVDs
+   * pytovid -- converts arbitrary video files to (S)VCD or DVD MPEG files
+   * tovid-stats -- displays conversion history (time, bitrate, size, ...)
+ .
+ Homepage: http://tovid.wikia.com
+
+Package: tovid-gui
+Architecture: all
+Section: contrib/graphics
+Priority: optional
+XS-Python-Version: >= 2.4
+XB-Python-Version: ${python:Versions}
+Depends: ${python:Depends}, python-libtovid (= ${Source-Version}),
+ python-wxgtk2.6, python-wxversion, python-imaging-tk, python-tk,
+ tovid (= ${Source-Version})
+Recommends:
+Suggests:
+Description: GUIs for making (S)VCDs and DVDs
+ Tovid can help you create your own DVDs, VCDs, and SVCDs for
+ playback on your home DVD player.
+ .
+ tovid converts arbitrary video formats into (S)VCD/DVD-compliant MPEG
+ files, and can help with menu creation and disc authoring.
+ .
+ This package contains these graphical user interfaces for tovid:
+   * tovidgui -- a wx-GTK+ (GNOME-like) front-end for tovid
+   * todiscgui -- a Tkinter front-end for todisc
+ .
+ Homepage: http://tovid.wikia.com
