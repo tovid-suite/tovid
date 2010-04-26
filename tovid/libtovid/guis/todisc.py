@@ -754,11 +754,34 @@ _aspect = Choice('Video aspect ratio', '-aspect', 'none',
     '4:3|16:9|none')
 
 _audio_lang = SpacedText('Audio', '-audio-lang', '',
-    'Single value or list of language codes for audio')
+    'Single value or list of language codes for audio. '
+    'Identify the audio tracks on the DVD.  These language codes are used for '
+    'each video in the titleset.  When you use the audio button on your DVD '
+    'remote the language name is displayed. Example: -audio-lang en fr ')
 
-_subtitles = SpacedText('Subtitles', '-subtitles', '',
-    'Single value or list')
+_audio_channel = SpacedText('Audio channel', '-audio-channel', '',
+    'Space-separated list of audio channel numbers, for example '
+    '"Video1_track Video2_track Video3_track", where "VideoN_track" is the '
+    'track number to use in a multi-track (multi-language) mpeg: usually '
+    'something like -audio-channel "1 0 1".  The '
+    '1st track is 0, 2nd is 1 . . .  etc. If the tracks are 0.English '
+    '1.French, then the above would make French the audio language on Video1 '
+    'and Video3, and English the audio language on Video2.  You can check the '
+    'mpeg with "mplayer -v . . ."')
 
+_subtitles = SpacedText('Subtitles', '-subtitle-lang', '',
+    'This allows selectable subtitles in the DVD, assuming you have optional '
+    'subtitles muxed into your videos. Enter a single 2-character language code, '
+    'or several separated by spaces.')
+
+_quick_nav = Flag('Quick-nav', '-quick-nav', False,
+    'This option will allow navigation of a menu with more than one titleset by '
+    'using the  left and  right  arrow  keys of your DVD remote.  When you press '
+    'this key the highlight will go the next or previous title.  If you are at '
+    'the end of a titleset the right key will go  to the next titleset.  If you '
+    'are at the beginning of a titleset, the left key will go to the previous '
+    'titleset.  If no next or previous titleset it will cycle to the end or '
+    'beginning of the titlesets. ')
 
 ### ---------------------------------------------------------------------------
 ### Main GUI layout and panel construction
@@ -998,9 +1021,10 @@ playback = Tabs("Playback",
     VPanel('Basic settings',
         HPanel('', _aspect,  _widescreen),
         HPanel('Menu Pause', _loop),
-        HPanel('Language(s)', _audio_lang, _subtitles),
+        HPanel('Language(s)', _audio_lang, _audio_channel, _subtitles),
         HPanel('Navigation',
             _playall,
+            _quick_nav,
             _videos_are_chapters,
             _chain_videos,
         ),
