@@ -63,7 +63,7 @@ def ensure_type(message, required_type, *objects):
     for obj in objects:
         if not isinstance(obj, required_type):
             type_message = "Expected %s, got %s instead" % \
-                         (required_type, type(obj))
+                         (required_type, obj.__class__.__name__)
             exit_with_traceback(type_message + '\n' + message)
 
 
