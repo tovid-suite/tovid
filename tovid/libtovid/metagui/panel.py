@@ -10,7 +10,6 @@ __all__ = [
     'Drawer',
     'Tabs',
     'FlagGroup',
-    'RelatedList',
 ]
 
 # Python < 3.x
@@ -305,10 +304,7 @@ class Tabs (Panel):
         Panel.__init__(self, name, *widgets, **kwargs)
         # Index of selected tab
         self.index = 0
-        if 'side' in kwargs:
-            self.side = kwargs['side']
-        else:
-            self.side = 'top'
+        self.side = kwargs.get('side', 'top')
         # Set by draw()
         self.buttons = None
         self.selected = None
@@ -420,17 +416,11 @@ class FlagGroup (Panel):
         self.flags = flags
         self.kind = kind
         # Keyword arguments
-        self.side = 'top'
-        if 'side' in kwargs:
-            self.side = kwargs['side']
-            if self.side not in ['top', 'left']:
-                raise ValueError("FlagGroup 'side' must be 'top' or 'left'.")
-        self.columns = 1
-        if 'columns' in kwargs:
-            self.columns = kwargs['columns']
-        self.rows = 1
-        if 'rows' in kwargs:
-            self.rows = kwargs['rows']
+        self.side = kwargs.get('side', 'top')
+        if self.side not in ['top', 'left']:
+            raise ValueError("FlagGroup 'side' must be 'top' or 'left'.")
+        self.columns = kwargs.get('columns', 1)
+        self.rows = kwargs.get('rows', 1)
 
 
     def draw(self, master, **kwargs):
@@ -480,263 +470,5 @@ class FlagGroup (Panel):
                 args.extend(flag.get_args())
         return args
 
-
-class RelatedList (Panel):
-    """A Panel showing two Lists, where one is related to the other.
-
-    Relates a parent list to a child Control, with a parent:child
-    relationship of 1:1 (each parent item has one child item)
-    or 1:* (each parent item has a list of child items).
-
-    One to one:
-
-        - Each item in parent list maps to one item in the child list
-        - Parent copy and child list scroll in unison
-        - If item in child is selected, parent item is selected also
-        - Drag/drop is allowed in parent list only
-
-    One to many:
-
-        - Each item in parent list maps to a list of items in the child list
-        - Parent copy and child list do NOT scroll in unison
-        - If item in child is selected, parent is unaffected
-        - Drag/drop is allowed in the child Control
-
-    Assumptions:
-
-        - If item in parent is selected, child item/list is selected also
-        - It item is added to parent, new child item/list is added also
-        - If item in parent is deleted, child item/list is deleted also
-        - Child option string is only passed once
-
-    """
-
-    def __init__(self,
-                 name,
-                 parent,
-                 correspondence,
-                 child_list,
-                 filter=lambda x: x,
-                 side='left',
-                 **kwargs):
-        """Create a ``1:1`` or ``1:*`` correspondence between two lists.
-
-            name
-                Name of the RelatedList, displayed as a label
-            parent
-                Parent List (a Control instance), or the option string
-                of the parent List control declared elsewhere
-            correspondence
-                Either ``1:1`` (one-to-one) or ``1:*`` (one-to-many)
-            child_list
-                List control for the child
-            filter
-                A function that translates parent values into child values
-            side
-                Pack the parent to the 'left' of child or on 'top' of child
-
-        Keyword arguments:
-
-            index
-                True to pass an additional argument between the sub-list's
-                option and arguments with the 1-based index of the sub-list.
-            repeat
-                True to pass the sub-list's option for every sub-list; False
-                to pass the sub-list's option only once.
-
-        Examples::
-
-            RelatedList('-files', '1:1',
-                List('Video titles', '-titles', Text()))
-            RelatedList('-files', '1:*',
-                List('Grouped videos', '-group', Filename()))
-        """
-        # Check for correct values / types
-        if type(parent) != str and not isinstance(parent, Control):
-            raise TypeError("Parent must be a Control or an option string.")
-        if correspondence not in ['1:1', '1:*']:
-            raise ValueError("Correspondence must be '1:1' or '1:*'.")
-        if not isinstance(child_list, List):
-            raise TypeError("RelatedList child must be a List instance.")
-        if not hasattr(filter, '__call__'):
-            raise TypeError("Translation filter must be a function.")
-        if side not in ['left', 'top']:
-            raise ValueError("RelatedList 'side' must be 'left' or 'top'")
-
-        Panel.__init__(self, name, **kwargs)
-        self.parent = parent
-        self.correspondence = correspondence
-        self.child = child_list
-        self.filter = filter
-        self.side = side
-        self.mapped = []
-        # Set by draw()
-        self.selected = None
-        self.parent_is_copy = False
-        self.listbox = None
-        # Handle keyword args
-        self.index = kwargs.get('index', False)
-        self.repeat = kwargs.get('repeat', True)
-
-
-    def draw(self, master, **kwargs):
-        """Draw the parent copy and related list Control,
-        side by side in the given master.
-        """
-        Panel.draw(self, master, **kwargs)
-
-        # Lookup the parent Control by option
-        if type(self.parent) == str:
-            self.parent_is_copy = True
-            parent_control = Control.by_option(self.parent)
-            if not parent_control:
-                raise ValueError("RelatedList parent '%s' does not exist" % \
-                                 self.parent)
-            else:
-                self.parent = parent_control
-        # Or use the parent Control itself
-        else:
-            self.parent_is_copy = False
-
-        ensure_type("RelatedList parent must be a List", List, self.parent)
-
-        # Draw the read-only copy of parent's values
-        if self.parent_is_copy:
-            self.selected = tk.StringVar()
-            frame = tk.LabelFrame(self.frame,
-                                  text="%s (copy)" % self.parent.label)
-            self.listbox = ScrollList(frame, self.parent.variable,
-                                      self.selected)
-            self.listbox.pack(expand=True, fill='both')
-            frame.pack(side=self.side, anchor='nw', expand=True, fill='both')
-        # Or draw the parent Control itself
-        else:
-            self.parent.draw(self.frame)
-            self.parent.pack(side=self.side, anchor='nw',
-                             expand=True, fill='both')
-            self.listbox = self.parent.listbox
-
-        # Draw the child control
-        # 1:1, add/remove in child is NOT allowed, and lists are linked
-        if self.correspondence == '1:1':
-            self.child.edit_only = True
-            self.child.draw(self.frame)
-            self.listbox.link(self.child.listbox)
-        # 1:many, add/remove in child is allowed
-        else:
-            self.child.draw(self.frame)
-        # Pack the child control
-        self.child.pack(side=self.side, anchor='nw', expand=True, fill='both')
-
-        # Add callbacks to handle changes in parent
-        self.add_callbacks()
-
-
-    def add_callbacks(self):
-        """Add callback functions for add/remove in the parent Control.
-        """
-        if self.correspondence == '1:1':
-            def insert(index, value):
-                """When a new item is inserted in the parent list,
-                insert a corresponding (filtered) item into the child list.
-                """
-                self.child.variable.insert(index, self.filter(value))
-                self.child.control.enable()
-
-            def remove(index, value):
-                """When an item is removed from the parent list,
-                remove the corresponding item from the child list.
-                """
-                try:
-                    self.child.variable.pop(index)
-                except IndexError:
-                    pass
-                # Disable child editor control if child list is empty
-                if self.child.listbox.items.count() == 0:
-                    self.child.control.disable()
-
-            def swap(index_a, index_b):
-                """When two items are swapped in the parent list,
-                swap the corresponding items in the child list.
-                """
-                self.child.listbox.swap(index_a, index_b)
-
-            def select(index, value):
-                """When an item is selected in the parent list,
-                select the corresponding item in the child list.
-                """
-                pass # already handled by listboxes being linked
-
-        else: # '1:*'
-            def insert(index, value):
-                """When a new item is inserted in the parent list,
-                insert a new child list (initially empty) for that item.
-                """
-                self.mapped.insert(index, ListVar())
-
-            def remove(index, value):
-                """When an item is removed from the parent list,
-                remove the corresponding child list.
-                """
-                try:
-                    self.mapped.pop(index)
-                except IndexError:
-                    pass
-
-            def swap(index_a, index_b):
-                """When two items are swapped in the parent list,
-                swap the two corresponding child lists.
-                """
-                a_var = self.mapped[index_a]
-                self.mapped[index_a] = self.mapped[index_b]
-                self.mapped[index_b] = a_var
-
-            def select(index, value):
-                """When an item is selected in the parent list,
-                display the corresponding child list for editing.
-                """
-                self.child.set_variable(self.mapped[index])
-
-        self.listbox.callback('select', select)
-        self.parent.listbox.callback('insert', insert)
-        self.parent.listbox.callback('remove', remove)
-        self.parent.listbox.callback('swap', swap)
-
-
-    def get_args(self):
-        """Return a list of arguments for the contained list(s).
-        """
-        args = []
-        # Add parent args, if parent was defined here
-        if not self.parent_is_copy:
-            args.extend(self.parent.get_args())
-        # Add child args, for one or many children
-        if self.correspondence == '1:*':
-            # FIXME: Most of this is a total hack to support 'index' and
-            # 'repeat' keywords
-            print("Adding arguments for 1:* sub-list: '%s'" %
-                  self.child.option)
-            # If child list(s) are nonempty, and we're not repeating the
-            # child option, add it once now
-            child_vals = [l.get() for l in self.mapped]
-            if any(child_vals) and not self.repeat:
-                args.append(self.child.option)
-            # Append arguments for each child list
-            for index, list_var in enumerate(self.mapped):
-                child_args = self.child.get_args(list_var)
-                if child_args:
-                    child_option = child_args.pop(0)
-                    if self.repeat:
-                        args.append(child_option)
-                    if self.index:
-                        args.append(index+1)
-                    args.extend(child_args)
-        else: # '1:1'
-            args.extend(self.child.get_args())
-        # Return args only if some list items are non-empty
-        if any(args):
-            return args
-        else:
-            return []
 
 

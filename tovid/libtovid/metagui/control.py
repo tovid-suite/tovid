@@ -90,6 +90,7 @@ __all__ = [
     'FlagOpt',
     'Font',
     'List',
+    'RelatedList',
     'Number',
     'SpacedText',
     'Text',
@@ -111,7 +112,7 @@ except ImportError:
     from tkinter.colorchooser import askcolor
 
 from libtovid.metagui.widget import Widget
-from libtovid.metagui.variable import VAR_TYPES
+from libtovid.metagui.variable import VAR_TYPES, ListVar
 from libtovid.metagui.support import \
     (DragList, ScrollList, FontChooser, PopupScale, ensure_type, ComboBox)
 # Used in Control
@@ -150,6 +151,12 @@ class NotDrawn (Exception):
     pass
 
 
+class NoSuchControl (ValueError):
+    """Exception raised when a nonexistent Control is referenced.
+    """
+    pass
+
+
 class Control (Widget):
     """A specialized GUI widget that controls a command-line option.
 
@@ -174,7 +181,7 @@ class Control (Widget):
         if option != '' and option in Control.all:
             return Control.all[option]
         else:
-            raise ValueError("No Control exists for option: '%s'" % option)
+            raise NoSuchControl("No Control exists for option: '%s'" % option)
 
 
     def __init__(self,
@@ -961,6 +968,7 @@ class Text (Control):
         if not isinstance(self.controller, Text):
             self.controller.listbox.next_item(event)
 
+
 class SpacedText (Text):
     """Text string interpreted as a space-separated list of strings
     """
@@ -1019,8 +1027,6 @@ class List (Control):
         ensure_type("List requires a Control instance", Control, control)
         Control.__init__(self, list, label, option, default, help, **kwargs)
         self.control = control
-        # If edit_only=True, omit add/move/remove features.
-        self.edit_only = False
         # Defined by draw()
         self.listbox = None
 
@@ -1030,25 +1036,43 @@ class List (Control):
         """
         Control.draw(self, master)
 
-        # Frame to draw list and child Control in
+        # Draw the outer frame, containing the listbox and tool frame
         frame = tk.LabelFrame(self, text=self.label)
+        self.listbox = self._draw_listbox(frame)
+        tool_frame = self._draw_tool_frame(frame)
+
+        # Pack everything
         frame.pack(fill='both', expand=True)
-
-        # Scrolled or draggable listbox
-        if self.edit_only:
-            self.listbox = ScrollList(frame, self.variable)
-        else:
-            self.listbox = DragList(frame, self.variable)
-        self.listbox.bind('<Return>', self.listbox.next_item)
-        self.listbox.callback('select', self.select)
         self.listbox.pack(fill='both', expand=True)
-
-        # Frame to hold add/remove buttons and child Control
-        tool_frame = tk.Frame(frame)
         tool_frame.pack(fill='x')
 
-        # Add/remove buttons (not shown for edit_only)
-        if not self.edit_only:
+        self._bind_control_to_listbox(self.control, self.listbox)
+
+
+    def _draw_listbox(self, master, allow_add_remove=True):
+        """Draw a listbox with appropriate bindings in the given master,
+        and return the new listbox.
+        """
+        # Scrolled or draggable listbox
+        if allow_add_remove:
+            listbox = DragList(master, self.variable)
+        else:
+            listbox = ScrollList(master, self.variable)
+        listbox.bind('<Return>', listbox.next_item)
+        listbox.callback('select', self.select)
+
+        return listbox
+
+
+    def _draw_tool_frame(self, master, allow_add_remove=True):
+        """Draw the child control and add/remove buttons in a new frame with
+        the given master, and return the new frame.
+        """
+        # Frame to hold add/remove buttons and child Control
+        tool_frame = tk.Frame(master)
+
+        # Add/remove buttons (only shown if allow_add_remove)
+        if allow_add_remove:
             add_button = \
                 tk.Button(tool_frame, text="Add", command=self.add)
             remove_button = \
@@ -1059,17 +1083,25 @@ class List (Control):
         # Draw associated Control
         self.control.draw(tool_frame)
         self.control.pack(fill='x', side='left', expand=True)
-        self.control.bind('<Return>', self.listbox.next_item)
-        if isinstance(self.control, Text):
-            self.control.get_control(self)
-        # Disabled until values are added
-        self.control.disable()
 
-        # Add event handler to child, to update selected list item
-        # when child control's variable is modified
+        return tool_frame
+
+
+    def _bind_control_to_listbox(self, control, listbox):
+        """Bind a given control to a listbox.
+        """
+        # Set up bindings on the control
+        control.bind('<Return>', listbox.next_item)
+        if isinstance(control, Text):
+            control.get_control(self)
+        # Disable the control until values are added
+        control.disable()
+
+        # Add event handler to control, to update selected list item
+        # when control's variable is modified
         def _modify(name, index, mode):
             self.modify()
-        self.control.variable.trace_variable('w', _modify)
+        control.variable.trace_variable('w', _modify)
 
 
     def refresh_control(self):
@@ -1145,6 +1177,289 @@ class List (Control):
         Control.set_variable(self, variable)
         self.listbox.set_variable(variable)
         self.refresh_control()
+
+
+class RelatedList (List):
+    """A List with values that are related to those in another List.
+
+    Relates a parent list to a child Control, with a parent:child
+    relationship of 1:1 (each parent item has one child item)
+    or 1:* (each parent item has a list of child items).
+
+    One to one:
+
+        - Each item in parent list maps to one item in the child list
+        - Parent copy and child list scroll in unison
+        - If item in child is selected, parent item is selected also
+        - Drag/drop is allowed in parent list only
+
+    One to many:
+
+        - Each item in parent list maps to a list of items in the child list
+        - Parent copy and child list do NOT scroll in unison
+        - If item in child is selected, parent is unaffected
+        - Drag/drop is allowed in the child Control
+
+    Assumptions:
+
+        - If item in parent is selected, child item/list is selected also
+        - It item is added to parent, new child item/list is added also
+        - If item in parent is deleted, child item/list is deleted also
+        - Child option string is only passed once
+
+    """
+
+    def __init__(self,
+                 label="Related List",
+                 option='',
+                 default=None,
+                 help='',
+                 control=Text(),
+                 parent='',
+                 correspondence='1:1',
+                 filter=lambda x: x,
+                 side='left',
+                 **kwargs):
+        """Create a RelatedList with a ``1:1`` or ``1:*`` correspondence.
+
+            parent
+                Parent List object, or the option string of the parent List
+                control declared elsewhere
+            correspondence
+                Either ``1:1`` (one-to-one) or ``1:*`` (one-to-many)
+            filter
+                A function that translates parent values into child values
+            side
+                Pack the parent to the 'left' of child or on 'top' of child
+
+        Keyword arguments:
+
+            index
+                True to pass an additional argument between the sub-list's
+                option and arguments with the 1-based index of the sub-list.
+            repeat
+                True to pass the sub-list's option for every sub-list; False
+                to pass the sub-list's option only once.
+
+        Examples::
+
+            TODO
+        """
+        List.__init__(self, label, option, default, help, control)
+
+        # Check for correct values / types
+        if type(parent) != str and not isinstance(parent, List):
+            raise TypeError("Parent must be a List or an option string.")
+        if correspondence not in ['1:1', '1:*']:
+            raise ValueError("Correspondence must be '1:1' or '1:*'.")
+        if not callable(filter):
+            raise TypeError("Translation filter must be a function.")
+        if side not in ['left', 'top']:
+            raise ValueError("RelatedList 'side' must be 'left' or 'top'")
+
+        self.parent = parent
+        self.correspondence = correspondence
+        self.filter = filter
+        self.side = side
+        self.mapped = []
+        # Set by draw()
+        self.selected = None
+        self.parent_is_copy = False
+        self.parent_listbox = None
+        # Handle keyword args
+        self.index = kwargs.get('index', False)
+        self.repeat = kwargs.get('repeat', True)
+
+
+    def draw(self, master):
+        """Draw the parent copy and related list Control,
+        side by side in the given master.
+        """
+        # Override all the List.draw() features
+        #List.draw(self, master)
+        Control.draw(self, master)
+
+        # Frame to wrap both lists in
+        outer_frame = tk.Frame(master, padx=8, pady=8)
+
+        # Draw parent listbox in the outer frame
+        parent_frame = self._draw_parent(outer_frame)
+
+        # Draw this list in its own frame
+        # Frame to draw listbox and child Control in
+        list_frame = tk.LabelFrame(outer_frame, text=self.label)
+
+        # For 1:1, add/remove in child is NOT allowed
+        if self.correspondence == '1:1':
+            allow_add_remove = False
+        else:
+            allow_add_remove = True
+
+        # Draw the listbox and tool frame
+        self.listbox = self._draw_listbox(list_frame, allow_add_remove)
+        tool_frame = self._draw_tool_frame(list_frame, allow_add_remove)
+        # Pack the listbox and tool frame
+        self.listbox.pack(fill='both', expand=True)
+        tool_frame.pack(fill='x')
+
+        self._bind_control_to_listbox(self.control, self.listbox)
+
+        # 1:1, parent listbox is linked to this one
+        if self.correspondence == '1:1':
+            self.parent_listbox.link(self.listbox)
+
+        # Add callbacks to handle changes in parent
+        self.add_callbacks()
+
+        # Pack the parent and the current list
+        parent_frame.pack(side=self.side, anchor='nw', fill='both', expand=True)
+        list_frame.pack(side=self.side, anchor='nw', fill='both', expand=True)
+        # Pack the outer frame containing both lists
+        outer_frame.pack(fill='both')
+
+
+    def _draw_parent(self, master):
+        """Draw the parent list in the given master, and return the frame
+        containing the parent listbox.
+        """
+        # Lookup the parent Control by option
+        if type(self.parent) == str:
+            self.parent_is_copy = True
+            try:
+                parent_control = Control.by_option(self.parent)
+            except NoSuchControl:
+                raise
+            else:
+                self.parent = parent_control
+        # Or use the parent Control itself
+        else:
+            self.parent_is_copy = False
+
+        ensure_type("RelatedList parent must be a List", List, self.parent)
+
+        # Draw the read-only copy of parent's values
+        if self.parent_is_copy:
+            # FIXME: Not great to bury attribute initialization here
+            self.selected = tk.StringVar()
+            parent_frame = tk.LabelFrame(master, text="%s (copy)" % self.parent.label)
+            self.parent_listbox = ScrollList(parent_frame, self.parent.variable,
+                                             self.selected)
+            self.parent_listbox.pack(expand=True, fill='both')
+        # Or draw the parent Control itself
+        else:
+            self.parent.draw(master)
+            self.parent_listbox = self.parent.listbox
+            parent_frame = self.parent
+
+        return parent_frame
+
+
+    def add_callbacks(self):
+        """Add callback functions for add/remove in the parent Control.
+        """
+        if self.correspondence == '1:1':
+            def insert(index, value):
+                """When a new item is inserted in the parent list,
+                insert a corresponding (filtered) item into the child list.
+                """
+                self.variable.insert(index, self.filter(value))
+                self.control.enable()
+
+            def remove(index, value):
+                """When an item is removed from the parent list,
+                remove the corresponding item from the child list.
+                """
+                try:
+                    self.variable.pop(index)
+                except IndexError:
+                    pass
+                # Disable child editor control if child list is empty
+                if self.listbox.items.count() == 0:
+                    self.control.disable()
+
+            def swap(index_a, index_b):
+                """When two items are swapped in the parent list,
+                swap the corresponding items in the child list.
+                """
+                self.listbox.swap(index_a, index_b)
+
+            def select(index, value):
+                """When an item is selected in the parent list,
+                select the corresponding item in the child list.
+                """
+                pass # already handled by listboxes being linked
+
+        else: # '1:*'
+            def insert(index, value):
+                """When a new item is inserted in the parent list,
+                insert a new child list (initially empty) for that item.
+                """
+                self.mapped.insert(index, ListVar())
+
+            def remove(index, value):
+                """When an item is removed from the parent list,
+                remove the corresponding child list.
+                """
+                try:
+                    self.mapped.pop(index)
+                except IndexError:
+                    pass
+
+            def swap(index_a, index_b):
+                """When two items are swapped in the parent list,
+                swap the two corresponding child lists.
+                """
+                a_var = self.mapped[index_a]
+                self.mapped[index_a] = self.mapped[index_b]
+                self.mapped[index_b] = a_var
+
+            def select(index, value):
+                """When an item is selected in the parent list,
+                display the corresponding child list for editing.
+                """
+                self.set_variable(self.mapped[index])
+
+        self.parent_listbox.callback('select', select)
+        self.parent.listbox.callback('insert', insert)
+        self.parent.listbox.callback('remove', remove)
+        self.parent.listbox.callback('swap', swap)
+
+
+    def get_args(self):
+        """Return a list of arguments for the contained list(s).
+        """
+        args = []
+        # Add parent args, if parent was defined here
+        if not self.parent_is_copy:
+            args.extend(self.parent.get_args())
+        # Add child args, for one or many children
+        if self.correspondence == '1:*':
+            # FIXME: Most of this is a total hack to support 'index' and
+            # 'repeat' keywords
+            print("Adding arguments for 1:* sub-list: '%s'" %
+                  self.option)
+            # If child list(s) are nonempty, and we're not repeating the
+            # child option, add it once now
+            child_vals = [l.get() for l in self.mapped]
+            if any(child_vals) and not self.repeat:
+                args.append(self.option)
+            # Append arguments for each child list
+            for index, list_var in enumerate(self.mapped):
+                child_args = List.get_args(self, list_var)
+                if child_args:
+                    child_option = child_args.pop(0)
+                    if self.repeat:
+                        args.append(child_option)
+                    if self.index:
+                        args.append(index+1)
+                    args.extend(child_args)
+        else: # '1:1'
+            args.extend(List.get_args(self))
+        # Return args only if some list items are non-empty
+        if any(args):
+            return args
+        else:
+            return []
 
 
 class ControlChoice (Control):

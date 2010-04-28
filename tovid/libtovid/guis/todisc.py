@@ -86,15 +86,22 @@ _files = List('Video files', '-files', None,
     'List of video files to include on the disc',
     Filename('', filetypes=video_filetypes))
 
-_titles = List('Video titles', '-titles', None,
+_files_and_titles = RelatedList('Video titles', '-titles', None,
     'Titles to display in the main menu, one for each video file on the disc',
-    Text())
+    Text(),
+    _files,
+    '1:1',
+    filter=to_title)
 
-_group = List('Grouped videos', '-group', None,
+_group = RelatedList('Grouped videos', '-group', None,
     'Video files to group together. Select the video in the list ' \
     'on the left, and add files to group with it by using the file ' \
     'selector on the right',
-    Filename('', filetypes=video_filetypes))
+    Filename('', filetypes=video_filetypes),
+    '-files',
+     '1:*',
+    index=True,
+    repeat=True)
 
 _ntsc = Flag('NTSC', '-ntsc', True, 'NTSC, US standard')
 
@@ -295,19 +302,25 @@ _submenu_bg_color = Color('Background color', '-submenu-bg-color', '#101010',
     'Background color to use for submenu(s). Default (#101010) is '
     'NTSC-safe black.')
 
-_submenu_titles = List('Submenu titles', '-submenu-titles', None,
-        'Submenu titles for each video.  '
-        'Use \\n for a new line in a multi-line title.', Text())
+_submenu_titles = RelatedList('Submenu titles', '-submenu-titles', None,
+    'Submenu titles for each video.  '
+    'Use \\n for a new line in a multi-line title.',
+    Text(),
+    '-files',
+    '1:1',
+    filter=strip_all)
 
-_chapter_titles = RelatedList('Chapter titles', '-files', '1:*',
-    List('Chapter titles', '-chapter-titles', None,
-        'Chapter titles for each video.  Use \\n for a new line in '
-        'a multi-line title.  Number of titles given must equal the '
-        'number of chapters given for that video.  HINT: If you '
-        'click on a video title in the list to the left, then click '
-        '"Add" repeatedly until you reach the desired number of '
-        'chapters, you can then edit the titles from the keyboard using '
-        'the Enter key to cycle through them. '),
+_chapter_titles = RelatedList('Chapter titles', '-chapter-titles', None,
+    'Chapter titles for each video.  Use \\n for a new line in '
+    'a multi-line title.  Number of titles given must equal the '
+    'number of chapters given for that video.  HINT: If you '
+    'click on a video title in the list to the left, then click '
+    '"Add" repeatedly until you reach the desired number of '
+    'chapters, you can then edit the titles from the keyboard using '
+    'the Enter key to cycle through them. ',
+    Text(),
+    '-files',
+    '1:*',
     side='left',
     repeat=False)
 
@@ -685,7 +698,7 @@ _playall = Flag('"Play all" button', '-playall', False,
     'Create a "Play All" button that jumps to the 1st title and plays '
     'all the videos in succession before returning to the main menu.')
 
-_chapters = List('Chapters', '-chapters', None,
+_chapters = RelatedList('Chapters', '-chapters', None,
     'Number of chapters or HH:MM:SS string for each video. '
     'If only one value is given, use that for all videos. '
     'For grouped videos, use a "+" separator for joining '
@@ -696,7 +709,11 @@ _chapters = List('Chapters', '-chapters', None,
     'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.  '
     'If using -no-menu and passing just integer(s), then the value '
     'represents the chapter INTERVAL not the number of chapters',
-    Text())
+    Text(),
+    '-files',
+    '1:1',
+    side='top',
+    filter=strip_all)
 
 _loop = FlagOpt('Menu looping (pause)', '-loop', False,
     'Pause before looping playback of the main menu.  Set the number spinbox '
@@ -792,7 +809,7 @@ _quick_nav = Flag('Quick-nav', '-quick-nav', False,
 main =  VPanel('Basic',
     Label('You can author (and burn) a DVD with a simple menu '
           'using ONLY this "Basic" pane', 'center'),
-    RelatedList('', _files, '1:1', _titles, filter=to_title),
+    _files_and_titles,
     VPanel('',
         HPanel('',
             VPanel('Menu options',
@@ -894,8 +911,7 @@ submenus = Tabs('Submenus',
 
     VPanel('Submenu titles',
         submenu_title_font,
-        RelatedList('Submenu titles',
-                    '-files', '1:1', _submenu_titles, filter=strip_all),
+        _submenu_titles,
     ),
 
     VPanel('Chapter titles',
@@ -1035,12 +1051,8 @@ playback = Tabs("Playback",
             _outlinewidth,
         ),
     ),
-    VPanel('Chapters',
-        RelatedList('Chapters', '-files', '1:1', _chapters, side='top', filter=strip_all),
-    ),
-    VPanel('Grouped Videos',
-        RelatedList('Grouped videos', '-files', '1:*', _group, index=True, repeat=True),
-    ),
+    VPanel('Chapters', _chapters),
+    VPanel('Grouped Videos', _group),
 )
 
 encoding = VPanel('Encoding',
