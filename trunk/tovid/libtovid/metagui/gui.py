@@ -441,10 +441,8 @@ class GUI (tk.Tk):
         self.height = height
 
         # Get style configuration from INI file
-        if 'inifile' in kwargs:
-            self.inifile = kwargs['inifile']
-        else:
-            self.inifile = DEFAULT_CONFIG
+        self.inifile = kwargs.get('inifile', DEFAULT_CONFIG)
+
         self.style = Style()
         if os.path.exists(self.inifile):
             print("Loading style from config file: '%s'" % self.inifile)
