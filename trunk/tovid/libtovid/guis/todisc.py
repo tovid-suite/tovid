@@ -86,20 +86,16 @@ _files = List('Video files', '-files', None,
     'List of video files to include on the disc',
     Filename('', filetypes=video_filetypes))
 
-_files_and_titles = RelatedList('Video titles', '-titles', None,
+_files_and_titles = ChildList(_files, '1:1', 'Video titles', '-titles', None,
     'Titles to display in the main menu, one for each video file on the disc',
     Text(),
-    _files,
-    '1:1',
     filter=to_title)
 
-_group = RelatedList('Grouped videos', '-group', None,
+_group = ChildList('-files', '1:*', 'Grouped videos', '-group', None,
     'Video files to group together. Select the video in the list ' \
     'on the left, and add files to group with it by using the file ' \
     'selector on the right',
     Filename('', filetypes=video_filetypes),
-    '-files',
-     '1:*',
     index=True,
     repeat=True)
 
@@ -302,15 +298,14 @@ _submenu_bg_color = Color('Background color', '-submenu-bg-color', '#101010',
     'Background color to use for submenu(s). Default (#101010) is '
     'NTSC-safe black.')
 
-_submenu_titles = RelatedList('Submenu titles', '-submenu-titles', None,
+_submenu_titles = ChildList('-files', '1:1', 'Submenu titles', '-submenu-titles', None,
     'Submenu titles for each video.  '
     'Use \\n for a new line in a multi-line title.',
     Text(),
-    '-files',
-    '1:1',
     filter=strip_all)
 
-_chapter_titles = RelatedList('Chapter titles', '-chapter-titles', None,
+_chapter_titles = ChildList('-files', '1:*',
+    'Chapter titles', '-chapter-titles', None,
     'Chapter titles for each video.  Use \\n for a new line in '
     'a multi-line title.  Number of titles given must equal the '
     'number of chapters given for that video.  HINT: If you '
@@ -319,8 +314,6 @@ _chapter_titles = RelatedList('Chapter titles', '-chapter-titles', None,
     'chapters, you can then edit the titles from the keyboard using '
     'the Enter key to cycle through them. ',
     Text(),
-    '-files',
-    '1:*',
     side='left',
     repeat=False)
 
@@ -698,7 +691,7 @@ _playall = Flag('"Play all" button', '-playall', False,
     'Create a "Play All" button that jumps to the 1st title and plays '
     'all the videos in succession before returning to the main menu.')
 
-_chapters = RelatedList('Chapters', '-chapters', None,
+_chapters = ChildList('-files', '1:1', 'Chapters', '-chapters', None,
     'Number of chapters or HH:MM:SS string for each video. '
     'If only one value is given, use that for all videos. '
     'For grouped videos, use a "+" separator for joining '
@@ -710,8 +703,6 @@ _chapters = RelatedList('Chapters', '-chapters', None,
     'If using -no-menu and passing just integer(s), then the value '
     'represents the chapter INTERVAL not the number of chapters',
     Text(),
-    '-files',
-    '1:1',
     side='top',
     filter=strip_all)
 

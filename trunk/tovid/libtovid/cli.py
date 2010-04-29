@@ -140,11 +140,11 @@ class Command:
 
         self.output = ''
         # Open files if string filenames were provided
-        if type(stdin) in (str, unicode):
+        if isinstance(stdin, basestring):
             stdin = open(stdin, 'r')
-        if type(stdout) in (str, unicode):
+        if isinstance(stdout, basestring):
             stdout = open(stdout, 'w')
-        if type(stderr) in (str, unicode):
+        if isinstance(stderr, basestring):
             stderr = open(stderr, 'w')
         # Run the subprocess
         self.proc = subprocess.Popen([self.program] + self.args,
