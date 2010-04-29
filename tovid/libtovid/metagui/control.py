@@ -90,7 +90,7 @@ __all__ = [
     'FlagOpt',
     'Font',
     'List',
-    'RelatedList',
+    'ChildList',
     'Number',
     'SpacedText',
     'Text',
@@ -124,7 +124,7 @@ from libtovid.odict import convert_list
 def _is_hex_rgb(color):
     """Return True if color appears to be a hex '#RRGGBB value.
     """
-    if type(color) != str:
+    if not isinstance(color, basestring):
         return False
     if re.match('#[0-9a-fA-F]{3}', color):
         return True
@@ -334,7 +334,7 @@ class Control (Widget):
         pass
 
 
-    # FIXME: The variable argument here is entirely to support RelatedList
+    # FIXME: The variable argument here is entirely to support ChildList
     def get_args(self, variable=None):
         """Return a list of arguments for passing this command-line option.
         draw() must be called before this function.
@@ -649,9 +649,9 @@ class Flag (Control):
         # Ensure the "enables" arg is the right type
         if not enables:
             self.enables = []
-        elif type(enables) == list:
+        elif isinstance(enables, list):
             self.enables = enables
-        elif type(enables) == str:
+        elif isinstance(enables, basestring):
             self.enables = [enables]
         else:
             raise TypeError("Flag 'enables' argument must be"
@@ -1179,21 +1179,21 @@ class List (Control):
         self.refresh_control()
 
 
-class RelatedList (List):
+class ChildList (List):
     """A List with values that are related to those in another List.
 
-    Relates a parent list to a child Control, with a parent:child
+    This is like a regular List, except that it has a parent:child
     relationship of 1:1 (each parent item has one child item)
     or 1:* (each parent item has a list of child items).
 
-    One to one:
+    1:1 (One to one):
 
         - Each item in parent list maps to one item in the child list
         - Parent copy and child list scroll in unison
-        - If item in child is selected, parent item is selected also
+        - If item in child list is selected, parent item is selected also
         - Drag/drop is allowed in parent list only
 
-    One to many:
+    1:* (One to many):
 
         - Each item in parent list maps to a list of items in the child list
         - Parent copy and child list do NOT scroll in unison
@@ -1210,17 +1210,17 @@ class RelatedList (List):
     """
 
     def __init__(self,
+                 parent,
+                 correspondence='1:1',
                  label="Related List",
                  option='',
                  default=None,
                  help='',
                  control=Text(),
-                 parent='',
-                 correspondence='1:1',
                  filter=lambda x: x,
                  side='left',
                  **kwargs):
-        """Create a RelatedList with a ``1:1`` or ``1:*`` correspondence.
+        """Create a ChildList with a ``1:1`` or ``1:*`` correspondence.
 
             parent
                 Parent List object, or the option string of the parent List
@@ -1235,11 +1235,11 @@ class RelatedList (List):
         Keyword arguments:
 
             index
-                True to pass an additional argument between the sub-list's
-                option and arguments with the 1-based index of the sub-list.
+                True to pass an additional argument between the child list's
+                option and arguments with the 1-based index of the child list.
             repeat
-                True to pass the sub-list's option for every sub-list; False
-                to pass the sub-list's option only once.
+                True to pass the option string for every child list; False
+                to pass the child's option only once.
 
         Examples::
 
@@ -1248,14 +1248,14 @@ class RelatedList (List):
         List.__init__(self, label, option, default, help, control)
 
         # Check for correct values / types
-        if type(parent) != str and not isinstance(parent, List):
+        if not isinstance(parent, (List, basestring)):
             raise TypeError("Parent must be a List or an option string.")
         if correspondence not in ['1:1', '1:*']:
             raise ValueError("Correspondence must be '1:1' or '1:*'.")
         if not callable(filter):
             raise TypeError("Translation filter must be a function.")
         if side not in ['left', 'top']:
-            raise ValueError("RelatedList 'side' must be 'left' or 'top'")
+            raise ValueError("ChildList 'side' must be 'left' or 'top'")
 
         self.parent = parent
         self.correspondence = correspondence
@@ -1323,7 +1323,7 @@ class RelatedList (List):
         containing the parent listbox.
         """
         # Lookup the parent Control by option
-        if type(self.parent) == str:
+        if isinstance(self.parent, basestring):
             self.parent_is_copy = True
             try:
                 parent_control = Control.by_option(self.parent)
@@ -1335,7 +1335,7 @@ class RelatedList (List):
         else:
             self.parent_is_copy = False
 
-        ensure_type("RelatedList parent must be a List", List, self.parent)
+        ensure_type("ChildList parent must be a List", List, self.parent)
 
         # Draw the read-only copy of parent's values
         if self.parent_is_copy:
