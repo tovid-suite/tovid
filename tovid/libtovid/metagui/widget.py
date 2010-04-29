@@ -21,7 +21,7 @@ class Widget (tk.Frame):
             name
                 Unique name for the widget, or '' for an anonymous widget
         """
-        if type(name) != str:
+        if not isinstance(name, basestring):
             raise TypeError("Widget name must be a string.")
 
         self.name = name
