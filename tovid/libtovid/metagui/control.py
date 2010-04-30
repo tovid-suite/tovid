@@ -1263,7 +1263,6 @@ class ChildList (List):
         self.side = side
         self.mapped = []
         # Set by draw()
-        self.selected = None
         self.parent_is_copy = False
         self.parent_listbox = None
         # Handle keyword args
@@ -1275,8 +1274,8 @@ class ChildList (List):
         """Draw the parent copy and related list Control,
         side by side in the given master.
         """
-        # Override all the List.draw() features
-        #List.draw(self, master)
+        # Calling Control.draw here instead of List.draw, since we're
+        # replacing all the List.draw functionality
         Control.draw(self, master)
 
         # Frame to wrap both lists in
@@ -1322,7 +1321,8 @@ class ChildList (List):
         """Draw the parent list in the given master, and return the frame
         containing the parent listbox.
         """
-        # Lookup the parent Control by option
+        # If parent is a string, look up the parent control by option name
+        # and treat the parent as a copy
         if isinstance(self.parent, basestring):
             self.parent_is_copy = True
             try:
@@ -1340,16 +1340,14 @@ class ChildList (List):
         # Draw the read-only copy of parent's values
         if self.parent_is_copy:
             # FIXME: Not great to bury attribute initialization here
-            self.selected = tk.StringVar()
             parent_frame = tk.LabelFrame(master, text="%s (copy)" % self.parent.label)
-            self.parent_listbox = ScrollList(parent_frame, self.parent.variable,
-                                             self.selected)
+            self.parent_listbox = ScrollList(parent_frame, self.parent.variable)
             self.parent_listbox.pack(expand=True, fill='both')
         # Or draw the parent Control itself
         else:
-            self.parent.draw(master)
-            self.parent_listbox = self.parent.listbox
             parent_frame = self.parent
+            self.parent_listbox = self.parent.listbox
+            self.parent.draw(master)
 
         return parent_frame
 
