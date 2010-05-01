@@ -86,12 +86,12 @@ _files = List('Video files', '-files', None,
     'List of video files to include on the disc',
     Filename('', filetypes=video_filetypes))
 
-_files_and_titles = ChildList(_files, '1:1', 'Video titles', '-titles', None,
+_files_and_titles = ListToOne(_files, 'Video titles', '-titles', None,
     'Titles to display in the main menu, one for each video file on the disc',
     Text(),
     filter=to_title)
 
-_group = ChildList('-files', '1:*', 'Grouped videos', '-group', None,
+_group = ListToMany('-files', 'Grouped videos', '-group', None,
     'Video files to group together. Select the video in the list ' \
     'on the left, and add files to group with it by using the file ' \
     'selector on the right',
@@ -298,14 +298,13 @@ _submenu_bg_color = Color('Background color', '-submenu-bg-color', '#101010',
     'Background color to use for submenu(s). Default (#101010) is '
     'NTSC-safe black.')
 
-_submenu_titles = ChildList('-files', '1:1', 'Submenu titles', '-submenu-titles', None,
+_submenu_titles = ListToOne('-files', 'Submenu titles', '-submenu-titles', None,
     'Submenu titles for each video.  '
     'Use \\n for a new line in a multi-line title.',
     Text(),
     filter=strip_all)
 
-_chapter_titles = ChildList('-files', '1:*',
-    'Chapter titles', '-chapter-titles', None,
+_chapter_titles = ListToMany('-files', 'Chapter titles', '-chapter-titles', None,
     'Chapter titles for each video.  Use \\n for a new line in '
     'a multi-line title.  Number of titles given must equal the '
     'number of chapters given for that video.  HINT: If you '
@@ -691,7 +690,7 @@ _playall = Flag('"Play all" button', '-playall', False,
     'Create a "Play All" button that jumps to the 1st title and plays '
     'all the videos in succession before returning to the main menu.')
 
-_chapters = ChildList('-files', '1:1', 'Chapters', '-chapters', None,
+_chapters = ListToOne('-files', 'Chapters', '-chapters', None,
     'Number of chapters or HH:MM:SS string for each video. '
     'If only one value is given, use that for all videos. '
     'For grouped videos, use a "+" separator for joining '
