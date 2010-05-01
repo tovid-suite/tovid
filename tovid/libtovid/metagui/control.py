@@ -1456,7 +1456,7 @@ class ListToMany (_SubList):
         """Draw the parent copy and related list Control,
         side by side in the given master.
         """
-        _SubList.draw(self, master, allow_add_remove=False)
+        _SubList.draw(self, master, allow_add_remove=True)
         # Add callbacks to handle changes in parent
         self.add_callbacks()
 
