@@ -1504,7 +1504,7 @@ class ListToMany (_SubList):
         # 'repeat' keywords
         # If child list(s) are nonempty, and we're not repeating the
         # child option, add it once now
-        child_vals = [l.get() for l in self.get().keys()]
+        child_vals = [listvar.get() for listvar in self.listvars.values()]
         if any(child_vals) and not self.repeat:
             args.append(self.option)
         # Append arguments for each child list
