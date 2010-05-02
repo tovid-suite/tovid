@@ -1,16 +1,19 @@
-#!/usr/bin/env python
-
 from Tkinter import *
 from tkFileDialog import askopenfilename
 from subprocess import Popen, PIPE
 import os.path
 from libtovid.metagui import Style
 from tkMessageBox import *
+from time import sleep
+from tempfile import mktemp
 
 num_titles = 0
 todisc_cmds = []
 error_msg = 'This is not a saved GUI script\n' + \
   'Please select the file that you saved'
+labels = ['General', 'VMGM menu', 'Titlesets']
+curdir = os.path.abspath('')
+newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
 
 def move(amt):
     global current
@@ -19,6 +22,7 @@ def move(amt):
         return
     current.pack_forget()
     current = pages[ind]
+    label4.configure(text='Page %s' %int(ind+1))
     current.pack(side=TOP, fill=BOTH, expand=1)
 
 def next():
@@ -28,8 +32,22 @@ def next():
     global num_titles, todisc_cmds
     mv_amt = +1
     if pages.index(current) == 0:
+        # if todisc_commands.bash exists in current dir, prompt for rename
+        if os.path.exists(script_file):
+            rename_msg = 'The option file we will use:\n' + \
+            'todisc_commands.bash\n' + \
+            'exists.  It will be renamed to:\n' + \
+            '%s' + \
+            '\nProceed ?'
+            rename_msg = rename_msg % (os.path.basename(newname))
+            if askokcancel(message=rename_msg):
+                os.rename(script_file, newname)
+            else:
+                showerror(message='Cancelled')
+                mv_amt = 0
+        
         # withdraw the wizard and run the GUI, collecting commands
-        tk.withdraw()
+        #tk.withdraw()
         get_commands = run_gui()
         # append to list and go to next page unless GUI was cancelled out of
         if len(get_commands) == 1 and 'Cancelled' in get_commands:
@@ -57,7 +75,7 @@ def next():
         # add an backslash and trailing newline char to each line
         #cmds = [l + ' \\' for l in cmds if l]
         # withdraw the wizard and run the GUI, collecting commands
-        tk.withdraw()
+        #tk.withdraw()
         get_commands = run_gui()
         # append to list and go to next page unless GUI was cancelled out of
         if len(get_commands) == 1 and 'Cancelled' in get_commands:
@@ -71,7 +89,6 @@ def next():
             cmds.extend(get_commands)
             cmds.append('-end-vmgm')
             todisc_cmds.append(cmds)
-        print todisc_cmds
         cmdout = open(script_file, 'w')
         # add the shebang, PATH, and 'todisc \' lines
         cmdout.writelines(header)
@@ -158,8 +175,10 @@ def save_list():
     #quit()
 
 def run_gui():
-    #todiscgui_cmd = tovid_prefix + '/' + 'todiscgui'
     todiscgui_cmd = Popen(['tovid', 'gui'], stdout=PIPE)
+    # sleep to avoid the 'void' of time before the GUI loads
+    sleep(0.5)
+    tk.withdraw()
     status = todiscgui_cmd.wait()
     if status == 0:
         todisc_cmds = read_script()
@@ -169,7 +188,6 @@ def run_gui():
 
 def read_script():
     title = 'load saved script'
-    curdir = os.path.abspath('')
     script = 'todisc_commands.bash'
 
     if os.path.exists(script_file):
@@ -182,7 +200,7 @@ def read_script():
                 filecontents = get_contents(script)
                 script_status = check_script(filecontents)
             else:
-                showinfo(message='Operation cancelled, Returning')
+                showinfo(message='Operation cancelled, returning')
                 return ['Cancelled']
     if script_status:
         return filecontents
@@ -193,18 +211,20 @@ def check_script(contents):
     # not sure what to use now that '\\\n is stripped before running this
     if not 'todisc' in contents:
         showerror(message=error_msg)
-        return False
+        return False 
     else:
         return True
-
-
+ 
+ 
 def get_contents(script_file):
     filecontents = [line.rstrip(' \\\n') for line in open('todisc_commands.bash')]
+    # we don't need -from-gui as we are making a command line script
+    filecontents.remove('-from-gui')
     #filedata = open(script_file, "r")
     #filecontents = filedata.readlines()
     #filedata.close()
     return filecontents
-
+ 
 
 
 ###################### get/set some external variables #######################
@@ -257,15 +277,15 @@ iNTRODUCTION
 
 Welcome to the tovid titleset wizard.  We will be making a complete DVD, with
 multiple levels of menus including a root menu (VMGM menu) and titleset menus.
-menus. We will be using the 'tovid gui', which uses the 'todisc' script.
+We will be using the 'tovid gui', which uses the 'todisc' script.
 
 Any of these menus can be either static or animated, and use thumbnail menu
 links or plain text links.  In addition the titleset menus can have chapter
 selection menus ("submenus") which by default have only thumbnail menu links.
 
 A great many options of these menus are configurable, including fonts, shapes
-shapes and effects for thumbnails, fade-in/fade-out effects, "switched menus",
-the addition of a "showcased" image/video, animated or static background image or
+and effects for thumbnails, fade-in/fade-out effects, "switched menus", the
+addition of a "showcased" image/video, animated or static background image or
 video, audio background ... etc.  There are also playback options including the
 supplying of chapter points, special navigation features like "quicknav",
 and configurable DVD button links.
@@ -292,7 +312,7 @@ Press 'Next' to begin ...
 
 page1 = Frame(tk)
 frame1 = Frame(tkframe)
-img_file = tovid_prefix + '/tovid.gif'
+img_file = tovid_prefix + '/data/tovid.gif'
 if os.path.isfile(img_file):
     img = PhotoImage(file=img_file)
     label1 = Label(frame1, text='Tovid', font=heading_font)
@@ -302,8 +322,9 @@ else:
 label2 = Label(frame1, image=img).pack(side=TOP)
 label3 = Label(frame1, text='Titleset Wizard', font=lrg_font)
 label3.pack(side=TOP, pady=40)
-#label4 = Label(frame1, text='Wizard', font=lrg_font).pack(side=TOP)
-frame1.pack(side=LEFT, padx=30, anchor='nw')
+label4 = Label(frame1, text='Page 1', font=lrg_font)
+label4.pack(side=BOTTOM, anchor='s')
+frame1.pack(side=LEFT, padx=30, anchor='nw', fill=Y, expand=1)
 page1.pack(fill=BOTH, expand=1)
 label5 = Label(page1, text=text0, justify=LEFT, font=style.font)
 label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
