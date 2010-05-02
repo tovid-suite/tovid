@@ -114,7 +114,9 @@ class DictVar (tk.Variable):
     def __getitem__(self, key):
         """Get a dict value using keyword syntax: ``dictvar[key]``.
         """
-        return self.get()[key]
+        current = self.get()
+        print("DictVar: %s" % current)
+        return current[key]
 
 
     def __setitem__(self, key, value):
@@ -123,6 +125,15 @@ class DictVar (tk.Variable):
         current = self.get()
         current[key] = value
         self.set(current)
+
+
+    def pop(self, key):
+        """Pop the item at the given key, and return it.
+        """
+        current = self.get()
+        value = current.pop(key)
+        self.set(current)
+        return value
 
 
     def get(self):

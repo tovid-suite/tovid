@@ -148,7 +148,8 @@ class ScrollList (tk.Frame):
         """Set the ScrollList to use the given ListVar for its items.
         """
         if not isinstance(listvar, ListVar):
-            raise TypeError("ScrollList.set_variable requires a ListVar.")
+            raise TypeError("ScrollList.set_variable requires a ListVar "
+                            "(got %s instead)" % listvar.__class__.__name__)
         self.items = listvar
         self.listbox.config(listvariable=self.items)
 
