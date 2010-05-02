@@ -168,8 +168,8 @@ class ScrollList (tk.Frame):
         Calls ``insert`` callbacks for each added item.
         """
         for value in values:
-            self.listbox.insert('end', value)
             self.summon_callbacks('insert', self.items.count(), value)
+            self.listbox.insert('end', value)
         self.select_index(-1)
 
 
