@@ -32,7 +32,7 @@ from libtovid.metagui.widget import Widget
 from libtovid.metagui.panel import Panel, Tabs
 from libtovid.metagui.support import \
     (ConfigWindow, Style, ensure_type, askyesno)
-from libtovid.metagui.control import Control
+from libtovid.metagui.control import Control, NoSuchControl
 
 
 DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
@@ -360,51 +360,61 @@ class Application (Widget):
     def load_script(self, filename):
         """Load current Control settings from a text file.
         """
-        # Clear all controls of existing values
-        for control in Control.all.values():
-            control.reset()
-        # Read nonempty, non-comment lines from the given file
-        infile = open(filename, 'r')
-        lines = [line.strip() for line in infile.readlines()
-                 if line.strip()
-                 and not line.strip().startswith('#') \
-                 and not line.strip().startswith('PATH=')]
-        infile.close()
-        # Join backslash-escaped lines to form the complete command
+        # Read lines from the file and reassemble the command
         command = ''
-        for line in lines:
-            if line.endswith('\\'):
+        for line in open(filename, 'r'):
+            line = line.strip()
+            # Discard comment lines and PATH assignment
+            if line and not (line.startswith('#') or line.startswith('PATH=')):
                 command += line.rstrip('\\')
-        # Parse the command to find options matching Controls in the GUI
-        options = Control.all.keys()
+
+        # Split the full command into tokens, according to shell syntax
         tokens = shlex.split(command)
+
         # Ensure the expected program is being run
         program = tokens.pop(0)
         if program != self.program:
-            print("This script runs '%s', expected '%s'" %
+            raise ValueError("This script runs '%s', expected '%s'" %
                   (program, self.program))
-        control = None
+
+        # Clear all controls of existing values
+        for control in Control.all.values():
+            control.reset()
+
+        # Examine each token to find those that are option strings
         while tokens:
             tok = tokens.pop(0)
-            if tok not in options:
+            # See if this is a valid option string; if not,
+            # print an error and continue
+            try:
+                control = Control.by_option(tok)
+            except NoSuchControl:
                 print("Unrecognized token: %s" % tok)
+                continue
             else:
                 print("Found option: %s" % tok)
-                control = Control.by_option(tok)
-                if control.vartype == bool:
-                    print("  Setting flag to True")
-                    control.set(True)
-                    control.enabler()
-                elif control.vartype == list:
-                    items = []
-                    while tokens and not tokens[0].startswith('-'):
-                        items.append(tokens.pop(0))
-                    print("  Setting list to: %s" % items)
-                    control.set(items)
-                elif control.vartype in (int, float, str):
-                    value = tokens.pop(0)
-                    print("  Setting value to: %s" % value)
-                    control.set(control.vartype(value))
+
+            # If this control expects a boolean option,
+            # it's probably a flag
+            if control.vartype == bool:
+                print("  Setting flag to True")
+                control.set(True)
+                control.enabler()
+
+            # If this control expects a list, get all
+            # the arguments for the list and set them
+            elif control.vartype == list:
+                items = []
+                while tokens and not tokens[0].startswith('-'):
+                    items.append(tokens.pop(0))
+                print("  Setting list to: %s" % items)
+                control.set(items)
+
+            # Otherwise, set a single-value option
+            elif control.vartype in (int, float, str):
+                value = tokens.pop(0)
+                print("  Setting value to: %s" % value)
+                control.set(control.vartype(value))
 
         print("Done reading '%s'" % filename)
 
@@ -473,6 +483,7 @@ class GUI (tk.Tk):
                 self.application.load_script(load_filename)
             except:
                 print("!!! Failed to load '%s'" % load_filename)
+                raise
             else:
                 print(":-) Successfully loaded '%s'" % load_filename)
         # Enter the main event handler

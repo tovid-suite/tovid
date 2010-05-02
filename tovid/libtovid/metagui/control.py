@@ -113,7 +113,7 @@ except ImportError:
     from tkinter.colorchooser import askcolor
 
 from libtovid.metagui.widget import Widget
-from libtovid.metagui.variable import VAR_TYPES, ListVar
+from libtovid.metagui.variable import VAR_TYPES, ListVar, DictVar
 from libtovid.metagui.support import \
     (DragList, ScrollList, FontChooser, PopupScale, ensure_type, ComboBox)
 # Used in Control
@@ -323,7 +323,6 @@ class Control (Widget):
     def reset(self):
         """Reset the Control's value to the default.
         """
-        #print("Resetting %s to %s" % (self.option, self.default))
         if self.variable:
             self.set(self.default)
 
@@ -673,8 +672,6 @@ class Flag (Control):
 
         # Enable/disable related controls
         if self.enables:
-            #print("%s will enable:" % self.option)
-            #print(self.enables)
             pass
 
         self.controls = [Control.by_option(opt) for opt in self.enables]
@@ -1118,7 +1115,7 @@ class List (Control):
     def set(self, value_list):
         """Set all list values.
         """
-        self.listbox.set(value_list)
+        self.variable.set(value_list)
         self.refresh_control()
 
 
@@ -1138,7 +1135,6 @@ class List (Control):
         # Only set control if value is different
         if self.control.get() != value:
             self.control.set(value)
-        #print("Editing '%s'" % value)
         self.control.focus()
 
 
@@ -1303,7 +1299,7 @@ class ListToOne (_SubList):
     """
     def __init__(self,
                  parent,
-                 label="_SubList",
+                 label="ListToOne",
                  option='',
                  default=None,
                  help='',
@@ -1416,7 +1412,7 @@ class ListToMany (_SubList):
     """
     def __init__(self,
                  parent,
-                 label="_SubList",
+                 label="ListToMany",
                  option='',
                  default=None,
                  help='',
@@ -1445,8 +1441,8 @@ class ListToMany (_SubList):
         """
         _SubList.__init__(self, parent, label, option, default, help,
                           control, filter, side, **kwargs)
-        # TODO: Convert this into a new variable type
-        self.mapped = []
+        # Will hold a list of ListVars
+        self.listvars = {}
         # Handle keyword args
         self.index = kwargs.get('index', False)
         self.repeat = kwargs.get('repeat', True)
@@ -1468,30 +1464,28 @@ class ListToMany (_SubList):
             """When a new item is inserted in the parent list,
             insert a new child list (initially empty) for that item.
             """
-            self.mapped.insert(index, ListVar())
+            self.listvars[index-1] = ListVar(self)
 
         def remove(index, value):
             """When an item is removed from the parent list,
             remove the corresponding child list.
             """
-            try:
-                self.mapped.pop(index)
-            except IndexError:
-                pass
+            del self.listvars[index]
 
         def swap(index_a, index_b):
             """When two items are swapped in the parent list,
             swap the two corresponding child lists.
             """
-            a_var = self.mapped[index_a]
-            self.mapped[index_a] = self.mapped[index_b]
-            self.mapped[index_b] = a_var
+            a_var = self.listvars[index_a]
+            self.listvars[index_a] = self.listvars[index_b]
+            self.listvars[index_b] = a_var
 
         def select(index, value):
             """When an item is selected in the parent list,
             display the corresponding child list for editing.
             """
-            self.set_variable(self.mapped[index])
+            listvar = self.listvars[index]
+            self.set_variable(listvar)
 
         self.parent_listbox.callback('select', select)
         self.parent.listbox.callback('insert', insert)
@@ -1508,15 +1502,13 @@ class ListToMany (_SubList):
             args.extend(self.parent.get_args())
         # FIXME: Most of this is a total hack to support 'index' and
         # 'repeat' keywords
-        print("Adding arguments for 1:* sub-list: '%s'" %
-              self.option)
         # If child list(s) are nonempty, and we're not repeating the
         # child option, add it once now
-        child_vals = [l.get() for l in self.mapped]
+        child_vals = [l.get() for l in self.get().keys()]
         if any(child_vals) and not self.repeat:
             args.append(self.option)
         # Append arguments for each child list
-        for index, list_var in enumerate(self.mapped):
+        for index, list_var in self.get():
             child_args = List.get_args(self, list_var)
             if child_args:
                 child_option = child_args.pop(0)
@@ -1531,6 +1523,22 @@ class ListToMany (_SubList):
         else:
             return []
 
+
+    def set(self, items):
+        """Append the given items to listvars.
+        """
+        # FIXME: This is an abuse of the set() function
+        # If an index is prepended, insert at that index
+        if self.index:
+            index = int(items.pop(0)) - 1
+        # Otherwise, just append in order
+        else:
+            index = len(self.listvars.keys())
+        self.listvars[index] = ListVar(self, items)
+
+
+    def reset(self):
+        self.listvars = {}
 
 
 class ControlChoice (Control):
