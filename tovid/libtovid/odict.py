@@ -29,7 +29,7 @@ class Odict (UserDict):
         UserDict.__init__(self, dict(zip(keys, values)))
 
     def __delitem__(self, key):
-        """Get the value from Odict[key].
+        """Delete the value from Odict[key].
         """
         UserDict.__delitem__(self, key)
         self._keys.remove(key)
@@ -76,11 +76,15 @@ class Odict (UserDict):
             key = self._keys[-1]
         except IndexError:
             raise KeyError('dictionary is empty')
+        else:
+            return self.pop(key)
 
+    def pop(self, key):
+        """Pop the item with the given key and return it.
+        """
         value = self[key]
         del self[key]
-
-        return (key, value)
+        return value
 
     def setdefault(self, key, failobj=None):
         """If Odict[key] doesn't exist, set Odict[key] = failobj,

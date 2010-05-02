@@ -314,7 +314,7 @@ _chapter_titles = ListToMany('-files', 'Chapter titles', '-chapter-titles', None
     'the Enter key to cycle through them. ',
     Text(),
     side='left',
-    repeat=False)
+    repeat=True)
 
 _title_gap = Number('Space between titles', '-title-gap', 10,
     'Leave this much vertical gap between titles.  '
