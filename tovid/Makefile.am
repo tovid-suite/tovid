@@ -44,7 +44,8 @@ sh_bin = \
 py_bin = \
 	src/tovid \
 	src/todiscgui \
-	src/tovid-stats
+	src/tovid-stats \
+	src/titleset-wizard
 # Removed from py_bin
 #src/genvid
 #src/pyidvid
@@ -59,9 +60,12 @@ py_bin = \
 bindir = $(libdir)/tovid
 
 # Specify the scripts to make and install.
+# The .gif is here because I can't be arsed to figure out the
+# Autohell way of doing it
 bin_SCRIPTS = \
 	$(sh_bin) \
-	$(py_bin)
+	$(py_bin) \
+	icons/tovid.gif
 
 # The manpages
 man_dir = docs/man

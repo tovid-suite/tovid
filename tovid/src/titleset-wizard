@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from Tkinter import *
 from tkFileDialog import askopenfilename
 from subprocess import Popen, PIPE
@@ -191,18 +193,18 @@ def check_script(contents):
     # not sure what to use now that '\\\n is stripped before running this
     if not 'todisc' in contents:
         showerror(message=error_msg)
-        return False 
+        return False
     else:
         return True
- 
- 
+
+
 def get_contents(script_file):
     filecontents = [line.rstrip(' \\\n') for line in open('todisc_commands.bash')]
     #filedata = open(script_file, "r")
     #filecontents = filedata.readlines()
     #filedata.close()
     return filecontents
- 
+
 
 
 ###################### get/set some external variables #######################
@@ -290,7 +292,7 @@ Press 'Next' to begin ...
 
 page1 = Frame(tk)
 frame1 = Frame(tkframe)
-img_file = tovid_prefix + '/data/tovid.gif'
+img_file = tovid_prefix + '/tovid.gif'
 if os.path.isfile(img_file):
     img = PhotoImage(file=img_file)
     label1 = Label(frame1, text='Tovid', font=heading_font)
