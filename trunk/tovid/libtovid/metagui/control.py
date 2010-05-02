@@ -1115,7 +1115,9 @@ class List (Control):
     def set(self, value_list):
         """Set all list values.
         """
-        self.variable.set(value_list)
+        # Use the listbox's set() method, so the relevant callbacks
+        # will be summoned for any child lists
+        self.listbox.set(value_list)
         self.refresh_control()
 
 
@@ -1321,7 +1323,6 @@ class ListToOne (_SubList):
                           control, filter, side, **kwargs)
 
 
-
     def add_callbacks(self):
         """Add callback functions for add/remove in the parent Control.
         """
@@ -1354,7 +1355,7 @@ class ListToOne (_SubList):
             """When an item is selected in the parent list,
             select the corresponding item in the child list.
             """
-            pass # already handled by listboxes being linked
+            pass # Already handled by listboxes being linked
 
         self.parent_listbox.callback('select', select)
         self.parent.listbox.callback('insert', insert)
@@ -1435,9 +1436,6 @@ class ListToMany (_SubList):
             index
                 True to pass an additional argument between the child list's
                 option and arguments with the 1-based index of the child list.
-            repeat
-                True to pass the option string for every child list; False
-                to pass the child's option only once.
         """
         _SubList.__init__(self, parent, label, option, default, help,
                           control, filter, side, **kwargs)
@@ -1445,7 +1443,8 @@ class ListToMany (_SubList):
         self.listvars = {}
         # Handle keyword args
         self.index = kwargs.get('index', False)
-        self.repeat = kwargs.get('repeat', True)
+        # Hack to support adding multiple lists in increasing order
+        self.curindex = 0
 
 
     def draw(self, master):
@@ -1464,7 +1463,7 @@ class ListToMany (_SubList):
             """When a new item is inserted in the parent list,
             insert a new child list (initially empty) for that item.
             """
-            self.listvars[index-1] = ListVar(self)
+            self.listvars[index] = ListVar(self)
 
         def remove(index, value):
             """When an item is removed from the parent list,
@@ -1500,20 +1499,12 @@ class ListToMany (_SubList):
         # Add parent args, if parent was defined here
         if not self.parent_is_copy:
             args.extend(self.parent.get_args())
-        # FIXME: Most of this is a total hack to support 'index' and
-        # 'repeat' keywords
-        # If child list(s) are nonempty, and we're not repeating the
-        # child option, add it once now
-        child_vals = [listvar.get() for listvar in self.listvars.values()]
-        if any(child_vals) and not self.repeat:
-            args.append(self.option)
         # Append arguments for each child list
-        for index, list_var in self.get():
+        for index, list_var in self.listvars.items():
             child_args = List.get_args(self, list_var)
             if child_args:
                 child_option = child_args.pop(0)
-                if self.repeat:
-                    args.append(child_option)
+                args.append(child_option)
                 if self.index:
                     args.append(index+1)
                 args.extend(child_args)
@@ -1531,13 +1522,16 @@ class ListToMany (_SubList):
         # If an index is prepended, insert at that index
         if self.index:
             index = int(items.pop(0)) - 1
-        # Otherwise, just append in order
+        # Otherwise, set at indices in increasing order
         else:
-            index = len(self.listvars.keys())
+            index = self.curindex
+            self.curindex += 1
+
         self.listvars[index] = ListVar(self, items)
 
 
     def reset(self):
+        self.curindex = 0
         self.listvars = {}
 
 
