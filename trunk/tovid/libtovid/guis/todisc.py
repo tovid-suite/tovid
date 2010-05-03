@@ -16,7 +16,10 @@ from libtovid.cli import Command
 def to_title(filename):
     basename = os.path.basename(filename)
     firstdot = basename.find('.')
-    return basename[0:firstdot]
+    if firstdot >= 0:
+        return basename[0:firstdot]
+    else:
+        return basename
 
 def strip_all(filename):
     return ''
@@ -1059,11 +1062,11 @@ encoding = VPanel('Encoding',
 
 ### --------------------------------------------------------------------
 
-def run(script_filename=''):
+def run(args=None):
     app = Application('todisc',
         main, main_menu, submenus, thumbnails, slideshows, playback, behavior, encoding)
     gui = GUI("todiscgui", 800, 660, app)
-    gui.run(script_filename)
+    gui.run(args)
 
 if __name__ == '__main__':
 
