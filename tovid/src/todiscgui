@@ -5,9 +5,5 @@ import sys
 from libtovid.guis import todisc
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        script_filename = sys.argv[1]
-    else:
-        script_filename = ''
-    todisc.run(script_filename)
+    todisc.run(sys.argv[1:])
 

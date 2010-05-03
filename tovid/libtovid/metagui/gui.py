@@ -339,6 +339,7 @@ class Application (Widget):
             return
 
         try:
+            self.reset()
             self.load_script(filename)
         except:
             showerror(title="Error", message="Failed to load '%s'" % filename)
@@ -357,6 +358,14 @@ class Application (Widget):
         outfile.close()
 
 
+    def reset(self):
+        """Reset all controls back to their defaults.
+        """
+        # Clear all controls of existing values
+        for control in Control.all.values():
+            control.reset()
+
+
     def load_script(self, filename):
         """Load current Control settings from a text file.
         """
@@ -367,32 +376,34 @@ class Application (Widget):
             # Discard comment lines and PATH assignment
             if line and not (line.startswith('#') or line.startswith('PATH=')):
                 command += line.rstrip('\\')
-
-        # Split the full command into tokens, according to shell syntax
-        tokens = shlex.split(command)
+        # Split the full command into arguments, according to shell syntax
+        args = shlex.split(command)
 
         # Ensure the expected program is being run
-        program = tokens.pop(0)
+        program = args.pop(0)
         if program != self.program:
             raise ValueError("This script runs '%s', expected '%s'" %
                   (program, self.program))
+        # Load the rest of the arguments
+        self.load_args(args)
+        print("Done reading '%s'" % filename)
 
-        # Clear all controls of existing values
-        for control in Control.all.values():
-            control.reset()
 
-        # Examine each token to find those that are option strings
-        while tokens:
-            tok = tokens.pop(0)
+    def load_args(self, args):
+        """Load settings from a list of command-line arguments.
+        """
+        # Examine each arg to find those that are option strings
+        while args:
+            arg = args.pop(0)
             # See if this is a valid option string; if not,
             # print an error and continue
             try:
-                control = Control.by_option(tok)
+                control = Control.by_option(arg)
             except NoSuchControl:
-                print("Unrecognized token: %s" % tok)
+                print("Unrecognized argument: %s" % arg)
                 continue
             else:
-                print("Found option: %s" % tok)
+                print("Found option: %s" % arg)
 
             # If this control expects a boolean option,
             # it's probably a flag
@@ -405,18 +416,17 @@ class Application (Widget):
             # the arguments for the list and set them
             elif control.vartype == list:
                 items = []
-                while tokens and not tokens[0].startswith('-'):
-                    items.append(tokens.pop(0))
+                while args and not args[0].startswith('-'):
+                    items.append(args.pop(0))
                 print("  Setting list to: %s" % items)
                 control.set(items)
 
             # Otherwise, set a single-value option
             elif control.vartype in (int, float, str):
-                value = tokens.pop(0)
+                value = args.pop(0)
                 print("  Setting value to: %s" % value)
                 control.set(control.vartype(value))
 
-        print("Done reading '%s'" % filename)
 
 
 class GUI (tk.Tk):
@@ -471,21 +481,29 @@ class GUI (tk.Tk):
         self.bind('<Control-q>', self.confirm_exit)
 
 
-    def run(self, load_filename=''):
+    def run(self, args=None):
         """Run the GUI and enter the main event handler.
         This function does not return until the GUI is closed.
         """
         self.draw()
-        # Load script from the given filename if provided
-        if load_filename:
-            print("Loading script '%s'" % load_filename)
-            try:
-                self.application.load_script(load_filename)
-            except:
-                print("!!! Failed to load '%s'" % load_filename)
-                raise
-            else:
-                print(":-) Successfully loaded '%s'" % load_filename)
+        if args:
+            # If first argument looks like a filename, load
+            # a script from that file
+            if os.path.isfile(args[0]):
+                filename = args.pop(0)
+                print("Loading script file '%s'" % filename)
+                try:
+                    self.application.load_script(filename)
+                except:
+                    print("!!! Failed to load '%s'" % filename)
+                    raise
+                else:
+                    print(":-) Successfully loaded '%s'" % filename)
+
+            # If more args remain, load those too
+            if args:
+                self.application.load_args(args)
+
         # Enter the main event handler
         self.mainloop()
 
