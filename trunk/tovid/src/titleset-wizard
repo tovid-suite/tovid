@@ -192,7 +192,7 @@ def read_script():
         while not os.path.exists(script):
             script = askopenfilename(title=title, initialfile=script)
             if not script:
-                showinfo(message='Operation cancelled, returning')
+                showinfo(message='Cancelled.\nReturning to previous page')
                 return ['Cancelled']
     fin = open(script)
     fcont = fin.readlines()
@@ -204,6 +204,8 @@ def read_script():
         showerror(message=error_msg)
         return ['Cancelled'] 
     else:
+        # delete the temporary saved script file
+        os.remove(script)
         return filecontents
  
  
