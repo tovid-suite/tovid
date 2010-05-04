@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from Tkinter import *
 from tkFileDialog import askopenfilename
 from subprocess import Popen, PIPE
@@ -7,8 +9,8 @@ from tkMessageBox import *
 from time import sleep
 from tempfile import mktemp
 
-num_titles = 0
 todisc_cmds = []
+all_options = []
 error_msg = 'This is not a saved GUI script\n' + \
   'Please select the file that you saved'
 labels = ['General', 'VMGM menu', 'Titlesets']
@@ -22,6 +24,7 @@ def move(amt):
         return
     current.pack_forget()
     current = pages[ind]
+    # when move is called, change the page number displayed
     label4.configure(text='Page %s' %int(ind+1))
     current.pack(side=TOP, fill=BOTH, expand=1)
 
@@ -29,14 +32,15 @@ def next():
     # if 1st page (general) then
     # move forward and unless cancelled, append anything added in current
     # page to [todisc_cmds], removing todisc_cmds[current] first
-    global num_titles, todisc_cmds
+    global todisc_cmds
     mv_amt = +1
     if pages.index(current) == 0:
         # if todisc_commands.bash exists in current dir, prompt for rename
         if os.path.exists(script_file):
             rename_msg = 'The option file we will use:\n' + \
             'todisc_commands.bash\n' + \
-            'exists.  It will be renamed to:\n' + \
+            'exists in the current directory.\n' + \
+            'It will be renamed to:\n' + \
             '%s' + \
             '\nProceed ?'
             rename_msg = rename_msg % (os.path.basename(newname))
@@ -44,7 +48,7 @@ def next():
                 os.rename(script_file, newname)
             else:
                 showerror(message='Cancelled')
-                mv_amt = 0
+                return
         
         # withdraw the wizard and run the GUI, collecting commands
         #tk.withdraw()
@@ -65,27 +69,24 @@ def next():
             header[-1] = 'todisc \\\n'
             cmds = [l for l in get_commands if l]
             todisc_cmds.append(cmds)
-            print header
         tk.deiconify()
     elif pages.index(current) == 1:
         cmds = list(listbox1.get(0, END))
         cmds = [l for l in cmds if l]
         cmds.insert(0, '-vmgm')
         cmds.insert(1, '-titles')
-        # add an backslash and trailing newline char to each line
-        #cmds = [l + ' \\' for l in cmds if l]
         # withdraw the wizard and run the GUI, collecting commands
-        #tk.withdraw()
         get_commands = run_gui()
         # append to list and go to next page unless GUI was cancelled out of
         if len(get_commands) == 1 and 'Cancelled' in get_commands:
-            mv_amt = 0
+            return
         else:
             if len(todisc_cmds) > 1:
                 todisc_cmds.pop(1)
                 # get rid of shebang and PATH statements
-            while not get_commands[0].startswith('-'):
-                get_commands.pop(0)
+            if len(get_commands) > 0:
+                while not get_commands[0].startswith('-'):
+                    get_commands.pop(0)
             cmds.extend(get_commands)
             cmds.append('-end-vmgm')
             todisc_cmds.append(cmds)
@@ -93,8 +94,9 @@ def next():
         # add the shebang, PATH, and 'todisc \' lines
         cmdout.writelines(header)
         # flatten the list
-        #all_lines = [line for line in sublist for sublist in todisc_cmds]
         all_lines = [line for sublist in todisc_cmds for line in sublist]
+        #DEBUG
+        print all_lines 
         #
         # write every line with a '\' at the end, except the last
         for line in all_lines[:-1]:
@@ -103,18 +105,20 @@ def next():
         cmdout.write(all_lines[-1])
         cmdout.close()
         tk.deiconify()
-        #num_titles = len(list(listbox1.get(0, END)))-1
-        #temp_list.pop(-1)
-    elif pages.index(current) == 2:
-        #save_list()
+
+        ####################  prepare the next pages listbox ##################
+        options_list = save_list()
         # delete titleset listbox contents else it increases with page movement
         listbox2.delete(0, END)
-        numtitles = num_titles
+        numtitles = len(options_list)
         if (numtitles > 10): numtitles = 10
         listbox2.configure(height=numtitles)
-        # insert or reinsert VMGM titles into titleset listbox
+        # insert or reinsert options list into titleset listbox
+        listbox2.insert(END, 'General options')
         for i in xrange(numtitles):
-            listbox2.insert(END, temp_list[i])
+            listbox2.insert(END, options_list[i])
+    elif pages.index(current) == 2:
+        pass
     move(mv_amt)
 
 def prev():
@@ -156,23 +160,14 @@ def set_list(event):
         listbox1.insert(END, enter1.get())
     listbox1.selection_set(END)
 
+# unused - will use it for choices listbox (general, vmgm, titlesets choices)
 def save_list():
     """
-    save the current listbox contents to a file
+    save the current listbox contents
     """
-    global num_titles, temp_list
     # get a list of listbox lines
     temp_list = list(listbox1.get(0, END))
-    num_titles = len(list(listbox1.get(0, END)))-1
-    #temp_list.pop(-1)
-    # add a trailing newline char to each line
-    vmgm_titles = [l + ' \\' for l in temp_list if l]
-    # give the file a different name
-    #fout = open("todisc_commands.bash", "w")
-    #fout.writelines(temp_list)
-    #fout.close()
-    #sys.stdout.write('\n'.join(temp_list))
-    #quit()
+    return temp_list
 
 def run_gui():
     todiscgui_cmd = Popen(['tovid', 'gui'], stdout=PIPE)
@@ -190,43 +185,28 @@ def read_script():
     title = 'load saved script'
     script = 'todisc_commands.bash'
 
+    # if script doesn't exist prompt for load.
     if os.path.exists(script_file):
-        filecontents = get_contents(script_file)
-        script_status = check_script(filecontents)
+        script = script_file
     else:
         while not os.path.exists(script):
             script = askopenfilename(title=title, initialfile=script)
-            if script:
-                filecontents = get_contents(script)
-                script_status = check_script(filecontents)
-            else:
+            if not script:
                 showinfo(message='Operation cancelled, returning')
                 return ['Cancelled']
-    if script_status:
-        return filecontents
-    else:
-        return ['Cancelled']
-
-def check_script(contents):
-    # not sure what to use now that '\\\n is stripped before running this
-    if not 'todisc' in contents:
-        showerror(message=error_msg)
-        return False 
-    else:
-        return True
- 
- 
-def get_contents(script_file):
-    filecontents = [line.rstrip(' \\\n') for line in open('todisc_commands.bash')]
-    # we don't need -from-gui as we are making a command line script
+    fin = open(script)
+    fcont = fin.readlines()
+    fin.close()
+    filecontents =  [line.rstrip(' \\\n') for line in fcont]
+    # -from-gui not needed
     filecontents.remove('-from-gui')
-    #filedata = open(script_file, "r")
-    #filecontents = filedata.readlines()
-    #filedata.close()
-    return filecontents
+    if not 'todisc \\\n' in fcont:
+        showerror(message=error_msg)
+        return ['Cancelled'] 
+    else:
+        return filecontents
  
-
-
+ 
 ###################### get/set some external variables #######################
 
 # get tovid prefix
@@ -385,7 +365,8 @@ text3 = '''
 label7 = Label(page2, text=text3, justify=LEFT, font=style.font)
 label7.pack(fill=BOTH, expand=1)
 # create the listbox (note that size is in characters)
-list_frame2 = LabelFrame(page3, text="Your titlesets")
+list_frame2 = LabelFrame(page3, \
+  text="Choose an item to edit with the GUI")
 list_frame2.pack(fill=X, expand=1)
 
 listbox2 = Listbox(list_frame2, width=60)
@@ -397,9 +378,6 @@ listbox2.pack(side=LEFT, fill=X, expand=1)
 yscroll2 = Scrollbar(list_frame2, command=listbox2.yview, orient=VERTICAL)
 yscroll2.pack(side=LEFT, fill=Y)
 listbox2.configure(yscrollcommand=yscroll.set)
-
-# button to save the listbox's data lines to a file
-#button2 = Button(page2, text='Done', command=save_list)
 
 #    run the gui and collect the options
 
