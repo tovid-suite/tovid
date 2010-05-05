@@ -99,6 +99,16 @@ __all__ = [
 import shlex
 import re
 
+# Python < 2.5 (I'm looking at YOU, CentOS)
+try:
+    any()
+except NameError:
+    def any(iterable):
+        for item in iterable:
+            if not item:
+                return False
+        return True
+
 # Python < 3.x
 try:
     import Tkinter as tk
@@ -145,6 +155,9 @@ def _rgb_to_hex(rgb_tuple):
     red, green, blue = rgb_tuple
     return '#%02x%02x%02x' % (red, green, blue)
 
+# ---------------
+# Exceptions
+# ---------------
 
 class NotDrawn (Exception):
     """Exception raised when a Control has not been drawn yet.
@@ -671,9 +684,6 @@ class Flag (Control):
         self.check.pack(side=self.labelside)
 
         # Enable/disable related controls
-        if self.enables:
-            pass
-
         self.controls = [Control.by_option(opt) for opt in self.enables]
         Flag.enabler(self)
         Control.post(self)
@@ -682,8 +692,6 @@ class Flag (Control):
     def enabler(self):
         """Enable/disable related Controls based on Flag state.
         """
-        if not self.controls:
-            return
         for control in self.controls:
             if self.get():
                 if control.is_drawn:
