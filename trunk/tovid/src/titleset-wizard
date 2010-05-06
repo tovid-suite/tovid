@@ -25,7 +25,7 @@ def move(amt):
     current.pack_forget()
     current = pages[ind]
     # when move is called, change the page number displayed
-    label4.configure(text='Page %s' %int(ind+1))
+    pg1_label4.configure(text='Page %s' %int(ind+1))
     current.pack(side=TOP, fill=BOTH, expand=1)
 
 def next():
@@ -35,6 +35,8 @@ def next():
     global todisc_cmds
     mv_amt = +1
     if pages.index(current) == 0:
+        pass
+    elif pages.index(current) == 1:
         # if todisc_commands.bash exists in current dir, prompt for rename
         if os.path.exists(script_file):
             rename_msg = 'The option file we will use:\n' + \
@@ -63,20 +65,22 @@ def next():
             # get header: shebang, PATH, and 'todisc'
             global header
             header = []
-            while not get_commands[0].startswith('-'):
-                header.append(get_commands[0] + '\n')
-                get_commands.pop(0)
+            try:
+                while not get_commands[0].startswith('-'):
+                    header.append(get_commands[0] + '\n')
+                    get_commands.pop(0)
+            except IndexError:
+                pass
             header[-1] = 'todisc \\\n'
             cmds = [l for l in get_commands if l]
             todisc_cmds.append(cmds)
         tk.deiconify()
-    elif pages.index(current) == 1:
-        cmds = list(listbox1.get(0, END))
-        cmds = [l for l in cmds if l]
-        cmds.insert(0, '-vmgm')
-        cmds.insert(1, '-titles')
+    elif pages.index(current) == 2:
+        run_cmds = list(pg3_listbox1.get(0, END))
+        run_cmds = [l for l in run_cmds if l]
         # withdraw the wizard and run the GUI, collecting commands
-        get_commands = run_gui()
+        run_cmds.insert(0,  '-titles')
+        get_commands = run_gui(run_cmds)
         # append to list and go to next page unless GUI was cancelled out of
         if len(get_commands) == 1 and 'Cancelled' in get_commands:
             return
@@ -84,9 +88,12 @@ def next():
             if len(todisc_cmds) > 1:
                 todisc_cmds.pop(1)
                 # get rid of shebang and PATH statements
-            if len(get_commands) > 0:
+            try:
                 while not get_commands[0].startswith('-'):
                     get_commands.pop(0)
+            except IndexError:
+                pass
+            cmds = ['-vmgm']
             cmds.extend(get_commands)
             cmds.append('-end-vmgm')
             todisc_cmds.append(cmds)
@@ -95,8 +102,6 @@ def next():
         cmdout.writelines(header)
         # flatten the list
         all_lines = [line for sublist in todisc_cmds for line in sublist]
-        #DEBUG
-        print all_lines 
         #
         # write every line with a '\' at the end, except the last
         for line in all_lines[:-1]:
@@ -109,16 +114,19 @@ def next():
         ####################  prepare the next pages listbox ##################
         options_list = save_list()
         # delete titleset listbox contents else it increases with page movement
-        listbox2.delete(0, END)
+        pg4_listbox1.delete(0, END)
         numtitles = len(options_list)
         if (numtitles > 10): numtitles = 10
-        listbox2.configure(height=numtitles)
+        pg4_listbox1.configure(height=numtitles)
         # insert or reinsert options list into titleset listbox
-        listbox2.insert(END, 'General options')
+        pg4_listbox1.insert(END, 'General options')
+        pg4_listbox1.insert(END, 'Root menu')
         for i in xrange(numtitles):
-            listbox2.insert(END, options_list[i])
-    elif pages.index(current) == 2:
-        pass
+            pg4_listbox1.insert(END, options_list[i])
+    elif pages.index(current) == 3:
+        options_list = save_list()
+        numtitles = len(save_list())
+        print 'numtitles is: ', numtitles
     move(mv_amt)
 
 def prev():
@@ -131,9 +139,9 @@ def get_list(event):
     """
     try:
         # get selected line index
-        index = listbox1.curselection()[0]
+        index = pg3_listbox1.curselection()[0]
         # get the line's text
-        seltext = listbox1.get(index)
+        seltext = pg3_listbox1.get(index)
         # delete previous text in enter1
         enter1.delete(0, END)
         # now display the selected text
@@ -147,18 +155,18 @@ def set_list(event):
     back into the listbox
     """
     try:
-        index = listbox1.curselection()[0]
+        index = pg3_listbox1.curselection()[0]
         # delete old listbox line
-        listbox1.delete(index)
+        pg3_listbox1.delete(index)
     except IndexError:
         index = END
-    # insert edited item back into listbox1 at index
-    listbox1.insert(index, enter1.get())
+    # insert edited item back into pg3_listbox1 at index
+    pg3_listbox1.insert(index, enter1.get())
     enter1.delete(0, END)
     # add a new index if we are at end of list
-    if listbox1.get(END):
-        listbox1.insert(END, enter1.get())
-    listbox1.selection_set(END)
+    if pg3_listbox1.get(END):
+        pg3_listbox1.insert(END, enter1.get())
+    pg3_listbox1.selection_set(END)
 
 # unused - will use it for choices listbox (general, vmgm, titlesets choices)
 def save_list():
@@ -166,11 +174,12 @@ def save_list():
     save the current listbox contents
     """
     # get a list of listbox lines
-    temp_list = list(listbox1.get(0, END))
-    return temp_list
+    temp_list = list(pg3_listbox1.get(0, END))
+    return [ l for l in temp_list if l]
 
-def run_gui():
-    todiscgui_cmd = Popen(['tovid', 'gui'], stdout=PIPE)
+def run_gui(args=[]):
+    cmd = ['tovid', 'gui'] + args
+    todiscgui_cmd = Popen(cmd, stdout=PIPE)
     # sleep to avoid the 'void' of time before the GUI loads
     sleep(0.5)
     tk.withdraw()
@@ -199,7 +208,8 @@ def read_script():
     fin.close()
     filecontents =  [line.rstrip(' \\\n') for line in fcont]
     # -from-gui not needed
-    filecontents.remove('-from-gui')
+    if '-from-gui' in filecontents:
+        filecontents.remove('-from-gui')
     if not 'todisc \\\n' in fcont:
         showerror(message=error_msg)
         return ['Cancelled'] 
@@ -254,7 +264,7 @@ button1 = Button(button_frame, text='Next', command=next)
 button1.pack(side=RIGHT, fill=X, expand=1, anchor='e')
 
 ############################ Page 1 of wizard ############################
-text0 = '''
+pg1_txt1 = '''
 iNTRODUCTION
 
 Welcome to the tovid titleset wizard.  We will be making a complete DVD, with
@@ -271,19 +281,7 @@ addition of a "showcased" image/video, animated or static background image or
 video, audio background ... etc.  There are also playback options including the
 supplying of chapter points, special navigation features like "quicknav",
 and configurable DVD button links.
-
-LET'S BEGIN
-
-When you press the "Next" button at the bottom of the wizard, we will start the
-GUI and begin with general options applying to all titlesets.  The only REQUIRED
-option here is specifying an Output directory at the bottom of the GUI's main tab.
 '''
-text1 = '''
-After making your selections, it is important that you save the file to
-%s
-
-Press 'Next' to begin ...
-''' %script_file
 #   The GUI will then be called repeated for each titleset you wish to make.
 #
 #    Each time you will need to press the "Save script" button and save to the same
@@ -297,23 +295,42 @@ frame1 = Frame(tkframe)
 img_file = tovid_prefix + '/data/tovid.gif'
 if os.path.isfile(img_file):
     img = PhotoImage(file=img_file)
-    label1 = Label(frame1, text='Tovid', font=heading_font)
-    label1.pack(side=TOP, pady=40)
+    pg1_label1 = Label(frame1, text='Tovid', font=heading_font)
+    pg1_label1.pack(side=TOP, pady=40)
 else:
     print img_file, ' does not exist'
-label2 = Label(frame1, image=img).pack(side=TOP)
-label3 = Label(frame1, text='Titleset Wizard', font=lrg_font)
-label3.pack(side=TOP, pady=40)
-label4 = Label(frame1, text='Page 1', font=lrg_font)
-label4.pack(side=BOTTOM, anchor='s')
+pg1_label2 = Label(frame1, image=img).pack(side=TOP)
+pg1_label3 = Label(frame1, text='Titleset Wizard', font=lrg_font)
+pg1_label3.pack(side=TOP, pady=40)
+pg1_label4 = Label(frame1, text='Page 1', font=lrg_font)
+pg1_label4.pack(side=BOTTOM, anchor='s')
 frame1.pack(side=LEFT, padx=30, anchor='nw', fill=Y, expand=1)
 page1.pack(fill=BOTH, expand=1)
-label5 = Label(page1, text=text0, justify=LEFT, font=style.font)
-label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
-label6 = Label(page1, text=text1, justify=LEFT, font=caption_font)
-label6.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
-############################ Page 2 of wizard ############################
-text2 = \
+pg1_label5 = Label(page1, text=pg1_txt1, justify=LEFT, font=style.font)
+pg1_label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
+############################## Page 2 of wizard ##############################
+pg2_txt1 = '''
+LET'S BEGIN
+
+When you press the "Next" button at the bottom of the wizard, we will start the
+GUI and begin with general options applying to all titlesets.  The only REQUIRED
+option here is specifying an Output directory at the bottom of the GUI's main tab.
+'''
+pg2_txt2 = '''
+After making your selections, it is important that you save the file to
+%s
+
+Press 'Next' to begin ...
+''' %script_file
+
+page2 = Frame(tk)
+pg2_label1 = Label(page2, text=pg2_txt1, justify=LEFT, font=style.font)
+pg2_label1.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
+pg2_label2 = Label(page2, text=pg2_txt2, justify=LEFT, font=caption_font)
+pg2_label2.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
+
+############################## Page 3 of wizard ##############################
+pg3_txt1 = \
 '''Now we will save options for your root (VMGM) menu.  The only option you
 really need is the titleset titles.  Since you can not save titles in the GUI
 without loading videos you need to enter them here.  These titleset names will
@@ -326,25 +343,23 @@ Press "Next" when you are finished.
 
 '''
 
-page2 = Frame(tk)
-page2_opts = ['-vmgm \\\n', '-titles \\\n']
-page3_opts = ['-titleset \\\n']
-label2 = Label(page2, text=text2, justify=LEFT, font=style.font)
-label2.pack(fill=BOTH, expand=1)
+page3 = Frame(tk)
+pg3_label1 = Label(page3, text=pg3_txt1, justify=LEFT, font=style.font)
+pg3_label1.pack(fill=BOTH, expand=1)
 # create the listbox (note that size is in characters)
-list_frame = LabelFrame(page2, text="Root 'menu link' titles")
-list_frame.pack(fill=Y, expand=1)
-listbox1 = Listbox(list_frame, width=50, height=12)
+pg3_frame1 = LabelFrame(page3, text="Root 'menu link' titles")
+pg3_frame1.pack(fill=Y, expand=1)
+pg3_listbox1 = Listbox(pg3_frame1, width=50, height=12)
 #listbox1.insert(0, '')
-listbox1.pack(side=LEFT, fill=Y, expand=1)
+pg3_listbox1.pack(side=LEFT, fill=Y, expand=1)
 
 # create a vertical scrollbar to the right of the listbox
-yscroll = Scrollbar(list_frame, command=listbox1.yview, orient=VERTICAL)
+yscroll = Scrollbar(pg3_frame1, command=pg3_listbox1.yview, orient=VERTICAL)
 yscroll.pack(side=LEFT, fill=Y)
-listbox1.configure(yscrollcommand=yscroll.set)
+pg3_listbox1.configure(yscrollcommand=yscroll.set)
 
 # use entry widget to display/edit selection
-enter1 = Entry(page2, width=50, text='Enter titles here')
+enter1 = Entry(page3, width=50, text='Enter titles here')
 enter1.pack(fill=Y, expand=1)
 # set focus on entry
 enter1.select_range(0, 'end')
@@ -353,52 +368,52 @@ enter1.focus_set()
 enter1.bind('<Return>', set_list)
 
 # button to save the listbox's data lines to a file
-#button2 = Button(page2, text='Done', command=save_list)
+#button2 = Button(page3, text='Done', command=save_list)
 #button2.pack(fill=X, expand=1, side=LEFT, anchor='sw')
 
 
-listbox1.bind('<ButtonRelease-1>', get_list)
-
-############################ Page 3 of wizard ############################
-
-page3 = Frame(tk)
-text3 = '''
-'''
-label7 = Label(page2, text=text3, justify=LEFT, font=style.font)
-label7.pack(fill=BOTH, expand=1)
-# create the listbox (note that size is in characters)
-list_frame2 = LabelFrame(page3, \
-  text="Choose an item to edit with the GUI")
-list_frame2.pack(fill=X, expand=1)
-
-listbox2 = Listbox(list_frame2, width=60)
-
-#listbox1.insert(0, '')
-listbox2.pack(side=LEFT, fill=X, expand=1)
-
-# create a vertical scrollbar to the right of the listbox
-yscroll2 = Scrollbar(list_frame2, command=listbox2.yview, orient=VERTICAL)
-yscroll2.pack(side=LEFT, fill=Y)
-listbox2.configure(yscrollcommand=yscroll.set)
-
-#    run the gui and collect the options
+pg3_listbox1.bind('<ButtonRelease-1>', get_list)
 
 ############################ Page 4 of wizard ############################
 
 page4 = Frame(tk)
-page4_frame = Frame(page4)
-page4_frame.pack(fill=BOTH, expand=1)
-page4label = Label(page4_frame, text='This is page 4')
-page4label.pack()
+pg4_txt1 = '''
+'''
+pg4_label1 = Label(page4, text=pg4_txt1, justify=LEFT, font=style.font)
+pg4_label1.pack(fill=BOTH, expand=1)
+# create the listbox (note that size is in characters)
+pg4_frame1 = LabelFrame(page4, \
+  text="Choose an item to edit with the GUI")
+pg4_frame1.pack(fill=X, expand=1)
+
+pg4_listbox1 = Listbox(pg4_frame1, width=60)
+
+#listbox1.insert(0, '')
+pg4_listbox1.pack(side=LEFT, fill=X, expand=1)
+
+# create a vertical scrollbar to the right of the listbox
+yscroll2 = Scrollbar(pg4_frame1, command=pg4_listbox1.yview, orient=VERTICAL)
+yscroll2.pack(side=LEFT, fill=Y)
+pg4_listbox1.configure(yscrollcommand=yscroll.set)
+
+#    run the gui and collect the options
+
+############################ Page 5 of wizard ############################
 
 page5 = Frame(tk)
-page5_frame = Frame(page5)
-page5_frame.pack(fill=BOTH, expand=1)
-page5label = Label(page5_frame, text='This is page 5')
-page5label.pack()
+pg5_frame1 = Frame(page5)
+pg5_frame1.pack(fill=BOTH, expand=1)
+page5_label1 = Label(pg5_frame1, text='This is page 4')
+page5_label1.pack()
+
+page6 = Frame(tk)
+pg6_frame1 = Frame(page6)
+pg6_frame1.pack(fill=BOTH, expand=1)
+pg6_label1 = Label(pg6_frame1, text='This is page 5')
+pg6_label1.pack()
 
 ######################### Run the darn thing already #########################
 
-pages = [page1, page2, page3, page4, page5]
+pages = [page1, page2, page3, page4, page5, page6]
 current = page1
 mainloop()
