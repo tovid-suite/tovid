@@ -97,18 +97,6 @@ def next():
             cmds.extend(get_commands)
             cmds.append('-end-vmgm')
             todisc_cmds.append(cmds)
-        cmdout = open(script_file, 'w')
-        # add the shebang, PATH, and 'todisc \' lines
-        cmdout.writelines(header)
-        # flatten the list
-        all_lines = [line for sublist in todisc_cmds for line in sublist]
-        #
-        # write every line with a '\' at the end, except the last
-        for line in all_lines[:-1]:
-            cmdout.write(line + ' \\\n')
-        # write the last line
-        cmdout.write(all_lines[-1])
-        cmdout.close()
         tk.deiconify()
 
         ####################  prepare the next pages listbox ##################
@@ -126,7 +114,39 @@ def next():
     elif pages.index(current) == 3:
         options_list = save_list()
         numtitles = len(save_list())
-        print 'numtitles is: ', numtitles
+        for i in range(numtitles):
+            run_cmds = ['-menu-title']
+            run_cmds.append(options_list[i])
+            # withdraw the wizard and run the GUI, collecting commands
+            get_commands = run_gui(run_cmds)
+            try:
+                while not get_commands[0].startswith('-'):
+                    get_commands.pop(0)
+            except IndexError:
+                pass
+            cmds = ['-titleset']
+            cmds.extend(get_commands)
+            cmds.append('-end-titleset')
+            todisc_cmds.append(cmds)
+            tk.deiconify()
+            if i < numtitles-1:
+                msg = 'Now we will work on titleset %s' % int(i+1)
+                showinfo(message=msg)
+                tk.withdraw()
+        tk.deiconify()
+        cmdout = open(script_file, 'w')
+        # add the shebang, PATH, and 'todisc \' lines
+        cmdout.writelines(header)
+        # flatten the list
+        all_lines = [line for sublist in todisc_cmds for line in sublist]
+        #
+        # write every line with a '\' at the end, except the last
+        for line in all_lines[:-1]:
+            cmdout.write(line + ' \\\n')
+        # write the last line
+        cmdout.write(all_lines[-1])
+        cmdout.close()
+        # not sure yet if we want to 'move' here
     move(mv_amt)
 
 def prev():
@@ -168,7 +188,6 @@ def set_list(event):
         pg3_listbox1.insert(END, enter1.get())
     pg3_listbox1.selection_set(END)
 
-# unused - will use it for choices listbox (general, vmgm, titlesets choices)
 def save_list():
     """
     save the current listbox contents
@@ -403,17 +422,17 @@ pg4_listbox1.configure(yscrollcommand=yscroll.set)
 page5 = Frame(tk)
 pg5_frame1 = Frame(page5)
 pg5_frame1.pack(fill=BOTH, expand=1)
-page5_label1 = Label(pg5_frame1, text='This is page 4')
+page5_label1 = Label(pg5_frame1, text='Finished!', font=heading_font)
 page5_label1.pack()
 
-page6 = Frame(tk)
-pg6_frame1 = Frame(page6)
-pg6_frame1.pack(fill=BOTH, expand=1)
-pg6_label1 = Label(pg6_frame1, text='This is page 5')
-pg6_label1.pack()
+#page6 = Frame(tk)
+#pg6_frame1 = Frame(page6)
+#pg6_frame1.pack(fill=BOTH, expand=1)
+#pg6_label1 = Label(pg6_frame1, text='This is page 6')
+#pg6_label1.pack()
 
 ######################### Run the darn thing already #########################
 
-pages = [page1, page2, page3, page4, page5, page6]
+pages = [page1, page2, page3, page4, page5]
 current = page1
 mainloop()
