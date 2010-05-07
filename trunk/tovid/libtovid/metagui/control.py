@@ -101,7 +101,7 @@ import re
 
 # Python < 2.5 (I'm looking at YOU, CentOS)
 try:
-    any()
+    any([True])
 except NameError:
     def any(iterable):
         for item in iterable:
