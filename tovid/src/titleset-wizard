@@ -112,12 +112,19 @@ def next():
         for i in xrange(numtitles):
             pg4_listbox1.insert(END, options_list[i])
     elif pages.index(current) == 3:
+        tk.withdraw()
         options_list = save_list()
         numtitles = len(save_list())
         for i in range(numtitles):
             run_cmds = ['-menu-title']
             run_cmds.append(options_list[i])
             # withdraw the wizard and run the GUI, collecting commands
+            if i < numtitles:
+                msg = 'Now we will work on titleset %s' % int(i+1)
+                root = Tk()
+                root.withdraw()
+                if showinfo(message=msg):
+                    root.destroy()
             get_commands = run_gui(run_cmds)
             try:
                 while not get_commands[0].startswith('-'):
@@ -128,11 +135,6 @@ def next():
             cmds.extend(get_commands)
             cmds.append('-end-titleset')
             todisc_cmds.append(cmds)
-            tk.deiconify()
-            if i < numtitles-1:
-                msg = 'Now we will work on titleset %s' % int(i+1)
-                showinfo(message=msg)
-                tk.withdraw()
         tk.deiconify()
         cmdout = open(script_file, 'w')
         # add the shebang, PATH, and 'todisc \' lines
@@ -201,7 +203,8 @@ def run_gui(args=[]):
     todiscgui_cmd = Popen(cmd, stdout=PIPE)
     # sleep to avoid the 'void' of time before the GUI loads
     sleep(0.5)
-    tk.withdraw()
+    if tk.state() is not 'withdrawn':
+        tk.withdraw()
     status = todiscgui_cmd.wait()
     if status == 0:
         todisc_cmds = read_script()
