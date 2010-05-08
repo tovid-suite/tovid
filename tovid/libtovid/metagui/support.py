@@ -225,7 +225,7 @@ class ScrollList (tk.Frame):
     def next_item(self, event):
         """Event handler when <Return> is pressed
         """
-        self.curindex = self.curindex+1
+        self.curindex += 1
         if self.linked:
             self.linked.curindex = self.curindex
         self.select_index(self.curindex)

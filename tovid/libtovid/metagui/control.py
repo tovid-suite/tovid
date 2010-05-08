@@ -517,16 +517,17 @@ class Color (Control):
         self.button.pack(side='left')
         # Textbox for typing in an RGB hex value or color name
         self.editbox = tk.Entry(self, textvariable=self.variable, width=8)
-        self.editbox.bind('<Return>', self.enter_color)
         self.editbox.pack(side='left', fill='y')
+        # Update the color preview when the variable changes
+        self.add_callback(self.update_color)
         # Indicate the current (default) color
         if self._is_hex_rgb(self.default):
             self.indicate_color(self.default)
         Control.post(self)
 
 
-    def enter_color(self, event=None):
-        """Event handler when Enter is pressed in the color entry box.
+    def update_color(self, event=None):
+        """Event handler to update the color preview.
         """
         color = self.variable.get().strip()
         self.set(color)
@@ -588,11 +589,14 @@ class Color (Control):
     # Static methods for supporting functions
     @staticmethod
     def _is_hex_rgb(color):
-        """Return True if color appears to be a hex '#RRGGBB value.
+        """Return True if color appears to be a hex #RRGGBB value.
+        Both three-digit and six-digit hex codes are allowed.
         """
         if not isinstance(color, basestring):
             return False
-        if re.match('#[0-9a-fA-F]{3}', color):
+        elif re.match('^#[0-9a-fA-F]{6}$', color):
+            return True
+        elif re.match('^#[0-9a-fA-F]{3}$', color):
             return True
         else:
             return False
@@ -992,6 +996,7 @@ class Text (Control):
         self.width = width
         # Defined by draw()
         self.entry = None
+        self.parent_list = None
 
 
     def draw(self, master):
@@ -1009,22 +1014,26 @@ class Text (Control):
         Control.post(self)
         self.entry.bind('<Return>', self.next_item)
 
+
     def focus(self):
         """Highlight the text entry box for editing.
         """
         self.entry.select_range(0, 'end')
         self.entry.focus_set()
 
-    def get_control(self, control):
-        """Get the control Text control links to
+
+    def set_parent(self, parent_list):
+        """Set the parent List control.
         """
-        self.controller = control
+        if not isinstance(parent_list, List):
+            raise TypeError("Text control must have a List as its parent.")
+        self.parent_list = parent_list
+
 
     def next_item(self, event):
-        """Select the next item in the listbox.
+        """Select the next item in the parent listbox.
         """
-        if not isinstance(self.controller, Text):
-            self.controller.listbox.next_item(event)
+        self.parent_list.listbox.next_item(event)
 
 
 class SpacedText (Text):
@@ -1152,7 +1161,7 @@ class List (Control):
         # Set up bindings on the control
         control.bind('<Return>', listbox.next_item)
         if isinstance(control, Text):
-            control.get_control(self)
+            control.set_parent(self)
         # Disable the control until values are added
         control.disable()
 
