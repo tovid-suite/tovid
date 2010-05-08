@@ -240,6 +240,8 @@ class Control (Widget):
         self.toggles = toggles
         self.labelside = labelside
         self.kwargs = kwargs
+        self.callbacks = []
+        self._callback_name = ''
 
         # Defined in draw()
         self.checked = None
@@ -271,6 +273,8 @@ class Control (Widget):
             self.variable = VAR_TYPES[self.vartype](self)
         else:
             self.variable = tk.Variable(self)
+        # Set a trace callback on the variable
+        self._add_trace()
         # Set default value
         if self.default:
             self.variable.set(self.default)
@@ -322,6 +326,8 @@ class Control (Widget):
         if not self.variable:
             raise NotDrawn("Must call draw() before set()")
         self.variable.set(value)
+        # Set a trace callback on the variable
+        self._add_trace()
 
 
     def set_variable(self, variable):
@@ -347,22 +353,12 @@ class Control (Widget):
         pass
 
 
-    # FIXME: The variable argument here is entirely to support ChildList
-    def get_args(self, variable=None):
+    def get_args(self):
         """Return a list of arguments for passing this command-line option.
         draw() must be called before this function.
-
-            variable
-                Tkinter Variable to use as the current value,
-                or None to use self.variable.
         """
         args = []
-
-        # Use the provided variable, or self.variable
-        if variable != None:
-            value = variable.get()
-        else:
-            value = self.get()
+        value = self.get()
 
         # Return empty if the control is toggled off
         if not self.enabled:
@@ -392,6 +388,46 @@ class Control (Widget):
         else:
             args.append(value)
         return args
+
+
+    def add_callback(self, callback):
+        """Add a callback to this Control, which will be called anytime the
+        Control's value is modified. The callback will be called with a single
+        argument: this Control instance. Callbacks will only be added once.
+        """
+        # Ensure the callback is callable
+        if not callable(callback):
+            raise TypeError("Control '%s' callback is not callable." % self.option)
+        # Don't add the same callback more than once
+        if callback in self.callbacks:
+            return
+        self.callbacks.append(callback)
+
+
+    def _add_trace(self):
+        """Add a trace callback to self.variable, and store the callback name.
+        """
+        # If self.variable is not set yet, do nothing
+        if not self.variable:
+            return
+        # If this variable doesn't already call self._callback,
+        # add it using trace_variable
+        found = False
+        for mode, callback_name in self.variable.trace_vinfo():
+            if callback_name == self._callback_name:
+                found = True
+        if not found:
+            self._callback_name = self.variable.trace_variable('w', self._callback)
+
+
+    def _callback(self, name, index, mode):
+        """Callback wrapper, called when variable's value is modified.
+        This method calls all other callbacks with the updated value.
+        """
+        value = self.get()
+        for callback in self.callbacks:
+            if callable(callback):
+                callback(self)
 
 
 class Choice (Control):
@@ -1509,7 +1545,8 @@ class ListToMany (_SubList):
             args.extend(self.parent.get_args())
         # Append arguments for each child list
         for index, list_var in self.listvars.items():
-            child_args = List.get_args(self, list_var)
+            self.set_variable(list_var)
+            List.get_args(self)
             if child_args:
                 child_option = child_args.pop(0)
                 args.append(child_option)
