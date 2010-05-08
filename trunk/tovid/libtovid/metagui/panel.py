@@ -441,23 +441,25 @@ class FlagGroup (Panel):
             # Draw all Flags in the row/column
             for flag in flags:
                 flag.draw(subframe)
-                flag.check.bind('<Button-1>', self.select)
+                flag.add_callback(self.modified)
                 flag.pack(anchor='nw', side=self.side, fill='x', expand=True)
             # Pack the frame for the current row/column
             subframe.pack(anchor='nw', side=strip_side)
 
 
-    def select(self, event):
-        """Event handler called when a Flag is selected.
+    def modified(self, flag):
+        """Called when a flag is modified.
         """
-        # For normal flags, nothing to do
+        # For normal flags, do nothing
         if self.kind != 'exclusive':
             return
-        # For exclusive flags, clear all but the clicked Flag
-        for flag in self.flags:
-            if flag.check != event.widget:
-                flag.set(False)
-            flag.enabler()
+        # If the flag is unchecked, do nothing
+        if not flag.get():
+            return
+        # Otherwise, uncheck all other flags
+        for _flag in self.flags:
+            if _flag != flag:
+                _flag.set(False)
 
 
     def get_args(self):
