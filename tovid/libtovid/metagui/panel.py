@@ -21,9 +21,9 @@ except ImportError:
 
 from libtovid.odict import Odict
 from libtovid.metagui.widget import Widget
-from libtovid.metagui.control import Control, Flag, List
+from libtovid.metagui.control import Control, Flag
 from libtovid.metagui.support import \
-    (ComboBox, ScrollList, ensure_type, divide_list)
+    (ComboBox, ensure_type, divide_list)
 from libtovid.metagui.variable import ListVar
 
 
@@ -79,18 +79,19 @@ class Panel (Widget):
         self.frame = None
 
 
-    def draw(self, master, labeled=True, **kwargs):
+    def draw(self, master, **kwargs):
         """Draw the Panel, but not any contained widgets.
 
             labeled
-                True to use a LabelFrame with the panel's name
+                True (default) to use a LabelFrame with the panel's name,
+                False to draw the panel without a label.
 
         Panel subclasses must pack the contained widgets, or
         call ``draw_widgets`` to pack them.
         """
         Widget.draw(self, master, **kwargs)
-        # Get a labeled or unlabeled frame
-        if self.name and labeled:
+        # Get a labeled or unlabeled frame (labeled by default)
+        if self.name and kwargs.get('labeled', True):
             self.frame = tk.LabelFrame(self, text=self.name,
                                        padx=8, pady=8)
         else:
