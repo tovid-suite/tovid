@@ -30,7 +30,7 @@ class Widget (tk.Frame):
         self.kwargs = kwargs
 
 
-    def draw(self, master):
+    def draw(self, master, **kwargs):
         """Initialize the base tk.Frame class.
         """
         tk.Frame.__init__(self, master)
