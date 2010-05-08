@@ -230,7 +230,7 @@ class Control (Widget):
                 Keyword arguments of the form key1=arg1, key2=arg2
 
         """
-        Widget.__init__(self, label)
+        Widget.__init__(self, label, **kwargs)
         self.vartype = vartype
         self.variable = None
         self.label = label
@@ -239,7 +239,6 @@ class Control (Widget):
         self.help = help
         self.toggles = toggles
         self.labelside = labelside
-        self.kwargs = kwargs
         self.callbacks = []
         self._callback_name = ''
 
@@ -1546,7 +1545,7 @@ class ListToMany (_SubList):
         # Append arguments for each child list
         for index, list_var in self.listvars.items():
             self.set_variable(list_var)
-            List.get_args(self)
+            child_args = List.get_args(self)
             if child_args:
                 child_option = child_args.pop(0)
                 args.append(child_option)

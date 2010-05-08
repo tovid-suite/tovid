@@ -27,9 +27,10 @@ class Widget (tk.Frame):
         self.name = name
         self.enabled = True
         self.is_drawn = False
+        self.kwargs = kwargs
 
 
-    def draw(self, master, **kwargs):
+    def draw(self, master):
         """Initialize the base tk.Frame class.
         """
         tk.Frame.__init__(self, master)
