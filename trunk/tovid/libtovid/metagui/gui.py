@@ -541,7 +541,7 @@ class GUI (tk.Tk):
             self.redraw()
 
 
-    def confirm_exit(self, evt=None):
+    def confirm_exit(self, event=None):
         """Exit the GUI, with confirmation prompt.
         """
         if askyesno(message="Exit?"):

@@ -104,6 +104,7 @@ try:
     any
 except NameError:
     def any(iterable):
+        """Return True if bool(x) is True for any x in iterable."""
         for item in iterable:
             if not item:
                 return False
@@ -123,7 +124,7 @@ except ImportError:
     from tkinter.colorchooser import askcolor
 
 from libtovid.metagui.widget import Widget
-from libtovid.metagui.variable import VAR_TYPES, ListVar, DictVar
+from libtovid.metagui.variable import VAR_TYPES, ListVar
 from libtovid.metagui.support import \
     (DragList, ScrollList, FontChooser, PopupScale, ensure_type, ComboBox)
 # Used in Control
@@ -131,29 +132,6 @@ from libtovid.metagui.tooltip import ToolTip
 # Used in Choice control
 from libtovid.odict import convert_list
 
-# Support functions for Color control
-def _is_hex_rgb(color):
-    """Return True if color appears to be a hex '#RRGGBB value.
-    """
-    if not isinstance(color, basestring):
-        return False
-    if re.match('#[0-9a-fA-F]{3}', color):
-        return True
-    else:
-        return False
-
-def _hex_to_rgb(color):
-    """Convert a hexadecimal color string '#RRGGBB' to an RGB tuple.
-    """
-    color = color.lstrip('#')
-    red, green, blue = (color[0:2], color[2:4], color[4:6])
-    return (int(red, 16), int(green, 16), int(blue, 16))
-
-def _rgb_to_hex(rgb_tuple):
-    """Convert an RGB tuple into a hexadecimal color string '#RRGGBB'.
-    """
-    red, green, blue = rgb_tuple
-    return '#%02x%02x%02x' % (red, green, blue)
 
 # ---------------
 # Exceptions
@@ -170,6 +148,10 @@ class NoSuchControl (ValueError):
     """
     pass
 
+
+# ---------------
+# Classes
+# ---------------
 
 class Control (Widget):
     """A specialized GUI widget that controls a command-line option.
@@ -273,7 +255,7 @@ class Control (Widget):
         else:
             self.variable = tk.Variable(self)
         # Set a trace callback on the variable
-        self._add_trace()
+        self._add_trace(self.variable)
         # Set default value
         if self.default:
             self.variable.set(self.default)
@@ -326,7 +308,7 @@ class Control (Widget):
             raise NotDrawn("Must call draw() before set()")
         self.variable.set(value)
         # Set a trace callback on the variable
-        self._add_trace()
+        self._add_trace(self.variable)
 
 
     def set_variable(self, variable):
@@ -396,27 +378,28 @@ class Control (Widget):
         """
         # Ensure the callback is callable
         if not callable(callback):
-            raise TypeError("Control '%s' callback is not callable." % self.option)
+            raise TypeError("Control '%s' callback is not callable." % \
+                            self.option)
         # Don't add the same callback more than once
         if callback in self.callbacks:
             return
         self.callbacks.append(callback)
 
 
-    def _add_trace(self):
+    def _add_trace(self, variable):
         """Add a trace callback to self.variable, and store the callback name.
         """
         # If self.variable is not set yet, do nothing
-        if not self.variable:
+        if not variable:
             return
         # If this variable doesn't already call self._callback,
         # add it using trace_variable
         found = False
-        for mode, callback_name in self.variable.trace_vinfo():
+        for mode, callback_name in variable.trace_vinfo():
             if callback_name == self._callback_name:
                 found = True
         if not found:
-            self._callback_name = self.variable.trace_variable('w', self._callback)
+            self._callback_name = variable.trace_variable('w', self._callback)
 
 
     def _callback(self, name, index, mode):
@@ -537,7 +520,7 @@ class Color (Control):
         self.editbox.bind('<Return>', self.enter_color)
         self.editbox.pack(side='left', fill='y')
         # Indicate the current (default) color
-        if _is_hex_rgb(self.default):
+        if self._is_hex_rgb(self.default):
             self.indicate_color(self.default)
         Control.post(self)
 
@@ -574,7 +557,7 @@ class Color (Control):
         If a given color name is unknown, return '#ffffff' (white).
         """
         # If color is already hex, return it
-        if _is_hex_rgb(color):
+        if self._is_hex_rgb(color):
             return color
 
         # Try to get color by name, converting from 16-bit to 8-bit RGB
@@ -584,22 +567,52 @@ class Color (Control):
         except (tk.TclError):
             rgb = [255, 255, 255]
 
-        return _rgb_to_hex(rgb)
+        return self._rgb_to_hex(rgb)
 
 
     def indicate_color(self, bg_color):
         """Change the button background color to the given RGB hex value.
         """
-        if not _is_hex_rgb(bg_color):
+        if not self._is_hex_rgb(bg_color):
             raise ValueError("indicate_color needs an 8-bit #RRGGBB hex string")
         # Choose a foreground color that will be visible
-        r, g, b = _hex_to_rgb(bg_color)
+        r, g, b = self._hex_to_rgb(bg_color)
         if (r + g + b) > 384: # hack
             fg_color = '#000000' # black
         else:
             fg_color = '#ffffff' # white
         # Set button background color to chosen color
         self.button.config(background=bg_color, foreground=fg_color)
+
+
+    # Static methods for supporting functions
+    @staticmethod
+    def _is_hex_rgb(color):
+        """Return True if color appears to be a hex '#RRGGBB value.
+        """
+        if not isinstance(color, basestring):
+            return False
+        if re.match('#[0-9a-fA-F]{3}', color):
+            return True
+        else:
+            return False
+
+
+    @staticmethod
+    def _hex_to_rgb(color):
+        """Convert a hexadecimal color string '#RRGGBB' to an RGB tuple.
+        """
+        color = color.lstrip('#')
+        red, green, blue = (color[0:2], color[2:4], color[4:6])
+        return (int(red, 16), int(green, 16), int(blue, 16))
+
+
+    @staticmethod
+    def _rgb_to_hex(rgb_tuple):
+        """Convert an RGB tuple into a hexadecimal color string '#RRGGBB'.
+        """
+        red, green, blue = rgb_tuple
+        return '#%02x%02x%02x' % (red, green, blue)
 
 
 class Filename (Control):
@@ -926,10 +939,12 @@ class Number (Control):
 
         else: # 'popup'
             def popup():
+                """Show a popup scale for setting the variable's value."""
                 scale = PopupScale(self)
                 if scale.result is not None:
                     self.variable.set(scale.result)
-            tk.Button(self, textvariable=self.variable, command=popup).pack(side='left')
+            tk.Button(self, textvariable=self.variable,
+                      command=popup).pack(side='left')
             tk.Label(self, name='units', text=self.units).pack(side='left')
 
         Control.post(self)
@@ -1006,6 +1021,8 @@ class Text (Control):
         self.controller = control
 
     def next_item(self, event):
+        """Select the next item in the listbox.
+        """
         if not isinstance(self.controller, Text):
             self.controller.listbox.next_item(event)
 
@@ -1040,6 +1057,7 @@ class SpacedText (Text):
         double-quoted. Double-quotes in list values are backslash-escaped.
         """
         def quote(val):
+            """Put double-quotes around the given value."""
             return '"%s"' % val.replace('"', '\\"')
         text = ' '.join([quote(val) for val in listvalue])
         Text.set(self, text)
@@ -1138,11 +1156,8 @@ class List (Control):
         # Disable the control until values are added
         control.disable()
 
-        # Add event handler to control, to update selected list item
-        # when control's variable is modified
-        def _modify(name, index, mode):
-            self.modify()
-        control.variable.trace_variable('w', _modify)
+        # Update selected list item when control's variable is modified
+        control.add_callback(self.modify)
 
 
     def refresh_control(self):
@@ -1164,11 +1179,11 @@ class List (Control):
         self.refresh_control()
 
 
-    def modify(self):
+    def modify(self, control):
         """Event handler when the Control's variable is modified.
         """
         index = self.listbox.curindex
-        new_value = self.control.get()
+        new_value = control.get()
         # Only update the list if the new value is different
         if self.variable[index] != new_value:
             self.variable[index] = new_value
@@ -1186,9 +1201,6 @@ class List (Control):
     def add(self):
         """Event handler for the "Add" button.
         """
-        # Index of first item to be added
-        index = self.listbox.items.count()
-
         # For filenames, show a file chooser to add one or more files
         if isinstance(self.control, Filename):
             files = askopenfilenames(parent=self, title='Add files',
@@ -1222,6 +1234,8 @@ class List (Control):
 
 
 class _SubList (List):
+    """Base class for ListToOne and ListToMany.
+    """
     def __init__(self,
                  parent,
                  label="_SubList",
@@ -1309,7 +1323,8 @@ class _SubList (List):
         # Draw the read-only copy of parent's values
         if self.parent_is_copy:
             # FIXME: Not great to bury attribute initialization here
-            parent_frame = tk.LabelFrame(master, text="%s (copy)" % self.parent.label)
+            parent_frame = tk.LabelFrame(master, text="%s (copy)" % \
+                                         self.parent.label)
             self.parent_listbox = ScrollList(parent_frame, self.parent.variable)
             self.parent_listbox.pack(expand=True, fill='both')
         # Or draw the parent Control itself
@@ -1575,28 +1590,10 @@ class ListToMany (_SubList):
 
 
     def reset(self):
+        """Reset the list values to empty.
+        """
         self.curindex = 0
         self.listvars = {}
-
-
-class ControlChoice (Control):
-    """A choice of values from any of several other Controls.
-    """
-    def __init__(self,
-                 label="Text List",
-                 option='',
-                 default=None,
-                 help='',
-                 *controls,
-                 **kwargs):
-        Control.__init__(self, str, label, option, default, help, **kwargs)
-        ensure_type("ControlChoice needs Control instances", Control, *controls)
-        self.controls = list(controls)
-
-
-    def draw(self, master):
-        pass
-
 
 
 # Exported control classes, indexed by name
