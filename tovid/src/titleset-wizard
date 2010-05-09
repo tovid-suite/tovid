@@ -11,6 +11,9 @@ from tempfile import mktemp
 
 todisc_cmds = []
 all_options = []
+gen_cmd = []
+tsets_cmds = []
+vmgm_cmd = []
 error_msg = 'This is not a saved GUI script\n' + \
   'Please select the file that you saved'
 labels = ['General', 'VMGM menu', 'Titlesets']
@@ -73,6 +76,7 @@ def next():
                 pass
             header[-1] = 'todisc \\\n'
             cmds = [l for l in get_commands if l]
+            gen_cmd.append(cmds)
             todisc_cmds.append(cmds)
         tk.deiconify()
     elif pages.index(current) == 2:
@@ -96,6 +100,7 @@ def next():
             cmds = ['-vmgm']
             cmds.extend(get_commands)
             cmds.append('-end-vmgm')
+            vmgm_cmd.append(cmds)
             todisc_cmds.append(cmds)
         tk.deiconify()
 
@@ -134,6 +139,7 @@ def next():
             cmds = ['-titleset']
             cmds.extend(get_commands)
             cmds.append('-end-titleset')
+            tsets_cmds.append(cmds)
             todisc_cmds.append(cmds)
         tk.deiconify()
         cmdout = open(script_file, 'w')
@@ -148,6 +154,8 @@ def next():
         # write the last line
         cmdout.write(all_lines[-1])
         cmdout.close()
+        run_in_xterm(script_file)
+        # allow editing the saved lists with the GUI
         # not sure yet if we want to 'move' here
     move(mv_amt)
 
@@ -189,6 +197,13 @@ def set_list(event):
     if pg3_listbox1.get(END):
         pg3_listbox1.insert(END, enter1.get())
     pg3_listbox1.selection_set(END)
+
+def callback(options):
+    pass
+    #TODO FIXME
+    #cmd = ['tovid', 'gui'] + options
+    #command = Popen(cmd, stdout=PIPE)
+
 
 def save_list():
     """
@@ -240,6 +255,15 @@ def read_script():
         os.remove(script)
         return filecontents
  
+
+def run_in_xterm(script):
+    cmd = ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
+    wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
+    tovid_cmd = 'bash %s' % script
+    cmd.append(tovid_cmd + wait_cmd)
+    tk.withdraw()
+    command = Popen(cmd, stderr=PIPE)
+    tk.deiconify()
  
 ###################### get/set some external variables #######################
 
@@ -412,7 +436,7 @@ pg4_listbox1 = Listbox(pg4_frame1, width=60)
 
 #listbox1.insert(0, '')
 pg4_listbox1.pack(side=LEFT, fill=X, expand=1)
-
+pg4_listbox1.bind("<<ListboxSelect>>", callback)#TODO FIXME 
 # create a vertical scrollbar to the right of the listbox
 yscroll2 = Scrollbar(pg4_frame1, command=pg4_listbox1.yview, orient=VERTICAL)
 yscroll2.pack(side=LEFT, fill=Y)
