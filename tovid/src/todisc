@@ -5064,7 +5064,7 @@ if $DO_MENU; then
             TITLE_STROKE=gray
         fi
     fi
-    [[ -z $TITLES_STROKE ]] && TITLES_STROKE=none
+    [[ -z $TITLES_STROKE ]] && TITLES_STROKE='#010101'
 
     # make a title image
     #! [[ -z ${STR// /} || -z $STR ]] && TRIM_CMD="-trim +repage -blur 0x0.4 "
