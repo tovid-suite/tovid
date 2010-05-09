@@ -201,7 +201,7 @@ if $BURN; then
     $QUIET || echo "($CDRW_DEVICE) if you have not already done so."
 
     # check for cdrw and blank if so
-    if cdrdao disk-info --device /dev/hdc --driver generic-mmc 2>&1 |
+    if cdrdao disk-info --device $CDRW_DEVICE --driver generic-mmc 2>&1 |
     grep -q CD-RW.*yes; then
     echo $SEPARATOR
     echo "Found rewritable CD - starting to blank in 10 seconds - press ctrl-c to quit"
