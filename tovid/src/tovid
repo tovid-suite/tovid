@@ -45,7 +45,7 @@ _scripts = {
     'gui': 'todiscgui',
     'mpg': 'makempg',
     'batch': 'tovid-batch',
-    'titlesets': 'titleset-wizard',
+    'titlesets': 'make_titlesets',
 }
 
 if __name__ == '__main__':
