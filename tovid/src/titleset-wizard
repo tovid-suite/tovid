@@ -55,6 +55,8 @@ def next():
                 showerror(message='Cancelled')
                 return
         
+        # disable previous button at this point
+        button2.pack_forget()
         # withdraw the wizard and run the GUI, collecting commands
         #tk.withdraw()
         get_commands = run_gui()
@@ -304,10 +306,10 @@ tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
 button_frame = Frame(tk)
 button_frame.pack(expand=1, fill=X, side=BOTTOM, anchor='s')
-button2 = Button(button_frame, text='Previous', command=prev)
-button2.pack(side=LEFT, fill=X, expand=1, anchor='w')
-button1 = Button(button_frame, text='Next', command=next)
-button1.pack(side=RIGHT, fill=X, expand=1, anchor='e')
+button2 = Button(button_frame, text='<<<  Previous', command=prev)
+button2.pack(side=LEFT, fill=Y, expand=1, anchor='w')
+button1 = Button(button_frame, text='Next page >>>', command=next)
+button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
 
 ############################ Page 1 of wizard ############################
 pg1_txt1 = '''
