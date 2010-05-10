@@ -1106,7 +1106,7 @@ yecho "Run 'tail -f \"$LOG_FILE\"' in another terminal to monitor the log"
 if $MULTIPLE_CPUS; then
     yecho "Multiple CPUs detected; mpeg2enc and ffmpeg will use multithreading."
     MTHREAD="--multi-thread 2"
-    FF_THREAD="-threads 0"
+    FF_THREAD="-threads 4"
 else
     MTHREAD=""
     FF_THREAD=""
