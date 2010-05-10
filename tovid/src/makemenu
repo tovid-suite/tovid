@@ -788,10 +788,10 @@ fi
 VID_LENGTH=$(mplayer -quiet -identify -frames 0 -vo null -ao null \
     "$AUDIO_STREAM" 2>&1 | grep '^ID_LENGTH' | awk -F '=' '{print $2}' | \
     sed -e "s/\.[0-9]*//g")
-VID_LENGTH=$(expr $VID_LENGTH \* $FPS \/ 100)
+VID_LENGTH=$(expr "$VID_LENGTH" \* $FPS \/ 100)
 
 # Make sure VID_LENGTH is nonzero
-if test $VID_LENGTH -eq 0 ; then
+if test "$VID_LENGTH" -eq 0 ; then
     # Use 30 seconds as a sensible default
     VID_LENGTH=$(expr 30 \* $FPS \/ 100)
 fi
