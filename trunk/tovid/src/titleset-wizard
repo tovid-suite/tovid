@@ -54,7 +54,7 @@ def next():
             else:
                 showerror(message='Cancelled')
                 return
-        
+
         # disable previous button at this point
         button2.pack_forget()
         # withdraw the wizard and run the GUI, collecting commands
@@ -251,12 +251,12 @@ def read_script():
         filecontents.remove('-from-gui')
     if not 'todisc \\\n' in fcont:
         showerror(message=error_msg)
-        return ['Cancelled'] 
+        return ['Cancelled']
     else:
         # delete the temporary saved script file
         os.remove(script)
         return filecontents
- 
+
 
 def run_in_xterm(script):
     cmd = ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
@@ -266,7 +266,7 @@ def run_in_xterm(script):
     tk.withdraw()
     command = Popen(cmd, stderr=PIPE)
     tk.deiconify()
- 
+
 ###################### get/set some external variables #######################
 
 # get tovid prefix
@@ -340,7 +340,7 @@ and configurable DVD button links.
 
 page1 = Frame(tk)
 frame1 = Frame(tkframe)
-img_file = tovid_prefix + '/data/tovid.gif'
+img_file = tovid_prefix + '/tovid.gif'
 if os.path.isfile(img_file):
     img = PhotoImage(file=img_file)
     pg1_label1 = Label(frame1, text='Tovid', font=heading_font)
@@ -438,7 +438,7 @@ pg4_listbox1 = Listbox(pg4_frame1, width=60)
 
 #listbox1.insert(0, '')
 pg4_listbox1.pack(side=LEFT, fill=X, expand=1)
-pg4_listbox1.bind("<<ListboxSelect>>", callback)#TODO FIXME 
+pg4_listbox1.bind("<<ListboxSelect>>", callback)#TODO FIXME
 # create a vertical scrollbar to the right of the listbox
 yscroll2 = Scrollbar(pg4_frame1, command=pg4_listbox1.yview, orient=VERTICAL)
 yscroll2.pack(side=LEFT, fill=Y)
