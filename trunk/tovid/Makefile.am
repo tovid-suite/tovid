@@ -37,8 +37,6 @@ sh_bin = \
 	src/tovid-init \
 	src/tovid-interactive \
 	src/make_titlesets
-# Removed from sh_bin
-#src/tovid-test
 
 # List the source files for each python script
 py_bin = \
@@ -46,17 +44,10 @@ py_bin = \
 	src/todiscgui \
 	src/tovid-stats \
 	src/titleset-wizard
-# Removed from py_bin
-#src/genvid
-#src/pyidvid
-#src/pytovid
-#src/pymakemenu
-#src/pymakexml
 
 # Override the default bindir, so the tovid executables are
 # installed to e.g. /usr/share/tovid/bin
 # FIXME: This is probably not the correct way to do it
-#bindir = $(datadir)/tovid/bin
 bindir = $(libdir)/tovid
 
 # Specify the scripts to make and install.
