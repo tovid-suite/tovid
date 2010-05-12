@@ -8,12 +8,10 @@ from libtovid.metagui import Style
 from tkMessageBox import *
 from time import sleep
 from tempfile import mktemp
+from sys import argv
 
 todisc_cmds = []
 all_options = []
-gen_cmd = []
-tsets_cmds = []
-vmgm_cmd = []
 error_msg = 'This is not a saved GUI script\n' + \
   'Please select the file that you saved'
 labels = ['General', 'VMGM menu', 'Titlesets']
@@ -32,6 +30,7 @@ def move(amt):
     current.pack(side=TOP, fill=BOTH, expand=1)
 
 def next():
+    # Page 1
     # if 1st page (general) then
     # move forward and unless cancelled, append anything added in current
     # page to [todisc_cmds], removing todisc_cmds[current] first
@@ -40,6 +39,7 @@ def next():
     if pages.index(current) == 0:
         pass
     elif pages.index(current) == 1:
+    # Page 2
         # if todisc_commands.bash exists in current dir, prompt for rename
         if os.path.exists(script_file):
             rename_msg = 'The option file we will use:\n' + \
@@ -56,7 +56,7 @@ def next():
                 return
 
         # disable previous button at this point
-        button2.pack_forget()
+        #button2.pack_forget()
         # withdraw the wizard and run the GUI, collecting commands
         #tk.withdraw()
         get_commands = run_gui()
@@ -78,10 +78,10 @@ def next():
                 pass
             header[-1] = 'todisc \\\n'
             cmds = [l for l in get_commands if l]
-            gen_cmd.append(cmds)
             todisc_cmds.append(cmds)
         tk.deiconify()
     elif pages.index(current) == 2:
+    # Page 3
         run_cmds = list(pg3_listbox1.get(0, END))
         run_cmds = [l for l in run_cmds if l]
         # withdraw the wizard and run the GUI, collecting commands
@@ -102,23 +102,11 @@ def next():
             cmds = ['-vmgm']
             cmds.extend(get_commands)
             cmds.append('-end-vmgm')
-            vmgm_cmd.append(cmds)
             todisc_cmds.append(cmds)
         tk.deiconify()
 
-        ####################  prepare the next pages listbox ##################
-        options_list = save_list()
-        # delete titleset listbox contents else it increases with page movement
-        pg4_listbox1.delete(0, END)
-        numtitles = len(options_list)
-        if (numtitles > 10): numtitles = 10
-        pg4_listbox1.configure(height=numtitles)
-        # insert or reinsert options list into titleset listbox
-        pg4_listbox1.insert(END, 'General options')
-        pg4_listbox1.insert(END, 'Root menu')
-        for i in xrange(numtitles):
-            pg4_listbox1.insert(END, options_list[i])
     elif pages.index(current) == 3:
+    # Page 4
         tk.withdraw()
         options_list = save_list()
         numtitles = len(save_list())
@@ -141,24 +129,40 @@ def next():
             cmds = ['-titleset']
             cmds.extend(get_commands)
             cmds.append('-end-titleset')
-            tsets_cmds.append(cmds)
             todisc_cmds.append(cmds)
         tk.deiconify()
-        cmdout = open(script_file, 'w')
-        # add the shebang, PATH, and 'todisc \' lines
-        cmdout.writelines(header)
-        # flatten the list
-        all_lines = [line for sublist in todisc_cmds for line in sublist]
-        #
-        # write every line with a '\' at the end, except the last
-        for line in all_lines[:-1]:
-            cmdout.write(line + ' \\\n')
-        # write the last line
-        cmdout.write(all_lines[-1])
-        cmdout.close()
-        run_in_xterm(script_file)
+        write_script()
         # allow editing the saved lists with the GUI
         # not sure yet if we want to 'move' here
+        ####################  prepare the next pages listbox ##################
+        # delete titleset listbox contents else it increases with page movement
+        pg5_listbox1.delete(0, END)
+        # insert or reinsert options list into titleset listbox
+        pg5_listbox1.pack(side=LEFT, fill=BOTH, expand=1)
+        pg5_listbox1.insert(END, 'General options')
+        pg5_listbox1.insert(END, 'Root menu')
+        for i in xrange(numtitles):
+            pg5_listbox1.insert(END, options_list[i])
+        if (numtitles > 10): numtitles = 10
+        options_list = save_list()
+        numtitles = len(options_list)
+        pg5_listbox1.configure(height=numtitles+2)
+        # change 'Next' button to 'Run'
+        button2 = Button(button_frame, text='Exit', command=quit)
+        button2.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
+        button1.configure(text='Run script now')
+    elif pages.index(current) == 4:
+    # Page 5
+        root = Tk()
+        root.option_add("*Dialog.msg.wrapLength", "10i")
+        root.withdraw()
+        mess = 'Thanks for using the titleset wizard and tovid!\n'
+        if askyesno(message="Run saved script in xterm now?"):
+            run_in_xterm(script_file)
+        else:
+            mess += 'You can run the script later with:\nbash "%s"' % script_file
+        showinfo(message=mess)
+        root.destroy()
     move(mv_amt)
 
 def prev():
@@ -199,13 +203,6 @@ def set_list(event):
     if pg3_listbox1.get(END):
         pg3_listbox1.insert(END, enter1.get())
     pg3_listbox1.selection_set(END)
-
-def callback(options):
-    pass
-    #TODO FIXME
-    #cmd = ['tovid', 'gui'] + options
-    #command = Popen(cmd, stdout=PIPE)
-
 
 def save_list():
     """
@@ -259,6 +256,7 @@ def read_script():
 
 
 def run_in_xterm(script):
+    ''' run the final script in an xterm, completing the project '''
     cmd = ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
     wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
     tovid_cmd = 'bash %s' % script
@@ -267,6 +265,74 @@ def run_in_xterm(script):
     command = Popen(cmd, stderr=PIPE)
     tk.deiconify()
 
+
+def rerun_options():
+    ''' run the gui with the selected options'''
+    global todisc_cmds
+    index = int(pg5_listbox1.curselection()[0])
+    mess='Rerun GUI for the %s options?' % pg5_listbox1.get(index)
+    if askyesno(message=mess):
+        remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
+        options = [ i for i in todisc_cmds[index] if not i in remove ]
+        rerun_opts = run_gui(options)
+        # remove shebang and PATH
+        try:
+            while not rerun_opts[0].startswith('-'):
+                rerun_opts.pop(0)
+        except IndexError:
+            pass
+        # add back the vmgm and titleset 'tag' options
+        if index == 1:
+            rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
+        elif index >= 2:
+            rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
+        print rerun_opts
+        todisc_cmds[index] = rerun_opts
+        # rewrite the saved script file
+        write_script()
+        tk.deiconify()
+
+def write_script():
+    cmdout = open(script_file, 'w')
+    # add the shebang, PATH, and 'todisc \' lines
+    cmdout.writelines(header)
+    # flatten the list
+    all_lines = [line for sublist in todisc_cmds for line in sublist]
+    #
+    # write every line with a '\' at the end, except the last
+    for line in all_lines[:-1]:
+        cmdout.write(line + ' \\\n')
+    # write the last line
+    cmdout.write(all_lines[-1])
+    cmdout.close()
+
+# unused - for loading a titleset script TODO
+def get_chunk(items, start, end):
+    # thanks to Eric Pierce for providing this function
+    """Extract a chunk [start ... end] from a list, and return the chunk.
+   The original list is modified in place.
+   """
+    # Find the starting index and test for 'end'
+    try:
+        index = items.index(start)
+        items.index(end)
+    # If item isn't in list, return empty list
+    except ValueError:
+        return []
+    # Pop items until end is reached
+    chunk = []
+    # we don't need first
+    items.pop(index)
+    while items and items[index] != end:
+        chunk.append(items.pop(index))
+    # we don't need last
+    items.pop(index)
+    # remove start and end
+    return chunk
+
+=======
+
+>>>>>>> .r3022
 ###################### get/set some external variables #######################
 
 # get tovid prefix
@@ -306,22 +372,33 @@ tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
 button_frame = Frame(tk)
 button_frame.pack(expand=1, fill=X, side=BOTTOM, anchor='s')
-button2 = Button(button_frame, text='<<<  Previous', command=prev)
-button2.pack(side=LEFT, fill=Y, expand=1, anchor='w')
-button1 = Button(button_frame, text='Next page >>>', command=next)
+#button2 = Button(button_frame, text='<<<  Previous', command=prev)
+#button2.pack(side=LEFT, fill=Y, expand=1, anchor='w')
+button1 = Button(button_frame, text='Next >>>', command=next)
 button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
 
 ############################ Page 1 of wizard ############################
 pg1_txt1 = '''
-iNTRODUCTION
+INTRODUCTION
 
 Welcome to the tovid titleset wizard.  We will be making a complete DVD, with
-multiple levels of menus including a root menu (VMGM menu) and titleset menus.
-We will be using the 'tovid gui', which uses the 'todisc' script.
-
+multiple levels of menus including a root menu (VMGM menu) and lower level
+titleset menus.  We will be using 'tovid gui', which uses the 'todisc'script.
 Any of these menus can be either static or animated, and use thumbnail menu
 links or plain text links.  In addition the titleset menus can have chapter
 selection menus ("submenus") which by default have only thumbnail menu links.
+
+Though the sheer number of options can be daunting when the GUI first loads,
+it is important to remember that there are very few REQUIRED options, and in
+all cases the required options are on the opening tab. Below is a table of
+'required' options for each run of the GUI:
+
+General:  only the "Output name" is required.
+Root menu: only the titleset titles (menu link text) are required.
+Titleset menus: only videos to include in the titleset are required.
+
+But if you include only those options your menu might be boring ! Please
+have fun exploring the different options using the preview to test.
 
 A great many options of these menus are configurable, including fonts, shapes
 and effects for thumbnails, fade-in/fade-out effects, "switched menus", the
@@ -357,14 +434,21 @@ page1.pack(fill=BOTH, expand=1)
 pg1_label5 = Label(page1, text=pg1_txt1, justify=LEFT, font=style.font)
 pg1_label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 ############################## Page 2 of wizard ##############################
+next_txt = '''
+After making your selections, it is important that you save the file to
+%s ''' % script_file
 pg2_txt1 = '''
-LET'S BEGIN
+GENERAL OPTIONS
 
 When you press the "Next" button at the bottom of the wizard, we will start the
-GUI and begin with general options applying to all titlesets.  The only REQUIRED
-option here is specifying an Output directory at the bottom of the GUI's main tab.
-'''
-pg2_txt2 = '''
+GUI and begin with general options applying to all titlesets.  For example you
+may wish to have all menus share a common font and fontsize of your choosing,
+for the menu link titles and/or the menu title.
+
+The only REQUIRED option here is specifying an Output directory at the bottom
+of the GUI's main tab.  Options you enter will be overridden if you use the
+same option again later for titlesets.
+
 After making your selections, it is important that you save the file to
 %s
 
@@ -374,12 +458,14 @@ Press 'Next' to begin ...
 page2 = Frame(tk)
 pg2_label1 = Label(page2, text=pg2_txt1, justify=LEFT, font=style.font)
 pg2_label1.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
-pg2_label2 = Label(page2, text=pg2_txt2, justify=LEFT, font=caption_font)
-pg2_label2.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
+#pg2_label2 = Label(page2, text=pg2_txt2, justify=LEFT, font=caption_font)
+#pg2_label2.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 
 ############################## Page 3 of wizard ##############################
-pg3_txt1 = \
-'''Now we will save options for your root (VMGM) menu.  The only option you
+pg3_txt1 = '''
+ROOT MENU (VMGM)
+
+Now we will save options for your root (VMGM) menu.  The only option you
 really need is the titleset titles.  Since you can not save titles in the GUI
 without loading videos you need to enter them here.  These titleset names will
 appear as menu titles for the respective menu in your DVD.
@@ -387,9 +473,12 @@ appear as menu titles for the respective menu in your DVD.
 Enter the names of your titlesets, one per line, pressing <ENTER> each time.
 Do not use quotes unless you want them to appear literally in the title.
 
-Press "Next" when you are finished.
-
-'''
+Press "Next" when you are finished, and the tovid gui will come up so you can
+enter any other options you want.  You can not enter video files here, but most
+other options can be used.  There are no REQUIRED options however, as you
+have already entered your root menu link titles.
+%s
+''' % next_txt
 
 page3 = Frame(tk)
 pg3_label1 = Label(page3, text=pg3_txt1, justify=LEFT, font=style.font)
@@ -426,13 +515,19 @@ pg3_listbox1.bind('<ButtonRelease-1>', get_list)
 
 page4 = Frame(tk)
 pg4_txt1 = '''
+TITLESET MENUS
+
+Okay, now you will enter options for each of your titlesets.  The only
+REQUIRED option here is to load one or more video files, but of course
+you should spruce up your menu by exploring some of the other options!
+The menu title for each has been changed to the text you used for the
+menu links in the root menu - change this to whatever you want.
+
+A popup dialog will appear for each run of the GUI telling you which
+titleset you are working on.
 '''
 pg4_label1 = Label(page4, text=pg4_txt1, justify=LEFT, font=style.font)
 pg4_label1.pack(fill=BOTH, expand=1)
-# create the listbox (note that size is in characters)
-pg4_frame1 = LabelFrame(page4, \
-  text="Choose an item to edit with the GUI")
-pg4_frame1.pack(fill=X, expand=1)
 
 pg4_listbox1 = Listbox(pg4_frame1, width=60)
 
@@ -444,15 +539,35 @@ yscroll2 = Scrollbar(pg4_frame1, command=pg4_listbox1.yview, orient=VERTICAL)
 yscroll2.pack(side=LEFT, fill=Y)
 pg4_listbox1.configure(yscrollcommand=yscroll.set)
 
+>>>>>>> .r3022
 #    run the gui and collect the options
 
 ############################ Page 5 of wizard ############################
 
 page5 = Frame(tk)
+pg5_txt2 = '''
+If you wish to go back and change any options with the GUI, you can select
+an item from the options listbox and press "Rerun Options".  The titleset options
+are listed by the name you gave for the root menu links.
+'''
 pg5_frame1 = Frame(page5)
 pg5_frame1.pack(fill=BOTH, expand=1)
 page5_label1 = Label(pg5_frame1, text='Finished!', font=heading_font)
 page5_label1.pack()
+page5_label2 = Label(pg5_frame1, text=pg5_txt2, justify=LEFT)
+page5_label2.pack(side=BOTTOM)
+# create the listbox
+pg5_frame2 = LabelFrame(page5, \
+  text="Choose an item to edit with the GUI and press 'Rerun Options'")
+pg5_frame2.pack(fill=X, expand=1)
+pg5_listbox1 = Listbox(pg5_frame2, width=60)
+# create a vertical scrollbar to the right of the listbox
+yscroll2 = Scrollbar(pg5_frame2, command=pg5_listbox1.yview, orient=VERTICAL)
+yscroll2.pack(side=LEFT, fill=Y)
+pg5_listbox1.configure(yscrollcommand=yscroll.set)
+# button to rerun the GUI to edit selected options
+pg5_button1 = Button(pg5_frame2, text='Rerun Options', command=rerun_options)
+pg5_button1.pack(side=BOTTOM)
 
 #page6 = Frame(tk)
 #pg6_frame1 = Frame(page6)
@@ -464,4 +579,27 @@ page5_label1.pack()
 
 pages = [page1, page2, page3, page4, page5]
 current = page1
+# TODO allow loading script to edit with gui on page 5
+#if len(argv) > 1:
+#    if os.path.exists(argv[1]):
+#        in_script = open(argv[1])
+#        in_cont = in_script.readlines()
+#        in_script.close()
+#        in_contents =  [line.rstrip(' \\\n') for line in in_cont]
+#        if '-from-gui' in in_contents:
+#            in_contents.remove('-from-gui')
+#        in_cmds = in_contents[:]
+#        all = [get_chunk(in_cmds, '-vmgm', '-end-vmgm')]
+#        while '-titleset' in in_cmds:
+#            all.append( get_chunk(in_cmds, '-titleset', '-end-titleset') )
+#        all.insert(0, in_cmds[2:])
+#        todisc_cmds = all[:]
+#        numtitles = len(todisc_cmds[2:])
+#        pg5_listbox1.pack(side=LEFT, fill=BOTH, expand=1)
+#        pg5_listbox1.insert(END, 'General options')
+#        pg5_listbox1.insert(END, 'Root menu')
+#        for i in xrange(numtitles):
+#            pg5_listbox1.insert(END, 'Titleset %s' % i)
+#        move(4)
+move(4)
 mainloop()
