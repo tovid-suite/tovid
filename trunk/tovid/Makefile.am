@@ -118,7 +118,8 @@ dist_app_DATA = \
 EXTRA_DIST = \
 	$(bin_SCRIPTS) \
 	$(src_MANS) \
-	SENSE
+	SENSE \
+	setup.py
 
 # Shared python libraries: libtovid and the gui
 # See lengthy comments in configure.ac
