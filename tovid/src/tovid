@@ -55,26 +55,23 @@ if __name__ == '__main__':
     else:
         args = sys.argv[1:]
 
-    # Determine actual installation path to tovid's executables
-    # (Assumes the 'tovid' in the user's path is a symbolic link
-    # to the true installation directory)
-    actual_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    # Prepend the actual install path to the $PATH environment variable
-    os.environ['PATH'] = actual_dir + os.pathsep + os.environ['PATH']
+    # Prepend the script directory /$PREFIX/lib/tovid/ to $PATH
+    script_dir = os.path.join(sys.prefix, 'lib', 'tovid')
+    os.environ['PATH'] = script_dir + os.pathsep + os.environ['PATH']
 
     command = args.pop(0)
 
     if command in ['-prefix', '--prefix']:
-        print actual_dir
+        print script_dir
         sys.exit(0)
 
-    print("tovid executables assumed to be in '%s'" % actual_dir)
+    print("tovid executables assumed to be in '%s'" % script_dir)
 
     if command in _scripts:
         script = _scripts[command]
-        # Ensure that the script exists in actual_dir
+        # Ensure that the script exists in script_dir
         # (Should never happen if installer is configured correctly)
-        script_path = os.path.join(actual_dir, script)
+        script_path = os.path.join(script_dir, script)
         if not os.path.exists(script_path):
             print("DEBUG: Missing script: '%s'" % script)
             sys.exit(1)
