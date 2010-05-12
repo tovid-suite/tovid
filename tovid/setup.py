@@ -19,14 +19,29 @@ import sys
 import shutil
 from distutils.core import setup, Command
 from distutils.command.install import install
+from distutils.command.build import build
 
 # Hack to get the 'uninstall' command to work
 _tovid_libdir  = os.path.join(sys.prefix, 'lib', 'tovid')
 _installed_file_log = os.path.join(_tovid_libdir, '.install.log')
 
 
+class BuildCommand (build):
+    """Extended build command--builds the manual page.
+    """
+
+    def run(self):
+        """Do the normal build, but also build the tovid manual page.
+        """
+        build.run(self)
+        source = 'docs/src/en/tovid.t2t'
+        target = 'docs/man/tovid.1'
+        command = 'txt2tags -t man -i "%s" -o "%s"' % (source, target)
+        os.system(command)
+
+
 class InstallCommand (install):
-    """Overridden install command--automatically records installed files
+    """Extended install command--automatically records installed files
     to $prefix/lib/tovid/.install.log, so they can be uninstalled later.
     """
     def initialize_options(self):
@@ -85,6 +100,7 @@ setup(
     cmdclass = {
         'install': InstallCommand,
         'uninstall': UninstallCommand,
+        'build': BuildCommand,
     },
 
     # Python modules go into /$PREFIX/lib/pythonX.Y/(site|dist)-packages
@@ -127,6 +143,27 @@ setup(
             'src/tovid-stats',
             'src/titleset-wizard',
         ]),
+        # Manual page
+        ('share/man/man1',
+         ['docs/man/tovid.1']),
+        # Desktop shortcut
+        ('share/applications',
+         ['tovidgui.desktop']),
+        # Icons
+        ('share/icons/hicolor/scalable/apps',
+         ['icons/hicolor/scalable/apps/tovid.svg',
+          'icons/hicolor/scalable/apps/tovid_bw.svg',
+          'icons/hicolor/scalable/apps/disc.svg',
+          'icons/hicolor/scalable/apps/cd.svg',
+         ]),
+        ('share/icons/hicolor/128x128/apps',
+         ['icons/hicolor/128x128/apps/tovid.png']),
+        ('share/icons/hicolor/64x64/apps',
+         ['icons/hicolor/64x64/apps/tovid.png']),
+        ('share/icons/hicolor/48x48/apps',
+         ['icons/hicolor/48x48/apps/tovid.png']),
+        ('share/icons/hicolor/32x32/apps',
+         ['icons/hicolor/32x32/apps/tovid.png']),
     ]
 )
 
