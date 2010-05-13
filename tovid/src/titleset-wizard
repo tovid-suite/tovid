@@ -5,10 +5,12 @@ from tkFileDialog import askopenfilename
 from subprocess import Popen, PIPE
 import os.path
 from libtovid.metagui import Style
+from libtovid.cli import _enc_arg
 from tkMessageBox import *
 from time import sleep
 from tempfile import mktemp
 from sys import argv
+import shlex
 
 todisc_cmds = []
 all_options = []
@@ -66,17 +68,8 @@ def next():
         else:
             if len(todisc_cmds) > 0:
                 todisc_cmds.pop(0)
-            #cmds = [l + ' \\' for l in get_commands if l]
-            # get header: shebang, PATH, and 'todisc'
-            global header
-            header = []
-            try:
-                while not get_commands[0].startswith('-'):
-                    header.append(get_commands[0] + '\n')
-                    get_commands.pop(0)
-            except IndexError:
-                pass
-            header[-1] = 'todisc \\\n'
+            #while not get_commands[0].startswith('-'):
+            #    get_commands.pop(0)
             cmds = [l for l in get_commands if l]
             todisc_cmds.append(cmds)
         tk.deiconify()
@@ -147,9 +140,11 @@ def next():
         options_list = save_list()
         numtitles = len(options_list)
         pg5_listbox1.configure(height=numtitles+2)
-        # change 'Next' button to 'Run'
+        # change 'Next' button to 'Run' and reposition buttons
+        button1.pack_forget()
         button2 = Button(button_frame, text='Exit', command=quit)
         button2.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
+        button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
         button1.configure(text='Run script now')
     elif pages.index(current) == 4:
     # Page 5
@@ -161,7 +156,7 @@ def next():
             run_in_xterm(script_file)
         else:
             mess += 'You can run the script later with:\nbash "%s"' % script_file
-        showinfo(message=mess)
+            showinfo(message=mess)
         root.destroy()
     move(mv_amt)
 
@@ -239,20 +234,23 @@ def read_script():
             if not script:
                 showinfo(message='Cancelled.\nReturning to previous page')
                 return ['Cancelled']
-    fin = open(script)
-    fcont = fin.readlines()
-    fin.close()
-    filecontents =  [line.rstrip(' \\\n') for line in fcont]
+    # lifted from gui.py's load_script function
+    # Read lines from the file and reassemble the command
+    command = ''
+    for line in open(script, 'r'):
+        # Discard comment lines and PATH assignment
+        if not (line.startswith('#') or line.startswith('PATH=')):
+            line = line.strip()
+            # we don't want the program name in list
+            if line and not line.startswith('todisc'):
+                command += line.rstrip('\\')
+        filecontents = shlex.split(command)
     # -from-gui not needed
     if '-from-gui' in filecontents:
         filecontents.remove('-from-gui')
-    if not 'todisc \\\n' in fcont:
-        showerror(message=error_msg)
-        return ['Cancelled']
-    else:
-        # delete the temporary saved script file
-        os.remove(script)
-        return filecontents
+    # delete the temporary saved script file
+    os.remove(script)
+    return filecontents
 
 
 def run_in_xterm(script):
@@ -286,7 +284,6 @@ def rerun_options():
             rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
         elif index >= 2:
             rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
-        print rerun_opts
         todisc_cmds[index] = rerun_opts
         # rewrite the saved script file
         write_script()
@@ -298,6 +295,10 @@ def write_script():
     cmdout.writelines(header)
     # flatten the list
     all_lines = [line for sublist in todisc_cmds for line in sublist]
+    # put the program name back into the beginning of the list
+    all_lines.insert(0, 'todisc')
+    words = [_enc_arg(arg) for arg in all_lines]
+    all_lines = words
     #
     # write every line with a '\' at the end, except the last
     for line in all_lines[:-1]:
@@ -330,15 +331,20 @@ def get_chunk(items, start, end):
     # remove start and end
     return chunk
 
-=======
-
->>>>>>> .r3022
 ###################### get/set some external variables #######################
 
 # get tovid prefix
 path_cmd = ['tovid', '--prefix']
 tovid_prefix = Popen(path_cmd, stdout=PIPE)
 tovid_prefix = tovid_prefix.communicate()[0].strip()
+
+# get script header
+shebang = '#!/usr/bin/env bash'
+_path = 'PATH=' + tovid_prefix + ':$PATH'
+_cmd = ['tovid', '--version']
+_version = Popen(_cmd, stdout=PIPE).communicate()[0].strip()
+identifier = '# tovid project script\n# tovid version %s' % _version
+header = '%s\n\n%s\n\n%s\n\n' % (shebang, identifier, _path )
 
 # get metagui font configuration
 inifile = os.path.expanduser('~/.metagui/config')
@@ -417,7 +423,7 @@ and configurable DVD button links.
 
 page1 = Frame(tk)
 frame1 = Frame(tkframe)
-img_file = tovid_prefix + '/tovid.gif'
+img_file = tovid_prefix + '/data/tovid.gif'
 if os.path.isfile(img_file):
     img = PhotoImage(file=img_file)
     pg1_label1 = Label(frame1, text='Tovid', font=heading_font)
@@ -529,19 +535,6 @@ titleset you are working on.
 pg4_label1 = Label(page4, text=pg4_txt1, justify=LEFT, font=style.font)
 pg4_label1.pack(fill=BOTH, expand=1)
 
-pg4_listbox1 = Listbox(pg4_frame1, width=60)
-
-#listbox1.insert(0, '')
-pg4_listbox1.pack(side=LEFT, fill=X, expand=1)
-pg4_listbox1.bind("<<ListboxSelect>>", callback)#TODO FIXME
-# create a vertical scrollbar to the right of the listbox
-yscroll2 = Scrollbar(pg4_frame1, command=pg4_listbox1.yview, orient=VERTICAL)
-yscroll2.pack(side=LEFT, fill=Y)
-pg4_listbox1.configure(yscrollcommand=yscroll.set)
-
->>>>>>> .r3022
-#    run the gui and collect the options
-
 ############################ Page 5 of wizard ############################
 
 page5 = Frame(tk)
@@ -601,5 +594,4 @@ current = page1
 #        for i in xrange(numtitles):
 #            pg5_listbox1.insert(END, 'Titleset %s' % i)
 #        move(4)
-move(4)
 mainloop()
