@@ -14,30 +14,15 @@ or:
 At this time, there is no 'uninstall' mechanism...
 """
 
+_tovid_version = 'svn'
+
 import os
 import sys
 import shutil
 from distutils.core import setup, Command
 from distutils.command.install import install
 from distutils.command.build import build
-
-# Hack to get the 'uninstall' command to work
-_tovid_libdir  = os.path.join(sys.prefix, 'lib', 'tovid')
-_installed_file_log = os.path.join(_tovid_libdir, '.install.log')
-
-
-class BuildCommand (build):
-    """Extended build command--builds the manual page.
-    """
-
-    def run(self):
-        """Do the normal build, but also build the tovid manual page.
-        """
-        build.run(self)
-        source = 'docs/src/en/tovid.t2t'
-        target = 'docs/man/tovid.1'
-        command = 'txt2tags -t man -i "%s" -o "%s"' % (source, target)
-        os.system(command)
+from distutils.sysconfig import get_config_var
 
 
 class InstallCommand (install):
@@ -53,10 +38,12 @@ class InstallCommand (install):
         """Install tovid, and write a list of installed files to
         $prefix/lib/tovid/.install.log.
         """
+        print("Installing tovid to %s" % self.prefix)
         install.run(self)
         # Move temporary install log to $prefix/lib/tovid
-        print("Moving install.log to '%s'" % _installed_file_log)
-        shutil.move('install.log', _installed_file_log)
+        install_log = os.path.join(self.prefix, 'lib', 'tovid', '.install.log')
+        print("Moving install.log to '%s'" % install_log)
+        shutil.move(self.record, install_log)
 
 
 class UninstallCommand (Command):
@@ -69,38 +56,126 @@ class UninstallCommand (Command):
     def finalize_options(self):
         pass
 
+    def get_prefix(self):
+        """Return the prefix (/usr or /usr/local) where tovid is installed,
+        or '' if the prefix could not be determined.
+        """
+        # Determine which tovid is in the $PATH
+        tovid = os.popen('which tovid').read()
+        # Get $prefix/bin
+        bin_prefix = os.path.dirname(tovid)
+        # Get $prefix
+        prefix = os.path.dirname(bin_prefix)
+        return prefix
+
     def run(self):
         """Uninstall tovid, removing all files listed in
         $prefix/lib/tovid/.install.log.
         """
+        # Determine the installed prefix
+        prefix = self.get_prefix()
+        if not prefix:
+            print("Could not find tovid in your $PATH. "
+                  "You may need to uninstall manually")
+            return
+        print("Uninstalling tovid from %s" % prefix)
+        install_log = os.path.join(prefix, 'lib', 'tovid', '.install.log')
         # If install log doesn't exist, there's nothing to do
-        if not os.path.exists(_installed_file_log):
-            print("Missing installation log: '%s'" % _installed_file_log)
+        if not os.path.exists(install_log):
+            print("Missing installation log: '%s'" % install_log)
             print("Either tovid is not installed, or "
                   "something went wrong during installation. "
                   "You may need to uninstall manually.")
             return
         # Remove each file found in install log
-        for line in open(_installed_file_log, 'r'):
+        for line in open(install_log, 'r'):
             filename = line.strip(' \n')
             print("Removing '%s'" % filename)
             os.remove(filename)
         # Remove the install log itself
-        os.remove(_installed_file_log)
+        os.remove(install_log)
         # Remove the $prefix/lib/tovid directory
-        os.removedirs(_tovid_libdir)
+        os.removedirs(os.path.dirname(install_log))
 
+
+class BuildDocs (Command):
+    description = "build the tovid documentation (currently just the manpage)"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        """Build the tovid manual page.
+        """
+        source = 'docs/src/en/tovid.t2t'
+        target = 'docs/man/tovid.1'
+        # Build only if target does not exist, or if source is newer than target
+        mod = os.path.getmtime
+        if not os.path.exists(target) or (mod(source) > mod(target)):
+            command = 'txt2tags -t man -i "%s" -o "%s"' % (source, target)
+            os.system(command)
+
+
+class BuildTovidInit (Command):
+    description = "build tovid-init"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def get_svn_version(self):
+        """Return the current SVN revision number, as reported by 'svn info'.
+        """
+        rev_line = os.popen('svn info | grep ^Revision').read()
+        rev_number = rev_line.split(':')[1].strip()
+        return rev_number
+
+    def run(self):
+        """Build src/tovid-init from tovid-init.in.
+        """
+        source = 'src/tovid-init.in'
+        target = 'src/tovid-init'
+        # Build only if target does not exist, or if source is newer than target
+        mod = os.path.getmtime
+        if not os.path.exists(target) or (mod(source) > mod(target)):
+            # We basically just need to replace @VERSION@ in tovid-init.in with
+            # the current version of tovid. If the current version is 'svn', we
+            # use the Subversion revision number.
+            if _tovid_version == 'svn':
+                version_number = 'svn-r%s' % self.get_svn_version()
+            else:
+                version_number = _tovid_version
+            # Read each line, and replace any occurrence of @VERSION@
+            lines = [line.replace('@VERSION@', version_number)
+                     for line in open(source, 'r')]
+            # Write all lines to the target file
+            outfile = open(target, 'w')
+            outfile.writelines(lines)
+            outfile.close()
+
+
+# Build documentation and tovid-init during the build process
+build.sub_commands.append(('build_docs', None))
+build.sub_commands.append(('build_tovid_init', None))
 
 # The actual setup
 setup(
     name = 'tovid',
-    version = 'svn',
+    version = _tovid_version, # Defined at the top of this file
     url = 'http://tovid.wikia.com/',
     license = 'GPL',
     cmdclass = {
         'install': InstallCommand,
         'uninstall': UninstallCommand,
-        'build': BuildCommand,
+        'build_docs': BuildDocs,
+        'build_tovid_init': BuildTovidInit,
     },
 
     # Python modules go into /$PREFIX/lib/pythonX.Y/(site|dist)-packages
@@ -142,6 +217,9 @@ setup(
             'src/todiscgui',
             'src/tovid-stats',
             'src/titleset-wizard',
+
+            # Icon used by titleset wizard
+            'icons/tovid.gif',
         ]),
         # Manual page
         ('share/man/man1',
