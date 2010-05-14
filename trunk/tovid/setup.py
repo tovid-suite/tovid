@@ -134,7 +134,11 @@ class BuildTovidInit (Command):
         """Return the current SVN revision number, as reported by 'svn info'.
         """
         rev_line = os.popen('svn info | grep ^Revision').read()
-        rev_number = rev_line.split(':')[1].strip()
+        # If rev_line is empty, either svn is missing or the command failed
+        if rev_line:
+            rev_number = rev_line.split(':')[1].strip()
+        else:
+            rev_number = 'unknown'
         return rev_number
 
     def run(self):
