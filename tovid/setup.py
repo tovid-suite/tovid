@@ -171,6 +171,9 @@ setup(
     version = _tovid_version, # Defined at the top of this file
     url = 'http://tovid.wikia.com/',
     license = 'GPL',
+    maintainer = 'Eric Pierce',
+    maintainer_email = 'wapcaplet88@gmail.com',
+
     cmdclass = {
         'install': InstallCommand,
         'uninstall': UninstallCommand,
