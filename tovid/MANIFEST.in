@@ -1,0 +1,9 @@
+include AUTHORS COPYING INSTALL NEWS PKG-INFO README SENSE
+include ChangeLog
+include configure Makefile
+include configure.ac Makefile.am Makefile.in
+include aclocal.m4 install-sh missing py-compile
+include tovidgui.desktop
+recursive-include src *
+recursive-include icons *
+recursive-include docs *
