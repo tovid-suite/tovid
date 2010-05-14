@@ -14,15 +14,35 @@ or:
 At this time, there is no 'uninstall' mechanism...
 """
 
-_tovid_version = 'svn'
-
 import os
+
+def svn_version():
+    """Return the current SVN revision number, as reported by 'svn info',
+    as a string like 'svn-r1234'. If svn is not installed, or if something goes
+    wrong, return 'svn-unknown'
+    """
+    rev_line = os.popen('svn info | grep ^Revision').read()
+    # If rev_line is empty, either svn is missing or the command failed
+    if rev_line:
+        return 'svn-r' + rev_line.split(':')[1].strip()
+    else:
+        return 'svn-unknown'
+
+# Current version number of tovid, as a string.
+# Examples:
+# Current SVN version number
+_tovid_version = svn_version()
+# Official release number
+#_tovid_version = '0.33'
+
+
 import sys
 import shutil
 from distutils.core import setup, Command
 from distutils.command.install import install
 from distutils.command.build import build
 from distutils.sysconfig import get_config_var
+
 
 
 class InstallCommand (install):
@@ -130,16 +150,6 @@ class BuildTovidInit (Command):
     def finalize_options(self):
         pass
 
-    def get_svn_version(self):
-        """Return the current SVN revision number, as reported by 'svn info'.
-        """
-        rev_line = os.popen('svn info | grep ^Revision').read()
-        # If rev_line is empty, either svn is missing or the command failed
-        if rev_line:
-            rev_number = rev_line.split(':')[1].strip()
-        else:
-            rev_number = 'unknown'
-        return rev_number
 
     def run(self):
         """Build src/tovid-init from tovid-init.in.
@@ -147,19 +157,14 @@ class BuildTovidInit (Command):
         source = 'src/tovid-init.in'
         target = 'src/tovid-init'
         # We basically just need to replace @VERSION@ in tovid-init.in with
-        # the current version of tovid. If the current version is 'svn', we
-        # use the Subversion revision number.
-        if _tovid_version == 'svn':
-            version_number = 'svn-r%s' % self.get_svn_version()
-        else:
-            version_number = _tovid_version
-        # Read each line, and replace any occurrence of @VERSION@
-        lines = [line.replace('@VERSION@', version_number)
+        # the current version of tovid.
+        lines = [line.replace('@VERSION@', _tovid_version)
                  for line in open(source, 'r')]
         # Write all lines to the target file
         outfile = open(target, 'w')
         outfile.writelines(lines)
         outfile.close()
+
 
 
 # Build documentation during the build process
