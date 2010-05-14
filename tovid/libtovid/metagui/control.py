@@ -1306,7 +1306,7 @@ class _SubList (List):
         parent_frame.pack(side=self.side, anchor='nw', fill='both', expand=True)
         list_frame.pack(side=self.side, anchor='nw', fill='both', expand=True)
         # Pack the outer frame containing both lists
-        outer_frame.pack(fill='both')
+        outer_frame.pack(fill='both', expand=True)
 
 
     def _draw_parent(self, master):

@@ -131,7 +131,8 @@ class ScrollList (tk.Frame):
         # Draw listbox and scrollbar
         self.scrollbar = tk.Scrollbar(self, orient='vertical',
                                       command=self.scroll)
-        self.listbox = tk.Listbox(self, width=30, listvariable=self.items,
+        self.listbox = tk.Listbox(self, listvariable=self.items,
+                                  width=30, height=7,
                                   yscrollcommand=self.scrollbar.set,
                                   exportselection=0)
         self.listbox.pack(side='left', fill='both', expand=True)
@@ -547,7 +548,6 @@ class PopupScale (Dialog):
         num = self.parent
         frame = tk.Frame(self, relief=tk.GROOVE, borderwidth=3)
         frame.pack(side='top', fill='both', expand=True, pady=6)
-        #tk.Label(master, name='label', text=num.label).pack(side='left')
         self.scale = tk.Scale(frame, from_=num.min, to=num.max,
                                resolution=num.step,
                                tickinterval=(num.max - num.min),
