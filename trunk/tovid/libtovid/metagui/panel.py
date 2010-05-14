@@ -180,7 +180,8 @@ class VPanel (Panel):
         """Draw the VPanel and its contained widgets in the given master.
         """
         Panel.draw(self, master, **kwargs)
-        self.draw_widgets(side='top')
+        # Avoid unnecessary vertical expansion
+        self.draw_widgets(side='top', expand=False)
 
 
 class Dropdowns (Panel):
