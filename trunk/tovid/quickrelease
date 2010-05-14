@@ -4,43 +4,37 @@
 if test $# -lt 2; then
     echo "quickrelease: Create and upload a tovid 'quick release' (SVN .tar.gz)"
     echo "Usage:"
-    echo "    quickrelease USERNAME PREFIX"
-    echo "Where USERNAME is your Google (GMail) username, and"
-    echo "PREFIX is your preferred ./configure --prefix setting."
-    echo "Warning: This script removes any existing quick-releases"
-    echo "in the current directory (rm -f tovid-svn*.tar.gz)"
+    echo "    quickrelease USERNAME"
+    echo "Where USERNAME is your Google (GMail) username."
     exit
 else
     USERNAME=$1
-    PREFIX=$2
 fi
 
 # Make sure there are no commits (otherwise revision number
 # will be wrong)
 if $(svn stat -u | grep -q '^M'); then
-    echo "You have uncommitted changes. Please run svn commit first."
+    echo "You have uncommitted changes. Please run 'svn commit',"
+    echo "then run 'svn update', before running this script."
     exit
 fi
 
-# Install tovid
-./bootstrap
-./configure --prefix=$PREFIX
-sudo make install
+# Ensure tovid-init is built
+python setup.py build_tovid_init
 
-# Build the quick-release
-rm -f tovid-svn*.tar.gz
-make dist
+# Build the source distribution
+python setup.py build
+python setup.py sdist
+
+# Find the newest .tar.gz in the dist/ folder
+TARBALL=$(ls -1t dist/tovid-*.tar.gz | head -n 1)
 
 # Upload the tarball to Google Code
-TARBALL=$(ls -1 ./tovid-svn*.tar.gz)
 ./googlecode_upload.py \
     -s "quick-release" \
     -p tovid \
     -u $USERNAME \
     $TARBALL
-
-# Prompt to remove tarball
-rm -i tovid-svn*.tar.gz
 
 echo "Done."
 
