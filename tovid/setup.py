@@ -165,13 +165,6 @@ class BuildTovidInit (Command):
         outfile.close()
 
 
-
-# Build documentation during the build process
-build.sub_commands.append(('build_docs', None))
-# Don't build tovid-init unless explicitly requested
-# (usually by the developer or person building source distribution)
-#build.sub_commands.append(('build_tovid_init', None))
-
 # The actual setup
 setup(
     name = 'tovid',
