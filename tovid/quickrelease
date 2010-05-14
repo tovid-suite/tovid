@@ -1,7 +1,7 @@
 #! /bin/bash
 # Do a "quick release" of the SVN code
 
-if test $# -lt 2; then
+if test $# -lt 1; then
     echo "quickrelease: Create and upload a tovid 'quick release' (SVN .tar.gz)"
     echo "Usage:"
     echo "    quickrelease USERNAME"
