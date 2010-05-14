@@ -57,10 +57,7 @@ def next():
                 showerror(message='Cancelled')
                 return
 
-        # disable previous button at this point
-        #button2.pack_forget()
         # withdraw the wizard and run the GUI, collecting commands
-        #tk.withdraw()
         get_commands = run_gui()
         # append to list and go to next page unless GUI was cancelled out of
         if len(get_commands) == 1 and 'Cancelled' in get_commands:
@@ -68,10 +65,9 @@ def next():
         else:
             if len(todisc_cmds) > 0:
                 todisc_cmds.pop(0)
-            #while not get_commands[0].startswith('-'):
-            #    get_commands.pop(0)
             cmds = [l for l in get_commands if l]
             todisc_cmds.append(cmds)
+        print todisc_cmds
         tk.deiconify()
     elif pages.index(current) == 2:
     # Page 3
@@ -86,12 +82,7 @@ def next():
         else:
             if len(todisc_cmds) > 1:
                 todisc_cmds.pop(1)
-                # get rid of shebang and PATH statements
-            try:
-                while not get_commands[0].startswith('-'):
-                    get_commands.pop(0)
-            except IndexError:
-                pass
+            trim_list_header(get_commands)
             cmds = ['-vmgm']
             cmds.extend(get_commands)
             cmds.append('-end-vmgm')
@@ -106,28 +97,26 @@ def next():
         for i in range(numtitles):
             run_cmds = ['-menu-title']
             run_cmds.append(options_list[i])
-            # withdraw the wizard and run the GUI, collecting commands
             if i < numtitles:
                 msg = 'Now we will work on titleset %s' % int(i+1)
                 root = Tk()
                 root.withdraw()
                 if showinfo(message=msg):
                     root.destroy()
+            # withdraw the wizard and run the GUI, collecting commands
             get_commands = run_gui(run_cmds)
-            try:
-                while not get_commands[0].startswith('-'):
-                    get_commands.pop(0)
-            except IndexError:
-                pass
+            get_commands = trim_list_header(get_commands)
+            # wrap the the commands in titleset 'tags', then write out script
             cmds = ['-titleset']
             cmds.extend(get_commands)
             cmds.append('-end-titleset')
             todisc_cmds.append(cmds)
         tk.deiconify()
         write_script()
-        # allow editing the saved lists with the GUI
-        # not sure yet if we want to 'move' here
+
         ####################  prepare the next pages listbox ##################
+
+        # allow editing the saved lists with the GUI
         # delete titleset listbox contents else it increases with page movement
         pg5_listbox1.delete(0, END)
         # insert or reinsert options list into titleset listbox
@@ -208,6 +197,8 @@ def save_list():
     return [ l for l in temp_list if l]
 
 def run_gui(args=[]):
+    title = 'load saved script'
+    script = 'todisc_commands.bash'
     cmd = ['tovid', 'gui'] + args
     todiscgui_cmd = Popen(cmd, stdout=PIPE)
     # sleep to avoid the 'void' of time before the GUI loads
@@ -216,42 +207,21 @@ def run_gui(args=[]):
         tk.withdraw()
     status = todiscgui_cmd.wait()
     if status == 0:
-        todisc_cmds = read_script()
+    # if script doesn't exist prompt for load.
+        if os.path.exists(script_file):
+            script = script_file
+        else:
+            while not os.path.exists(script):
+                script = askopenfilename(title=title, initialfile=script)
+                if not script:
+                    showinfo(message='Cancelled.\nReturning to previous page')
+                    return ['Cancelled']
+        # Read lines from the file and reassemble the command
+        todisc_cmds = script_to_list(script)
+        os.remove(script)
     else:
         todisc_cmds = []
     return todisc_cmds
-
-def read_script():
-    title = 'load saved script'
-    script = 'todisc_commands.bash'
-
-    # if script doesn't exist prompt for load.
-    if os.path.exists(script_file):
-        script = script_file
-    else:
-        while not os.path.exists(script):
-            script = askopenfilename(title=title, initialfile=script)
-            if not script:
-                showinfo(message='Cancelled.\nReturning to previous page')
-                return ['Cancelled']
-    # lifted from gui.py's load_script function
-    # Read lines from the file and reassemble the command
-    command = ''
-    for line in open(script, 'r'):
-        # Discard comment lines and PATH assignment
-        if not (line.startswith('#') or line.startswith('PATH=')):
-            line = line.strip()
-            # we don't want the program name in list
-            if line and not line.startswith('todisc'):
-                command += line.rstrip('\\')
-        filecontents = shlex.split(command)
-    # -from-gui not needed
-    if '-from-gui' in filecontents:
-        filecontents.remove('-from-gui')
-    # delete the temporary saved script file
-    os.remove(script)
-    return filecontents
-
 
 def run_in_xterm(script):
     ''' run the final script in an xterm, completing the project '''
@@ -266,19 +236,16 @@ def run_in_xterm(script):
 
 def rerun_options():
     ''' run the gui with the selected options'''
-    global todisc_cmds
+    rerun_opts = []
     index = int(pg5_listbox1.curselection()[0])
     mess='Rerun GUI for the %s options?' % pg5_listbox1.get(index)
     if askyesno(message=mess):
+        # the GUI doesn't understand the titleset type options
         remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
         options = [ i for i in todisc_cmds[index] if not i in remove ]
         rerun_opts = run_gui(options)
-        # remove shebang and PATH
-        try:
-            while not rerun_opts[0].startswith('-'):
-                rerun_opts.pop(0)
-        except IndexError:
-            pass
+        # trim header from todisc_cmds
+        rerun_opts = trim_list_header(rerun_opts)
         # add back the vmgm and titleset 'tag' options
         if index == 1:
             rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
@@ -288,6 +255,26 @@ def rerun_options():
         # rewrite the saved script file
         write_script()
         tk.deiconify()
+
+def trim_list_header(cmds):
+        # remove shebang, identifier and PATH
+        try:
+            while not cmds[0].startswith('-'):
+                cmds.pop(0)
+        except IndexError:
+            pass
+        return cmds
+
+def script_to_list(infile):
+    add_line = False
+    command = ''
+    for line in open(infile, 'r'):
+        if line.startswith('-'):
+            add_line = True
+        if add_line and not line.startswith('-from-gui'):
+            line = line.strip()
+            command += line.rstrip('\\')
+    return shlex.split(command)
 
 def write_script():
     cmdout = open(script_file, 'w')
@@ -307,7 +294,7 @@ def write_script():
     cmdout.write(all_lines[-1])
     cmdout.close()
 
-# unused - for loading a titleset script TODO
+# for loading a titleset script
 def get_chunk(items, start, end):
     # thanks to Eric Pierce for providing this function
     """Extract a chunk [start ... end] from a list, and return the chunk.
@@ -322,14 +309,36 @@ def get_chunk(items, start, end):
         return []
     # Pop items until end is reached
     chunk = []
-    # we don't need first
-    items.pop(index)
     while items and items[index] != end:
         chunk.append(items.pop(index))
-    # we don't need last
-    items.pop(index)
-    # remove start and end
+    # Pop the last item (==end)
+    chunk.append(items.pop(index))
     return chunk
+
+def load_project():
+    '''Load a saved project script for editing with the wizard and GUI'''
+    page5_label1.configure(text='Editing a saved project')
+    error_msg2 = 'This is not a saved tovid project script\n'
+    error_msg2 += 'Do you want to try to load it anyway?'
+    if not '# tovid project script\n' in open(argv[1], 'r'):
+        if not askyesno(message=error_msg2):
+            showinfo(message='Cancelled')
+            quit()
+    in_contents = script_to_list(argv[1])
+    in_cmds = in_contents[:]
+    all = [get_chunk(in_cmds, '-vmgm', '-end-vmgm')]
+    while '-titleset' in in_cmds:
+        all.append( get_chunk(in_cmds, '-titleset', '-end-titleset') )
+    all.insert(0, in_cmds)
+    todisc_cmds = all[:]
+    numtitles = len(todisc_cmds[2:])
+    pg5_listbox1.pack(side=LEFT, fill=BOTH, expand=1)
+    pg5_listbox1.insert(END, 'General options')
+    pg5_listbox1.insert(END, 'Root menu')
+    for i in range(numtitles):
+        pg5_listbox1.insert(END, 'Titleset %s' % int(i+1))
+    move(4)
+    return todisc_cmds
 
 ###################### get/set some external variables #######################
 
@@ -378,8 +387,6 @@ tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
 button_frame = Frame(tk)
 button_frame.pack(expand=1, fill=X, side=BOTTOM, anchor='s')
-#button2 = Button(button_frame, text='<<<  Previous', command=prev)
-#button2.pack(side=LEFT, fill=Y, expand=1, anchor='w')
 button1 = Button(button_frame, text='Next >>>', command=next)
 button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
 
@@ -413,17 +420,9 @@ video, audio background ... etc.  There are also playback options including the
 supplying of chapter points, special navigation features like "quicknav",
 and configurable DVD button links.
 '''
-#   The GUI will then be called repeated for each titleset you wish to make.
-#
-#    Each time you will need to press the "Save script" button and save to the same
-#    file.  When you have no more titlesets, press the "Done" button and you will
-#    be prompted to run your final project.
-#
-#    Press "Next" to begin...
-
 page1 = Frame(tk)
 frame1 = Frame(tkframe)
-img_file = tovid_prefix + '/data/tovid.gif'
+img_file = tovid_prefix + '/tovid.gif'
 if os.path.isfile(img_file):
     img = PhotoImage(file=img_file)
     pg1_label1 = Label(frame1, text='Tovid', font=heading_font)
@@ -439,6 +438,7 @@ frame1.pack(side=LEFT, padx=30, anchor='nw', fill=Y, expand=1)
 page1.pack(fill=BOTH, expand=1)
 pg1_label5 = Label(page1, text=pg1_txt1, justify=LEFT, font=style.font)
 pg1_label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
+
 ############################## Page 2 of wizard ##############################
 next_txt = '''
 After making your selections, it is important that you save the file to
@@ -464,8 +464,6 @@ Press 'Next' to begin ...
 page2 = Frame(tk)
 pg2_label1 = Label(page2, text=pg2_txt1, justify=LEFT, font=style.font)
 pg2_label1.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
-#pg2_label2 = Label(page2, text=pg2_txt2, justify=LEFT, font=caption_font)
-#pg2_label2.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 
 ############################## Page 3 of wizard ##############################
 pg3_txt1 = '''
@@ -509,12 +507,6 @@ enter1.select_range(0, 'end')
 enter1.focus_set()
 # pressing the return key will update edited line
 enter1.bind('<Return>', set_list)
-
-# button to save the listbox's data lines to a file
-#button2 = Button(page3, text='Done', command=save_list)
-#button2.pack(fill=X, expand=1, side=LEFT, anchor='sw')
-
-
 pg3_listbox1.bind('<ButtonRelease-1>', get_list)
 
 ############################ Page 4 of wizard ############################
@@ -572,26 +564,9 @@ pg5_button1.pack(side=BOTTOM)
 
 pages = [page1, page2, page3, page4, page5]
 current = page1
-# TODO allow loading script to edit with gui on page 5
-#if len(argv) > 1:
-#    if os.path.exists(argv[1]):
-#        in_script = open(argv[1])
-#        in_cont = in_script.readlines()
-#        in_script.close()
-#        in_contents =  [line.rstrip(' \\\n') for line in in_cont]
-#        if '-from-gui' in in_contents:
-#            in_contents.remove('-from-gui')
-#        in_cmds = in_contents[:]
-#        all = [get_chunk(in_cmds, '-vmgm', '-end-vmgm')]
-#        while '-titleset' in in_cmds:
-#            all.append( get_chunk(in_cmds, '-titleset', '-end-titleset') )
-#        all.insert(0, in_cmds[2:])
-#        todisc_cmds = all[:]
-#        numtitles = len(todisc_cmds[2:])
-#        pg5_listbox1.pack(side=LEFT, fill=BOTH, expand=1)
-#        pg5_listbox1.insert(END, 'General options')
-#        pg5_listbox1.insert(END, 'Root menu')
-#        for i in xrange(numtitles):
-#            pg5_listbox1.insert(END, 'Titleset %s' % i)
-#        move(4)
-mainloop()
+
+if __name__ == '__main__':
+    if len(argv) > 1:
+        if os.path.exists(argv[1]):
+            todisc_cmds = load_project()
+    mainloop()
