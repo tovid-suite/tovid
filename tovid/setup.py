@@ -142,9 +142,8 @@ class BuildTovidInit (Command):
         """
         source = 'src/tovid-init.in'
         target = 'src/tovid-init'
-        # Build only if target does not exist, or if source is newer than target
-        mod = os.path.getmtime
-        if not os.path.exists(target) or (mod(source) > mod(target)):
+        # Only rebuild if tovid-init doesn't exist
+        if not os.path.exists(target):
             # We basically just need to replace @VERSION@ in tovid-init.in with
             # the current version of tovid. If the current version is 'svn', we
             # use the Subversion revision number.
@@ -163,7 +162,7 @@ class BuildTovidInit (Command):
 
 # Build documentation and tovid-init during the build process
 build.sub_commands.append(('build_docs', None))
-build.sub_commands.append(('build_tovid_init', None))
+#build.sub_commands.append(('build_tovid_init', None))
 
 # The actual setup
 setup(
