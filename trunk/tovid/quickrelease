@@ -19,7 +19,8 @@ if $(svn stat -u | grep -q '^M'); then
     exit
 fi
 
-# Ensure tovid-init is built
+# Ensure manpage and tovid-init are built
+python setup.py build_docs
 python setup.py build_tovid_init
 
 # Build the source distribution
