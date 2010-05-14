@@ -21,7 +21,7 @@ def svn_version():
     as a string like 'svn-r1234'. If svn is not installed, or if something goes
     wrong, return 'svn-unknown'
     """
-    rev_line = os.popen('svn info | grep ^Revision').read()
+    rev_line = os.popen('svn info 2>/dev/null | grep ^Revision').read()
     # If rev_line is empty, either svn is missing or the command failed
     if rev_line:
         return 'svn-r' + rev_line.split(':')[1].strip()
@@ -42,7 +42,6 @@ from distutils.core import setup, Command
 from distutils.command.install import install
 from distutils.command.build import build
 from distutils.sysconfig import get_config_var
-
 
 
 class InstallCommand (install):
