@@ -146,26 +146,26 @@ class BuildTovidInit (Command):
         """
         source = 'src/tovid-init.in'
         target = 'src/tovid-init'
-        # Only rebuild if tovid-init doesn't exist
-        if not os.path.exists(target):
-            # We basically just need to replace @VERSION@ in tovid-init.in with
-            # the current version of tovid. If the current version is 'svn', we
-            # use the Subversion revision number.
-            if _tovid_version == 'svn':
-                version_number = 'svn-r%s' % self.get_svn_version()
-            else:
-                version_number = _tovid_version
-            # Read each line, and replace any occurrence of @VERSION@
-            lines = [line.replace('@VERSION@', version_number)
-                     for line in open(source, 'r')]
-            # Write all lines to the target file
-            outfile = open(target, 'w')
-            outfile.writelines(lines)
-            outfile.close()
+        # We basically just need to replace @VERSION@ in tovid-init.in with
+        # the current version of tovid. If the current version is 'svn', we
+        # use the Subversion revision number.
+        if _tovid_version == 'svn':
+            version_number = 'svn-r%s' % self.get_svn_version()
+        else:
+            version_number = _tovid_version
+        # Read each line, and replace any occurrence of @VERSION@
+        lines = [line.replace('@VERSION@', version_number)
+                 for line in open(source, 'r')]
+        # Write all lines to the target file
+        outfile = open(target, 'w')
+        outfile.writelines(lines)
+        outfile.close()
 
 
-# Build documentation and tovid-init during the build process
+# Build documentation during the build process
 build.sub_commands.append(('build_docs', None))
+# Don't build tovid-init unless explicitly requested
+# (usually by the developer or person building source distribution)
 #build.sub_commands.append(('build_tovid_init', None))
 
 # The actual setup
