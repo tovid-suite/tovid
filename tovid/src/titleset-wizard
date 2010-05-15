@@ -20,6 +20,14 @@ labels = ['General', 'VMGM menu', 'Titlesets']
 curdir = os.path.abspath('')
 newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
 
+# get metagui font configuration
+def get_font(name='', size='', _style=''):
+    font = [name, size, _style]
+    for i in range(len(style.font)):
+        if not font[i]:
+            font[i] = style.font[i]
+    return font
+
 def move(amt):
     global current
     ind = pages.index(current) + amt
@@ -294,9 +302,10 @@ def write_script():
     cmdout.write(all_lines[-1])
     cmdout.close()
 
-# for loading a titleset script
+# get_chunk and get_list_arts are
+# for parsing args from a loaded titleset script
+# thanks to Eric Pierce for providing these
 def get_chunk(items, start, end):
-    # thanks to Eric Pierce for providing this function
     """Extract a chunk [start ... end] from a list, and return the chunk.
    The original list is modified in place.
    """
@@ -304,7 +313,7 @@ def get_chunk(items, start, end):
     try:
         index = items.index(start)
         items.index(end)
-    # If item isn't in list, return empty list
+    # If start or end isn't in list, return empty list
     except ValueError:
         return []
     # Pop items until end is reached
@@ -316,7 +325,6 @@ def get_chunk(items, start, end):
     return chunk
 
 def get_list_args(items, option):
-    items = items[:]
     try:
         index = items.index(option)
     # If item isn't in list, return empty list
@@ -324,9 +332,13 @@ def get_list_args(items, option):
         return []
     # Pop items until end is reached
     chunk = []
-    while items and not items[index+1].startswith('-'):
-        chunk.append(items.pop(index+1))
-    return chunk
+    try:
+        while items and not items[index+1].startswith('-'):
+            chunk.append(items[index+1])
+            index += 1
+        return chunk
+    except IndexError:
+        pass
 
 def load_project():
     '''Load a saved project script for editing with the wizard and GUI'''
@@ -375,22 +387,6 @@ _version = Popen(_cmd, stdout=PIPE).communicate()[0].strip()
 identifier = '# tovid project script\n# tovid version %s' % _version
 header = '%s\n\n%s\n\n%s\n\n' % (shebang, identifier, _path )
 
-# get metagui font configuration
-inifile = os.path.expanduser('~/.metagui/config')
-style = Style()
-style.load(inifile)
-caption_font = list(style.font)
-caption_font[2] = 'bold'
-heading_font = []
-lrg_font = []
-bold_font = []
-heading_font.extend(caption_font)
-lrg_font.extend(caption_font)
-bold_font.extend(caption_font)
-heading_font[1] = 20
-lrg_font[1] = 16
-bold_font[2] = 'bold'
-
 # the script we will be using for options
 cur_dir = os.path.abspath('')
 script_file = cur_dir + '/todisc_commands.bash'
@@ -409,6 +405,12 @@ button_frame = Frame(tk)
 button_frame.pack(expand=1, fill=X, side=BOTTOM, anchor='s')
 button1 = Button(button_frame, text='Next >>>', command=next)
 button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
+# get fonts
+inifile = os.path.expanduser('~/.metagui/config')
+style = Style()
+style.load(inifile)
+heading_font = get_font(size=20, _style='bold')
+lrg_font = get_font(size=16, _style='bold')
 
 ############################ Page 1 of wizard ############################
 pg1_txt1 = '''
