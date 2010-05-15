@@ -522,13 +522,6 @@ class GUI (tk.Tk):
         self.application.draw_toolbar(self.show_config, self.confirm_exit)
 
 
-    def redraw(self):
-        """Destroy and re-draw the GUI.
-        """
-        self.frame.destroy()
-        self.draw()
-
-
     def show_config(self):
         """Open the GUI configuration dialog.
         """
@@ -537,8 +530,11 @@ class GUI (tk.Tk):
             self.style = config.result
             print("Saving configuration to: '%s'" % self.inifile)
             self.style.save(self.inifile)
-            self.style.apply(self)
-            self.redraw()
+            showinfo("Configuration saved",
+                "Saved configuration to '%s'. Please restart the GUI for the"
+                " changes to take effect. You may want to 'Save script' before"
+                " quitting." % self.inifile)
+
 
 
     def confirm_exit(self, event=None):
