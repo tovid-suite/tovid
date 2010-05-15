@@ -70,7 +70,7 @@ if __name__ == '__main__':
         tovid_init = script_dir + '/tovid-init'
         cmd = shlex.split("sh -c '. %s && printf $TOVID_VERSION'" % tovid_init)
         print Popen(cmd, stdout=PIPE).communicate()[0]
-        sys.exit(0)        
+        sys.exit(0)
 
     print("tovid executables assumed to be in '%s'" % script_dir)
 
