@@ -315,6 +315,19 @@ def get_chunk(items, start, end):
     chunk.append(items.pop(index))
     return chunk
 
+def get_list_args(items, option):
+    items = items[:]
+    try:
+        index = items.index(option)
+    # If item isn't in list, return empty list
+    except ValueError:
+        return []
+    # Pop items until end is reached
+    chunk = []
+    while items and not items[index+1].startswith('-'):
+        chunk.append(items.pop(index+1))
+    return chunk
+
 def load_project():
     '''Load a saved project script for editing with the wizard and GUI'''
     page5_label1.configure(text='Editing a saved project')
@@ -332,11 +345,18 @@ def load_project():
     all.insert(0, in_cmds)
     todisc_cmds = all[:]
     numtitles = len(todisc_cmds[2:])
+    menu_titles = []
+    for l in todisc_cmds[2:]:
+        menu_titles.extend(get_list_args(l, '-menu-title'))
     pg5_listbox1.pack(side=LEFT, fill=BOTH, expand=1)
     pg5_listbox1.insert(END, 'General options')
     pg5_listbox1.insert(END, 'Root menu')
     for i in range(numtitles):
-        pg5_listbox1.insert(END, 'Titleset %s' % int(i+1))
+        if len(menu_titles) == numtitles:
+            titles = menu_titles[i]
+        else:
+            titles = 'Titleset %s' % int(i+1)
+        pg5_listbox1.insert(END, titles)
     move(4)
     return todisc_cmds
 
