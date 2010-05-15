@@ -1065,7 +1065,7 @@ encoding = VPanel('Encoding',
 def run(args=None):
     app = Application('todisc',
         main, main_menu, submenus, thumbnails, slideshows, playback, behavior, encoding)
-    gui = GUI("todiscgui", 800, 660, app)
+    gui = GUI("tovid gui", 800, 660, app)
     gui.run(args)
 
 if __name__ == '__main__':
