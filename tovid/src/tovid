@@ -48,6 +48,7 @@ _scripts = {
     'titlesets': 'make_titlesets',
 }
 
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print(usage)
@@ -55,14 +56,20 @@ if __name__ == '__main__':
     else:
         args = sys.argv[1:]
 
-    # Prepend the script directory /$PREFIX/lib/tovid/ to $PATH
-    script_dir = os.path.join(sys.prefix, 'lib', 'tovid')
+    # Determine the prefix where tovid is installed
+    tovid_path = sys.argv[0]
+    bin_dir = os.path.dirname(tovid_path)
+    prefix = os.path.dirname(bin_dir)
+
+    # Prepend the script directory /$PREFIX/lib/tovid/ to $PATH,
+    # so executables in there can be run without an absolute pathname
+    script_dir = os.path.join(prefix, 'lib', 'tovid')
     os.environ['PATH'] = script_dir + os.pathsep + os.environ['PATH']
 
     command = args.pop(0)
 
     if command in ['-prefix', '--prefix']:
-        print script_dir
+        print script_dir.
         sys.exit(0)
     elif command in ['-version', '--version']:
         from subprocess import Popen, PIPE
