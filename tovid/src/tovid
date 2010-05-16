@@ -69,7 +69,7 @@ if __name__ == '__main__':
     command = args.pop(0)
 
     if command in ['-prefix', '--prefix']:
-        print script_dir.
+        print script_dir
         sys.exit(0)
     elif command in ['-version', '--version']:
         from subprocess import Popen, PIPE
