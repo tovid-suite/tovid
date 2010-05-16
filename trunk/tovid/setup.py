@@ -57,10 +57,15 @@ class InstallCommand (install):
         """Install tovid, and write a list of installed files to
         $prefix/lib/tovid/.install.log.
         """
-        print("Installing tovid to %s" % self.prefix)
         install.run(self)
+        # For whatever reason, on Ubuntu, self.prefix only points to /usr/local
+        # if setup.py was explicitly called with the --prefix option.
+        # self.install_data does correctly point to /usr/local on Ubuntu
+        # (both with and without the --prefix option)
+        prefix = self.install_data
+        print("Installing tovid to %s" % prefix)
         # Move temporary install log to $prefix/lib/tovid
-        install_log = os.path.join(self.prefix, 'lib', 'tovid', '.install.log')
+        install_log = os.path.join(prefix, 'lib', 'tovid', '.install.log')
         print("Moving install.log to '%s'" % install_log)
         shutil.move(self.record, install_log)
 
