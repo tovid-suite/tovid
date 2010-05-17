@@ -75,7 +75,6 @@ def next():
                 todisc_cmds.pop(0)
             cmds = [l for l in get_commands if l]
             todisc_cmds.append(cmds)
-        print todisc_cmds
         tk.deiconify()
     elif pages.index(current) == 2:
     # Page 3
@@ -102,16 +101,24 @@ def next():
         tk.withdraw()
         options_list = save_list()
         numtitles = len(save_list())
+        # set [Next] button to set waitVar, allowing loop to continue
+        button1.configure(command=setVar)
         for i in range(numtitles):
             run_cmds = ['-menu-title']
             run_cmds.append(options_list[i])
             if i < numtitles:
-                msg = 'Now we will work on titleset %s' % int(i+1)
-                root = Tk()
-                root.withdraw()
-                if showinfo(message=msg):
-                    root.destroy()
+                pg4_txt2 = 'Now we will work on titleset %s:\n"%s"\n\n'
+                pg4_txt2 += 'Press [Next] to continue'
+                pg4_txt2 = pg4_txt2 % (int(i+1), options_list[i])
+                pg4_label2.configure(text=pg4_txt2)
+                # remove original text on the page
+                pg4_label1.pack_forget()
+                # blink the next button to show action is needed
+                blink(button1)
             # withdraw the wizard and run the GUI, collecting commands
+            tk.deiconify()
+            # pressing 'Next' sets the waitVar and continues
+            tk.wait_variable(waitVar)
             get_commands = run_gui(run_cmds)
             get_commands = trim_list_header(get_commands)
             # wrap the the commands in titleset 'tags', then write out script
@@ -120,29 +127,22 @@ def next():
             cmds.append('-end-titleset')
             todisc_cmds.append(cmds)
         tk.deiconify()
+        # set button1 back to next command
+        button1.configure(command=next)
         write_script()
 
         ####################  prepare the next pages listbox ##################
 
         # allow editing the saved lists with the GUI
         # delete titleset listbox contents else it increases with page movement
-        pg5_listbox1.delete(0, END)
         # insert or reinsert options list into titleset listbox
-        pg5_listbox1.pack(side=LEFT, fill=BOTH, expand=1)
-        pg5_listbox1.insert(END, 'General options')
-        pg5_listbox1.insert(END, 'Root menu')
-        for i in xrange(numtitles):
-            pg5_listbox1.insert(END, options_list[i])
+        pg5_listbox1.pack(side=TOP, anchor='w')
+        refill_listbox(pg5_listbox1, options_list)
         if (numtitles > 10): numtitles = 10
         options_list = save_list()
         numtitles = len(options_list)
         pg5_listbox1.configure(height=numtitles+2)
-        # change 'Next' button to 'Run' and reposition buttons
-        button1.pack_forget()
-        button2 = Button(button_frame, text='Exit', command=quit)
-        button2.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
-        button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
-        button1.configure(text='Run script now')
+        set_last_page()
     elif pages.index(current) == 4:
     # Page 5
         root = Tk()
@@ -187,7 +187,8 @@ def set_list(event):
         # delete old listbox line
         pg3_listbox1.delete(index)
     except IndexError:
-        index = END
+        index = '0'
+    print index
     # insert edited item back into pg3_listbox1 at index
     pg3_listbox1.insert(index, enter1.get())
     enter1.delete(0, END)
@@ -232,7 +233,8 @@ def run_gui(args=[]):
     return todisc_cmds
 
 def run_in_xterm(script):
-    ''' run the final script in an xterm, completing the project '''
+    ''' run the final script in an xterm, completing the project
+    '''
     cmd = ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
     wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
     tovid_cmd = 'bash %s' % script
@@ -243,10 +245,11 @@ def run_in_xterm(script):
 
 
 def rerun_options():
-    ''' run the gui with the selected options'''
+    ''' run the gui with the selected options
+    '''
     rerun_opts = []
     index = int(pg5_listbox1.curselection()[0])
-    mess='Rerun GUI for the %s options?' % pg5_listbox1.get(index)
+    mess='Rerun GUI for the "%s" options?' % pg5_listbox1.get(index)
     if askyesno(message=mess):
         # the GUI doesn't understand the titleset type options
         remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
@@ -254,8 +257,10 @@ def rerun_options():
         rerun_opts = run_gui(options)
         # trim header from todisc_cmds
         rerun_opts = trim_list_header(rerun_opts)
-        # add back the vmgm and titleset 'tag' options
+        # fill the listbox again if vmgm opts changed
+        # add the 'tags' back around the option list if needed
         if index == 1:
+            refill_listbox(pg5_listbox1, rerun_opts)
             rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
         elif index >= 2:
             rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
@@ -263,6 +268,23 @@ def rerun_options():
         # rewrite the saved script file
         write_script()
         tk.deiconify()
+
+def refill_listbox(listbox, opts):
+    ''' repopulate the rerun listbox with option list titles
+    '''
+    if '-titles' in opts:
+        new_titles = get_list_args(opts, '-titles')
+    else:
+        new_titles = opts
+    listbox.delete(0, END)
+    # insert or reinsert options list into titleset listbox
+    listbox.insert(END, 'General options')
+    listbox.insert(END, 'Root menu')
+    numtitles = len(new_titles)
+    listbox.configure(height=numtitles+2)
+    for i in xrange(numtitles):
+        listbox.insert(END, new_titles[i])
+
 
 def trim_list_header(cmds):
         # remove shebang, identifier and PATH
@@ -341,7 +363,9 @@ def get_list_args(items, option):
         pass
 
 def load_project():
-    '''Load a saved project script for editing with the wizard and GUI'''
+    ''' Load a saved project script for editing with the wizard and GUI
+    '''
+    global todisc_cmds
     page5_label1.configure(text='Editing a saved project')
     error_msg2 = 'This is not a saved tovid project script\n'
     error_msg2 += 'Do you want to try to load it anyway?'
@@ -360,17 +384,38 @@ def load_project():
     menu_titles = []
     for l in todisc_cmds[2:]:
         menu_titles.extend(get_list_args(l, '-menu-title'))
-    pg5_listbox1.pack(side=LEFT, fill=BOTH, expand=1)
-    pg5_listbox1.insert(END, 'General options')
-    pg5_listbox1.insert(END, 'Root menu')
-    for i in range(numtitles):
-        if len(menu_titles) == numtitles:
-            titles = menu_titles[i]
-        else:
-            titles = 'Titleset %s' % int(i+1)
-        pg5_listbox1.insert(END, titles)
+    pg5_listbox1.pack(side=LEFT, anchor='w', fill=X, expand=1)
+    refill_listbox(pg5_listbox1, menu_titles)
+    set_last_page()
+    # write out todisc_commands.bash in current dir
+    write_script()
     move(4)
     return todisc_cmds
+
+def set_last_page():
+    ''' dynamic configuration for the last page
+    '''
+    # set label for running in xterm
+    page5_label3 = Label(pg5_frame1, text=pg5_txt3, justify=LEFT)
+    page5_label3.pack(side=BOTTOM, anchor='w')
+    # change 'Next' button to 'Run' and reposition buttons
+    button1.pack_forget()
+    button2 = Button(button_frame, text='Exit', command=quit)
+    button2.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
+    button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
+    button1.configure(text='Run script now')
+
+def setVar():
+    ''' set a BooleanVar() so tk.wait_var can exit
+    '''
+    waitVar.set(True)
+
+def blink(widget):
+    """ cause widget to blink
+    """
+    tk.after(1000, lambda: widget.flash())
+    widget.update()
+    tk.after(1000, lambda: widget.flash())
 
 ###################### get/set some external variables #######################
 
@@ -401,6 +446,8 @@ tkframe = Frame(tk)
 tkframe.pack(side=LEFT, fill=Y, anchor='w')
 tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
+waitVar = BooleanVar()
+waitVar.set(False)
 button_frame = Frame(tk)
 button_frame.pack(expand=1, fill=X, side=BOTTOM, anchor='s')
 button1 = Button(button_frame, text='Next >>>', command=next)
@@ -411,6 +458,7 @@ style = Style()
 style.load(inifile)
 heading_font = get_font(size=20, _style='bold')
 lrg_font = get_font(size=16, _style='bold')
+bold_font = get_font(_style='bold')
 
 ############################ Page 1 of wizard ############################
 pg1_txt1 = '''
@@ -418,7 +466,7 @@ INTRODUCTION
 
 Welcome to the tovid titleset wizard.  We will be making a complete DVD, with
 multiple levels of menus including a root menu (VMGM menu) and lower level
-titleset menus.  We will be using 'tovid gui', which uses the 'todisc'script.
+titleset menus.  We will be using 'tovid gui', which uses the 'todisc' script.
 Any of these menus can be either static or animated, and use thumbnail menu
 links or plain text links.  In addition the titleset menus can have chapter
 selection menus ("submenus") which by default have only thumbnail menu links.
@@ -463,7 +511,7 @@ pg1_label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 
 ############################## Page 2 of wizard ##############################
 next_txt = '''
-After making your selections, it is important that you save the file to
+After making your selections, it is IMPORTANT that you save the file to
 %s ''' % script_file
 pg2_txt1 = '''
 GENERAL OPTIONS
@@ -474,10 +522,10 @@ may wish to have all menus share a common font and fontsize of your choosing,
 for the menu link titles and/or the menu title.
 
 The only REQUIRED option here is specifying an Output directory at the bottom
-of the GUI's main tab.  Options you enter will be overridden if you use the
-same option again later for titlesets.
+of the GUI's main tab.  Options you enter will be overridden if you use the same    
+option again later for titlesets.
 
-After making your selections, it is important that you save the file to
+After making your selections, it is IMPORTANT that you save the file to
 %s
 
 Press 'Next' to begin ...
@@ -508,13 +556,13 @@ have already entered your root menu link titles.
 
 page3 = Frame(tk)
 pg3_label1 = Label(page3, text=pg3_txt1, justify=LEFT, font=style.font)
-pg3_label1.pack(fill=BOTH, expand=1)
+pg3_label1.pack(side=TOP, fill=BOTH, expand=1, anchor='w')
 # create the listbox (note that size is in characters)
 pg3_frame1 = LabelFrame(page3, text="Root 'menu link' titles")
-pg3_frame1.pack(fill=Y, expand=1)
+pg3_frame1.pack(side=TOP, fill=Y, expand=1)
 pg3_listbox1 = Listbox(pg3_frame1, width=50, height=12)
 #listbox1.insert(0, '')
-pg3_listbox1.pack(side=LEFT, fill=Y, expand=1)
+pg3_listbox1.pack(fill=Y, expand=1, anchor='w')
 
 # create a vertical scrollbar to the right of the listbox
 yscroll = Scrollbar(pg3_frame1, command=pg3_listbox1.yview, orient=VERTICAL)
@@ -546,28 +594,47 @@ menu links in the root menu - change this to whatever you want.
 A popup dialog will appear for each run of the GUI telling you which
 titleset you are working on.
 '''
-pg4_label1 = Label(page4, text=pg4_txt1, justify=LEFT, font=style.font)
+pg4_frame1 = Frame(page4)
+pg4_frame1.pack(side=TOP, fill=BOTH, expand=1)
+pg4_label1 = Label(pg4_frame1, text=pg4_txt1, justify=LEFT, font=style.font)
 pg4_label1.pack(fill=BOTH, expand=1)
+pg4_txt2 = ''
+pg4_label2 = \
+  Label(pg4_frame1, text=pg4_txt2, justify=LEFT, font=bold_font)
+pg4_label2.pack(fill=BOTH, expand=1)
 
 ############################ Page 5 of wizard ############################
 
 page5 = Frame(tk)
 pg5_txt2 = '''
 If you wish to go back and change any options with the GUI, you can select
-an item from the options listbox and press "Rerun Options".  The titleset options
-are listed by the name you gave for the root menu links.
+an item from the options listbox and press "Rerun Options".  The titleset
+options are listed by the name you gave for the root menu links.
 '''
+pg5_txt3 = '''
+If you are happy with your saved options, now you can either choose to run
+the script now in an xterm, or exit and run it later in your favorite terminal.
+
+You can run it with:
+bash %s
+
+You may also edit the file with a text editor but do not change the headers
+(first 3 lines of text) or change the order of the sections:
+1. General opts, 2. Root menu 3. Titleset menus
+
+Press [Run script now] or [Exit].
+''' % script_file
 pg5_frame1 = Frame(page5)
-pg5_frame1.pack(fill=BOTH, expand=1)
+pg5_frame1.pack()
 page5_label1 = Label(pg5_frame1, text='Finished!', font=heading_font)
 page5_label1.pack()
 page5_label2 = Label(pg5_frame1, text=pg5_txt2, justify=LEFT)
-page5_label2.pack(side=BOTTOM)
+page5_label2.pack(side=TOP, anchor='w')
 # create the listbox
-pg5_frame2 = LabelFrame(page5, \
+pg5_frame2 = LabelFrame(pg5_frame1, \
   text="Choose an item to edit with the GUI and press 'Rerun Options'")
 pg5_frame2.pack(fill=X, expand=1)
-pg5_listbox1 = Listbox(pg5_frame2, width=60)
+pg5_listbox1 = Listbox(pg5_frame2)
 # create a vertical scrollbar to the right of the listbox
 yscroll2 = Scrollbar(pg5_frame2, command=pg5_listbox1.yview, orient=VERTICAL)
 yscroll2.pack(side=LEFT, fill=Y)
@@ -576,17 +643,10 @@ pg5_listbox1.configure(yscrollcommand=yscroll.set)
 pg5_button1 = Button(pg5_frame2, text='Rerun Options', command=rerun_options)
 pg5_button1.pack(side=BOTTOM)
 
-#page6 = Frame(tk)
-#pg6_frame1 = Frame(page6)
-#pg6_frame1.pack(fill=BOTH, expand=1)
-#pg6_label1 = Label(pg6_frame1, text='This is page 6')
-#pg6_label1.pack()
-
 ######################### Run the darn thing already #########################
 
 pages = [page1, page2, page3, page4, page5]
 current = page1
-
 if __name__ == '__main__':
     if len(argv) > 1:
         if os.path.exists(argv[1]):
