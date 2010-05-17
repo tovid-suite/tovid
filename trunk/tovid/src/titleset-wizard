@@ -19,6 +19,8 @@ error_msg = 'This is not a saved GUI script\n' + \
 labels = ['General', 'VMGM menu', 'Titlesets']
 curdir = os.path.abspath('')
 newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
+os.environ['METAGUI_WIZARD'] = '1'
+
 
 # get metagui font configuration
 def get_font(name='', size='', _style=''):
@@ -101,14 +103,14 @@ def next():
         tk.withdraw()
         options_list = save_list()
         numtitles = len(save_list())
-        # set [Next] button to set waitVar, allowing loop to continue
+        # set [ Next >>> ] button to set waitVar, allowing loop to continue
         button1.configure(command=setVar)
         for i in range(numtitles):
             run_cmds = ['-menu-title']
             run_cmds.append(options_list[i])
             if i < numtitles:
                 pg4_txt2 = 'Now we will work on titleset %s:\n"%s"\n\n'
-                pg4_txt2 += 'Press [Next] to continue'
+                pg4_txt2 += 'Press  [ Next >>> ]  to continue'
                 pg4_txt2 = pg4_txt2 % (int(i+1), options_list[i])
                 pg4_label2.configure(text=pg4_txt2)
                 # remove original text on the page
@@ -251,27 +253,30 @@ def run_in_xterm(script):
 def rerun_options(Event=None):
     ''' run the gui with the selected options
     '''
+    try:
+        index = int(pg5_listbox1.curselection()[0])
+    except IndexError:
+        showerror('Please select an options line first')
     rerun_opts = []
-    index = int(pg5_listbox1.curselection()[0])
-    mess='Rerun GUI for the "%s" options?' % pg5_listbox1.get(index)
-    if askyesno(message=mess):
-        # the GUI doesn't understand the titleset type options
-        remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
-        options = [ i for i in todisc_cmds[index] if not i in remove ]
-        rerun_opts = run_gui(options)
-        # trim header from todisc_cmds
-        rerun_opts = trim_list_header(rerun_opts)
-        # fill the listbox again if vmgm opts changed
-        # add the 'tags' back around the option list if needed
-        if index == 1:
-            refill_listbox(pg5_listbox1, rerun_opts)
-            rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
-        elif index >= 2:
-            rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
-        todisc_cmds[index] = rerun_opts
-        # rewrite the saved script file
-        write_script()
-        tk.deiconify()
+    #mess='Rerun GUI for the "%s" options?' % pg5_listbox1.get(index)
+    #if askyesno(message=mess):
+    # the GUI doesn't understand the titleset type options
+    remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
+    options = [ i for i in todisc_cmds[index] if not i in remove ]
+    rerun_opts = run_gui(options)
+    # trim header from todisc_cmds
+    rerun_opts = trim_list_header(rerun_opts)
+    # fill the listbox again if vmgm opts changed
+    # add the 'tags' back around the option list if needed
+    if index == 1:
+        refill_listbox(pg5_listbox1, rerun_opts)
+        rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
+    elif index >= 2:
+        rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
+    todisc_cmds[index] = rerun_opts
+    # rewrite the saved script file
+    write_script()
+    tk.deiconify()
 
 def refill_listbox(listbox, opts):
     ''' repopulate the rerun listbox with option list titles
@@ -328,7 +333,7 @@ def write_script():
     cmdout.write(all_lines[-1])
     cmdout.close()
 
-# get_chunk and get_list_arts are
+# get_chunk and get_list_args are
 # for parsing args from a loaded titleset script
 # thanks to Eric Pierce for providing these
 def get_chunk(items, start, end):
@@ -515,12 +520,12 @@ pg1_label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 
 ############################## Page 2 of wizard ##############################
 next_txt = '''
-After making your selections, it is IMPORTANT that you save the file to
-%s ''' % script_file
+After making your selections, press [ Save to wizard ] in the GUI
+'''
 pg2_txt1 = '''
 GENERAL OPTIONS
 
-When you press the "Next" button at the bottom of the wizard, we will start the
+When you press the  [ Next >>> ]  button at the bottom of the wizard, we will start the
 GUI and begin with general options applying to all titlesets.  For example you
 may wish to have all menus share a common font and fontsize of your choosing,
 for the menu link titles and/or the menu title.
@@ -529,11 +534,10 @@ The only REQUIRED option here is specifying an Output directory at the bottom
 of the GUI's main tab.  Options you enter will be overridden if you use the same    
 option again later for titlesets.
 
-After making your selections, it is IMPORTANT that you save the file to
-%s
+After making your selections, press [ Save to wizard ] in the GUI
 
-Press 'Next' to begin ...
-''' %script_file
+Press  [ Next >>> ]  to begin ...
+'''
 
 page2 = Frame(tk)
 pg2_label1 = Label(page2, text=pg2_txt1, justify=LEFT, font=style.font)
@@ -551,7 +555,7 @@ appear as menu titles for the respective menu in your DVD.
 Enter the names of your titlesets, one per line, pressing <ENTER> each time.
 Do not use quotes unless you want them to appear literally in the title.
 
-Press "Next" when you are finished, and the tovid gui will come up so you can
+Press  [ Next >>> ]  when you are finished, and the tovid gui will come up so you can
 enter any other options you want.  You can not enter video files here, but most
 other options can be used.  There are no REQUIRED options however, as you
 have already entered your root menu link titles.
@@ -595,8 +599,8 @@ you should spruce up your menu by exploring some of the other options!
 The menu title for each has been changed to the text you used for the
 menu links in the root menu - change this to whatever you want.
 
-A popup dialog will appear for each run of the GUI telling you which
-titleset you are working on.
+Follow the simple instructions that appear in the next and subsequent pages:
+you will need to press  [ Next >>> ]  for each titleset.
 '''
 pg4_frame1 = Frame(page4)
 pg4_frame1.pack(side=TOP, fill=BOTH, expand=1)
@@ -612,7 +616,7 @@ pg4_label2.pack(fill=BOTH, expand=1)
 page5 = Frame(tk)
 pg5_txt2 = '''
 If you wish to go back and change any options with the GUI, you can select
-an item from the options listbox and press "Rerun Options".  The titleset
+an item from the options listbox and press [ Rerun Options ].  The titleset
 options are listed by the name you gave for the root menu links.
 '''
 pg5_txt3 = '''
@@ -636,7 +640,7 @@ page5_label2 = Label(pg5_frame1, text=pg5_txt2, justify=LEFT)
 page5_label2.pack(side=TOP, anchor='w')
 # create the listbox
 pg5_frame2 = LabelFrame(pg5_frame1, \
-  text="Choose an item to edit with the GUI and press 'Rerun Options'")
+  text="Choose an item to edit with the GUI and press [ Rerun Options ]")
 pg5_frame2.pack(fill=X, expand=1)
 pg5_listbox1 = Listbox(pg5_frame2)
 pg5_listbox1.bind('<Double-Button-1>', rerun_options)
