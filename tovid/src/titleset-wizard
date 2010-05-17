@@ -425,6 +425,27 @@ def blink(widget):
     widget.update()
     tk.after(1000, lambda: widget.flash())
 
+class BigLabel (Text):
+    """Looks similar to a Label widget, but with automatic word-wrap.
+    """
+    def __init__(self, master, text, font):
+        """Create a text widget with the given text and font,
+        and the same background color as the master widget.
+        """
+        # Text widget with the same background color as the master
+        Text.__init__(self, master, font=font, wrap='word',
+                      background=master.cget('background'), borderwidth=0)
+        # Try to intelligently group the text into paragraphs.
+        # Two consecutive newlines start a new paragraph; a single
+        # newline should be treated as a single space. Strip leading
+        # and trailing whitespace from each paragraph.
+        paragraphs = [para.replace('\n', ' ').strip()
+                      for para in text.split('\n\n')]
+        # Rejoin paragraphs into a single block of text
+        self.insert('end', '\n\n'.join(paragraphs))
+        # Make the text widget read-only
+        self.config(state='disabled')
+
 ###################### get/set some external variables #######################
 
 # get tovid prefix
@@ -479,24 +500,24 @@ Any of these menus can be either static or animated, and use thumbnail menu
 links or plain text links.  In addition the titleset menus can have chapter
 selection menus ("submenus") which by default have only thumbnail menu links.
 
-Though the sheer number of options can be daunting when the GUI first loads,
-it is important to remember that there are very few REQUIRED options, and in
-all cases the required options are on the opening tab. Below is a table of
+Though the sheer number of options can be daunting when the GUI first loads, it
+is important to remember that there are very few REQUIRED options, and in all
+cases the required options are on the opening tab. Below is a table of
 'required' options for each run of the GUI:
 
-General:  only the "Output name" is required.
-Root menu: only the titleset titles (menu link text) are required.
-Titleset menus: only videos to include in the titleset are required.
+General:  only the "Output name" is required.  Root menu: only the titleset
+titles (menu link text) are required.  Titleset menus: only videos to include
+in the titleset are required.
 
-But if you include only those options your menu might be boring ! Please
-have fun exploring the different options using the preview to test.
+But if you include only those options your menu might be boring ! Please have
+fun exploring the different options using the preview to test.
 
 A great many options of these menus are configurable, including fonts, shapes
 and effects for thumbnails, fade-in/fade-out effects, "switched menus", the
 addition of a "showcased" image/video, animated or static background image or
 video, audio background ... etc.  There are also playback options including the
-supplying of chapter points, special navigation features like "quicknav",
-and configurable DVD button links.
+supplying of chapter points, special navigation features like "quicknav", and
+configurable DVD button links.
 '''
 page1 = Frame(tk)
 frame1 = Frame(tkframe)
@@ -514,7 +535,9 @@ pg1_label4 = Label(frame1, text='Page 1', font=lrg_font)
 pg1_label4.pack(side=BOTTOM, anchor='s')
 frame1.pack(side=LEFT, padx=30, anchor='nw', fill=Y, expand=1)
 page1.pack(fill=BOTH, expand=1)
-pg1_label5 = Label(page1, text=pg1_txt1, justify=LEFT, font=style.font)
+
+# Use a BigLabel widget to get automatic word-wrap that adjusts to window size
+pg1_label5 = BigLabel(page1, pg1_txt1, style.font)
 pg1_label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 
 ############################## Page 2 of wizard ##############################
@@ -524,14 +547,14 @@ After making your selections, press [ Save to wizard ] in the GUI
 pg2_txt1 = '''
 GENERAL OPTIONS
 
-When you press the  [ Next >>> ]  button at the bottom of the wizard, we will start the
-GUI and begin with general options applying to all titlesets.  For example you
-may wish to have all menus share a common font and fontsize of your choosing,
-for the menu link titles and/or the menu title.
+When you press the  [ Next >>> ]  button at the bottom of the wizard, we will
+start the GUI and begin with general options applying to all titlesets.  For
+example you may wish to have all menus share a common font and fontsize of your
+choosing, for the menu link titles and/or the menu title.
 
 The only REQUIRED option here is specifying an Output directory at the bottom
-of the GUI's main tab.  Options you enter will be overridden if you use the same
-option again later for titlesets.
+of the GUI's main tab.  Options you enter will be overridden if you use the
+same option again later for titlesets.
 
 After making your selections, press [ Save to wizard ] in the GUI
 
@@ -546,18 +569,18 @@ pg2_label1.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 pg3_txt1 = '''
 ROOT MENU (VMGM)
 
-Now we will save options for your root (VMGM) menu.  The only option you
-really need is the titleset titles.  Since you can not save titles in the GUI
-without loading videos you need to enter them here.  These titleset names will
-appear as menu titles for the respective menu in your DVD.
+Now we will save options for your root (VMGM) menu.  The only option you really
+need is the titleset titles.  Since you can not save titles in the GUI without
+loading videos you need to enter them here.  These titleset names will appear
+as menu titles for the respective menu in your DVD.
 
 Enter the names of your titlesets, one per line, pressing <ENTER> each time.
 Do not use quotes unless you want them to appear literally in the title.
 
-Press  [ Next >>> ]  when you are finished, and the tovid gui will come up so you can
-enter any other options you want.  You can not enter video files here, but most
-other options can be used.  There are no REQUIRED options however, as you
-have already entered your root menu link titles.
+Press  [ Next >>> ]  when you are finished, and the tovid gui will come up so
+you can enter any other options you want.  You can not enter video files here,
+but most other options can be used.  There are no REQUIRED options however, as
+you have already entered your root menu link titles.
 %s
 ''' % next_txt
 
@@ -592,11 +615,11 @@ page4 = Frame(tk)
 pg4_txt1 = '''
 TITLESET MENUS
 
-Okay, now you will enter options for each of your titlesets.  The only
-REQUIRED option here is to load one or more video files, but of course
-you should spruce up your menu by exploring some of the other options!
-The menu title for each has been changed to the text you used for the
-menu links in the root menu - change this to whatever you want.
+Okay, now you will enter options for each of your titlesets.  The only REQUIRED
+option here is to load one or more video files, but of course you should spruce
+up your menu by exploring some of the other options!  The menu title for each
+has been changed to the text you used for the menu links in the root menu -
+change this to whatever you want.
 
 Follow the simple instructions that appear in the next and subsequent pages:
 you will need to press  [ Next >>> ]  for each titleset.
