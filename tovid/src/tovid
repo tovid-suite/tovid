@@ -45,7 +45,8 @@ _scripts = {
     'gui': 'todiscgui',
     'mpg': 'makempg',
     'batch': 'tovid-batch',
-    'titlesets': 'make_titlesets',
+    #'titlesets': 'make_titlesets',
+    'titlesets': 'titleset-wizard',
 }
 
 
