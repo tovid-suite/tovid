@@ -270,6 +270,15 @@ class Application (Widget):
         exit_button.pack(anchor='e', side='right', fill='x')
         # Pack the toolbar
         self.toolbar.pack(fill='x', anchor='sw')
+        # hack to allow wizard to use less clicks and remove uneeded commmands
+        if os.getenv('METAGUI_WIZARD'):
+            save_button.pack_forget()
+            load_button.pack_forget()
+            load_button.pack(anchor='w', side='left', fill='x', expand=True)
+            save_button.pack(anchor='w', side='left', fill='x', expand=True)
+            save_button.config(command=self.save_exit, text='Save to wizard')
+            run_button.pack_forget()
+#            exit_button.pack_forget()
 
 
     def get_args(self):
@@ -325,6 +334,12 @@ class Application (Widget):
         else:
             showinfo(title="Script saved", message="Saved '%s'" % filename)
 
+    def save_exit(self):
+        filename = os.getcwd() + '/todisc_commands.bash'
+        self.save_script(filename)
+        showinfo(title="Script saved", \
+          message="Saved sucessfully to '\n%s'" % filename)
+        self.quit()
 
     def prompt_load_script(self):
         """Prompt for a script filename, then load current Control settings
