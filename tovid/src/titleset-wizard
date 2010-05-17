@@ -21,7 +21,6 @@ curdir = os.path.abspath('')
 newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
 os.environ['METAGUI_WIZARD'] = '1'
 
-
 # get metagui font configuration
 def get_font(name='', size='', _style=''):
     font = [name, size, _style]
@@ -531,7 +530,7 @@ may wish to have all menus share a common font and fontsize of your choosing,
 for the menu link titles and/or the menu title.
 
 The only REQUIRED option here is specifying an Output directory at the bottom
-of the GUI's main tab.  Options you enter will be overridden if you use the same    
+of the GUI's main tab.  Options you enter will be overridden if you use the same
 option again later for titlesets.
 
 After making your selections, press [ Save to wizard ] in the GUI
