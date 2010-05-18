@@ -70,13 +70,17 @@ def next():
         get_commands = run_gui()
         # append to list and go to next page unless GUI was cancelled out of
         if not get_commands:
+            success = False
             mv_amt = 0
         else:
+            success = True
             if len(todisc_cmds) > 0:
                 todisc_cmds.pop(0)
             cmds = [l for l in get_commands if l]
             todisc_cmds.append(cmds)
         tk.deiconify()
+        if success:
+            show_success()
     elif pages.index(current) == 2:
     # Page 3
         run_cmds = list(pg3_listbox1.get(0, END))
@@ -85,7 +89,7 @@ def next():
         run_cmds.insert(0,  '-titles')
         get_commands = run_gui(run_cmds)
         # append to list and go to next page unless GUI was cancelled out of
-        if len(get_commands) == 1 and 'Cancelled' in get_commands:
+        if not get_commands:
             return
         else:
             if len(todisc_cmds) > 1:
@@ -427,6 +431,15 @@ def blink(widget):
     widget.update()
     tk.after(1000, lambda: widget.flash())
 
+def show_success():
+    frame2 = Frame(frame1, relief=GROOVE, borderwidth=2)
+    frame2.pack(pady=80)
+    pg2_label2 = Label(frame2, text='Options saved!', \
+      font=italic_font, foreground='blue')
+    pg2_label2.pack(side=BOTTOM, fill=BOTH, expand=1, anchor='w')
+    tk.after(1000, lambda: pg2_label2.configure(foreground='black'))
+    tk.after(3000, lambda: frame2.pack_forget())
+
 class BigLabel (Text):
     """Looks similar to a Label widget, but with automatic word-wrap.
     """
@@ -487,9 +500,11 @@ button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
 inifile = os.path.expanduser('~/.metagui/config')
 style = Style()
 style.load(inifile)
-heading_font = get_font(size=20, _style='bold')
-lrg_font = get_font(size=16, _style='bold')
+heading_font = get_font(size=style.font[1]+8, _style='bold')
+lrg_font = get_font(size=style.font[1]+4, _style='bold')
 bold_font = get_font(_style='bold')
+italic_font = get_font(size=style.font[1]+2, _style='italic')
+
 
 ############################ Page 1 of wizard ############################
 pg1_txt1 = '''
