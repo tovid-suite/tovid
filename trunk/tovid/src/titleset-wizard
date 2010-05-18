@@ -445,15 +445,21 @@ def fake_press(widget):
 
 def show_success(status):
     if status == 0:
-        text='Options saved!'
+        text='\nOptions saved!\n'
     else:
-        text='Cancelled!'
-    frame2 = Frame(frame1)
+        text='\nCancelled!\n'
+    frame2 = Frame(frame1, borderwidth=2, relief=RIDGE)
     frame2.pack(pady=80)
-    pg2_label2 = Label(frame2, text=text, \
-      font=button_font, fg='blue', borderwidth=2, relief=GROOVE)
-    pg2_label2.pack(side=BOTTOM, fill=BOTH, expand=1, anchor='w')
-    tk.after(1000, lambda: pg2_label2.configure(relief=SUNKEN))
+    pg2_label2 = Label(frame2, text=text, font=button_font, fg='blue')
+    pg2_label2.pack(side=TOP)
+    pg2_label3 = Label(frame2, text='ok', borderwidth=2, relief=GROOVE)
+    pg2_label3.pack(side=TOP)
+    #frame2 = Frame(frame1)
+    #frame2.pack(pady=80)
+    #pg2_label2 = Label(frame2, text=text, \
+    #  font=button_font, fg='blue', borderwidth=2, relief=GROOVE)
+    #pg2_label2.pack(side=BOTTOM, fill=BOTH, expand=1, anchor='w')
+    tk.after(1000, lambda: pg2_label3.configure(relief=SUNKEN))
     tk.after(2000, lambda: frame2.pack_forget())
 
 def confirm_exit(event=None):
