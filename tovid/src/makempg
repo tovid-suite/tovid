@@ -49,8 +49,8 @@ exit 1 ; }
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
-tovid
-DVD and (S)VCD video conversion script
+tovid mpg
+Convert videos to DVD or (S)VCD format
 Version $TOVID_VERSION
 $TOVID_HOME_PAGE
 --------------------------------

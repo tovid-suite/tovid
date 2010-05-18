@@ -228,6 +228,9 @@ setup(
 
             # Icon used by titleset wizard
             'icons/tovid.gif',
+
+            # Config file
+            'src/tovid.ini',
         ]),
         # Manual page
         ('share/man/man1',

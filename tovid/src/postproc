@@ -37,9 +37,9 @@ exit 1 ; }
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
-postproc
-Video postprocessing script
-Part of the tovid suite, version $TOVID_VERSION
+tovid postproc
+Post-process video files
+Version $TOVID_VERSION
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`

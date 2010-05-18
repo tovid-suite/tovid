@@ -38,15 +38,15 @@ exit 1 ; }
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
-idvid
-Video identification script
-Part of the tovid suite, version $TOVID_VERSION
+tovid id
+Identify video files
+Version $TOVID_VERSION
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
 USAGE=`cat << EOF
-Usage: tovid id [OPTIONS] <file list>
+Usage: tovid id [OPTIONS] {file list}
 
 Where OPTIONS may be any of the following:
 
