@@ -11,6 +11,7 @@ import os
 import tempfile
 import shlex
 import subprocess
+from sys import exit
 
 # Python < 3.x
 try:
@@ -337,9 +338,8 @@ class Application (Widget):
     def save_exit(self):
         filename = os.getcwd() + '/todisc_commands.bash'
         self.save_script(filename)
-        showinfo(title="Script saved", \
-          message="Saved sucessfully to '\n%s'" % filename)
-        self.quit()
+        # exit code borrowed from apache so wizard knows it has a file to read
+        exit(200)
 
     def prompt_load_script(self):
         """Prompt for a script filename, then load current Control settings
