@@ -69,7 +69,7 @@ def next():
         # withdraw the wizard and run the GUI, collecting commands
         get_commands = run_gui()
         # append to list and go to next page unless GUI was cancelled out of
-        if len(get_commands) == 1 and 'Cancelled' in get_commands:
+        if not get_commands:
             mv_amt = 0
         else:
             if len(todisc_cmds) > 0:
@@ -220,16 +220,15 @@ def run_gui(args=[]):
     if tk.state() is not 'withdrawn':
         tk.withdraw()
     status = todiscgui_cmd.wait()
-    if status == 0:
+    if status == 200:
     # if script doesn't exist prompt for load.
         if os.path.exists(script_file):
             script = script_file
         else:
-            while not os.path.exists(script):
-                script = askopenfilename(title=title, initialfile=script)
-                if not script:
-                    showinfo(message='Cancelled.\nReturning to previous page')
-                    return ['Cancelled']
+            err = 'A problem has occured with saving your options.\n'
+            err += 'The saved script file was not found.\n'
+            err += 'Please submit a bug report'
+            showerror(message=err)
         # Read lines from the file and reassemble the command
         todisc_cmds = script_to_list(script)
         os.remove(script)
@@ -263,18 +262,21 @@ def rerun_options(Event=None):
     remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
     options = [ i for i in todisc_cmds[index] if not i in remove ]
     rerun_opts = run_gui(options)
-    # trim header from todisc_cmds
-    rerun_opts = trim_list_header(rerun_opts)
-    # fill the listbox again if vmgm opts changed
-    # add the 'tags' back around the option list if needed
-    if index == 1:
-        refill_listbox(pg5_listbox1, rerun_opts)
-        rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
-    elif index >= 2:
-        rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
-    todisc_cmds[index] = rerun_opts
-    # rewrite the saved script file
-    write_script()
+    if rerun_opts:
+        # trim header from todisc_cmds
+        rerun_opts = trim_list_header(rerun_opts)
+        # fill the listbox again if vmgm opts changed
+        # add the 'tags' back around the option list if needed
+        if index == 1:
+            refill_listbox(pg5_listbox1, rerun_opts)
+            rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
+        elif index >= 2:
+            rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
+        todisc_cmds[index] = rerun_opts
+        # rewrite the saved script file
+        write_script()
+    else:
+        showinfo(message='Commands were not saved.\nYour project is unchanged.')
     tk.deiconify()
 
 def refill_listbox(listbox, opts):
