@@ -622,7 +622,7 @@ pg3_frame1 = LabelFrame(page3, text="Root 'menu link' titles")
 pg3_frame1.pack(side=TOP, fill=Y, expand=1)
 pg3_listbox1 = Listbox(pg3_frame1, width=50, height=12)
 #listbox1.insert(0, '')
-pg3_listbox1.pack(fill=Y, expand=1, anchor='w')
+pg3_listbox1.pack(side=LEFT, fill=Y, expand=1, anchor='w')
 
 # create a vertical scrollbar to the right of the listbox
 yscroll = Scrollbar(pg3_frame1, command=pg3_listbox1.yview, orient=VERTICAL)
