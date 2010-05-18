@@ -40,19 +40,21 @@ exit 1 ; }
 
 SCRIPT_NAME=`cat << EOF
 --------------------------------
-todisc
+tovid disc
 Generate a DVD filesystem with animated thumbnail menus
-Part of the tovid suite, version $TOVID_VERSION
+Version $TOVID_VERSION
 $TOVID_HOME_PAGE
 --------------------------------
 EOF`
 
 USAGE=`cat << EOF
 Usage:
+
     todisc [OPTIONS] \\\\
       -files File1.mpg File2.mpg ... \\\\
       -titles "Title 1" "Title 2" ... \\\\
       -out OUT_PREFIX
+
 You can also do slideshows using -slides IMAGES rather than -files VIDEOS
 See the tovid manual page ('man tovid') for additional documentation.
 
@@ -1234,8 +1236,8 @@ $(if $QUICK_NAV || $SKIP_VMGM_MENU; then
 fi)
 $(if $VMGM_PLAYALL; then
         # g8 tests if a video finished playing, if not do not jump to next
-        echo -e "        if (g8==0) g7=0;" 
-        echo -e "        if (g8==1) { " 
+        echo -e "        if (g8==0) g7=0;"
+        echo -e "        if (g8==1) { "
         # for a vmgm playall g7 for jumping between titlesets after last video
         for ((i=1; i<=${#TITLESET_OPTS[@]}; i++)); do
             echo -e "          if ( g7 eq $i ) jump titleset $i menu;"
@@ -2062,7 +2064,7 @@ check_maskshape()
     'oval|vignette|plectrum|flare|arch|spiral|blob|star|normal' \
     <<< "$SHAPE"  && \
     ! test -f "$TOVID_PREFIX/masks/${SHAPE}.png" && \
-    ! test -f "$HOME/.tovid/masks/$SHAPE.png" 
+    ! test -f "$HOME/.tovid/masks/$SHAPE.png"
     (($? == 0)) && return 1 || return 0
 }
 
@@ -2107,7 +2109,7 @@ make_mask()
         # test if imagemagick has -distort polar
         if ! convert -list distort | grep -q -w Polar; then
             usage_error "Your imagemagick version is too old to support the
-              \"-distort polar\" technique used with the 'flare' thumb 
+              \"-distort polar\" technique used with the 'flare' thumb
               shape.  Upgrade your imagemagick to version 6.3.5-1 or
               newer, or use a different thumb shape."
         fi
@@ -2159,7 +2161,7 @@ make_mask()
         convert - -trim +repage miff:- |
         ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
         convert - -resize $THUMB_SIZE! $MASK
-        ;;    
+        ;;
       "blob")
         echo $SEPARATOR
         echo "Running convert -size 100x60 xc:none -fill white \
@@ -3395,7 +3397,7 @@ if test -n "$OUT_PREFIX"; then
         with '>', '<' or '&' in it.  Please choose another directory or \
         name for -out  You used: $OUT_DIR"
     elif test $(wc -l <<< "$(echo -e "$OUT_DIR")") -gt 1; then
-        usage_error "Dvdauthor does not allow multiline directory names.  
+        usage_error "Dvdauthor does not allow multiline directory names.
         Please change the directory you gave as an -out argument."
     fi
 else
@@ -3578,7 +3580,7 @@ if [[ -n $THUMB_SHAPE ]]; then
         usage_error "Please supply a usable thumb shape with
         -thumb-shape option. You gave \"$THUMB_SHAPE\""
     fi
-            
+
 fi
 if [[ -n $SHOWCASE_SHAPE ]]; then
     if ! check_maskshape $SHOWCASE_SHAPE; then
@@ -4185,7 +4187,7 @@ if $NOMENU; then
         fi
     done
     get_stats files
-    IN_FILES=( $WORK_DIR/*.mpg ) 
+    IN_FILES=( $WORK_DIR/*.mpg )
     lastvid=${#IN_FILES[@]}
     nomenu_cmd=(dvdauthor -o )
     nomenu_cmd+=("$OUT_DIR")
@@ -5531,8 +5533,8 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             fi
         fi
     elif [[ -n "$SHOWCASE_IMG" ]]; then
-        
-        if [[ -n $SHOWCASE_SHAPE ]]; then # apply mask and no -raise 
+
+        if [[ -n $SHOWCASE_SHAPE ]]; then # apply mask and no -raise
             SHAPE_CMD=(composite -compose CopyOpacity $SHOWCASE_MASK +matte \
             "$SHOWCASE_IMG")
         else
@@ -5699,7 +5701,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         IM_CMD6=(convert - -bordercolor $THUMB_FRAME_CLR $THUMB_FRAME \
         $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[i]}")
         IM_CMD7=(convert - $THUMB_ROTATE -resize ${THUMB_SIZE}! "${PICS[i]}")
-        
+
         if $FEATHER; then
             if $SHOWCASE; then
                 "${IM_CMD0[@]}" miff:- | "${IM_CMD5[@]}"
@@ -7409,7 +7411,7 @@ $(if $AUTHOR; then
     $SWITCHED_MENUS && \
     echo     "        if (g1 eq 0) g1=1;"
     echo     "        $VMGM_PREJUMP"
-    echo     "        </pre>"        
+    echo     "        </pre>"
     $DO_INTRO && \
     echo     "        <post>g2=1; jump titleset 1 menu;</post>"
     echo -e  "      </pgc>\n    </menus>\n  </vmgm>"
@@ -7609,7 +7611,7 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
                     echo     "        <post>"
                     echo     "        { if (g7>0) {"
                     echo     "              g8=1;"
-                    echo -ne "              if (g7>=${TSET_TOT}) { g7=0; g4=0; } " 
+                    echo -ne "              if (g7>=${TSET_TOT}) { g7=0; g4=0; } "
                     echo -e  "else g7=$((TSET_NUM+1));"
                     echo     "              call vmgm menu entry title;"
                     echo     "              }"
@@ -7637,7 +7639,7 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
                     echo     "        <post>"
                     echo     "        { if (g7>0) {"
                     echo     "              g8=1;"
-                    echo -ne "              if (g7>=${TSET_TOT}) { g7=0; g4=0; } " 
+                    echo -ne "              if (g7>=${TSET_TOT}) { g7=0; g4=0; } "
                     echo     "else g7=$((TSET_NUM+1));"
                     echo     "              call vmgm menu entry title;"
                     echo     "              }"
@@ -8309,7 +8311,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
         done
         wait $ffm_pid
         (($?)) && runtime_error "Problem creating images from the video."
-            
+
         strings "$LOG_FILE.tmp" >> "$LOG_FILE"
         rm -f "$LOG_FILE.tmp"
         echo
@@ -8359,7 +8361,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
                     "${sc_3d_cmd[@]}" miff:- |
                     convert $QUALITY -size $SHOWCASE_SIZE - -background none \
                     $ROTATE $WAVE -resize ${SHOWCASE_SIZE}! "$pic" ; } 2>> "$LOG_FILE" &
-                else 
+                else
                     { convert -size $SHOWCASE_SIZE "$pic" $SC_RAISE miff:- |
                     convert - $SHOWCASE_FRAME -background none $ROTATE $WAVE miff:- |
                     convert - -$QUALITY  resize ${SHOWCASE_SIZE}! "$pic"  ; } \
