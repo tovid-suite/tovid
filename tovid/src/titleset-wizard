@@ -63,24 +63,23 @@ def next():
             if askokcancel(message=rename_msg):
                 os.rename(script_file, newname)
             else:
-                showerror(message='Cancelled')
+                show_success(1)
                 return
 
         # withdraw the wizard and run the GUI, collecting commands
         get_commands = run_gui()
         # append to list and go to next page unless GUI was cancelled out of
         if not get_commands:
-            success = False
+            status = 1
             mv_amt = 0
         else:
-            success = True
+            status = 0
             if len(todisc_cmds) > 0:
                 todisc_cmds.pop(0)
             cmds = [l for l in get_commands if l]
             todisc_cmds.append(cmds)
         tk.deiconify()
-        if success:
-            show_success()
+        show_success(status)
     elif pages.index(current) == 2:
     # Page 3
         run_cmds = list(pg3_listbox1.get(0, END))
@@ -90,10 +89,10 @@ def next():
         get_commands = run_gui(run_cmds)
         # append to list and go to next page unless GUI was cancelled out of
         if not get_commands:
-            success = False
+            status = 1
             return
         else:
-            success = True
+            status = 0
             if len(todisc_cmds) > 1:
                 todisc_cmds.pop(1)
             trim_list_header(get_commands)
@@ -102,9 +101,7 @@ def next():
             cmds.append('-end-vmgm')
             todisc_cmds.append(cmds)
         tk.deiconify()
-        if success:
-            show_success()
-
+        show_success(status) 
     elif pages.index(current) == 3:
     # Page 4
         tk.withdraw()
@@ -122,15 +119,15 @@ def next():
                 pg4_label2.configure(text=pg4_txt2)
                 # remove original text on the page
                 pg4_label1.pack_forget()
-                # blink the next button to show action is needed
-                blink(button1)
+                # fake press the next button to show action is needed
+                fake_press(button1)
             # withdraw the wizard and run the GUI, collecting commands
             tk.deiconify()
             # pressing 'Next' sets the waitVar and continues
             tk.wait_variable(waitVar)
             get_commands = run_gui(run_cmds)
             if get_commands:
-                success = True
+                status = 0
                 get_commands = trim_list_header(get_commands)
                 # wrap the commands in titleset 'tags', then write out script
                 cmds = ['-titleset']
@@ -138,11 +135,8 @@ def next():
                 cmds.append('-end-titleset')
                 todisc_cmds.append(cmds)
             else:
-                success = False
-                pass
-                # FIXME
-            if success:
-                show_success()
+                status = 1 
+            show_success(status)
         tk.deiconify()
         # set button1 back to next command
         button1.configure(command=next)
@@ -227,6 +221,8 @@ def save_list():
     return [ l for l in temp_list if l]
 
 def run_gui(args=[]):
+    # TODO change todisc_cmds (is global) to todisc_opts
+    # TODO deiconfiy() in run_gui() using tk.after(100, tk.deiconify()) or so
     title = 'load saved script'
     script = 'todisc_commands.bash'
     cmd = ['tovid', 'gui'] + args
@@ -279,7 +275,7 @@ def rerun_options(Event=None):
     options = [ i for i in todisc_cmds[index] if not i in remove ]
     rerun_opts = run_gui(options)
     if rerun_opts:
-        show_success()
+        status = 0
         # trim header from todisc_cmds
         rerun_opts = trim_list_header(rerun_opts)
         # fill the listbox again if vmgm opts changed
@@ -293,8 +289,10 @@ def rerun_options(Event=None):
         # rewrite the saved script file
         write_script()
     else:
-        showinfo(message='Commands were not saved.\nYour project is unchanged.')
+        status = 1
     tk.deiconify()
+
+    show_success(status)
 
 def refill_listbox(listbox, opts):
     ''' repopulate the rerun listbox with option list titles
@@ -427,7 +425,7 @@ def set_last_page():
     page5_label3.pack(side=BOTTOM, anchor='w')
     # change 'Next' button to 'Run' and reposition buttons
     button1.pack_forget()
-    button2 = Button(button_frame, text='Exit', command=quit)
+    button2 = Button(button_frame, text='Exit', command=confirm_exit)
     button2.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
     button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
     button1.configure(text='Run script now')
@@ -437,21 +435,33 @@ def setVar():
     '''
     waitVar.set(True)
 
-def blink(widget):
+def fake_press(widget):
     """ cause widget to blink
     """
-    tk.after(1000, lambda: widget.flash())
+    # 3000 and 4000 ms because show_status uses up 3000 already
+    tk.after(3000, lambda: widget.configure(relief=SUNKEN))
     widget.update()
-    tk.after(1000, lambda: widget.flash())
+    tk.after(4000, lambda: widget.configure(relief=RAISED))
 
-def show_success():
-    frame2 = Frame(frame1, relief=RAISED, borderwidth=2)
+def show_success(status):
+    if status == 0:
+        text='Options saved!'
+    else:
+        text='Cancelled!'
+    frame2 = Frame(frame1)
     frame2.pack(pady=80)
-    pg2_label2 = Label(frame2, text='Options saved!', \
-      font=italic_font, foreground='blue')
+    pg2_label2 = Label(frame2, text=text, \
+      font=button_font, fg='blue', borderwidth=2, relief=GROOVE)
     pg2_label2.pack(side=BOTTOM, fill=BOTH, expand=1, anchor='w')
-    tk.after(1000, lambda: pg2_label2.configure(foreground='black'))
+    tk.after(1000, lambda: pg2_label2.configure(relief=SUNKEN))
     tk.after(2000, lambda: frame2.pack_forget())
+
+def confirm_exit(event=None):
+        """Exit the GUI, with confirmation prompt.
+        """
+        if askyesno(message="Exit?"):
+            setVar()
+            quit()
 
 class BigLabel (Text):
     """Looks similar to a Label widget, but with automatic word-wrap.
@@ -461,8 +471,8 @@ class BigLabel (Text):
         and the same background color as the master widget.
         """
         # Text widget with the same background color as the master
-        Text.__init__(self, master, font=font, wrap='word',
-                      background=master.cget('background'), borderwidth=0)
+        Text.__init__(self, master, font=font, wrap='word', width=70,
+                      background=tk.cget('background'), borderwidth=0, padx=10)
         # Try to intelligently group the text into paragraphs.
         # Two consecutive newlines start a new paragraph; a single
         # newline should be treated as a single space. Strip leading
@@ -516,8 +526,11 @@ style.load(inifile)
 heading_font = get_font(size=style.font[1]+8, _style='bold')
 lrg_font = get_font(size=style.font[1]+4, _style='bold')
 bold_font = get_font(_style='bold')
-italic_font = get_font(size=style.font[1]+2, _style='italic')
+button_font = get_font(size=style.font[1]+2)
 
+# bindings for exit
+tk.protocol("WM_DELETE_WINDOW", confirm_exit)
+tk.bind('<Control-q>', confirm_exit)
 
 ############################ Page 1 of wizard ############################
 pg1_txt1 = '''
