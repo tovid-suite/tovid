@@ -90,8 +90,10 @@ def next():
         get_commands = run_gui(run_cmds)
         # append to list and go to next page unless GUI was cancelled out of
         if not get_commands:
+            success = False
             return
         else:
+            success = True
             if len(todisc_cmds) > 1:
                 todisc_cmds.pop(1)
             trim_list_header(get_commands)
@@ -100,6 +102,8 @@ def next():
             cmds.append('-end-vmgm')
             todisc_cmds.append(cmds)
         tk.deiconify()
+        if success:
+            show_success()
 
     elif pages.index(current) == 3:
     # Page 4
@@ -125,12 +129,20 @@ def next():
             # pressing 'Next' sets the waitVar and continues
             tk.wait_variable(waitVar)
             get_commands = run_gui(run_cmds)
-            get_commands = trim_list_header(get_commands)
-            # wrap the the commands in titleset 'tags', then write out script
-            cmds = ['-titleset']
-            cmds.extend(get_commands)
-            cmds.append('-end-titleset')
-            todisc_cmds.append(cmds)
+            if get_commands:
+                success = True
+                get_commands = trim_list_header(get_commands)
+                # wrap the commands in titleset 'tags', then write out script
+                cmds = ['-titleset']
+                cmds.extend(get_commands)
+                cmds.append('-end-titleset')
+                todisc_cmds.append(cmds)
+            else:
+                success = False
+                pass
+                # FIXME
+            if success:
+                show_success()
         tk.deiconify()
         # set button1 back to next command
         button1.configure(command=next)
@@ -267,6 +279,7 @@ def rerun_options(Event=None):
     options = [ i for i in todisc_cmds[index] if not i in remove ]
     rerun_opts = run_gui(options)
     if rerun_opts:
+        show_success()
         # trim header from todisc_cmds
         rerun_opts = trim_list_header(rerun_opts)
         # fill the listbox again if vmgm opts changed
@@ -432,13 +445,13 @@ def blink(widget):
     tk.after(1000, lambda: widget.flash())
 
 def show_success():
-    frame2 = Frame(frame1, relief=GROOVE, borderwidth=2)
+    frame2 = Frame(frame1, relief=RAISED, borderwidth=2)
     frame2.pack(pady=80)
     pg2_label2 = Label(frame2, text='Options saved!', \
       font=italic_font, foreground='blue')
     pg2_label2.pack(side=BOTTOM, fill=BOTH, expand=1, anchor='w')
     tk.after(1000, lambda: pg2_label2.configure(foreground='black'))
-    tk.after(3000, lambda: frame2.pack_forget())
+    tk.after(2000, lambda: frame2.pack_forget())
 
 class BigLabel (Text):
     """Looks similar to a Label widget, but with automatic word-wrap.
@@ -613,7 +626,7 @@ pg3_listbox1.pack(fill=Y, expand=1, anchor='w')
 
 # create a vertical scrollbar to the right of the listbox
 yscroll = Scrollbar(pg3_frame1, command=pg3_listbox1.yview, orient=VERTICAL)
-yscroll.pack(side=LEFT, fill=Y)
+yscroll.pack(side=LEFT, fill=Y, anchor='nw')
 pg3_listbox1.configure(yscrollcommand=yscroll.set)
 
 # use entry widget to display/edit selection
