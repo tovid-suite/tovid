@@ -1,9 +1,0 @@
-?package(tovid-gui):needs="X11" section="Apps/Tools"\
-title="tovidgui"\
-description="GUI for tovid"\
-command="/usr/bin/tovidgui"
-
-?package(tovid-gui):needs="X11" section="Apps/Tools"\
-title="todiscgui"\
-description="GUI for todisc"\
-command="/usr/bin/todiscgui"
