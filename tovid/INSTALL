@@ -21,13 +21,13 @@ To install an official source distribution of tovid (from a tarball such as
 tovid-0.30.tar.gz), or from a quick-release, first extract the .tar.gz file,
 then do:
 
-    $ su -c ./setup.py install
+    $ su -c './setup.py install'
     or
     $ sudo ./setup.py install
 
 If you want to uninstall tovid, do this:
 
-    $ su -c ./setup.py uninstall
+    $ su -c './setup.py uninstall'
     or
     $ sudo ./setup.py uninstall
 
@@ -55,7 +55,7 @@ Run these commands to build the necessary files:
 
 Then run ./setup.py install as superuser:
 
-    $ su -c ./setup.py install
+    $ su -c './setup.py install'
     or
     $ sudo ./setup.py install
 
