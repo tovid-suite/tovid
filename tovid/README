@@ -11,7 +11,7 @@ the disc image.
 
 Quick install:
 
-    $ su -c ./setup.py install
+    $ su -c './setup.py install'
     or
     $ sudo ./setup.py install
 
