@@ -69,10 +69,19 @@ def install_tovid_ini(script_dir):
     """If tovid.ini doesn't exist in user's home directory,
     copy the one from script_dir.
     """
+    # If for some reason the default tovid.ini doesn't exist, return
     default_tovid_ini = os.path.join(script_dir, 'tovid.ini')
     if not os.path.exists(default_tovid_ini):
         return
-    user_tovid_ini = os.path.expanduser('~/.tovid/tovid.ini')
+
+    # Create ~/.tovid if it doesn't exist already
+    user_tovid_dir = os.path.expanduser('~/.tovid')
+    if not os.path.exists(user_tovid_dir):
+        print("Creating '%s'" % user_tovid_dir)
+        os.mkdir(user_tovid_dir)
+
+    # Copy default tovid.ini to ~/.tovid if it doesn't exist already
+    user_tovid_ini = os.path.join(user_tovid_dir, 'tovid.ini')
     if not os.path.exists(user_tovid_ini):
         print("Creating '%s'" % user_tovid_ini)
         shutil.copy(default_tovid_ini, user_tovid_ini)
@@ -95,7 +104,10 @@ def get_config_options(command):
     # and split into a list of individual options using shell syntax
     else:
         options = config.get(command, 'options')
-        return shlex.split(options)
+        options = shlex.split(options)
+        print("Read options from %s:" % filename)
+        print(' '.join(options))
+        return options
 
 
 def main(args):
