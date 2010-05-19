@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 
-from Tkinter import *
-from tkFileDialog import askopenfilename
-from subprocess import Popen, PIPE
 import os.path
+import shlex
+from Tkinter import *
+from subprocess import Popen, PIPE
 from libtovid.metagui import Style
 from libtovid.cli import _enc_arg
 from tkMessageBox import *
 from time import sleep
 from tempfile import mktemp
 from sys import argv
-import shlex
-import signal
 
 todisc_cmds = []
 all_options = []
@@ -20,7 +18,6 @@ error_msg = 'This is not a saved GUI script\n' + \
 labels = ['General', 'VMGM menu', 'Titlesets']
 curdir = os.path.abspath('')
 newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
-pid_file = mktemp(suffix='.pid', prefix='todiscgui.', dir='/tmp')
 os.environ['METAGUI_WIZARD'] = '1'
 
 # get metagui font configuration
@@ -86,24 +83,29 @@ def next():
     # Page 3
         run_cmds = list(pg3_listbox1.get(0, END))
         run_cmds = [l for l in run_cmds if l]
-        # withdraw the wizard and run the GUI, collecting commands
-        run_cmds.insert(0,  '-titles')
-        get_commands = run_gui(run_cmds)
-        # append to list and go to next page unless GUI was cancelled out of
-        if not get_commands:
-            status = 1
+        if len(run_cmds) < 2:
+            showerror(message='At least two titlesets (titles) must be defined')
             return
         else:
-            status = 0
-            if len(todisc_cmds) > 1:
-                todisc_cmds.pop(1)
-            trim_list_header(get_commands)
-            cmds = ['-vmgm']
-            cmds.extend(get_commands)
-            cmds.append('-end-vmgm')
-            todisc_cmds.append(cmds)
-        tk.deiconify()
-        show_status(status) 
+            # withdraw the wizard and run the GUI, collecting commands
+            run_cmds.insert(0,  '-titles')
+            get_commands = run_gui(run_cmds)
+            # append to list and go to next page unless GUI was cancelled out of
+            if not get_commands:
+                status = 1
+                tk.deiconify()
+                return
+            else:
+                status = 0
+                if len(todisc_cmds) > 1:
+                    todisc_cmds.pop(1)
+                trim_list_header(get_commands)
+                cmds = ['-vmgm']
+                cmds.extend(get_commands)
+                cmds.append('-end-vmgm')
+                todisc_cmds.append(cmds)
+            tk.deiconify()
+            show_status(status) 
     elif pages.index(current) == 3:
     # Page 4
         tk.withdraw()
@@ -119,15 +121,16 @@ def next():
                 pg4_txt2 += 'Press  [ Next >>> ]  to continue'
                 pg4_txt2 = pg4_txt2 % (int(i+1), options_list[i])
                 pg4_label2.configure(text=pg4_txt2)
-                # remove original text on the page
-                pg4_label1.pack_forget()
+                pg4_frame3.pack()
+                see_me(pg4_label2)
                 # fake press the next button to show action is needed
                 fake_press(button1)
             # withdraw the wizard and run the GUI, collecting commands
             tk.deiconify()
             # pressing 'Next' sets the waitVar and continues
             tk.wait_variable(waitVar)
-            get_commands = run_gui(run_cmds)
+            if is_running.get() == 1:
+                get_commands = run_gui(run_cmds)
             if get_commands:
                 status = 0
                 get_commands = trim_list_header(get_commands)
@@ -137,7 +140,14 @@ def next():
                 cmds.append('-end-titleset')
                 todisc_cmds.append(cmds)
             else:
+                # nothing saved, return to previous page
                 status = 1 
+                prev()
+                button1.configure(command=next)
+                tk.deiconify()
+                show_status(status)
+                return
+            pg4_frame3.pack_forget()
             show_status(status)
         tk.deiconify()
         # set button1 back to next command and set waitVar back to false
@@ -226,15 +236,10 @@ def run_gui(args=[]):
     # TODO deiconfiy() in run_gui() using tk.after(100, tk.deiconify()) or so
     title = 'load saved script'
     script = 'todisc_commands.bash'
-    cmd = ['tovid', 'gui'] + args
+    cmd = ['todiscgui'] + args
     todiscgui_cmd = Popen(cmd, stdout=PIPE)
     # sleep to avoid the 'void' of time before the GUI loads
     sleep(0.5)
-    pid = todiscgui_cmd.pid
-    # we need the pid later in case of interupt during wait_variable loop
-    write_pid = open(pid_file, 'w')
-    write_pid.write(str(pid))
-    write_pid.close()
     if tk.state() is not 'withdrawn':
         tk.withdraw()
     status = todiscgui_cmd.wait()
@@ -449,6 +454,13 @@ def fake_press(widget):
     widget.update()
     tk.after(4000, lambda: widget.configure(relief=RAISED))
 
+def see_me(widget):
+    # 3000 and 4000 ms because show_status uses up 3000 already
+    tk.after(3000, lambda: widget.configure(foreground='blue'))
+    widget.update()
+    tk.after(4000, lambda: widget.configure(foreground='black'))
+    
+
 def show_status(status):
     if status == 0:
         text='\nOptions saved!\n'
@@ -471,18 +483,13 @@ def show_status(status):
 def confirm_exit(event=None):
         """Exit the GUI, with confirmation prompt.
         """
+        global is_running
         if askyesno(message="Exit?"):
             # waitVar will cause things to hang, check if set and spring it
             if waitVar.get() == 1:
+                # set is_running to false so the gui doesn't get run
+                is_running.set(False)
                 setVar()
-            # springing the var will cause the GUI to run, we need to kill it
-        if os.path.exists(pid_file):
-            pid = open(pid_file).read().strip()
-            if pid:
-                    try:
-                        os.kill(int(pid), signal.SIGTERM)
-                    except OSError:
-                        pass
             quit()
 
 class BigLabel (Text):
@@ -512,6 +519,7 @@ class BigLabel (Text):
 path_cmd = ['tovid', '--prefix']
 tovid_prefix = Popen(path_cmd, stdout=PIPE)
 tovid_prefix = tovid_prefix.communicate()[0].strip()
+os.environ['PATH'] = tovid_prefix + os.pathsep + os.environ['PATH']
 
 # get script header
 shebang = '#!/usr/bin/env bash'
@@ -535,6 +543,8 @@ tkframe = Frame(tk)
 tkframe.pack(side=LEFT, fill=Y, anchor='w')
 tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
+is_running = BooleanVar()
+is_running.set(True)
 waitVar = BooleanVar()
 waitVar.set(False)
 button_frame = Frame(tk)
@@ -696,8 +706,9 @@ pg4_frame2.pack(fill=BOTH, expand=1)
 pg4_label1 = Label(pg4_frame2, text=pg4_txt1, justify=LEFT, font=style.font)
 pg4_label1.pack(fill=BOTH, expand=1)
 pg4_txt2 = ''
-pg4_label2 = \
-  Label(pg4_frame1, text=pg4_txt2, justify=LEFT, font=style.font)
+pg4_frame3 = Frame(pg4_frame1, borderwidth=2, relief=GROOVE)
+pg4_label2 = Label(pg4_frame3, text=pg4_txt2, justify=LEFT,
+  font=style.font, padx=10, pady=10)
 pg4_label2.pack(fill=BOTH, expand=1)
 
 ############################ Page 5 of wizard ############################
