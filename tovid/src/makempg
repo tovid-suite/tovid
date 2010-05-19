@@ -361,14 +361,6 @@ function get_args()
     while test $# -gt 0; do
         DO_SHIFT=:
         case "$1" in
-
-            # Use config file?
-            "-config" )
-                # Read configuration file
-                shift
-                read_config "$1"
-                ;;
-
             # PAL or NTSC
             "-pal" )
                 TVSYS="PAL"
@@ -639,27 +631,6 @@ function get_args()
     done
 } # End get_args()
 
-# ******************************************************************************
-# Read a configuration file
-# Args: $1: name of configuration file
-# ******************************************************************************
-function read_config()
-{
-    # Check that a config file exists and is readable
-    if ! test -r "$1"; then
-        exit_with_error "Could not find configuration file: $1"
-    fi
-
-    # Strip config contents down to just its command-line options
-    CONFIG_ARGS=$(grep '^-' $1 | tr '\n' ' ')
-    yecho "Using config file $1, containing the following options:"
-    if test -n "$CONFIG_ARGS"; then
-        yecho "$CONFIG_ARGS"
-        get_args $CONFIG_ARGS
-    else
-        yecho "(none)"
-    fi
-}
 
 # ******************************************************************************
 # Clean up temporary files
@@ -865,11 +836,7 @@ if test "$1" = "-v" || test "$1" = "-version"; then
 fi
 
 printf "%s\n" "$SCRIPT_NAME"
-# Read default configuration file, if it exists
-# (CONFIG_FILE is defined in tovid-init.in)
-if test -e $CONFIG_FILE; then
-    read_config $CONFIG_FILE
-fi
+
 # Read command-line options
 get_args "$@"
 
