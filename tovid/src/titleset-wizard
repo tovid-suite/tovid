@@ -11,6 +11,7 @@ from time import sleep
 from tempfile import mktemp
 from sys import argv
 import shlex
+import signal
 
 todisc_cmds = []
 all_options = []
@@ -19,6 +20,7 @@ error_msg = 'This is not a saved GUI script\n' + \
 labels = ['General', 'VMGM menu', 'Titlesets']
 curdir = os.path.abspath('')
 newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
+pid_file = mktemp(suffix='.pid', prefix='todiscgui.', dir='/tmp')
 os.environ['METAGUI_WIZARD'] = '1'
 
 # get metagui font configuration
@@ -63,7 +65,7 @@ def next():
             if askokcancel(message=rename_msg):
                 os.rename(script_file, newname)
             else:
-                show_success(1)
+                show_status(1)
                 return
 
         # withdraw the wizard and run the GUI, collecting commands
@@ -79,7 +81,7 @@ def next():
             cmds = [l for l in get_commands if l]
             todisc_cmds.append(cmds)
         tk.deiconify()
-        show_success(status)
+        show_status(status)
     elif pages.index(current) == 2:
     # Page 3
         run_cmds = list(pg3_listbox1.get(0, END))
@@ -101,7 +103,7 @@ def next():
             cmds.append('-end-vmgm')
             todisc_cmds.append(cmds)
         tk.deiconify()
-        show_success(status) 
+        show_status(status) 
     elif pages.index(current) == 3:
     # Page 4
         tk.withdraw()
@@ -136,10 +138,11 @@ def next():
                 todisc_cmds.append(cmds)
             else:
                 status = 1 
-            show_success(status)
+            show_status(status)
         tk.deiconify()
-        # set button1 back to next command
+        # set button1 back to next command and set waitVar back to false
         button1.configure(command=next)
+        waitVar.set(False)
         write_script()
 
         ####################  prepare the next pages listbox ##################
@@ -147,7 +150,7 @@ def next():
         # allow editing the saved lists with the GUI
         # delete titleset listbox contents else it increases with page movement
         # insert or reinsert options list into titleset listbox
-        pg5_listbox1.pack(side=TOP, anchor='w')
+        pg5_listbox1.pack(side=TOP, anchor='w', fill=BOTH, expand=1)
         refill_listbox(pg5_listbox1, options_list)
         if (numtitles > 10): numtitles = 10
         options_list = save_list()
@@ -159,12 +162,10 @@ def next():
         root = Tk()
         root.option_add("*Dialog.msg.wrapLength", "10i")
         root.withdraw()
-        mess = 'Thanks for using the titleset wizard and tovid!\n'
         if askyesno(message="Run saved script in xterm now?"):
             run_in_xterm(script_file)
         else:
-            mess += 'You can run the script later with:\nbash "%s"' % script_file
-            showinfo(message=mess)
+            show_status(1)
         root.destroy()
     move(mv_amt)
 
@@ -229,6 +230,11 @@ def run_gui(args=[]):
     todiscgui_cmd = Popen(cmd, stdout=PIPE)
     # sleep to avoid the 'void' of time before the GUI loads
     sleep(0.5)
+    pid = todiscgui_cmd.pid
+    # we need the pid later in case of interupt during wait_variable loop
+    write_pid = open(pid_file, 'w')
+    write_pid.write(str(pid))
+    write_pid.close()
     if tk.state() is not 'withdrawn':
         tk.withdraw()
     status = todiscgui_cmd.wait()
@@ -292,7 +298,7 @@ def rerun_options(Event=None):
         status = 1
     tk.deiconify()
 
-    show_success(status)
+    show_status(status)
 
 def refill_listbox(listbox, opts):
     ''' repopulate the rerun listbox with option list titles
@@ -443,21 +449,21 @@ def fake_press(widget):
     widget.update()
     tk.after(4000, lambda: widget.configure(relief=RAISED))
 
-def show_success(status):
+def show_status(status):
     if status == 0:
         text='\nOptions saved!\n'
     else:
         text='\nCancelled!\n'
-    frame2 = Frame(frame1, borderwidth=2, relief=RIDGE)
+    frame2 = Frame(frame1, borderwidth=1, relief=RAISED)
     frame2.pack(pady=80)
-    pg2_label2 = Label(frame2, text=text, font=button_font, fg='blue')
+    pg2_label2 = Label(frame2, text=text, font=medium_font, fg='blue')
     pg2_label2.pack(side=TOP)
     pg2_label3 = Label(frame2, text='ok', borderwidth=2, relief=GROOVE)
     pg2_label3.pack(side=TOP)
     #frame2 = Frame(frame1)
     #frame2.pack(pady=80)
     #pg2_label2 = Label(frame2, text=text, \
-    #  font=button_font, fg='blue', borderwidth=2, relief=GROOVE)
+    #  font=medium_font, fg='blue', borderwidth=2, relief=GROOVE)
     #pg2_label2.pack(side=BOTTOM, fill=BOTH, expand=1, anchor='w')
     tk.after(1000, lambda: pg2_label3.configure(relief=SUNKEN))
     tk.after(2000, lambda: frame2.pack_forget())
@@ -466,7 +472,17 @@ def confirm_exit(event=None):
         """Exit the GUI, with confirmation prompt.
         """
         if askyesno(message="Exit?"):
-            setVar()
+            # waitVar will cause things to hang, check if set and spring it
+            if waitVar.get() == 1:
+                setVar()
+            # springing the var will cause the GUI to run, we need to kill it
+        if os.path.exists(pid_file):
+            pid = open(pid_file).read().strip()
+            if pid:
+                    try:
+                        os.kill(int(pid), signal.SIGTERM)
+                    except OSError:
+                        pass
             quit()
 
 class BigLabel (Text):
@@ -531,8 +547,8 @@ style = Style()
 style.load(inifile)
 heading_font = get_font(size=style.font[1]+8, _style='bold')
 lrg_font = get_font(size=style.font[1]+4, _style='bold')
+medium_font = get_font(size=style.font[1]+2)
 bold_font = get_font(_style='bold')
-button_font = get_font(size=style.font[1]+2)
 
 # bindings for exit
 tk.protocol("WM_DELETE_WINDOW", confirm_exit)
@@ -650,7 +666,7 @@ pg3_listbox1.configure(yscrollcommand=yscroll.set)
 
 # use entry widget to display/edit selection
 enter1 = Entry(page3, width=50, text='Enter titles here')
-enter1.pack(fill=Y, expand=1)
+enter1.pack(fill=Y, expand=0)
 # set focus on entry
 enter1.select_range(0, 'end')
 enter1.focus_set()
@@ -675,11 +691,13 @@ you will need to press  [ Next >>> ]  for each titleset.
 '''
 pg4_frame1 = Frame(page4)
 pg4_frame1.pack(side=TOP, fill=BOTH, expand=1)
-pg4_label1 = Label(pg4_frame1, text=pg4_txt1, justify=LEFT, font=style.font)
+pg4_frame2 = Frame(pg4_frame1, borderwidth=1)
+pg4_frame2.pack(fill=BOTH, expand=1)
+pg4_label1 = Label(pg4_frame2, text=pg4_txt1, justify=LEFT, font=style.font)
 pg4_label1.pack(fill=BOTH, expand=1)
 pg4_txt2 = ''
 pg4_label2 = \
-  Label(pg4_frame1, text=pg4_txt2, justify=LEFT, font=bold_font)
+  Label(pg4_frame1, text=pg4_txt2, justify=LEFT, font=style.font)
 pg4_label2.pack(fill=BOTH, expand=1)
 
 ############################ Page 5 of wizard ############################
