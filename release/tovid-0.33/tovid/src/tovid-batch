@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+ME="[tovid-batch]:"
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run tovid-batch as:\ntovid batch OPTIONS"
+exit 1 ; }
+
+# tovid-batch
+# Part of the tovid suite
+# =======================
+# A bash script for batch video conversion.
+#
+# Project homepage: http://tovid.wikia.com
+#
+# Copyright (C) 2005-2010
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+
+SCRIPT_NAME=`cat << EOF
+--------------------------------
+tovid-batch
+A batch conversion script using tovid
+Part of the tovid suite, version $TOVID_VERSION
+$TOVID_HOME_PAGE
+--------------------------------
+EOF`
+
+USAGE=`cat << EOF
+Usage: tovid batch [OPTIONS] -infiles <input files>
+
+OPTIONS may be any options that tovid accepts. See 'man tovid'.
+
+EOF`
+
+SEPARATOR="=============================================================================="
+
+# No tovid arguments to start with
+TOVID_ARGS=""
+
+# ***********************************
+# EXECUTION BEGINS HERE
+# ***********************************
+
+precho "$SCRIPT_NAME"
+
+# Get all arguments up to -infiles
+while test $# -gt 0; do
+    if test "$1" = "-infiles"; then
+        shift
+        break
+    else
+        TOVID_ARGS="$TOVID_ARGS $1"
+    fi
+
+    # Get next argument
+    shift
+done
+
+# If no infiles, print usage notes
+if test $# -le 0; then
+    precho "$USAGE"
+    echo "$SEPARATOR"
+    echo "Please provide a list of files to encode using -infiles"
+    exit 1
+fi
+
+# For every input filename provided, run tovid with the given options
+for FILE in "$@"; do
+    echo $SEPARATOR
+    if test -e "$FILE"; then
+       EXT=$(echo "$FILE" | awk -F '.' '{ print $NF }')
+       FILENAME=$(basename "$FILE" ."$EXT")
+       TOVID_CMD="tovid -noask $TOVID_ARGS -in \"$FILE\" -out \"$FILENAME.tovid_encoded\""
+       precho $TOVID_CMD
+       eval $TOVID_CMD
+    else
+       echo "Couldn't find file \"$FILE\", not encoding it."
+    fi
+done

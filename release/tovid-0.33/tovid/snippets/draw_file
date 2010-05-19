@@ -1,0 +1,22 @@
+#!/bin/bash
+# how to use  convert -draw 'text . . .  with a variable for the text string
+
+if [ $# -eq 0 ]; then
+    echo -e "Usage: $0 \"your title\""
+    exit 1
+fi
+
+(
+cat  <<EOF
+font Candice
+font-size 40
+gravity south 
+fill white
+stroke black
+text 0,30 "$1"
+
+EOF
+)  > draw_file
+
+convert -size 400x300 xc:DodgerBlue -draw @draw_file draw.png
+#-trim +repage draw.png

@@ -1,0 +1,137 @@
+#! /usr/bin/env python
+# pymakexml
+
+__doc__ = \
+r"""Generate vcdimager/dvdauthor XML for an (S)VCD/DVD disc.
+
+Usage:
+
+    pymakexml [OPTIONS] {video1.mpg video2.mpg ...} -out OUTFILE[.xml]
+
+At minimum, provide a list of .mpg video files that will be played back in
+sequence, for example:
+
+    pymakexml video1.mpg video2.mpg video3.mpg -out mydisc
+
+See the pymakexml manual page ('man pymakexml') for options and examples.
+"""
+
+import os
+import sys
+import libtovid
+from libtovid.author import *
+from libtovid.util.output import red, green, blue
+
+HEADER = """----------------------------------------------
+pymakexml, part of tovid (http://tovid.wikia.com/)
+----------------------------------------------"""
+
+def error(message):
+    """Exit with an error message, after printing usage notes."""
+    print(__doc__)
+    print(red("Error: ") + message)
+    sys.exit()
+
+# Main program
+if __name__ == '__main__':
+    print(HEADER)
+
+    # If no args provided, print usage notes
+    if len(sys.argv) < 2:
+        error("Please provide at least one video to author,"\
+              " and the name of an output file.")
+
+    args = sys.argv[1:]
+    disc = Disc()
+    outfile = None
+    overwrite = False
+    video = None
+
+    if '-menu' not in args:
+        print("No -menu option provided; creating a menuless disc.")
+        titleset = Titleset()
+        disc.titlesets.append(titleset)
+
+    # Parse command-line arguments
+    while args:
+        arg = args.pop(0)
+
+        if arg in ['-dvd', '-vcd', '-svcd']:
+            disc.format = arg.lstrip('-')
+
+        elif arg in ['-pal', '-ntsc']:
+            disc.tvsys = arg.lstrip('-')
+
+        elif arg == '-overwrite':
+            overwrite = True
+
+        elif arg == '-topmenu':
+            disc.topmenu = Menu(args.pop(0))
+
+        elif arg == '-menu':
+            titleset = Titleset()
+            titleset.menu = Menu(args.pop(0))
+            disc.titlesets.append(titleset)
+
+        elif arg == '-chapters':
+            if not video:
+                error("The -chapters option must follow a video filename.")
+            chapter_list = args.pop(0)
+            video.chapters = chapter_list.split(',')
+
+        elif arg == '-out':
+            outfile = args.pop(0)
+
+        elif arg.startswith('-'):
+            error("Unrecognized command-line option: %s" % arg)
+
+        # Assume everything else is a video filename
+        else:
+            video = Video(arg)
+            titleset.add(video)
+
+
+    # Make sure outfile was provided
+    if not outfile:
+        error("Please provide an output file with -out")
+
+    # Add .xml if necessary
+    if not outfile.endswith('.xml'):
+        outfile = outfile + '.xml'
+
+    # Check for existing output file
+    if os.path.exists(outfile):
+        if overwrite:
+            print(blue("Overwriting existing file: %s" % outfile))
+        else:
+            error("File '%s' already exists." % outfile +\
+                  " Use the -overwrite option to overwrite it.")
+
+    disc.name = outfile.rstrip('.xml')
+
+    # Print out disc structure
+    print(' ')
+    print("Creating the following disc structure:")
+    print(' ')
+    if disc.topmenu:
+        print("  Top menu: %s" % disc.topmenu.filename)
+    for ts in disc.titlesets:
+        if ts.menu:
+            print("      Menu: %s" % ts.menu.filename)
+        for video in ts.videos:
+            print("          Video: %s" % video.filename)
+    print
+
+    # Get XML for authoring the disc
+    if disc.format == 'dvd':
+        xml = dvdauthor_xml(disc)
+    else:
+        xml = vcdimager_xml(disc)
+
+    print("Writing XML to file: %s" % outfile)
+    xml_file = open(outfile, 'w')
+    xml_file.write(xml)
+    xml_file.close()
+
+    print("Done! Thanks for using pymakexml.")
+

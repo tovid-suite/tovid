@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+ME="[tovid-interactive]:"
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run tovid-interactive as:\ntovid interactive OPTIONS"
+exit 1 ; }
+
+# tovid-interactive
+# Part of the tovid suite
+# =======================
+# A bash script with an interactive frontend to the tovid
+# script. This script prompts the user for all options, and
+# then runs the tovid script with the selected options.
+#
+# Project homepage: http://tovid.wikia.com
+#
+# Copyright (C) 2005-2010
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+
+WELCOME=`cat << EOF
+--------------------------------
+tovid-interactive
+Interactive CLI front-end to tovid
+Part of the tovid suite, version $TOVID_VERSION
+$TOVID_HOME_PAGE
+--------------------------------
+
+Welcome to the tovid-interactive script. This script is an interactive front-end for the tovid video conversion script. I will ask you several questions about the video you want to encode, and then run the tovid script with the options you choose.
+
+EOF`
+
+SEPARATOR="==============================================================================="
+
+precho $"$WELCOME"
+echo $SEPARATOR
+
+# Make sure tovid is in the path
+if ! test -x $(which tovid); then
+  precho "Oops! I can't find tovid in your path. Before you use this script, please install the tovid suite by running the 'configure' script from the directory where you unzipped tovid."
+  exit 1
+fi
+
+# 7 Get the file to encode
+echo "Step 1 of 7:"
+if test $# -eq 1; then
+  INFILE="$1"
+  echo "Encoding the filename provided on the command-line:"
+  echo "$1"
+  echo $SEPARATOR
+else
+  INFILE=""
+  if test $# -gt 1; then
+    echo "I found more than one command line paramter! Please give only one"
+    echo "video to encode. You gave me $#:"
+    echo "$@"
+  fi
+  precho "What video file do you want to encode? Please use the full path name if the file is not in the current directory. Hint: if you don't know the full name of the file, you can press [control]-C now, and run tovid-interactive followed by the name of the file."
+  while ! test -e "$INFILE"; do
+    echo -n "filename: "
+    read INFILE
+    if ! test -e "$INFILE"; then
+       echo "Cannot find \"$INFILE\"! Please try again."
+    fi
+  done
+  echo $SEPARATOR
+fi
+
+# 6 Ask for format
+echo "Step 2 of 7:"
+echo "You can encode this video to one of the following formats:"
+echo "For burning onto DVD:"
+echo "   dvd       DVD format             720x480 NTSC, 720x576 PAL"
+echo "   half-dvd  Half-DVD format        352x480 NTSC, 352x576 PAL"
+echo "   dvd-vcd   VCD-on-DVD format      352x240 NTSC, 352x288 PAL"
+echo "For burning onto CD:"
+echo "   vcd       Video CD format        352x240 NTSC, 352x288 PAL"
+echo "   svcd      Super Video CD format  480x480 NTSC, 480x576 PAL"
+
+VIDFORMAT="none"
+until $(verify $VIDFORMAT set "dvd half-dvd dvd-vcd vcd svcd")
+do
+  echo "Please enter one of the formats listed (dvd, half-dvd, dvd-vcd, vcd, svcd)."
+  echo -n "format: "
+  read VIDFORMAT
+done
+  echo $SEPARATOR
+
+# 5 Ask for NTSC or PAL
+echo "Step 3 of 7:"
+precho "Do you want the video to be NTSC or PAL? If you live in the Americas or Japan, you probably want NTSC; if you live in Europe, Australia, or New Zealand, you probably want PAL."
+
+TVSYS="none"
+until $(verify $TVSYS set "ntsc pal")
+do
+  echo "Please use lowercase (ntsc, pal)."
+  echo -n "ntsc or pal: "
+  read TVSYS
+done
+echo $SEPARATOR
+
+# 4 Ask for aspect ratio
+echo "Step 4 of 7:"
+echo "You can encode to three different screen formats:"
+echo "   full        If your video is full-screen (4:3 aspect ratio)"
+echo "   wide        If your video is wide-screen (16:9 aspect ratio)"
+echo "   panavision  If your video is theatrical wide-screen (2.35:1 aspect ratio)"
+precho "If you choose wide or panavision, the video will be 'letterboxed' to fit a standard TV screen. Most TV programs are 'full'; many movies are 'wide', and some movies are 'panavision' (if they look very wide and skinny)."
+
+ASPECT="none"
+until $(verify $ASPECT set "full wide panavision")
+do
+echo "Please enter one of the screen formats listed (full, wide, panavision)."
+echo -n "screen format: "
+read ASPECT
+done
+echo $SEPARATOR
+
+# 3 Normalize audio?
+echo "Step 5 of 7:"
+precho "In some videos, the volume may be too quiet or too loud. You can fix this by normalizing the audio."
+
+NORMALIZE="none"
+until $(verify $NORMALIZE set "n N y Y yes Yes")
+do
+echo -n "normalize audio (default yes) [y/n]? "
+read NORMALIZE
+done
+if test "x$NORMALIZE" = "xn" || test "x$NORMALIZE" = "xN"; then
+  NORMALIZE=""
+else
+  NORMALIZE="-normalize"
+fi
+echo $SEPARATOR
+
+# 2 Any custom options?
+echo "Step 6 of 7:"
+precho "Would you like to pass other options to tovid? (see man tovid for more) Add any other options you want as if you were calling tovid. For example, if you wanted to add subtitles, you would type '-subtitles <file>'. Type [enter] for no custom options."
+echo -n "custom tovid options: "
+read CUSTOM_OPTIONS
+echo $SEPARATOR
+
+# 1 Get output prefix
+echo "Step 7 of 7:"
+precho "You are almost ready to encode your video. All I need now is the name you want to use for the output file. You don't need to give a filename extension (like .mpg); just type a name like 'MyVideo1'."
+echo -n "output name: "
+read OUT_PREFIX
+echo $SEPARATOR
+
+# Print last message and call tovid
+echo "Great! I will now start tovid with the options you chose. Here is the"
+echo "command that will be executed:"
+TOVID_CMD="tovid $NORMALIZE -$VIDFORMAT -$TVSYS -$ASPECT $CUSTOM_OPTIONS -in \"$INFILE\" -out \"$OUT_PREFIX\""
+echo $SEPARATOR
+precho "$TOVID_CMD"
+echo $SEPARATOR
+echo "Starting tovid in 5 seconds..."
+for COUNTER in 5 4 3 2 1; do
+  sleep 1s
+  echo -n "$COUNTER "
+done
+echo "Here goes!"
+eval $TOVID_CMD
+exit 0

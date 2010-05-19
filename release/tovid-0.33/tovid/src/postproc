@@ -1,0 +1,296 @@
+#!/usr/bin/env bash
+ME="[postproc]:"
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run postproc as:\ntovid postproc OPTIONS"
+exit 1 ; }
+
+# postproc
+# Part of the tovid suite
+# =======================
+# A bash script for doing post-encoding processing on
+# MPEG video files. Can requantize (shrink) video and
+# adjust A/V sync.
+#
+# Project homepage: http://tovid.wikia.com
+#
+# Copyright (C) 2005-2010
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+
+SCRIPT_NAME=`cat << EOF
+--------------------------------
+tovid postproc
+Post-process video files
+Version $TOVID_VERSION
+$TOVID_HOME_PAGE
+--------------------------------
+EOF`
+
+USAGE=`cat << EOF
+Usage: tovid postproc [OPTIONS] {input file} {output file}
+
+Where OPTIONS may be any of the following:
+
+  -audiodelay NUM    Delay audio by NUM milliseconds
+  -normalize         Normalize the audio
+  -amplitudeNUM[dB]  Apply a gain of NUM (0 - 1.0, add dB for decibel gain)
+  -shrink NUM        Shrink video by factor NUM (1.0 - 2.0)
+  -parallel          Run all processes in parallel (can save time)
+  -debug             Keep a log of actions and output
+
+See the tovid manual page ('man tovid') for additional documentation.
+
+EOF`
+
+SEPARATOR="========================================================="
+
+# Default values
+TMP_FILE="postproc.fileinfo.$PPID"
+AUDIO_DELAY=""
+SHRINK_FACTOR=""
+DO_NORM=false
+AUDIO_AMPLITUDE=""
+DO_SHRINK=false
+MUX_OPTS=""
+DEBUG=false
+# File to use for saving postprocessing statistics
+STAT_DIR=$HOME/.tovid
+STAT_FILE="$STAT_DIR/stats.postproc"
+SHRINK_PERCENT="0"
+PARALLEL=false
+# Video format in use
+VIDEO_FORMAT="DVD"
+BACKGR=""
+
+# Print script name, usage notes, and optional error message, then exit.
+# Args: $1 == text string containing error message
+usage_error ()
+{
+  echo "$USAGE"
+  echo "$SEPARATOR"
+  echo "$@"
+  exit 1
+}
+
+# Remove temporary files
+cleanup ()
+{
+    echo "Cleaning up..."
+    rm -fv video_shrink video_dump audio_dump normed_audio
+
+}
+
+
+# ***********************************
+# EXECUTION BEGINS HERE
+# ***********************************
+
+echo "$SCRIPT_NAME"
+
+# Make sure there are at least two arguments (infile and outfile)
+if test $# -lt 2; then
+  usage_error "Error: Please provide an input filename and an output filename."
+fi
+
+while test ${1:0:1} = "-"; do
+    case "$1" in
+        "-audiodelay" )
+            shift
+            AUDIO_DELAY="-O ${1}ms"
+            ;;
+        "-shrink" )
+            shift
+            DO_SHRINK=:
+            SHRINK_FACTOR="$1"
+            assert_dep "$transcode" "You are missing dependencies required for shrinking video!"
+            ;;
+        "-parallel" )
+            PARALLEL=:
+            cleanup
+            mkfifo video_dump
+            mkfifo audio_dump
+            mkfifo video_shrink
+            BACKGR="&"
+            ;;
+        "-normalize" )
+            DO_NORM=:
+            ;;
+        "-amplitude" )
+            shift
+            AUDIO_AMPLITUDE="--amplitude=$1"
+            DO_NORM=:
+            ;;
+        "-debug" )
+            DEBUG=:
+            ;;
+    esac
+
+    # Get next argument
+    shift
+done
+
+
+IN_FILE="$1"
+shift
+OUT_FILE="$1"
+
+echo $SEPARATOR
+
+$DO_NORM && assert_dep "sox" "You are missing dependancies necessarily for processing audio wav's"
+if $DO_NORM && $PARALLEL; then
+   echo "Cannot normalize audio in parallel mode! Turning off -parallel."
+   PARALLEL=false
+   cleanup
+fi
+
+# Figure out what format it is. 44.1khz audio can be VCD or SVCD,
+# 48khz audio is DVD.
+echo "Gathering file information. This may take a while."
+if eval $(idvid -terse "$IN_FILE"); then :; else
+    echo "Could not identify source video: $IN_FILE"
+    exit 1
+fi
+video_format=$(tr A-Z a-z <<< $ID_VIDEO_FORMAT)video
+
+if test $ID_AUDIO_RATE -eq "48000"; then
+    MUX_OPTS="-V -f 8"
+    VIDEO_FORMAT="DVD"
+elif test $ID_AUDIO_RATE -eq "44100"; then
+    # VCD is 352 wide, SVCD is 480 wide
+    if test $ID_VIDEO_WIDTH -eq "352"; then
+        MUX_OPTS="-f 1"
+        VIDEO_FORMAT="VCD"
+    elif test $ID_VIDEO_WIDTH -eq "480"; then
+        MUX_OPTS="-V -f 4"
+        VIDEO_FORMAT="SVCD"
+    fi
+fi
+
+echo "Dumping audio and video streams with the following commands:"
+
+# Dump audio and video
+if $DO_NORM; then
+    AUDIO_DUMP="ffmpeg -i  \"$IN_FILE\" -vn -f wav -y audio_dump"
+else
+    #AUDIO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpaudio -dumpfile audio_dump"
+    AUDIO_DUMP="ffmpeg -i \"$IN_FILE\" -vn -f $ID_AUDIO_CODEC -acodec copy -y audio_dump"
+fi
+VIDEO_DUMP="ffmpeg -i \"$IN_FILE\" -an -f $video_format -vcodec copy -y video_dump"
+VID_STREAM="video_dump"
+
+echo "$AUDIO_DUMP"
+echo "$VIDEO_DUMP"
+# Should always be safe to put audio decode in the background
+eval $AUDIO_DUMP > $TMP_FILE 2>&1 &
+eval $VIDEO_DUMP >> $TMP_FILE 2>&1 $BACKGR
+
+# Let the audio process finish if not in parallel mode (should always finish
+# before video, so this is just precautionary)
+$PARALLEL || wait
+
+# Normalize/gain
+if $DO_NORM; then
+   AUDIO_NORM="$NORMALIZE $AUDIO_AMPLITUDE audio_dump"
+
+   echo "Normalizing audio/applying gain with the following command:"
+   echo "$AUDIO_NORM"
+   eval $AUDIO_NORM
+
+   # Re-encode audio
+   mv -v audio_dump normed_audio
+   AUDIO_BITRATE=$(expr $ID_AUDIO_BITRATE / 1000)
+   AUDIO_ENC="ffmpeg -i normed_audio -vn -ab ${AUDIO_BITRATE}k -ar $ID_AUDIO_RATE"
+   AUDIO_ENC="$AUDIO_ENC -ac $ID_AUDIO_NCH -acodec $ID_AUDIO_CODEC"
+   AUDIO_ENC="$AUDIO_ENC -y audio_dump.$ID_AUDIO_CODEC"
+
+   echo "Encoding the normalized/gained audio stream with the following command:"
+   echo "$AUDIO_ENC"
+   eval $AUDIO_ENC
+
+   mv -v audio_dump.$ID_AUDIO_CODEC audio_dump
+fi
+
+# Shrink, if requested
+if $DO_SHRINK; then
+    # Can't shrink VCD
+    if test $VIDEO_FORMAT = "VCD"; then
+        echo $SEPARATOR
+        echo "This file appears to be in VCD format. Unfortunately, the"
+        echo "VCD specification does not allow shrinking (requantization)."
+        echo "Shrinking will be skipped."
+        echo $SEPARATOR
+    else
+        START_SIZE=$( ls -l video_dump | awk '{print $5}' )
+        echo $SEPARATOR
+        echo "Shrinking video stream by a factor of $SHRINK_FACTOR"
+        SHRINK_CMD="tcrequant -i video_dump -o video_shrink -f $SHRINK_FACTOR"
+        echo "$SHRINK_CMD"
+        eval $SHRINK_CMD $BACKGR
+        VID_STREAM="video_shrink"
+        if $PARALLEL; then
+            :
+        else
+            wait
+            SHRINK_SIZE=$( ls -l video_shrink | awk '{print $5}' )
+            SHRINK_PERCENT=$(expr 100 \- \( 100 \* $SHRINK_SIZE \/ $START_SIZE \))
+            echo "Video stream was shrunk by $SHRINK_PERCENT%"
+        fi
+    fi
+fi
+
+echo $SEPARATOR
+
+# Multiplex audio and video back together
+echo "Multiplexing audio and video streams with the following command:"
+MPLEX_CMD="mplex $VID_STREAM audio_dump -o \"$OUT_FILE\" $MUX_OPTS $AUDIO_DELAY"
+echo "$MPLEX_CMD"
+eval $MPLEX_CMD >> $TMP_FILE 2>&1
+
+# For parallel, compare infile and outfile sizes
+if $PARALLEL; then
+    START_SIZE=$( ls -l "$IN_FILE" | awk '{print $5}' )
+    SHRINK_SIZE=$( ls -l "$OUT_FILE" | awk '{print $5}' )
+    SHRINK_PERCENT=$(expr 100 \- \( 100 \* $SHRINK_SIZE \/ $START_SIZE \))
+    echo "Video stream was shrunk by $SHRINK_PERCENT%"
+fi
+
+echo $SEPARATOR
+
+cleanup
+
+# Create stats directory and save video statistics
+mkdir -p $STAT_DIR
+FINAL_STATS=`cat << EOF
+postproc $TOVID_VERSION
+File: $OUT_FILE
+Shrink factor: $SHRINK_FACTOR
+Shrunk by: $SHRINK_PERCENT%
+EOF`
+echo $"$FINAL_STATS" >> $STAT_FILE
+
+# If doing debugging, keep log and print message
+if $DEBUG; then
+  echo "All output has been saved in the file: $TMP_FILE."
+else
+  rm $TMP_FILE
+fi
+
+echo "Done. Thanks for using postproc!"

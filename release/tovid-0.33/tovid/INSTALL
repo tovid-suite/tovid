@@ -1,0 +1,87 @@
+INSTALL
+=====================================================
+tovid (http://tovid.wikia.com/)
+Video disc authoring software
+=====================================================
+
+This file contains configuration and installation instructions for tovid.
+
+!!!!
+NOTE: Prior releases of tovid used autoconf and automake, but these will
+be discontinued in a future release. As of tovid-0.33, setup.py is the
+recommended installation method.
+!!!!
+
+
+=====================================================
+INSTALLING FROM DISTRIBUTED SOURCE (*.tar.gz)
+=====================================================
+
+To install an official source distribution of tovid (from a tarball such as
+tovid-0.30.tar.gz), or from a quick-release, first extract the .tar.gz file,
+then do:
+
+    $ su -c ./setup.py install
+    or
+    $ sudo ./setup.py install
+
+If you want to uninstall tovid, do this:
+
+    $ su -c ./setup.py uninstall
+    or
+    $ sudo ./setup.py uninstall
+
+See the tovid homepage (http://tovid.wikia.com/) for additional documentation.
+
+
+=====================================================
+INSTALLING FROM SUBVERSION
+=====================================================
+
+New subversion check-outs have two files that must be "compiled"
+prior to installation:
+
+    docs/man/tovid.1
+    src/tovid-init
+
+To build the manpage, you will need txt2tags:
+
+    http://txt2tags.sourceforge.net
+
+Run these commands to build the necessary files:
+
+    $ ./setup.py build_docs
+    $ ./setup.py build_tovid_init
+
+Then run ./setup.py install as superuser:
+
+    $ su -c ./setup.py install
+    or
+    $ sudo ./setup.py install
+
+
+=====================================================
+BUILDING A DISTRIBUTABLE ARCHIVE
+=====================================================
+
+If you are a developer or packager, you may wish to consult the distutils
+documentation for more information:
+
+    http://docs.python.org/library/distutils.html
+
+To build a distributable .tar.gz file of tovid, first build the manpage and
+tovid-init:
+
+    $ ./setup.py build_docs
+    $ ./setup.py build_tovid_init
+
+Then do the build and sdist:
+
+    $ ./setup.py build
+    $ ./setup.py sdist
+
+Most of the files to include in the distribution are determined by what's
+listed in the setup.py setup() method; any extra files for distribution are
+listed in the MANIFEST.in file in this directory.
+
+
