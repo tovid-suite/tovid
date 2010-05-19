@@ -47,8 +47,7 @@ _scripts = {
     'gui': 'todiscgui',
     'mpg': 'makempg',
     'batch': 'tovid-batch',
-    #'titlesets': 'make_titlesets',
-    'titlesets': 'titleset-wizard',
+    'titlesets': 'make_titlesets',
 }
 
 
@@ -152,16 +151,19 @@ def main(args):
 
     # Get any options found in tovid.ini
     ini_args = get_config_options(command)
+
     # Summon the script and catch keyboard interruptions
     try:
-        status = subprocess.call([script] + ini_args + args)
+        proc = subprocess.Popen([script] + ini_args + args)
+        proc.wait()
     except KeyboardInterrupt:
         print("\n!!! tovid was manually interrupted. Exiting.")
+        proc.kill()
         # Sleep a second to let the script clean up
         time.sleep(1)
         sys.exit(1)
     else:
-        sys.exit(status)
+        sys.exit(proc.returncode)
 
 
 if __name__ == '__main__':
