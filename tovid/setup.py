@@ -31,9 +31,9 @@ def svn_version():
 # Current version number of tovid, as a string.
 # Examples:
 # Current SVN version number
-_tovid_version = svn_version()
+#_tovid_version = svn_version()
 # Official release number
-#_tovid_version = '0.33'
+_tovid_version = '0.33'
 
 
 import sys
