@@ -13,15 +13,14 @@ from sys import argv
 
 todisc_cmds = []
 all_options = []
-error_msg = 'This is not a saved GUI script\n' + \
-  'Please select the file that you saved'
 labels = ['General', 'VMGM menu', 'Titlesets']
 curdir = os.path.abspath('')
 newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
 os.environ['METAGUI_WIZARD'] = '1'
 
-# get metagui font configuration
 def get_font(name='', size='', _style=''):
+    """Get metagui font configuration
+    """
     font = [name, size, _style]
     for i in range(len(style.font)):
         if not font[i]:
@@ -29,6 +28,8 @@ def get_font(name='', size='', _style=''):
     return font
 
 def move(amt):
+    """Move wizard to a new page by unpacking old and packing new
+    """
     global current
     ind = pages.index(current) + amt
     if not 0 <= ind < len(pages):
@@ -40,6 +41,8 @@ def move(amt):
     current.pack(side=TOP, fill=BOTH, expand=1)
 
 def next():
+    """Execute page specific commands, then call move()
+    """
     # Page 1
     # if 1st page (general) then
     # move forward and unless cancelled, append anything added in current
@@ -178,12 +181,12 @@ def next():
     move(mv_amt)
 
 def prev():
+    """Move to previous page
+    """
     move(-1)
 
 def get_list(event):
-    """
-    function to read the listbox selection
-    and put the result in an entry widget
+    """Read the listbox selection and put the result in an entry widget
     """
     try:
         # get selected line index
@@ -199,9 +202,7 @@ def get_list(event):
         pass
 
 def set_list(event):
-    """
-    insert an edited line from the entry widget
-    back into the listbox
+    """Insert an edited line from the entry widget back into the listbox
     """
     try:
         index = pg3_listbox1.curselection()[0]
@@ -222,14 +223,15 @@ def set_list(event):
     pg3_listbox1.selection_set(END)
 
 def save_list():
-    """
-    save the current listbox contents
+    """Save the current listbox contents
     """
     # get a list of listbox lines
     temp_list = list(pg3_listbox1.get(0, END))
     return [ l for l in temp_list if l]
 
 def run_gui(args=[]):
+    """Run the tovid GUI, collecting options, and saving to wizard
+    """
     # TODO change todisc_cmds (is global) to todisc_opts
     # TODO deiconfiy() in run_gui() using tk.after(100, tk.deiconify()) or so
     title = 'load saved script'
@@ -258,8 +260,8 @@ def run_gui(args=[]):
     return todisc_cmds
 
 def run_in_xterm(script):
-    ''' run the final script in an xterm, completing the project
-    '''
+    """Run the final script in an xterm, completing the project
+    """
     cmd = ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
     wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
     tovid_cmd = 'bash %s' % script
@@ -270,8 +272,8 @@ def run_in_xterm(script):
 
 
 def rerun_options(Event=None):
-    ''' run the gui with the selected options
-    '''
+    """Run the gui with the selected options
+    """
     try:
         index = int(pg5_listbox1.curselection()[0])
     except IndexError:
@@ -304,8 +306,8 @@ def rerun_options(Event=None):
     show_status(status)
 
 def refill_listbox(listbox, opts):
-    ''' repopulate the rerun listbox with option list titles
-    '''
+    """Repopulate the rerun listbox with option list titles
+    """
     if '-titles' in opts:
         new_titles = get_list_args(opts, '-titles')
     else:
@@ -321,6 +323,8 @@ def refill_listbox(listbox, opts):
 
 
 def trim_list_header(cmds):
+        """Trim header (items before 1st option starting with '-') from a list
+        """
         # remove shebang, identifier and PATH
         try:
             while not cmds[0].startswith('-'):
@@ -330,6 +334,8 @@ def trim_list_header(cmds):
         return cmds
 
 def script_to_list(infile):
+    """File contents to a list, trimming '-from-gui' and header
+    """
     add_line = False
     command = ''
     for line in open(infile, 'r'):
@@ -341,6 +347,8 @@ def script_to_list(infile):
     return shlex.split(command)
 
 def write_script():
+    """Write out the final script to todisc_commands.bash
+    """
     cmdout = open(script_file, 'w')
     # add the shebang, PATH, and 'todisc \' lines
     cmdout.writelines(header)
@@ -363,8 +371,8 @@ def write_script():
 # thanks to Eric Pierce for providing these
 def get_chunk(items, start, end):
     """Extract a chunk [start ... end] from a list, and return the chunk.
-   The original list is modified in place.
-   """
+    The original list is modified in place.
+    """
     # Find the starting index and test for 'end'
     try:
         index = items.index(start)
@@ -381,12 +389,14 @@ def get_chunk(items, start, end):
     return chunk
 
 def get_list_args(items, option):
+    """Get option arguments from a list (to next item starting with '-')
+    """
     try:
         index = items.index(option)
     # If item isn't in list, return empty list
     except ValueError:
         return []
-    # Pop items until end is reached
+    # Append items until end is reached
     chunk = []
     try:
         while items and not items[index+1].startswith('-'):
@@ -397,14 +407,14 @@ def get_list_args(items, option):
         pass
 
 def load_project():
-    ''' Load a saved project script for editing with the wizard and GUI
-    '''
+    """Load a saved project script for editing with the wizard and GUI
+    """
     global todisc_cmds
     page5_label1.configure(text='Editing a saved project')
-    error_msg2 = 'This is not a saved tovid project script\n'
-    error_msg2 += 'Do you want to try to load it anyway?'
+    error_msg = 'This is not a saved tovid project script\n'
+    error_msg += 'Do you want to try to load it anyway?'
     if not '# tovid project script\n' in open(argv[1], 'r'):
-        if not askyesno(message=error_msg2):
+        if not askyesno(message=error_msg):
             showinfo(message='Cancelled')
             quit()
     in_contents = script_to_list(argv[1])
@@ -427,8 +437,8 @@ def load_project():
     return todisc_cmds
 
 def set_last_page():
-    ''' dynamic configuration for the last page
-    '''
+    """Dynamic configuration for the last page
+    """
     # set label for running in xterm
     page5_label3 = Label(pg5_frame1, text=pg5_txt3, justify=LEFT)
     page5_label3.pack(side=BOTTOM, anchor='w')
@@ -440,14 +450,13 @@ def set_last_page():
     button1.configure(text='Run script now')
 
 def setVar():
-    ''' set a BooleanVar() so tk.wait_var can exit
-    '''
+    """Set a BooleanVar() so tk.wait_var can exit
+    """
     waitVar.set(True)
 
 def see_me(widget):
-    '''
-     bring attention to widget by changing text colour
-    '''
+    """Bring attention to widget by changing text colour
+    """
     # 3000 and 4000 ms because show_status uses up 3000 already
     tk.after(3000, lambda: widget.configure(foreground='blue'))
     widget.update()
@@ -455,6 +464,8 @@ def see_me(widget):
     
 
 def show_status(status):
+    """Show status label on all pages, with timeout
+    """
     if status == 0:
         text='\nOptions saved!\n'
     else:
@@ -488,7 +499,7 @@ class BigLabel (Text):
         and the same background color as the master widget.
         """
         # Text widget with the same background color as the master
-        Text.__init__(self, master, font=font, wrap='word', width=70,
+        Text.__init__(self, master, font=font, wrap='word', width=65,
                       background=tk.cget('background'), borderwidth=0, padx=10)
         # Try to intelligently group the text into paragraphs.
         # Two consecutive newlines start a new paragraph; a single
@@ -560,21 +571,14 @@ Welcome to the tovid titleset wizard.  We will be making a complete DVD, with
 multiple levels of menus including a root menu (VMGM menu) and lower level
 titleset menus.  We will be using 'tovid gui', which uses the 'todisc' script.
 Any of these menus can be either static or animated, and use thumbnail menu
-links or plain text links.  In addition the titleset menus can have chapter
-selection menus ("submenus") which by default have only thumbnail menu links.
+links or plain text links.  Titleset menus can also have chapter menus.
 
 Though the sheer number of options can be daunting when the GUI first loads, it
 is important to remember that there are very few REQUIRED options, and in all
-cases the required options are on the opening tab. Below is a table of
-'required' options for each run of the GUI:
+cases the required options are on the opening tab. The required options will
+be listed for you for each run of the GUI.
 
-General:  only the "Output name" is required.  Root menu: only the titleset
-titles (menu link text) are required.  Titleset menus: only videos to include
-in the titleset are required.
-
-But if you include only those options your menu might be boring ! Please have
-fun exploring the different options using the preview to test.
-
+But please have fun exploring the different options using the preview to test.
 A great many options of these menus are configurable, including fonts, shapes
 and effects for thumbnails, fade-in/fade-out effects, "switched menus", the
 addition of a "showcased" image/video, animated or static background image or
