@@ -2373,9 +2373,6 @@ while test $# -gt 0; do
         "-keep-files" )
             KEEP_FILES=:
             ;;
-        "-dvd" )
-            usage_error "Option removed, as todisc only does DVD's now"
-            ;;
         "-svcd" )
             usage_error \
             "Todisc does only DVD's now.  Use the tovid, makemenu, makexml
@@ -3538,16 +3535,6 @@ if ! $SINGLE_SLIDESHOW; then
                 exit 1
             fi
         done
-        if $TITLESET_MODE && $VMGM_MENU && $PLAYALL && ! $SHOWCASE; then
-            BUTTON_STYLE="rect"
-            yecho
-            yecho "Warning ************"
-            yecho "You can not use text button style when using both \
-            playall and titlesets"
-            yecho "because of spumux and space limitations"
-            yecho "Changing to 'rect' style of buttons"
-            $WARN && sleep 15
-        fi
     fi
 fi
 if { $TEXTMENU || $QUICK_MENU ; } && [[ $BUTTON_STYLE = "rect" ]]; then
