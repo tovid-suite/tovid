@@ -86,7 +86,7 @@ class Command:
         contents is necessary.
         """
         for arg in args:
-            self.args.append(str(arg))
+            self.args.append(unicode(arg))
 
 
     def run(self, capture=False, background=False):
@@ -135,7 +135,7 @@ class Command:
         """
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print("Running command:")
-        print(self)
+        print(unicode(self))
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         self.output = ''
@@ -284,7 +284,7 @@ class Pipe:
     def __str__(self):
         """Return a string representation of the Pipe.
         """
-        commands = [str(cmd) for cmd in self.commands]
+        commands = [unicode(cmd) for cmd in self.commands]
         return ' | '.join(commands)
 
 
@@ -302,7 +302,7 @@ def _enc_arg(arg):
     This is used internally by Command; you'd only need this if you're running
     shell programs without using the Command class.
     """
-    arg = str(arg)
+    arg = unicode(arg)
     # At the first sign of any special character in the argument,
     # single-quote the whole thing and return it (escaping ' itself)
     for char in ' #"\'\\&|<>()[]!?*':
