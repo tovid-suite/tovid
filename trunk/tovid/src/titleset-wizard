@@ -123,8 +123,6 @@ def next():
                 pg4_label2.configure(text=pg4_txt2)
                 pg4_frame3.pack()
                 see_me(pg4_label2)
-                # fake press the next button to show action is needed
-                fake_press(button1)
             # withdraw the wizard and run the GUI, collecting commands
             tk.deiconify()
             # pressing 'Next' sets the waitVar and continues
@@ -446,15 +444,10 @@ def setVar():
     '''
     waitVar.set(True)
 
-def fake_press(widget):
-    """ cause widget to blink
-    """
-    # 3000 and 4000 ms because show_status uses up 3000 already
-    tk.after(3000, lambda: widget.configure(relief=SUNKEN))
-    widget.update()
-    tk.after(4000, lambda: widget.configure(relief=RAISED))
-
 def see_me(widget):
+    '''
+     bring attention to widget by changing text colour
+    '''
     # 3000 and 4000 ms because show_status uses up 3000 already
     tk.after(3000, lambda: widget.configure(foreground='blue'))
     widget.update()
@@ -466,19 +459,14 @@ def show_status(status):
         text='\nOptions saved!\n'
     else:
         text='\nCancelled!\n'
-    frame2 = Frame(frame1, borderwidth=1, relief=RAISED)
-    frame2.pack(pady=80)
-    pg2_label2 = Label(frame2, text=text, font=medium_font, fg='blue')
-    pg2_label2.pack(side=TOP)
-    pg2_label3 = Label(frame2, text='ok', borderwidth=2, relief=GROOVE)
-    pg2_label3.pack(side=TOP)
-    #frame2 = Frame(frame1)
-    #frame2.pack(pady=80)
-    #pg2_label2 = Label(frame2, text=text, \
-    #  font=medium_font, fg='blue', borderwidth=2, relief=GROOVE)
-    #pg2_label2.pack(side=BOTTOM, fill=BOTH, expand=1, anchor='w')
-    tk.after(1000, lambda: pg2_label3.configure(relief=SUNKEN))
-    tk.after(2000, lambda: frame2.pack_forget())
+    status_frame = Frame(frame1, borderwidth=1, relief=RAISED)
+    status_frame.pack(pady=80)
+    label1 = Label(status_frame, text=text, font=medium_font, fg='blue')
+    label1.pack(side=TOP)
+    label2 = Label(status_frame, text='ok', borderwidth=2, relief=GROOVE)
+    label2.pack(side=TOP)
+    tk.after(1000, lambda: label2.configure(relief=SUNKEN))
+    tk.after(2000, lambda: status_frame.pack_forget())
 
 def confirm_exit(event=None):
         """Exit the GUI, with confirmation prompt.
@@ -619,8 +607,7 @@ pg1_label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 next_txt = '''
 After making your selections, press [ Save to wizard ] in the GUI
 '''
-pg2_txt1 = '''
-GENERAL OPTIONS
+pg2_txt1 = '''GENERAL OPTIONS
 
 When you press the  [ Next >>> ]  button at the bottom of the wizard, we will
 start the GUI and begin with general options applying to all titlesets.  For
@@ -638,11 +625,10 @@ Press  [ Next >>> ]  to begin ...
 
 page2 = Frame(tk)
 pg2_label1 = Label(page2, text=pg2_txt1, justify=LEFT, font=style.font)
-pg2_label1.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
+pg2_label1.pack(side=TOP, anchor='nw')
 
 ############################## Page 3 of wizard ##############################
-pg3_txt1 = '''
-ROOT MENU (VMGM)
+pg3_txt1 = '''ROOT MENU (VMGM)
 
 Now we will save options for your root (VMGM) menu.  The only option you really
 need is the titleset titles.  Since you can not save titles in the GUI without
@@ -687,8 +673,7 @@ pg3_listbox1.bind('<ButtonRelease-1>', get_list)
 ############################ Page 4 of wizard ############################
 
 page4 = Frame(tk)
-pg4_txt1 = '''
-TITLESET MENUS
+pg4_txt1 = '''TITLESET MENUS
 
 Okay, now you will enter options for each of your titlesets.  The only REQUIRED
 option here is to load one or more video files, but of course you should spruce
@@ -704,7 +689,7 @@ pg4_frame1.pack(side=TOP, fill=BOTH, expand=1)
 pg4_frame2 = Frame(pg4_frame1, borderwidth=1)
 pg4_frame2.pack(fill=BOTH, expand=1)
 pg4_label1 = Label(pg4_frame2, text=pg4_txt1, justify=LEFT, font=style.font)
-pg4_label1.pack(fill=BOTH, expand=1)
+pg4_label1.pack(side=TOP)
 pg4_txt2 = ''
 pg4_frame3 = Frame(pg4_frame1, borderwidth=2, relief=GROOVE)
 pg4_label2 = Label(pg4_frame3, text=pg4_txt2, justify=LEFT,
@@ -734,7 +719,7 @@ Press [Run script now] or [Exit].
 ''' % script_file
 pg5_frame1 = Frame(page5)
 pg5_frame1.pack()
-page5_label1 = Label(pg5_frame1, text='Finished!', font=heading_font)
+page5_label1 = Label(pg5_frame1, text='Finished!', font=lrg_font)
 page5_label1.pack()
 page5_label2 = Label(pg5_frame1, text=pg5_txt2, justify=LEFT)
 page5_label2.pack(side=TOP, anchor='w')
