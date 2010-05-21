@@ -162,6 +162,7 @@ def next():
         # delete titleset listbox contents else it increases with page movement
         # insert or reinsert options list into titleset listbox
         pg5_listbox1.pack(side=TOP, anchor='w', fill=BOTH, expand=1)
+        pg5_listbox1.select_set(0)
         refill_listbox(pg5_listbox1, options_list)
         if (numtitles > 10): numtitles = 10
         options_list = save_list()
@@ -280,7 +281,8 @@ def rerun_options(Event=None):
     try:
         index = int(pg5_listbox1.curselection()[0])
     except IndexError:
-        showerror('Please select an options line first')
+        showerror(message='Please select an options line first')
+        return
     rerun_opts = []
     os.environ['METAGUI_WIZARD'] = str(index+1)
     #mess='Rerun GUI for the "%s" options?' % pg5_listbox1.get(index)
@@ -445,7 +447,7 @@ def set_last_page():
     """
     # set label for running in xterm
     page5_label3 = Label(pg5_frame1, text=pg5_txt3, justify=LEFT)
-    page5_label3.pack(side=BOTTOM, anchor='w')
+    page5_label3.pack(fill=BOTH, expand=1, side=BOTTOM, anchor='w')
     # change 'Next' button to 'Run' and reposition buttons
     button1.pack_forget()
     button2 = Button(button_frame, text='Exit', command=confirm_exit)
@@ -504,7 +506,7 @@ class BigLabel (Text):
         """
         # Text widget with the same background color as the master
         Text.__init__(self, master, font=font, wrap='word', width=65,
-                      background=tk_bgcolour, borderwidth=0, padx=10)
+                      background=bg_clr, borderwidth=0, padx=10)
         # Try to intelligently group the text into paragraphs.
         # Two consecutive newlines start a new paragraph; a single
         # newline should be treated as a single space. Strip leading
@@ -520,14 +522,17 @@ def create_image(icon=False):
     if icon:
         opts = ' %s -resize 32x32! gif:-' %img_file
     else:
-        opts = ' -background %s %s -flatten gif:-' %(tk_bgcolour, img_file)
-        #opts += ' -flatten '
-    cmd = 'convert %s' %opts 
-    cmd = shlex.split(cmd)
-    im_dat = Popen(cmd, stdout=PIPE) 
-    img_data = im_dat.communicate()[0]
+        opts = ' +dither -background %s %s -flatten gif:-' %(bg_clr, img_file)
+    cmd = shlex.split('convert %s' %opts)
+    im_dat = Popen(cmd, stdout=PIPE).communicate()[0] 
     print cmd
-    return PhotoImage(data=b64encode(img_data))
+    return PhotoImage(data=b64encode(im_dat))
+
+def add_titleset():
+    pass
+
+def remove_titleset():
+    pass
 
 ###################### get/set some external variables #######################
 
@@ -560,7 +565,7 @@ tkframe.pack(side=LEFT, fill=Y, anchor='w')
 tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
 img_file = tovid_prefix + '/tovid.svg'
-tk_bgcolour = tk.cget('background')
+bg_clr = tk.cget('background')
 
 if os.path.isfile(img_file):
     # we need img both for page 1, and for icon display if TCL allows it
@@ -752,7 +757,7 @@ pg5_frame1.pack()
 page5_label1 = Label(pg5_frame1, text='Finished!', font=lrg_font)
 page5_label1.pack()
 page5_label2 = Label(pg5_frame1, text=pg5_txt2, justify=LEFT)
-page5_label2.pack(side=TOP, anchor='w')
+page5_label2.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 # create the listbox
 pg5_frame2 = LabelFrame(pg5_frame1, \
   text="Choose an item to edit with the GUI and press [ Rerun Options ]")
@@ -764,8 +769,14 @@ yscroll2 = Scrollbar(pg5_frame2, command=pg5_listbox1.yview, orient=VERTICAL)
 yscroll2.pack(side=LEFT, fill=Y)
 pg5_listbox1.configure(yscrollcommand=yscroll.set)
 # button to rerun the GUI to edit selected options
-pg5_button1 = Button(pg5_frame2, text='Rerun Options', command=rerun_options)
-pg5_button1.pack(side=BOTTOM)
+pg5_frame3 = Frame(pg5_frame2)
+pg5_frame3.pack(side=BOTTOM, fill=X, expand=1)
+pg5_button2 = Button(pg5_frame3, text='Add titleset', command=add_titleset)
+pg5_button2.pack(side=LEFT, anchor='w')
+pg5_button1 = Button(pg5_frame3, text='Rerun Options', command=rerun_options)
+pg5_button1.pack(side=LEFT, fill=X, expand=1)
+pg5_button2 = Button(pg5_frame3, text='Remove titleset', command=remove_titleset)
+pg5_button2.pack(side=RIGHT, anchor='e')
 
 ######################### Run the darn thing already #########################
 
