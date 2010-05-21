@@ -227,7 +227,7 @@ setup(
             'src/titleset-wizard',
 
             # Icon used by titleset wizard
-            'icons/tovid.gif',
+            'icons/hicolor/scalable/apps/tovid.svg',
 
             # Config file
             'src/tovid.ini',
