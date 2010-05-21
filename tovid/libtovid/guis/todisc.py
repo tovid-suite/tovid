@@ -81,18 +81,56 @@ The actual GUI layout comes afterwards...
 ### Main todisc options
 ### --------------------------------------------------------------------
 
+### configuration for titleset wizard ( 'tovid titlesets' )
+wizard = os.getenv('METAGUI_WIZARD')
+if wizard == '1':
+    # General options
+    heading_text = 'General options applying to all titlesets.\n'
+    heading_text += 'Required option: "Out name" at bottom of window'
+elif wizard == '2':
+    # Root menu options
+    heading_text = 'Root menu options.  Use any options that do not depend\n'
+    heading_text += 'on video files being loaded'
+elif wizard >= '3':
+    # titleset options
+    heading_text = 'Options for titleset %s' % wizard
+else:
+    heading_text = 'You can author (and burn) a DVD with a simple menu '
+    heading_text += 'using ONLY this "Basic" pane'
+
+if wizard == '2':
+    # Root menu options
+    _files = List('Do not load any files for Root menu !', '-files', None,
+        '',
+        Filename('', filetypes=video_filetypes))
+    _files_and_titles = ListToOne(_files, 'Root menu link titleset titles',
+        '-titles', None,
+        'The titles for the Root menu link titleset titles',
+        Text(),
+        filter=to_title)
+else:
+    _files = List('Video files', '-files', None,
+        'List of video files to include on the disc',
+        Filename('', filetypes=video_filetypes))
+    _files_and_titles = ListToOne(_files, 'Video titles', '-titles', None,
+        'Titles to display in the main menu, one for each video file on the disc',
+        Text(),
+        filter=to_title)
+
+if wizard and int(wizard) > 1:
+    # _out only for General Options ( '1' )
+    _out = Label(' ')
+else:
+    _out = Filename('Output name', '-out', '',
+        'Name to use for the output directory where the disc will be created.',
+        'save', 'Choose an output name')
+####
+
+_heading = Label(heading_text, 'center')
+ 
 _menu_title = Text('Menu title', '-menu-title', 'My video collection',
     'Title text displayed on the main menu. Use \\n for a new line '
      'in a multi-line title.')
-
-_files = List('Video files', '-files', None,
-    'List of video files to include on the disc',
-    Filename('', filetypes=video_filetypes))
-
-_files_and_titles = ListToOne(_files, 'Video titles', '-titles', None,
-    'Titles to display in the main menu, one for each video file on the disc',
-    Text(),
-    filter=to_title)
 
 _group = ListToMany('-files', 'Grouped videos', '-group', None,
     'Video files to group together. Select the video in the list ' \
@@ -105,10 +143,6 @@ _group = ListToMany('-files', 'Grouped videos', '-group', None,
 _ntsc = Flag('NTSC', '-ntsc', True, 'NTSC, US standard')
 
 _pal = Flag('PAL', '-pal', False, 'PAL, European standard')
-
-_out = Filename('Output name', '-out', '',
-    'Name to use for the output directory where the disc will be created.',
-    'save', 'Choose an output name')
 
 
 ### --------------------------------------------------------------------
@@ -329,8 +363,6 @@ _text_start = Number('Start titles at', '-text-start', 50,
     'Titles will start at this pixel in the vertical axis.  '
     'This value is applied before the menu is scaled.',
     0, 460, 'pixels')
-
-
 
 ### --------------------------------------------------------------------
 ### Runtime behavior
@@ -800,9 +832,7 @@ _quick_nav = Flag('Quick-nav', '-quick-nav', False,
 """
 
 main =  VPanel('Basic',
-    Label('You can author (and burn) a DVD with a simple menu '
-          'using ONLY this "Basic" pane', 'center'),
-    _files_and_titles,
+    _heading,_files_and_titles,
     VPanel('',
         HPanel('',
             VPanel('Menu options',
