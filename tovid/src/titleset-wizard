@@ -10,6 +10,7 @@ from tkMessageBox import *
 from time import sleep
 from tempfile import mktemp
 from sys import argv
+from base64 import b64encode
 
 todisc_cmds = []
 all_options = []
@@ -503,7 +504,7 @@ class BigLabel (Text):
         """
         # Text widget with the same background color as the master
         Text.__init__(self, master, font=font, wrap='word', width=65,
-                      background=tk.cget('background'), borderwidth=0, padx=10)
+                      background=tk_bgcolour, borderwidth=0, padx=10)
         # Try to intelligently group the text into paragraphs.
         # Two consecutive newlines start a new paragraph; a single
         # newline should be treated as a single space. Strip leading
@@ -515,10 +516,19 @@ class BigLabel (Text):
         # Make the text widget read-only
         self.config(state='disabled')
 
-#def create_image(flatten=False):
-#    cmd = 'convert image_file %s'
-    
-    
+def create_image(icon=False):
+    if icon:
+        opts = '-resize 32x32!'
+    else:
+        opts = ' -background %s' %tk_bgcolour
+        opts += ' -flatten -blur 0.01'
+    cmd = 'convert %s %s' %(img_file, opts) 
+    cmd += ' gif:-'
+    cmd = shlex.split(cmd)
+    im_dat = Popen(cmd, stdout=PIPE) 
+    img_data = im_dat.communicate()[0]
+    print cmd
+    return PhotoImage(data=b64encode(img_data))
 
 ###################### get/set some external variables #######################
 
@@ -550,12 +560,16 @@ tkframe = Frame(tk)
 tkframe.pack(side=LEFT, fill=Y, anchor='w')
 tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
-img_file = tovid_prefix + '/tovid.gif'
+img_file = tovid_prefix + '/tovid.svg'
+tk_bgcolour = tk.cget('background')
+
 if os.path.isfile(img_file):
     # we need img both for page 1, and for icon display if TCL allows it
-    img = PhotoImage(file=img_file)
+    img = create_image()
+    #img = PhotoImage(file=img_file)
     if TclVersion >= 8.5:
-        tk.tk.call('wm', 'iconphoto', tk._w, img)
+        icon = create_image(True)
+        tk.tk.call('wm', 'iconphoto', tk._w, icon)
 else:
     img = None
     print img_file, ' does not exist'
