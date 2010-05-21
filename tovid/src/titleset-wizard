@@ -518,12 +518,11 @@ class BigLabel (Text):
 
 def create_image(icon=False):
     if icon:
-        opts = '-resize 32x32!'
+        opts = ' %s -resize 32x32! gif:-' %img_file
     else:
-        opts = ' -background %s' %tk_bgcolour
-        opts += ' -flatten -blur 0.01'
-    cmd = 'convert %s %s' %(img_file, opts) 
-    cmd += ' gif:-'
+        opts = ' -background %s %s -flatten gif:-' %(tk_bgcolour, img_file)
+        #opts += ' -flatten '
+    cmd = 'convert %s' %opts 
     cmd = shlex.split(cmd)
     im_dat = Popen(cmd, stdout=PIPE) 
     img_data = im_dat.communicate()[0]
