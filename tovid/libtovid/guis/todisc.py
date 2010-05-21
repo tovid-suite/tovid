@@ -86,14 +86,15 @@ wizard = os.getenv('METAGUI_WIZARD')
 if wizard == '1':
     # General options
     heading_text = 'General options applying to all titlesets.\n'
-    heading_text += 'Required option: "Out name" at bottom of window'
+    heading_text += 'Required: "Out name" at bottom of window'
 elif wizard == '2':
     # Root menu options
     heading_text = 'Root menu options.  Use any options that do not depend\n'
-    heading_text += 'on video files being loaded'
+    heading_text += 'on video files or slideshows being loaded\nRequired: None'
 elif wizard >= '3':
     # titleset options
-    heading_text = 'Options for titleset %s' % wizard
+    heading_text = 'Options for titleset %s\n' %(int(wizard) - 2)
+    heading_text += 'Required: 1 or more videos or slideshows'
 else:
     heading_text = 'You can author (and burn) a DVD with a simple menu '
     heading_text += 'using ONLY this "Basic" pane'
@@ -117,8 +118,8 @@ else:
         Text(),
         filter=to_title)
 
-if wizard and int(wizard) > 1:
-    # _out only for General Options ( '1' )
+if wizard and wizard != '1':
+    # 'Output name' only for General Options ( '1' )
     _out = Label(' ')
 else:
     _out = Filename('Output name', '-out', '',
