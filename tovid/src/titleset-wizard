@@ -16,7 +16,6 @@ all_options = []
 labels = ['General', 'VMGM menu', 'Titlesets']
 curdir = os.path.abspath('')
 newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
-os.environ['METAGUI_WIZARD'] = '1'
 
 def get_font(name='', size='', _style=''):
     """Get metagui font configuration
@@ -25,7 +24,7 @@ def get_font(name='', size='', _style=''):
     for i in range(len(style.font)):
         if not font[i]:
             font[i] = style.font[i]
-    return font
+    return tuple(font)
 
 def move(amt):
     """Move wizard to a new page by unpacking old and packing new
@@ -69,7 +68,7 @@ def next():
                 return
 
         # withdraw the wizard and run the GUI, collecting commands
-        get_commands = run_gui()
+        get_commands = run_gui([], '1')
         # append to list and go to next page unless GUI was cancelled out of
         if not get_commands:
             status = 1
@@ -92,7 +91,7 @@ def next():
         else:
             # withdraw the wizard and run the GUI, collecting commands
             run_cmds.insert(0,  '-titles')
-            get_commands = run_gui(run_cmds)
+            get_commands = run_gui(run_cmds, '2')
             # append to list and go to next page unless GUI was cancelled out of
             if not get_commands:
                 status = 1
@@ -131,7 +130,7 @@ def next():
             # pressing 'Next' sets the waitVar and continues
             tk.wait_variable(waitVar)
             if is_running.get() == 1:
-                get_commands = run_gui(run_cmds)
+                get_commands = run_gui(run_cmds, '%s' %(i+3))
             if get_commands:
                 status = 0
                 get_commands = trim_list_header(get_commands)
@@ -229,13 +228,16 @@ def save_list():
     temp_list = list(pg3_listbox1.get(0, END))
     return [ l for l in temp_list if l]
 
-def run_gui(args=[]):
+def run_gui(args=[], index=''):
     """Run the tovid GUI, collecting options, and saving to wizard
     """
-    # TODO change todisc_cmds (is global) to todisc_opts
     # TODO deiconfiy() in run_gui() using tk.after(100, tk.deiconify()) or so
     title = 'load saved script'
     script = 'todisc_commands.bash'
+    set_env = []
+    if index:
+        print "DEBUG: setting os.environ['METAGUI_WIZARD'] =", "%s" %index
+        os.environ['METAGUI_WIZARD'] = '%s' %index
     cmd = ['todiscgui'] + args
     todiscgui_cmd = Popen(cmd, stdout=PIPE)
     # sleep to avoid the 'void' of time before the GUI loads
@@ -253,11 +255,11 @@ def run_gui(args=[]):
             err += 'Please submit a bug report'
             showerror(message=err)
         # Read lines from the file and reassemble the command
-        todisc_cmds = script_to_list(script)
+        todisc_opts = script_to_list(script)
         os.remove(script)
     else:
-        todisc_cmds = []
-    return todisc_cmds
+        todisc_opts  = []
+    return todisc_opts
 
 def run_in_xterm(script):
     """Run the final script in an xterm, completing the project
@@ -279,12 +281,13 @@ def rerun_options(Event=None):
     except IndexError:
         showerror('Please select an options line first')
     rerun_opts = []
+    os.environ['METAGUI_WIZARD'] = str(index+1)
     #mess='Rerun GUI for the "%s" options?' % pg5_listbox1.get(index)
     #if askyesno(message=mess):
     # the GUI doesn't understand the titleset type options
     remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
     options = [ i for i in todisc_cmds[index] if not i in remove ]
-    rerun_opts = run_gui(options)
+    rerun_opts = run_gui(options, '%s' %(index+1))
     if rerun_opts:
         status = 0
         # trim header from todisc_cmds
@@ -512,6 +515,11 @@ class BigLabel (Text):
         # Make the text widget read-only
         self.config(state='disabled')
 
+#def create_image(flatten=False):
+#    cmd = 'convert image_file %s'
+    
+    
+
 ###################### get/set some external variables #######################
 
 # get tovid prefix
@@ -542,6 +550,15 @@ tkframe = Frame(tk)
 tkframe.pack(side=LEFT, fill=Y, anchor='w')
 tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
+img_file = tovid_prefix + '/tovid.gif'
+if os.path.isfile(img_file):
+    # we need img both for page 1, and for icon display if TCL allows it
+    img = PhotoImage(file=img_file)
+    if TclVersion >= 8.5:
+        tk.tk.call('wm', 'iconphoto', tk._w, img)
+else:
+    img = None
+    print img_file, ' does not exist'
 is_running = BooleanVar()
 is_running.set(True)
 waitVar = BooleanVar()
@@ -588,14 +605,10 @@ configurable DVD button links.
 '''
 page1 = Frame(tk)
 frame1 = Frame(tkframe)
-img_file = tovid_prefix + '/tovid.gif'
-if os.path.isfile(img_file):
-    img = PhotoImage(file=img_file)
-    pg1_label1 = Label(frame1, text='Tovid', font=heading_font)
-    pg1_label1.pack(side=TOP, pady=40)
-else:
-    print img_file, ' does not exist'
-pg1_label2 = Label(frame1, image=img).pack(side=TOP)
+pg1_label1 = Label(frame1, text='Tovid', font=heading_font)
+pg1_label1.pack(side=TOP, pady=40)
+if img:
+    pg1_label2 = Label(frame1, image=img).pack(side=TOP)
 pg1_label3 = Label(frame1, text='Titleset Wizard', font=lrg_font)
 pg1_label3.pack(side=TOP, pady=40)
 pg1_label4 = Label(frame1, text='Page 1', font=lrg_font)
