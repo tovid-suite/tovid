@@ -537,7 +537,8 @@ class BigLabel (Text):
         and the same background color as the master widget.
         """
         # Text widget with the same background color as the master
-        Text.__init__(self, master, font=font, wrap='word', width=65,
+        Text.__init__(self, master, font=font, wrap='word',
+                      width=65, height=10,
                       background=bg_clr, borderwidth=0, padx=10)
         # Try to intelligently group the text into paragraphs.
         # Two consecutive newlines start a new paragraph; a single
@@ -708,7 +709,7 @@ page1.pack(fill=BOTH, expand=1)
 
 # Use a BigLabel widget to get automatic word-wrap that adjusts to window size
 pg1_label5 = BigLabel(page1, pg1_txt1, style.font)
-pg1_label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
+pg1_label5.pack(fill='both', expand=True, side='top', anchor='nw')
 
 ############################## Page 2 of wizard ##############################
 next_txt = '''
@@ -731,8 +732,8 @@ Press  [ Next >>> ]  to begin ...
 '''
 
 page2 = Frame(tk)
-pg2_label1 = Label(page2, text=pg2_txt1, justify=LEFT, font=style.font)
-pg2_label1.pack(side=TOP, anchor='nw')
+pg2_label1 = BigLabel(page2, pg2_txt1, style.font)
+pg2_label1.pack(fill='both', expand=True, side='top', anchor='nw')
 
 ############################## Page 3 of wizard ##############################
 pg3_txt1 = '''ROOT MENU (VMGM)
@@ -753,23 +754,24 @@ you have already entered your root menu link titles.
 ''' % next_txt
 
 page3 = Frame(tk)
-pg3_label1 = Label(page3, text=pg3_txt1, justify=LEFT, font=style.font)
-pg3_label1.pack(side=TOP, fill=BOTH, expand=1, anchor='w')
+pg3_label1 = BigLabel(page3, pg3_txt1, style.font)
+pg3_label1.pack(fill='both', expand=True, side='top', anchor='nw')
+
 # create the listbox (note that size is in characters)
 pg3_frame1 = LabelFrame(page3, text="Root 'menu link' titles")
-pg3_frame1.pack(side=TOP, fill=Y, expand=1)
+pg3_frame1.pack(side='top', fill='y', expand=False)
+
 pg3_listbox1 = Listbox(pg3_frame1, width=50, height=12)
-#listbox1.insert(0, '')
-pg3_listbox1.pack(side=LEFT, fill=Y, expand=1, anchor='w')
+pg3_listbox1.pack(side='left', fill='y', expand=False, anchor='nw')
 
 # create a vertical scrollbar to the right of the listbox
-yscroll = Scrollbar(pg3_frame1, command=pg3_listbox1.yview, orient=VERTICAL)
-yscroll.pack(side=RIGHT, fill=Y, anchor='ne')
+yscroll = Scrollbar(pg3_frame1, command=pg3_listbox1.yview, orient='vertical')
+yscroll.pack(side='right', fill='y', anchor='ne')
 pg3_listbox1.configure(yscrollcommand=yscroll.set)
 
 # use entry widget to display/edit selection
 enter1 = Entry(page3, width=50, text='Enter titles here')
-enter1.pack(fill=Y, expand=0)
+enter1.pack(fill='y', expand=False)
 # set focus on entry
 enter1.select_range(0, 'end')
 enter1.focus_set()
@@ -795,8 +797,10 @@ pg4_frame1 = Frame(page4)
 pg4_frame1.pack(side=TOP, fill=BOTH, expand=1)
 pg4_frame2 = Frame(pg4_frame1, borderwidth=1)
 pg4_frame2.pack(fill=BOTH, expand=1)
-pg4_label1 = Label(pg4_frame2, text=pg4_txt1, justify=LEFT, font=style.font)
-pg4_label1.pack(side=TOP)
+
+pg4_label1 = BigLabel(pg4_frame2, pg4_txt1, style.font)
+pg4_label1.pack(fill='both', expand=True, side='top')
+
 pg4_txt2 = ''
 pg4_frame3 = Frame(pg4_frame1, borderwidth=2, relief=GROOVE)
 pg4_label2 = Label(pg4_frame3, text=pg4_txt2, justify=LEFT,
