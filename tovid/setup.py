@@ -227,7 +227,7 @@ setup(
             'src/titleset-wizard',
 
             # Icon used by titleset wizard
-            'icons/hicolor/scalable/apps/titleset_wizard.svg',
+            'icons/hicolor/scalable/apps/titleset-wizard.svg',
 
             # Config file
             'src/tovid.ini',
@@ -240,19 +240,33 @@ setup(
          ['tovidgui.desktop']),
         # Icons
         ('share/icons/hicolor/scalable/apps',
-         ['icons/hicolor/scalable/apps/tovid.svg',
-          'icons/hicolor/scalable/apps/tovid_bw.svg',
-          'icons/hicolor/scalable/apps/disc.svg',
-          'icons/hicolor/scalable/apps/cd.svg',
+         [
+             'icons/hicolor/scalable/apps/tovid.svg',
+             'icons/hicolor/scalable/apps/titleset-wizard.svg',
+             'icons/hicolor/scalable/apps/tovid_bw.svg',
+             'icons/hicolor/scalable/apps/disc.svg',
+             'icons/hicolor/scalable/apps/cd.svg',
          ]),
         ('share/icons/hicolor/128x128/apps',
-         ['icons/hicolor/128x128/apps/tovid.png']),
+         [
+             'icons/hicolor/128x128/apps/tovid.png',
+             'icons/hicolor/128x128/apps/titleset-wizard.png',
+         ]),
         ('share/icons/hicolor/64x64/apps',
-         ['icons/hicolor/64x64/apps/tovid.png']),
+         [
+             'icons/hicolor/64x64/apps/tovid.png',
+             'icons/hicolor/64x64/apps/titleset-wizard.png',
+         ]),
         ('share/icons/hicolor/48x48/apps',
-         ['icons/hicolor/48x48/apps/tovid.png']),
+         [
+             'icons/hicolor/48x48/apps/tovid.png',
+             'icons/hicolor/48x48/apps/titleset-wizard.png',
+         ]),
         ('share/icons/hicolor/32x32/apps',
-         ['icons/hicolor/32x32/apps/tovid.png']),
+         [
+             'icons/hicolor/32x32/apps/tovid.png',
+             'icons/hicolor/32x32/apps/titleset-wizard.png',
+         ]),
     ]
 )
 

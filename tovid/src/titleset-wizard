@@ -632,7 +632,7 @@ tkframe = Frame(tk)
 tkframe.pack(side=LEFT, fill=Y, anchor='w')
 tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
-img_file = tovid_prefix + '/titleset_wizard.svg'
+img_file = tovid_prefix + '/titleset-wizard.svg'
 bg_clr = tk.cget('background')
 
 if os.path.isfile(img_file):
