@@ -23,6 +23,12 @@ Where 'command' is one of the following:
     mpg         Encode videos to MPEG format                tovid
     titlesets   Start the titleset wizard                   (new)
 
+The following general options are also available:
+    --prefix | -prefix      Return the tovid install prefix
+    --version | -version    Return the tovid version
+    --info | -info          Return prefix, version and python module search path
+    These options are to be used on there own, as in:  tovid --prefix
+
 Run 'tovid <command>' with no further arguments to get help on a command,
 and what arguments it expects.
 """
