@@ -132,7 +132,7 @@ class ScrollList (tk.Frame):
         self.scrollbar = tk.Scrollbar(self, orient='vertical',
                                       command=self.scroll)
         self.listbox = tk.Listbox(self, listvariable=self.items,
-                                  width=30, height=7,
+                                  width=45, height=7,
                                   yscrollcommand=self.scrollbar.set,
                                   exportselection=0)
         self.listbox.pack(side='left', fill='both', expand=True)
