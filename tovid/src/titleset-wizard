@@ -3,6 +3,7 @@
 import os.path
 import shlex
 from Tkinter import *
+from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
 from libtovid.metagui import Style
 from libtovid.cli import _enc_arg
@@ -168,6 +169,7 @@ def next():
         options_list = save_list()
         numtitles = len(options_list)
         pg5_listbox1.configure(height=numtitles+2)
+        # set the dynamic options for this page
         set_last_page()
     elif pages.index(current) == 4:
     # Page 5
@@ -412,6 +414,27 @@ def get_list_args(items, option):
     except IndexError:
         pass
 
+# used to repopulate titleset titles after adding new one
+def get_option(items, option):
+    """Get option and arguments from a list (to next item starting with '-')
+    The list is modified in place.
+    """
+    try:
+        index = items.index(option)
+    # If item isn't in list, return empty list
+    except ValueError:
+        return []
+    # Append items until end is reached
+    chunk = []
+    try:
+        while items and not items[index+1].startswith('-'):
+            chunk.append(items.pop(index+1))
+        opt = items.index(option)
+        chunk.insert(0, items.pop(opt))
+        return chunk
+    except IndexError:
+        pass
+
 def load_project():
     """Load a saved project script for editing with the wizard and GUI
     """
@@ -436,6 +459,7 @@ def load_project():
         menu_titles.extend(get_list_args(l, '-menu-title'))
     pg5_listbox1.pack(side=LEFT, anchor='w', fill=X, expand=1)
     refill_listbox(pg5_listbox1, menu_titles)
+    # set the dynamic options for this page
     set_last_page()
     # write out todisc_commands.bash in current dir
     write_script()
@@ -525,13 +549,26 @@ def create_image(icon=False):
         opts = ' +dither -background %s %s -flatten gif:-' %(bg_clr, img_file)
     cmd = shlex.split('convert %s' %opts)
     im_dat = Popen(cmd, stdout=PIPE).communicate()[0] 
-    print cmd
     return PhotoImage(data=b64encode(im_dat))
 
-def add_titleset():
-    pass
-
-def remove_titleset():
+def add_titleset(Event=None):
+    text = 'Please enter a menu link title for your titleset'
+    title = askstring('Titleset title', text)
+    vmgm_cmds = [w for w in todisc_cmds[1]]
+    new_titles = get_option(vmgm_cmds, '-titles')
+    new_titles.append(title)
+    vmgm_cmds.pop(-1)
+    vmgm_cmds.extend(new_titles)
+    vmgm_cmds.append('-end-vmgm')
+    # delete old vmgm options from global todisc_cmds
+    todisc_cmds.pop(1)
+    todisc_cmds.insert(1, vmgm_cmds)
+    new_titleset = ['-titleset', '-menu-title', title, '-end-titleset']
+    todisc_cmds.append(new_titleset)
+    pg5_listbox1.insert(END, title)
+    pg5_listbox1.configure(height=pg5_listbox1.size())
+    
+def remove_titleset(Event=None):
     pass
 
 ###################### get/set some external variables #######################
@@ -564,7 +601,7 @@ tkframe = Frame(tk)
 tkframe.pack(side=LEFT, fill=Y, anchor='w')
 tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
-img_file = tovid_prefix + '/tovid.svg'
+img_file = tovid_prefix + '/titleset_wizard.svg'
 bg_clr = tk.cget('background')
 
 if os.path.isfile(img_file):
