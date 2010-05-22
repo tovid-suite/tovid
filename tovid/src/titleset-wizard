@@ -97,7 +97,7 @@ def next():
                 cmds.append('-end-vmgm')
                 todisc_cmds.append(cmds)
             tk.deiconify()
-            show_status(status) 
+            show_status(status)
     elif pages.index(current) == 3:
     # Page 4
         tk.withdraw()
@@ -131,7 +131,7 @@ def next():
                 todisc_cmds.append(cmds)
             else:
                 # nothing saved, return to previous page
-                status = 1 
+                status = 1
                 prev()
                 button1.configure(command=next)
                 tk.deiconify()
@@ -498,7 +498,7 @@ def see_me(widget):
     tk.after(3000, lambda: widget.configure(foreground='blue'))
     widget.update()
     tk.after(4000, lambda: widget.configure(foreground='black'))
-    
+
 
 def show_status(status):
     """Show status label on all pages, with timeout
@@ -555,7 +555,7 @@ def create_image(icon=False):
     else:
         opts = ' +dither -background %s %s -flatten gif:-' %(bg_clr, img_file)
     cmd = shlex.split('convert %s' %opts)
-    im_dat = Popen(cmd, stdout=PIPE).communicate()[0] 
+    im_dat = Popen(cmd, stdout=PIPE).communicate()[0]
     return PhotoImage(data=b64encode(im_dat))
 
 def add_titleset(Event=None):
@@ -574,7 +574,7 @@ def add_titleset(Event=None):
     todisc_cmds.append(new_titleset)
     pg5_listbox1.insert(END, title)
     #pg5_listbox1.configure(height=pg5_listbox1.size())
-    
+
 def remove_titleset(Event=None):
     mess1='You can only remove titlesets'
     mess2='You must have at least 2 titlesets. Please add ' + \
@@ -607,6 +607,7 @@ def remove_titleset(Event=None):
 path_cmd = ['tovid', '--prefix']
 tovid_prefix = Popen(path_cmd, stdout=PIPE)
 tovid_prefix = tovid_prefix.communicate()[0].strip()
+tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
 os.environ['PATH'] = tovid_prefix + os.pathsep + os.environ['PATH']
 
 # get script header
