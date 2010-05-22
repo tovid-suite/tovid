@@ -2,7 +2,7 @@
 Name=tovid titleset wizard
 Type=Application
 Exec=tovid titlesets
-Icon=titleset_wizard
+Icon=titleset-wizard
 Terminal=false
 GenericName=DVD creation with multiple menus
 GenericName[en_US]=DVD creation with multiple menus
