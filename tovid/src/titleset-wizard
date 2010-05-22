@@ -56,19 +56,7 @@ def next():
     # Page 2
         # if todisc_commands.bash exists in current dir, prompt for rename
         if os.path.exists(script_file):
-            rename_msg = 'The option file we will use:\n' + \
-            'todisc_commands.bash\n' + \
-            'exists in the current directory.\n' + \
-            'It will be renamed to:\n' + \
-            '%s' + \
-            '\nProceed ?'
-            rename_msg = rename_msg % (os.path.basename(newname))
-            if askokcancel(message=rename_msg):
-                os.rename(script_file, newname)
-            else:
-                show_status(1)
-                return
-
+            rename_script()
         # withdraw the wizard and run the GUI, collecting commands
         get_commands = run_gui([], '1')
         # append to list and go to next page unless GUI was cancelled out of
@@ -168,7 +156,7 @@ def next():
         if (numtitles > 10): numtitles = 10
         options_list = save_list()
         numtitles = len(options_list)
-        pg5_listbox1.configure(height=numtitles+2)
+        #pg5_listbox1.configure(height=numtitles+2)
         # set the dynamic options for this page
         set_last_page()
     elif pages.index(current) == 4:
@@ -187,6 +175,21 @@ def prev():
     """Move to previous page
     """
     move(-1)
+
+def rename_script():
+    # if todisc_commands.bash exists in current dir, prompt for rename
+    rename_msg = 'The option file we will use:\n' + \
+    'todisc_commands.bash\n' + \
+    'exists in the current directory.\n' + \
+    'It will be renamed to:\n' + \
+    '%s' + \
+    '\nProceed ?'
+    rename_msg = rename_msg % (os.path.basename(newname))
+    if askokcancel(message=rename_msg):
+        os.rename(script_file, newname)
+    else:
+        show_status(1)
+        return
 
 def get_list(event):
     """Read the listbox selection and put the result in an entry widget
@@ -258,6 +261,7 @@ def run_gui(args=[], index=''):
             err += 'The saved script file was not found.\n'
             err += 'Please submit a bug report'
             showerror(message=err)
+            return
         # Read lines from the file and reassemble the command
         todisc_opts = script_to_list(script)
         os.remove(script)
@@ -325,7 +329,7 @@ def refill_listbox(listbox, opts):
     listbox.insert(END, 'General options')
     listbox.insert(END, 'Root menu')
     numtitles = len(new_titles)
-    listbox.configure(height=numtitles+2)
+    #listbox.configure(height=numtitles+2)
     for i in xrange(numtitles):
         listbox.insert(END, new_titles[i])
 
@@ -440,8 +444,8 @@ def load_project():
     """
     global todisc_cmds
     page5_label1.configure(text='Editing a saved project')
-    error_msg = 'This is not a saved tovid project script\n'
-    error_msg += 'Do you want to try to load it anyway?'
+    error_msg = 'This is not a saved tovid project script\n' + \
+      'Do you want to try to load it anyway?'
     if not '# tovid project script\n' in open(argv[1], 'r'):
         if not askyesno(message=error_msg):
             showinfo(message='Cancelled')
@@ -462,6 +466,9 @@ def load_project():
     # set the dynamic options for this page
     set_last_page()
     # write out todisc_commands.bash in current dir
+    # if it exists in current dir, prompt for rename
+    if os.path.exists(script_file):
+        rename_script()
     write_script()
     move(4)
     return todisc_cmds
@@ -566,11 +573,34 @@ def add_titleset(Event=None):
     new_titleset = ['-titleset', '-menu-title', title, '-end-titleset']
     todisc_cmds.append(new_titleset)
     pg5_listbox1.insert(END, title)
-    pg5_listbox1.configure(height=pg5_listbox1.size())
+    #pg5_listbox1.configure(height=pg5_listbox1.size())
     
 def remove_titleset(Event=None):
-    pass
-
+    mess1='You can only remove titlesets'
+    mess2='You must have at least 2 titlesets. Please add ' + \
+      'a new titleset [ Add titleset ]  before deleting one'
+    mess3='Please select a titleset to remove first'
+    try:
+        ind = int(pg5_listbox1.curselection()[0])
+        if ind < 2:
+            showerror(message=mess1)
+            return
+        elif pg5_listbox1.size() < 5:
+            showerror(message=mess2)
+            return
+    except IndexError:
+        if pg5_listbox1.size() < 5:
+            mess = mess3 + '\n\n' + mess2
+        else:
+            mess = mess3
+        showerror(message=mess)
+        return
+    item = pg5_listbox1.get(ind)
+    pg5_listbox1.delete(ind)
+    todisc_cmds[1].remove(item)
+    todisc_cmds.pop(ind)
+    write_script()
+    print todisc_cmds # DEBUG
 ###################### get/set some external variables #######################
 
 # get tovid prefix
@@ -729,7 +759,7 @@ pg3_listbox1.pack(side=LEFT, fill=Y, expand=1, anchor='w')
 
 # create a vertical scrollbar to the right of the listbox
 yscroll = Scrollbar(pg3_frame1, command=pg3_listbox1.yview, orient=VERTICAL)
-yscroll.pack(side=LEFT, fill=Y, anchor='nw')
+yscroll.pack(side=RIGHT, fill=Y, anchor='ne')
 pg3_listbox1.configure(yscrollcommand=yscroll.set)
 
 # use entry widget to display/edit selection
@@ -799,11 +829,11 @@ page5_label2.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 pg5_frame2 = LabelFrame(pg5_frame1, \
   text="Choose an item to edit with the GUI and press [ Rerun Options ]")
 pg5_frame2.pack(fill=X, expand=1)
-pg5_listbox1 = Listbox(pg5_frame2)
+pg5_listbox1 = Listbox(pg5_frame2, selectbackground='#A6B5BF')
 pg5_listbox1.bind('<Double-Button-1>', rerun_options)
 # create a vertical scrollbar to the right of the listbox
 yscroll2 = Scrollbar(pg5_frame2, command=pg5_listbox1.yview, orient=VERTICAL)
-yscroll2.pack(side=LEFT, fill=Y)
+yscroll2.pack(side=RIGHT, anchor='ne', fill=Y)
 pg5_listbox1.configure(yscrollcommand=yscroll.set)
 # button to rerun the GUI to edit selected options
 pg5_frame3 = Frame(pg5_frame2)
