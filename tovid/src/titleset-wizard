@@ -2,6 +2,7 @@
 
 import os.path
 import shlex
+import commands
 from Tkinter import *
 from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
@@ -521,10 +522,10 @@ def confirm_exit(event=None):
         """
         global is_running
         if askyesno(message="Exit?"):
-            # waitVar will cause things to hang, check if set and spring it
             if waitVar.get() == 1:
                 # set is_running to false so the gui doesn't get run
                 is_running.set(False)
+                # waitVar will cause things to hang, spring it if set
                 setVar()
             quit()
 
@@ -562,18 +563,20 @@ def add_titleset(Event=None):
     text = 'Please enter a menu link title for your titleset'
     title = askstring('Titleset title', text)
     vmgm_cmds = [w for w in todisc_cmds[1]]
+    # get options ( -titles title1 title2 ... ), removing them from original
     new_titles = get_option(vmgm_cmds, '-titles')
+    # add new title, remove -end-vmgm, add the -titles ... back, add -end-vmgm
     new_titles.append(title)
     vmgm_cmds.pop(-1)
     vmgm_cmds.extend(new_titles)
     vmgm_cmds.append('-end-vmgm')
-    # delete old vmgm options from global todisc_cmds
+    # delete old vmgm options from todisc_cmds and insert new
     todisc_cmds.pop(1)
     todisc_cmds.insert(1, vmgm_cmds)
     new_titleset = ['-titleset', '-menu-title', title, '-end-titleset']
+    # add new titleset with just the 'tags' surrounding the new title
     todisc_cmds.append(new_titleset)
     pg5_listbox1.insert(END, title)
-    #pg5_listbox1.configure(height=pg5_listbox1.size())
 
 def remove_titleset(Event=None):
     mess1='You can only remove titlesets'
@@ -595,18 +598,20 @@ def remove_titleset(Event=None):
             mess = mess3
         showerror(message=mess)
         return
+    # get the index from listbox then delete it
     item = pg5_listbox1.get(ind)
     pg5_listbox1.delete(ind)
+    # remove the menu title from vmgm options
     todisc_cmds[1].remove(item)
+    # delete that index from todisc_cmds
     todisc_cmds.pop(ind)
+    # write out the script again
     write_script()
-    print todisc_cmds # DEBUG
+
 ###################### get/set some external variables #######################
 
 # get tovid prefix
-path_cmd = ['tovid', '--prefix']
-tovid_prefix = Popen(path_cmd, stdout=PIPE)
-tovid_prefix = tovid_prefix.communicate()[0].strip()
+tovid_prefix = commands.getoutput('tovid -prefix')
 tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
 os.environ['PATH'] = tovid_prefix + os.pathsep + os.environ['PATH']
 
@@ -638,7 +643,6 @@ bg_clr = tk.cget('background')
 if os.path.isfile(img_file):
     # we need img both for page 1, and for icon display if TCL allows it
     img = create_image()
-    #img = PhotoImage(file=img_file)
     if TclVersion >= 8.5:
         icon = create_image(True)
         tk.tk.call('wm', 'iconphoto', tk._w, icon)
@@ -806,6 +810,10 @@ pg5_txt2 = '''
 If you wish to go back and change any options with the GUI, you can select
 an item from the options listbox and press [ Rerun Options ].  The titleset
 options are listed by the name you gave for the root menu links.
+
+You can also remove a titleset, or add a new titleset.  If you add a new one
+be sure to select it and run [ Rerun options ] as it will only have a menu
+title.
 '''
 pg5_txt3 = '''
 If you are happy with your saved options, now you can either choose to run
