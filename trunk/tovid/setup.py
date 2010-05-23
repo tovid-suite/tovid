@@ -14,19 +14,25 @@ or:
 At this time, there is no 'uninstall' mechanism...
 """
 
-import os
 
 def svn_version():
     """Return the current SVN revision number, as reported by 'svn info',
     as a string like 'svn-r1234'. If svn is not installed, or if something goes
     wrong, return 'svn-unknown'
     """
-    rev_line = os.popen('svn info 2>/dev/null | grep ^Revision').read()
-    # If rev_line is empty, either svn is missing or the command failed
+    from commands import getoutput
+    rev_line = getoutput('svn info 2>/dev/null | grep ^Revision')
+    # If rev_line is found, get the revision number
     if rev_line:
         return 'svn-r' + rev_line.split(':')[1].strip()
+    # If rev_line is empty, try using bzr instead
     else:
-        return 'svn-unknown'
+        rev_line = getoutput('bzr log -l 1 2>/dev/null | grep "^svn revno"')
+        # "svn revno: NNNN (on /trunk)"
+        if rev_line:
+            return 'svn-r' + rev_line.split(':')[1].strip().split(' ')[0]
+    # If all else fails...
+    return 'svn-unknown'
 
 # Current version number of tovid, as a string.
 # Examples:
@@ -36,6 +42,7 @@ _tovid_version = svn_version()
 #_tovid_version = '0.34'
 
 
+import os
 import sys
 import shutil
 from distutils.core import setup, Command
@@ -153,7 +160,6 @@ class BuildTovidInit (Command):
 
     def finalize_options(self):
         pass
-
 
     def run(self):
         """Build src/tovid-init from tovid-init.in.
