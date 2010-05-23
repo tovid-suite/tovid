@@ -511,16 +511,17 @@ def show_status(status):
     tk.after(2000, lambda: status_frame.pack_forget())
 
 def confirm_exit(event=None):
-        """Exit the GUI, with confirmation prompt.
-        """
-        global is_running
-        if askyesno(message="Exit?"):
-            if waitVar.get() == 1:
-                # set is_running to false so the gui doesn't get run
-                is_running.set(False)
-                # waitVar will cause things to hang, spring it if set
-                setVar()
-            quit()
+    """Exit the GUI, with confirmation prompt.
+    """
+    global is_running
+    if askyesno(message="Exit?"):
+        if waitVar.get() == 1:
+            # set is_running to false so the gui doesn't get run
+            is_running.set(False)
+            # waitVar will cause things to hang, spring it if set
+            setVar()
+        quit()
+
 
 class BigLabel (Text):
     """Looks similar to a Label widget, but with automatic word-wrap.
@@ -532,7 +533,8 @@ class BigLabel (Text):
         # Text widget with the same background color as the master
         Text.__init__(self, master, font=font, wrap='word',
                       width=65, height=10,
-                      background=bg_clr, borderwidth=0, padx=10)
+                      background=master.cget('background'),
+                      borderwidth=0, padx=10)
         # Try to intelligently group the text into paragraphs.
         # Two consecutive newlines start a new paragraph; a single
         # newline should be treated as a single space. Strip leading
@@ -544,12 +546,13 @@ class BigLabel (Text):
         # Make the text widget read-only
         self.config(state='disabled')
 
-def create_image(icon=False):
+
+def create_image(img_file, background, icon=False):
     if icon:
-        opts = ' %s -resize 32x32! gif:-' %img_file
+        opts = ' %s -resize 32x32! gif:-' % img_file
     else:
-        opts = ' +dither -background %s %s -flatten gif:-' %(bg_clr, img_file)
-    cmd = shlex.split('convert %s' %opts)
+        opts = ' +dither -background %s %s -flatten gif:-' % (background, img_file)
+    cmd = shlex.split('convert %s' % opts)
     im_dat = Popen(cmd, stdout=PIPE).communicate()[0]
     return PhotoImage(data=b64encode(im_dat))
 
@@ -631,18 +634,7 @@ tkframe = Frame(tk)
 tkframe.pack(side=LEFT, fill=Y, anchor='w')
 tk.title('Tovid titleset wizard')
 tk.minsize(width=800, height=660)
-img_file = tovid_prefix + '/titleset-wizard.svg'
-bg_clr = tk.cget('background')
 
-if os.path.isfile(img_file):
-    # we need img both for page 1, and for icon display if TCL allows it
-    img = create_image()
-    if TclVersion >= 8.5:
-        icon = create_image(True)
-        tk.tk.call('wm', 'iconphoto', tk._w, icon)
-else:
-    img = None
-    print img_file, ' does not exist'
 is_running = BooleanVar()
 is_running.set(True)
 waitVar = BooleanVar()
@@ -665,8 +657,7 @@ tk.protocol("WM_DELETE_WINDOW", confirm_exit)
 tk.bind('<Control-q>', confirm_exit)
 
 ############################ Page 1 of wizard ############################
-pg1_txt1 = '''
-INTRODUCTION
+pg1_txt1 = '''INTRODUCTION
 
 Welcome to the tovid titleset wizard.  We will be making a complete DVD, with
 multiple levels of menus including a root menu (VMGM menu) and lower level
@@ -691,8 +682,27 @@ page1 = Frame(tk)
 frame1 = Frame(tkframe)
 pg1_label1 = Label(frame1, text='Tovid', font=heading_font)
 pg1_label1.pack(side=TOP, pady=40)
-if img:
-    pg1_label2 = Label(frame1, image=img).pack(side=TOP)
+
+# If the titleset-wizard.svg file is found, convert it to .gif and
+# display it in the GUI (and also in the titlebar if Tcl supports it)
+img_file = tovid_prefix + '/titleset-wizard.svg'
+if os.path.isfile(img_file):
+    background = tk.cget('background')
+    img = create_image(img_file, background)
+
+    # Display the image in a label on all pages
+    pg1_label2 = Label(frame1, image=img)
+    pg1_label2.pack(side=TOP)
+
+    # If Tcl supports it, generate an icon for the titlebar
+    if TclVersion >= 8.5:
+        icon = create_image(img_file, background, icon=True)
+        tk.tk.call('wm', 'iconphoto', tk._w, icon)
+
+# No image file? Print a message and continue
+else:
+    print('%s does not exist' % img_file)
+
 pg1_label3 = Label(frame1, text='Titleset Wizard', font=lrg_font)
 pg1_label3.pack(side=TOP, pady=40)
 pg1_label4 = Label(frame1, text='Page 1', font=lrg_font)
