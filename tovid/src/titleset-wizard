@@ -162,14 +162,10 @@ def next():
         set_last_page()
     elif pages.index(current) == 4:
     # Page 5
-        root = Tk()
-        root.option_add("*Dialog.msg.wrapLength", "10i")
-        root.withdraw()
         if askyesno(message="Run saved script in xterm now?"):
             run_in_xterm(script_file)
         else:
             show_status(1)
-        root.destroy()
     move(mv_amt)
 
 def prev():
@@ -292,8 +288,6 @@ def rerun_options(Event=None):
         return
     rerun_opts = []
     os.environ['METAGUI_WIZARD'] = str(index+1)
-    #mess='Rerun GUI for the "%s" options?' % pg5_listbox1.get(index)
-    #if askyesno(message=mess):
     # the GUI doesn't understand the titleset type options
     remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
     options = [ i for i in todisc_cmds[index] if not i in remove ]
@@ -443,7 +437,6 @@ def get_option(items, option):
 def load_project():
     """Load a saved project script for editing with the wizard and GUI
     """
-    global todisc_cmds
     page5_label1.configure(text='Editing a saved project')
     error_msg = 'This is not a saved tovid project script\n' + \
       'Do you want to try to load it anyway?'
@@ -738,8 +731,8 @@ pg2_label1.pack(fill='both', expand=True, side='top', anchor='nw')
 ############################## Page 3 of wizard ##############################
 pg3_txt1 = '''ROOT MENU (VMGM)
 
-Now we will save options for your root (VMGM) menu.  The only option you really
-need is the titleset titles.  Since you can not save titles in the GUI without
+Now we will save options for your root (VMGM) menu.  The only REQUIRED option
+is the titleset titles.  Since you can not save titles in the GUI without
 loading videos you need to enter them here.  These titleset names will appear
 as menu titles for the respective menu in your DVD.
 
@@ -748,8 +741,8 @@ Do not use quotes unless you want them to appear literally in the title.
 
 Press  [ Next >>> ]  when you are finished, and the tovid gui will come up so
 you can enter any other options you want.  You can not enter video files here,
-but most other options can be used.  There are no REQUIRED options however, as
-you have already entered your root menu link titles.
+but most other options can be used.  There are now no REQUIRED options however,
+as you will have already entered your root menu link titles.
 %s
 ''' % next_txt
 
@@ -812,7 +805,7 @@ pg4_label2.pack(fill=BOTH, expand=1)
 page5 = Frame(tk)
 pg5_txt2 = '''
 If you wish to go back and change any options with the GUI, you can select
-an item from the options listbox and press [ Rerun Options ].  The titleset
+an item from the options listbox and press [ Edit ].  The titleset
 options are listed by the name you gave for the root menu links.
 
 You can also remove a titleset, or add a new titleset.  If you add a new one
@@ -843,9 +836,10 @@ page5_label2 = Label(pg5_frame1, text=pg5_txt2, justify=LEFT)
 page5_label2.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
 # create the listbox
 pg5_frame2 = LabelFrame(pg5_frame1, \
-  text="Choose an item to edit with the GUI and press [ Rerun Options ]")
+  text=" Double-click item to edit with GUI, or select " + \
+    "and  press [ Edit ] ")
 pg5_frame2.pack(fill=X, expand=1)
-pg5_listbox1 = Listbox(pg5_frame2, selectbackground='#A6B5BF')
+pg5_listbox1 = Listbox(pg5_frame2, selectbackground='#A6B5BF', height=7)
 pg5_listbox1.bind('<Double-Button-1>', rerun_options)
 # create a vertical scrollbar to the right of the listbox
 yscroll2 = Scrollbar(pg5_frame2, command=pg5_listbox1.yview, orient=VERTICAL)
@@ -856,7 +850,7 @@ pg5_frame3 = Frame(pg5_frame2)
 pg5_frame3.pack(side=BOTTOM, fill=X, expand=1)
 pg5_button2 = Button(pg5_frame3, text='Add titleset', command=add_titleset)
 pg5_button2.pack(side=LEFT, anchor='w')
-pg5_button1 = Button(pg5_frame3, text='Rerun Options', command=rerun_options)
+pg5_button1 = Button(pg5_frame3, text='Edit', command=rerun_options)
 pg5_button1.pack(side=LEFT, fill=X, expand=1)
 pg5_button2 = Button(pg5_frame3, text='Remove titleset', command=remove_titleset)
 pg5_button2.pack(side=RIGHT, anchor='e')
