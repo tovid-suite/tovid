@@ -829,9 +829,12 @@ bash %s
 You may also edit the file with a text editor but do not change the headers
 (first 3 lines of text) or change the order of the sections:
 1. General opts, 2. Root menu 3. Titleset menus
+You may also load the file back onto this page of the GUI and make any changes
+you want, using the command:
+tovid titlesets %s
 
 Press [Run script now] or [Exit].
-''' % script_file
+''' % (script_file, script_file)
 pg5_frame1 = Frame(page5)
 pg5_frame1.pack()
 page5_label1 = Label(pg5_frame1, text='Finished!', font=lrg_font)
