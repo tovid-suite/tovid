@@ -33,7 +33,7 @@ from base64 import b64encode
 class Label (Widget):
     """A widget with a text label.
     """
-    def __init__(self, text='', justify='left'):
+    def __init__(self, text='', justify='left', anchor=''):
         """Create a Label with the given text.
 
             text
@@ -49,7 +49,10 @@ class Label (Widget):
         self.justify = justify
         # In addition to justify, anchor to nw, n, or ne
         _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
-        self.anchor = _anchors[self.justify]
+        if anchor:
+            self.anchor = anchor
+        else:
+            self.anchor = _anchors[self.justify]
         # Will be set by draw()
         self.label = None
 
@@ -166,7 +169,7 @@ class Panel (Widget):
         # Get a labeled or unlabeled frame (labeled by default)
         if self.name and kwargs.get('labeled', True):
             self.frame = tk.LabelFrame(self, text=self.name,
-                                       padx=8, pady=8)
+                                       padx=4, pady=4)
         else:
             self.frame = tk.Frame(self)
         # Pack the frame
