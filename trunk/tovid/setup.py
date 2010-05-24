@@ -243,7 +243,8 @@ setup(
          ['docs/man/tovid.1']),
         # Desktop shortcut
         ('share/applications',
-         ['tovidgui.desktop']),
+         ['tovidgui.desktop',
+         'titleset-wizard.desktop']),
         # Icons
         ('share/icons/hicolor/scalable/apps',
          [
