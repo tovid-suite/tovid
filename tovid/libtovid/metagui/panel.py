@@ -35,7 +35,6 @@ class Label (Widget):
     def __init__(self,
                  text='',
                  justify='left',
-                 anchor='w',
                  image_file='',
                  image_width=0,
                  image_height=0,
@@ -77,12 +76,6 @@ class Label (Widget):
         self.image_file = image_file
         self.image_width = image_width
         self.image_height = image_height
-        # In addition to justify, anchor to nw, n, or ne if no 'anchor' arg
-        if anchor:
-            self.anchor = anchor
-        else:
-            _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
-            self.anchor = _anchors[self.justify]
         # Will be set by draw()
         self.label = None
         self.image = None
@@ -100,8 +93,10 @@ class Label (Widget):
             self.image = tk.Label(self, image=photo_image)
             self.image.pack(side='left', expand=False)
         # Create and pack the label
-        self.label = tk.Label(self, text=self.text, justify=self.justify)
-        self.label.pack(fill='x', expand=True, side='left', anchor=self.anchor)
+        self.label = tk.Label(self, text=self.text, justify=self.justify, padx=8)
+        # Set appropriate anchoring based on justification
+        _anchors = {'left': 'w', 'center': 'center', 'right': 'e'}
+        self.label.pack(expand=True, anchor=_anchors[self.justify])
 
 
     def get_photo_image(self):
