@@ -37,8 +37,7 @@ class Label (Widget):
                  justify='left',
                  image_file='',
                  image_width=0,
-                 image_height=0,
-                 image_side='left'):
+                 image_height=0):
         """Create a Label with the given text.
 
             text
@@ -90,8 +89,11 @@ class Label (Widget):
             photo_image = self.get_photo_image()
             # Keep a reference to the PhotoImage to prevent garbage collection
             self.photo = photo_image
-            self.image = tk.Label(self, image=photo_image)
-            self.image.pack(side='left', expand=False)
+            image_frame = tk.Frame(self, padx=4, pady=4)
+            self.image = tk.Label(image_frame, image=photo_image)
+            self.image.pack()
+            image_frame.pack(side='left', expand=False)
+
         # Create and pack the label
         self.label = tk.Label(self, text=self.text, justify=self.justify, padx=8)
         # Set appropriate anchoring based on justification
