@@ -11,6 +11,7 @@ from libtovid.util import filetypes
 import os
 import fnmatch
 from libtovid.cli import Command
+import commands
 
 # Define a few supporting functions
 def to_title(filename):
@@ -69,6 +70,8 @@ home_dir = os.path.expanduser("~") + '/.tovid/masks'
 for dir in sys_dir, home_dir:
     masks.extend(find_masks(dir, '*.png'))
 thumb_masks =  '|'.join(nodupes(masks))
+tovid_prefix = commands.getoutput('tovid -prefix')
+tovid_icon = os.path.join(tovid_prefix, 'lib', 'tovid', 'tovid.svg')
 
 """Since todisc has a large number of options, it helps to store each
 one in a variable, named after the corresponding command-line option.
@@ -128,8 +131,11 @@ else:
         'save', 'Choose an output name')
 ####
 
-_heading = Label(heading_text, 'center')
- 
+_heading = HPanel('',
+    Image(tovid_icon, 64, 64),
+    Label(heading_text, 'center'),
+)
+
 _menu_title = Text('Menu title', '-menu-title', 'My video collection',
     'Title text displayed on the main menu. Use \\n for a new line '
      'in a multi-line title.')
