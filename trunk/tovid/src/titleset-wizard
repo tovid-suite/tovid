@@ -40,8 +40,8 @@ def move(amt):
     current = pages[ind]
     # when move is called, change the page number displayed
     pg1_label4.configure(text='Page %s' %int(ind+1))
-    if 3 > pages.index(current) > 4:
-        button1.focus_set()
+    # focus on [Next >>>] button
+    button1.focus_set()
     current.pack(side=TOP, fill=BOTH, expand=1)
 
 def next():
@@ -106,14 +106,14 @@ def next():
         tk.withdraw()
         options_list = save_list()
         numtitles = len(save_list())
-        # set [ Next >>> ] button to set waitVar, allowing loop to continue
+        # set [Next >>>] button to set waitVar, allowing loop to continue
         button1.configure(command=setVar)
         for i in range(numtitles):
             run_cmds = ['-menu-title']
             run_cmds.append(options_list[i])
             if i < numtitles:
                 pg4_txt2 = 'Now we will work on titleset %s:\n"%s"\n\n'
-                pg4_txt2 += 'Press  [ Next >>> ]  to continue'
+                pg4_txt2 += 'Press  [Next >>>]  to continue'
                 pg4_txt2 = pg4_txt2 % (int(i+1), options_list[i])
                 pg4_label2.configure(text=pg4_txt2)
                 pg4_frame3.pack()
@@ -723,7 +723,7 @@ After making your selections, press [ Save to wizard ] in the GUI
 '''
 pg2_txt1 = '''GENERAL OPTIONS
 
-When you press the  [ Next >>> ]  button at the bottom of the wizard, we will
+When you press the  [Next >>>]  button at the bottom of the wizard, we will
 start the GUI and begin with general options applying to all titlesets.  For
 example you may wish to have all menus share a common font and fontsize of your
 choosing, for the menu link titles and/or the menu title.
@@ -734,7 +734,7 @@ same option again later for titlesets.
 
 After making your selections, press [ Save to wizard ] in the GUI
 
-Press  [ Next >>> ]  to begin ...
+Press  [Next >>>]  to begin ...
 '''
 
 page2 = Frame(tk)
@@ -752,7 +752,7 @@ as menu titles for the respective menu in your DVD.
 Enter the names of your titlesets, one per line, pressing <ENTER> each time.
 Do not use quotes unless you want them to appear literally in the title.
 
-Press  [ Next >>> ]  when you are finished, and the tovid gui will come up so
+Press  [Next >>>]  when you are finished, and the tovid gui will come up so
 you can enter any other options you want.  You can not enter video files here,
 but most other options can be used.  There are now no REQUIRED options however,
 as you will have already entered your root menu link titles.
@@ -797,7 +797,7 @@ has been changed to the text you used for the menu links in the root menu -
 change this to whatever you want.
 
 Follow the simple instructions that appear in the next and subsequent pages:
-you will need to press  [ Next >>> ]  for each titleset.
+you will need to press  [Next >>>]  for each titleset.
 '''
 pg4_frame1 = Frame(page4)
 pg4_frame1.pack(side=TOP, fill=BOTH, expand=1)
