@@ -40,6 +40,8 @@ def move(amt):
     current = pages[ind]
     # when move is called, change the page number displayed
     pg1_label4.configure(text='Page %s' %int(ind+1))
+    if 3 > pages.index(current) > 4:
+        button1.focus_set()
     current.pack(side=TOP, fill=BOTH, expand=1)
 
 def next():
@@ -122,6 +124,8 @@ def next():
             tk.wait_variable(waitVar)
             if is_running.get() == 1:
                 get_commands = run_gui(run_cmds, '%s' %(i+3))
+            else:
+                quit()
             if get_commands:
                 status = 0
                 get_commands = trim_list_header(get_commands)
@@ -513,13 +517,11 @@ def show_status(status):
 def confirm_exit(event=None):
     """Exit the GUI, with confirmation prompt.
     """
-    global is_running
     if askyesno(message="Exit?"):
-        if waitVar.get() == 1:
-            # set is_running to false so the gui doesn't get run
-            is_running.set(False)
-            # waitVar will cause things to hang, spring it if set
-            setVar()
+        # set is_running to false so the gui doesn't get run
+        is_running.set(False)
+        # waitVar may cause things to hang, spring it
+        setVar()
         quit()
 
 
@@ -643,6 +645,7 @@ button_frame = Frame(tk)
 button_frame.pack(expand=1, fill=X, side=BOTTOM, anchor='s')
 button1 = Button(button_frame, text='Next >>>', command=next)
 button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
+button1.focus_set()
 # get fonts
 inifile = os.path.expanduser('~/.metagui/config')
 style = Style()
