@@ -47,11 +47,11 @@ class Label (Widget):
             raise ValueError("Label justify argument must be 'left', 'center', "
                              "or 'right' (got '%s' instead)." % justify)
         self.justify = justify
-        # In addition to justify, anchor to nw, n, or ne
-        _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
+        # In addition to justify, anchor to nw, n, or ne if no 'anchor' arg
         if anchor:
             self.anchor = anchor
         else:
+            _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
             self.anchor = _anchors[self.justify]
         # Will be set by draw()
         self.label = None
