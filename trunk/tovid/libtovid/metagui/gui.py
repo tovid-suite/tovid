@@ -336,7 +336,7 @@ class Application (Widget):
             showinfo(title="Script saved", message="Saved '%s'" % filename)
 
     def save_exit(self):
-        filename = os.getcwd() + '/todisc_commands.bash'
+        filename = os.getcwd() + os.path.sep + '%s_commands.bash' % self.program
         self.save_script(filename)
         # exit code borrowed from apache so wizard knows it has a file to read
         exit(200)
