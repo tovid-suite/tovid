@@ -132,7 +132,7 @@ else:
         'save', 'Choose an output name')
 ####
 
-_heading = Label(heading_text, 'center', tovid_icon, 48, 48, 'right')
+_heading = Label(heading_text, 'center', tovid_icon, 48, 48)
 
 _menu_title = Text('Menu title', '-menu-title', 'My video collection',
     'Title text displayed on the main menu. Use \\n for a new line '
