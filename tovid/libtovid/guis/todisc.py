@@ -101,7 +101,8 @@ elif wizard >= '3':
     heading_text += 'Required: 1 or more videos and/or slideshows'
 else:
     heading_text = 'You can author (and burn) a DVD with a simple menu '
-    heading_text += 'using ONLY this "Basic" pane'
+    heading_text += 'using ONLY this "Basic" pane\n'
+    heading_text += 'Required: video files (and/or slideshows) and "Output name"'
 
 if wizard == '2':
     # Root menu options
@@ -133,7 +134,7 @@ else:
 
 _heading = HPanel('',
     Image(tovid_icon, 64, 64),
-    Label(heading_text, 'center'),
+    Label(heading_text, 'center', 'w'),
 )
 
 _menu_title = Text('Menu title', '-menu-title', 'My video collection',
