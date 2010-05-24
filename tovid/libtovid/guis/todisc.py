@@ -132,10 +132,7 @@ else:
         'save', 'Choose an output name')
 ####
 
-_heading = HPanel('',
-    Image(tovid_icon, 64, 64),
-    Label(heading_text, 'center', 'w'),
-)
+_heading = Label(heading_text, 'center', 'w', tovid_icon, 48, 48, 'right')
 
 _menu_title = Text('Menu title', '-menu-title', 'My video collection',
     'Title text displayed on the main menu. Use \\n for a new line '
