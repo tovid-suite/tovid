@@ -3,7 +3,6 @@
 
 __all__ = [
     'Label',
-    'Image',
     'Panel',
     'HPanel',
     'VPanel',
@@ -33,50 +32,26 @@ from base64 import b64encode
 class Label (Widget):
     """A widget with a text label.
     """
-    def __init__(self, text='', justify='left', anchor=''):
+    def __init__(self,
+                 text='',
+                 justify='left',
+                 anchor='w',
+                 image_file='',
+                 image_width=0,
+                 image_height=0,
+                 image_side='left'):
         """Create a Label with the given text.
 
             text
                 String to appear in the Label
             justify
                 Text justification: 'left', 'center', or 'right'
-        """
-        Widget.__init__(self, text)
-        self.text = text
-        if justify not in ['left', 'center', 'right']:
-            raise ValueError("Label justify argument must be 'left', 'center', "
-                             "or 'right' (got '%s' instead)." % justify)
-        self.justify = justify
-        # In addition to justify, anchor to nw, n, or ne if no 'anchor' arg
-        if anchor:
-            self.anchor = anchor
-        else:
-            _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
-            self.anchor = _anchors[self.justify]
-        # Will be set by draw()
-        self.label = None
-
-
-    def draw(self, master, **kwargs):
-        """Draw the Label in the given master.
-        """
-        Widget.draw(self, master, **kwargs)
-        self.label = tk.Label(self, text=self.text, justify=self.justify)
-        self.label.pack(anchor=self.anchor)
-
-
-class Image (Widget):
-    """A widget that displays an image.
-    """
-    def __init__(self, filename, width=0, height=0):
-        """Create an Image widget.
-
-            filename
+            image_file
                 Full path to image file. May be in any format that
                 'convert' supports.
-            width
+            image_width
                 Width in pixels to resize the image to
-            height
+            image_height
                 Height in pixels to resize the image to
 
         Width and height may be used to scale the image in different ways:
@@ -92,21 +67,41 @@ class Image (Widget):
             width > 0, height > 0
                 Resize to exactly the given dimensions
         """
-        Widget.__init__(self, '')
-        self.filename = filename
-        self.width = width
-        self.height = height
+        Widget.__init__(self, text)
+        self.text = text
+        if justify not in ['left', 'center', 'right']:
+            raise ValueError("Label justify argument must be 'left', 'center', "
+                             "or 'right' (got '%s' instead)." % justify)
+        self.justify = justify
+        # Image attributes
+        self.image_file = image_file
+        self.image_width = image_width
+        self.image_height = image_height
+        # In addition to justify, anchor to nw, n, or ne if no 'anchor' arg
+        if anchor:
+            self.anchor = anchor
+        else:
+            _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
+            self.anchor = _anchors[self.justify]
+        # Will be set by draw()
+        self.label = None
+        self.image = None
 
 
     def draw(self, master, **kwargs):
-        """Draw the Image in the given master widget.
+        """Draw the Label in the given master.
         """
         Widget.draw(self, master, **kwargs)
-        photo_image = self.get_photo_image()
-        self.label = tk.Label(self, image=photo_image)
-        # Keep a reference to the PhotoImage to prevent garbage collection
-        self.photo = photo_image
-        self.label.pack()
+        # If an image filename was provided, get a PhotoImage
+        if self.image_file:
+            photo_image = self.get_photo_image()
+            # Keep a reference to the PhotoImage to prevent garbage collection
+            self.photo = photo_image
+            self.image = tk.Label(self, image=photo_image)
+            self.image.pack(side='left', expand=False)
+        # Create and pack the label
+        self.label = tk.Label(self, text=self.text, justify=self.justify)
+        self.label.pack(fill='x', expand=True, side='left', anchor=self.anchor)
 
 
     def get_photo_image(self):
@@ -116,9 +111,9 @@ class Image (Widget):
         args = []
         # Use the widget's background color, in case of transparency
         args += ['+dither', '-background', self.cget('background')]
-        args += [self.filename]
+        args += [self.image_file]
         # Scale appropriately
-        w, h = self.width, self.height
+        w, h = self.image_width, self.image_height
         if w > 0 and h == 0:
             args += ['-resize', '%dx' % w]
         elif w == 0 and h > 0:
