@@ -3,6 +3,7 @@
 
 __all__ = [
     'Label',
+    'Image',
     'Panel',
     'HPanel',
     'VPanel',
@@ -19,12 +20,14 @@ try:
 except ImportError:
     import tkinter as tk
 
+from libtovid import cli
 from libtovid.odict import Odict
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.control import Control, Flag
 from libtovid.metagui.support import \
     (ComboBox, ensure_type, divide_list)
 from libtovid.metagui.variable import ListVar
+from base64 import b64encode
 
 
 class Label (Widget):
@@ -57,6 +60,76 @@ class Label (Widget):
         Widget.draw(self, master, **kwargs)
         self.label = tk.Label(self, text=self.text, justify=self.justify)
         self.label.pack(anchor=self.anchor)
+
+
+class Image (Widget):
+    """A widget that displays an image.
+    """
+    def __init__(self, filename, width=0, height=0):
+        """Create an Image widget.
+
+            filename
+                Full path to image file. May be in any format that
+                'convert' supports.
+            width
+                Width in pixels to resize the image to
+            height
+                Height in pixels to resize the image to
+
+        Width and height may be used to scale the image in different ways:
+
+            width == 0, height == 0
+                Preserve the original image's size
+            width > 0, height == 0
+                Resize to the given width; height automatically
+                adjusts to maintain aspect ratio
+            width == 0, height > 0
+                Resize to the given height; width automatically
+                adjusts to maintain aspect ratio
+            width > 0, height > 0
+                Resize to exactly the given dimensions
+        """
+        Widget.__init__(self, '')
+        self.filename = filename
+        self.width = width
+        self.height = height
+
+
+    def draw(self, master, **kwargs):
+        """Draw the Image in the given master widget.
+        """
+        Widget.draw(self, master, **kwargs)
+        photo_image = self.get_photo_image()
+        self.label = tk.Label(self, image=photo_image)
+        # Keep a reference to the PhotoImage to prevent garbage collection
+        self.photo = photo_image
+        self.label.pack()
+
+
+    def get_photo_image(self):
+        """Convert the image file into a tk.PhotoImage and return it.
+        """
+        # Convert the image file to gif using 'convert'
+        args = []
+        # Use the widget's background color, in case of transparency
+        args += ['+dither', '-background', self.cget('background')]
+        args += [self.filename]
+        # Scale appropriately
+        w, h = self.width, self.height
+        if w > 0 and h == 0:
+            args += ['-resize', '%dx' % w]
+        elif w == 0 and h > 0:
+            args += ['-resize', 'x%d' % h]
+        elif w > 0 and h > 0:
+            args += ['-resize', '%dx%d!' % (w, h)]
+        # Flatten and convert to gif
+        args += ['-flatten', 'gif:-']
+        # Create and run the 'convert' command
+        cmd = cli.Command('convert', *args)
+        cmd.run(capture=True)
+        gif_data = cmd.get_output()
+        # Create the PhotoImage
+        return tk.PhotoImage(data=b64encode(gif_data))
 
 
 class Panel (Widget):
