@@ -232,7 +232,8 @@ setup(
             'src/tovid-stats',
             'src/titleset-wizard',
 
-            # Icon used by titleset wizard
+            # Icons used in the GUIs
+            'icons/hicolor/scalable/apps/tovid.svg',
             'icons/hicolor/scalable/apps/titleset-wizard.svg',
 
             # Config file
