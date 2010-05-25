@@ -83,7 +83,7 @@ class Frontend:
         """Return the tovid version string.
         """
         tovid_init = self.script_dir + '/tovid-init'
-        cmd = shlex.split("sh -c '. %s && printf $TOVID_VERSION'" % tovid_init)
+        cmd = shlex.split("bash -c '. %s && printf $TOVID_VERSION'" % tovid_init)
         return subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
 
 
