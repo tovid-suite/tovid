@@ -152,8 +152,8 @@ def get_photo_image(filename, width=0, height=0, background='', dither=False):
     elif width > 0 and height > 0:
         cmd.add('-resize', '%dx%d!' % (width, height))
 
-    # Flatten and convert to gif data
-    cmd.add('-flatten', 'gif:-')
+    # Convert to gif data
+    cmd.add('gif:-')
 
     # Run the command, capturing the gif data from standard output
     cmd.run(capture=True)
