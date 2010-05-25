@@ -542,7 +542,11 @@ class GUI (tk.Tk):
         # Set the application icon, if provided
         if self.icon_file:
             self.icon = get_photo_image(self.icon_file, 32, 32)
-            self.application.tk.call('wm', 'iconphoto', self._w, self.icon)
+            try:
+                self.application.tk.call('wm', 'iconphoto', self._w, self.icon)
+            except tk.TclError:
+                print("Could not set titlebar icon. Maybe your Tcl"
+                      " is too old? Continuing anyway.")
 
 
     def show_config(self):
