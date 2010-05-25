@@ -688,7 +688,7 @@ pg1_label1.pack(side=TOP, pady=40)
 
 # If the titleset-wizard.svg file is found, convert it to .gif and
 # display it in the GUI (and also in the titlebar if Tcl supports it)
-img_file = tovid_prefix + '/titleset-wizard.svg'
+img_file = tovid_prefix + '/titleset-wizard.png'
 if os.path.isfile(img_file):
     background = tk.cget('background')
     img = create_image(img_file, background)

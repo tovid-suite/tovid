@@ -71,7 +71,7 @@ for dir in sys_dir, home_dir:
     masks.extend(find_masks(dir, '*.png'))
 thumb_masks =  '|'.join(nodupes(masks))
 tovid_prefix = commands.getoutput('tovid -prefix')
-tovid_icon = os.path.join(tovid_prefix, 'lib', 'tovid', 'tovid.svg')
+tovid_icon = os.path.join(tovid_prefix, 'lib', 'tovid', 'tovid.png')
 
 """Since todisc has a large number of options, it helps to store each
 one in a variable, named after the corresponding command-line option.
