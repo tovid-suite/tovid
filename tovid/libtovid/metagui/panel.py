@@ -24,7 +24,7 @@ from libtovid.odict import Odict
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.control import Control, Flag
 from libtovid.metagui.support import \
-    (ComboBox, ensure_type, divide_list)
+    (ComboBox, ensure_type, divide_list, get_photo_image)
 from libtovid.metagui.variable import ListVar
 from base64 import b64encode
 
@@ -86,7 +86,8 @@ class Label (Widget):
         Widget.draw(self, master, **kwargs)
         # If an image filename was provided, get a PhotoImage
         if self.image_file:
-            photo_image = self.get_photo_image()
+            photo_image = get_photo_image(self.image_file,
+                self.image_width, self.image_height, self.cget('background'))
             # Keep a reference to the PhotoImage to prevent garbage collection
             self.photo = photo_image
             image_frame = tk.Frame(self, padx=4, pady=4)
@@ -99,32 +100,6 @@ class Label (Widget):
         # Set appropriate anchoring based on justification
         _anchors = {'left': 'w', 'center': 'center', 'right': 'e'}
         self.label.pack(expand=True, anchor=_anchors[self.justify])
-
-
-    def get_photo_image(self):
-        """Convert the image file into a tk.PhotoImage and return it.
-        """
-        # Convert the image file to gif using 'convert'
-        args = []
-        # Use the widget's background color, in case of transparency
-        args += ['+dither', '-background', self.cget('background')]
-        args += [self.image_file]
-        # Scale appropriately
-        w, h = self.image_width, self.image_height
-        if w > 0 and h == 0:
-            args += ['-resize', '%dx' % w]
-        elif w == 0 and h > 0:
-            args += ['-resize', 'x%d' % h]
-        elif w > 0 and h > 0:
-            args += ['-resize', '%dx%d!' % (w, h)]
-        # Flatten and convert to gif
-        args += ['-flatten', 'gif:-']
-        # Create and run the 'convert' command
-        cmd = cli.Command('convert', *args)
-        cmd.run(capture=True)
-        gif_data = cmd.get_output()
-        # Create the PhotoImage
-        return tk.PhotoImage(data=b64encode(gif_data))
 
 
 class Panel (Widget):

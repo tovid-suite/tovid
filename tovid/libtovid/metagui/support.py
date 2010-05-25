@@ -5,6 +5,7 @@ __all__ = [
     'exit_with_traceback',
     'ensure_type',
     'divide_list',
+    'get_photo_image',
     # Others
     'ScrollList',
     'DragList',
@@ -95,6 +96,70 @@ def askyesno(title=None, message=None, **options):
         return True
     else:
         return False
+
+
+def get_photo_image(filename, width=0, height=0, background='', dither=False):
+    """Get a tk.PhotoImage from a given image file.
+
+        filename
+            Full path to the image file, in any format that 'convert'
+            understands
+        width
+            Desired image width in pixels
+        height
+            Desired image height in pixels
+        background
+            An '#RRGGBB' string for the desired background color.
+            Only effective for images with transparency.
+        dither
+            True to dither the image. May increase graininess.
+            Smallish images usually look better without dithering.
+
+    Width and height may be used to scale the image in different ways:
+
+        width == 0, height == 0
+            Preserve the original image's size
+        width > 0, height == 0
+            Resize to the given width; height automatically
+            adjusts to maintain aspect ratio
+        width == 0, height > 0
+            Resize to the given height; width automatically
+            adjusts to maintain aspect ratio
+        width > 0, height > 0
+            Resize to exactly the given dimensions
+    """
+    # Convert the image file to gif using 'convert'
+    cmd = cli.Command('convert')
+
+    # Pre-processing
+    # Dither if requested, otherwise disable
+    if dither:
+        cmd.add('-dither')
+    else:
+        cmd.add('+dither')
+    # Set the background color, if provided
+    if background:
+        cmd.add('-background', background)
+
+    cmd.add(filename)
+
+    # Post-processing
+    # Scale appropriately
+    if width > 0 and height == 0:
+        cmd.add('-resize', '%dx' % width)
+    elif width == 0 and height > 0:
+        cmd.add('-resize', 'x%d' % height)
+    elif width > 0 and height > 0:
+        cmd.add('-resize', '%dx%d!' % (width, height))
+
+    # Flatten and convert to gif data
+    cmd.add('-flatten', 'gif:-')
+
+    # Run the command, capturing the gif data from standard output
+    cmd.run(capture=True)
+    gif_data = cmd.get_output()
+    # Create and return the PhotoImage from the gif data
+    return tk.PhotoImage(data=base64.b64encode(gif_data))
 
 
 ### --------------------------------------------------------------------

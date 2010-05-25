@@ -32,7 +32,7 @@ from libtovid import cli
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.panel import Panel, Tabs
 from libtovid.metagui.support import \
-    (ConfigWindow, Style, ensure_type, askyesno)
+    (ConfigWindow, Style, ensure_type, askyesno, get_photo_image)
 from libtovid.metagui.control import Control, NoSuchControl
 
 
@@ -461,7 +461,10 @@ class GUI (tk.Tk):
 
         Keywords arguments accepted:
 
-            inifile:      Name of an .ini-formatted file with GUI configuration
+            inifile
+                Name of an .ini-formatted file with GUI configuration
+            icon
+                Full path to an image to use as the titlebar icon
         """
         tk.Tk.__init__(self)
 
@@ -475,8 +478,9 @@ class GUI (tk.Tk):
         self.width = width
         self.height = height
 
-        # Get style configuration from INI file
+        # Get keyword arguments
         self.inifile = kwargs.get('inifile', DEFAULT_CONFIG)
+        self.icon_file = kwargs.get('icon', None)
 
         self.style = Style()
         if os.path.exists(self.inifile):
@@ -535,6 +539,10 @@ class GUI (tk.Tk):
         self.application.pack(anchor='n', fill='both', expand=True)
         # Draw the toolbar
         self.application.draw_toolbar(self.show_config, self.confirm_exit)
+        # Set the application icon, if provided
+        if self.icon_file:
+            self.icon = get_photo_image(self.icon_file, 32, 32)
+            self.application.tk.call('wm', 'iconphoto', self._w, self.icon)
 
 
     def show_config(self):
