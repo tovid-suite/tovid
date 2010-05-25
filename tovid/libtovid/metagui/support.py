@@ -152,6 +152,10 @@ def get_photo_image(filename, width=0, height=0, background='', dither=False):
     elif width > 0 and height > 0:
         cmd.add('-resize', '%dx%d!' % (width, height))
 
+    # If background color was set, flatten the image
+    if background:
+        cmd.add('-flatten')
+
     # Convert to gif data
     cmd.add('gif:-')
 
