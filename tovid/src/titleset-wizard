@@ -7,6 +7,7 @@ from Tkinter import *
 from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
 from libtovid.metagui import Style
+from libtovid.metagui.support import PrettyLabel
 from libtovid.cli import _enc_arg
 from tkMessageBox import *
 from time import sleep
@@ -525,30 +526,6 @@ def confirm_exit(event=None):
         quit()
 
 
-class BigLabel (Text):
-    """Looks similar to a Label widget, but with automatic word-wrap.
-    """
-    def __init__(self, master, text, font):
-        """Create a text widget with the given text and font,
-        and the same background color as the master widget.
-        """
-        # Text widget with the same background color as the master
-        Text.__init__(self, master, font=font, wrap='word',
-                      width=65, height=10,
-                      background=master.cget('background'),
-                      borderwidth=0, padx=10)
-        # Try to intelligently group the text into paragraphs.
-        # Two consecutive newlines start a new paragraph; a single
-        # newline should be treated as a single space. Strip leading
-        # and trailing whitespace from each paragraph.
-        paragraphs = [para.replace('\n', ' ').strip()
-                      for para in text.split('\n\n')]
-        # Rejoin paragraphs into a single block of text
-        self.insert('end', '\n\n'.join(paragraphs))
-        # Make the text widget read-only
-        self.config(state='disabled')
-
-
 def create_image(img_file, background, icon=False):
     if icon:
         opts = ' %s -resize 32x32! gif:-' % img_file
@@ -713,8 +690,7 @@ pg1_label4.pack(side=BOTTOM, anchor='s')
 frame1.pack(side=LEFT, padx=30, anchor='nw', fill=Y, expand=1)
 page1.pack(fill=BOTH, expand=1)
 
-# Use a BigLabel widget to get automatic word-wrap that adjusts to window size
-pg1_label5 = BigLabel(page1, pg1_txt1, style.font)
+pg1_label5 = PrettyLabel(page1, pg1_txt1)
 pg1_label5.pack(fill='both', expand=True, side='top', anchor='nw')
 
 ############################## Page 2 of wizard ##############################
@@ -738,7 +714,7 @@ Press  [Next >>>]  to begin ...
 '''
 
 page2 = Frame(tk)
-pg2_label1 = BigLabel(page2, pg2_txt1, style.font)
+pg2_label1 = PrettyLabel(page2, pg2_txt1)
 pg2_label1.pack(fill='both', expand=True, side='top', anchor='nw')
 
 ############################## Page 3 of wizard ##############################
@@ -760,7 +736,7 @@ as you will have already entered your root menu link titles.
 ''' % next_txt
 
 page3 = Frame(tk)
-pg3_label1 = BigLabel(page3, pg3_txt1, style.font)
+pg3_label1 = PrettyLabel(page3, pg3_txt1)
 pg3_label1.pack(fill='both', expand=True, side='top', anchor='nw')
 
 # create the listbox (note that size is in characters)
@@ -804,7 +780,7 @@ pg4_frame1.pack(side=TOP, fill=BOTH, expand=1)
 pg4_frame2 = Frame(pg4_frame1, borderwidth=1)
 pg4_frame2.pack(fill=BOTH, expand=1)
 
-pg4_label1 = BigLabel(pg4_frame2, pg4_txt1, style.font)
+pg4_label1 = PrettyLabel(pg4_frame2, pg4_txt1)
 pg4_label1.pack(fill='both', expand=True, side='top')
 
 pg4_txt2 = ''
