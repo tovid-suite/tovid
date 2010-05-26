@@ -545,8 +545,8 @@ class GUI (tk.Tk):
             try:
                 self.application.tk.call('wm', 'iconphoto', self._w, self.icon)
             except tk.TclError:
-                print("Could not set titlebar icon. Maybe your Tcl"
-                      " is too old? Continuing anyway.")
+                print("Could not set window manager icons.  Maybe your "
+                      "Tkinter (Tcl) is too old? Continuing anyway.")
 
 
     def show_config(self):
