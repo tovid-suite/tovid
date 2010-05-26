@@ -817,11 +817,13 @@ class PrettyLabel (tk.Text):
     of headings and preformatted text from basic markup cues.
 
     """
-    def __init__(self, master, text):
+    def __init__(self, master, text, font=None):
         """Create a pretty label for displaying the given text.
         """
         # Text widget with the same background color as the master
         tk.Text.__init__(self, master, wrap='word', borderwidth=0, padx=10)
+        if font:
+            self.config(font=font)
         # Add the text with formatting applied
         self.set_text(text)
         # background and unfocused border color same as master's background
@@ -862,17 +864,12 @@ class PrettyLabel (tk.Text):
     def set_text(self, text):
         """Set the widget to contain the given text, with formatting applied.
         """
-        boldfont = ('Helvetica', 14, 'bold')
-        monofont = ('Courier', 12)
-
-        heading_re = re.compile('^[ A-Z]+$')
+        heading_re = re.compile('^[ A-Z()]+$')
         pre_re = re.compile('^ +(.+)$')
 
-        # Get wrapped lines
-        lines = self.rewrap(text)
-
+        # Parse each logical (wrapped) line in the text
         lineno = 1
-        for line in lines:
+        for line in self.rewrap(text):
             L = str(lineno)
             # Heading line
             if heading_re.match(line):
@@ -882,14 +879,14 @@ class PrettyLabel (tk.Text):
                 # Unique tag name for this heading
                 tag = 'heading' + L
                 self.tag_add(tag, L+'.0', L+'.end')
-                self.tag_config(tag, font=boldfont)
+                self.tag_config(tag, font=self.get_heading_font())
             # Preformatted line
             elif pre_re.match(line):
                 self.insert('end', line)
                 # Unique tag name for this line
                 tag = 'pre' + L
                 self.tag_add(tag, L+'.0', L+'.end')
-                self.tag_config(tag, font=monofont)
+                self.tag_config(tag, font=self.get_monospace_font())
             # Paragraph
             else:
                 self.insert('end', line)
@@ -897,4 +894,31 @@ class PrettyLabel (tk.Text):
             self.insert('end', '\n')
             lineno += 1
 
+
+    def get_heading_font(self):
+        """Return a bold font, in the current font family.
+        """
+        # The config('font') method returns a 5-tuple, where the last
+        # item is the font descriptor tuple, or 'TkFixedFont' as a default
+        font = self.config('font')[-1]
+        # If font is (family, height, style), increase size and make it bold
+        if isinstance(font, tuple) and len(font) == 3:
+            family, height, style = font
+            return (family, int(height)+6, 'bold')
+        # Default font
+        else:
+            return ('Helvetica', 16, 'bold')
+
+
+    def get_monospace_font(self):
+        """Return a monospace font, with the current font size and style.
+        """
+        font = self.config('font')[-1]
+        # If font is (family, height, style), change family to Courier
+        if isinstance(font, tuple) and len(font) == 3:
+            family, height, style = font
+            return ('Courier', int(height), style)
+        # Default font
+        else:
+            return ('Courier', 12, 'normal')
 
