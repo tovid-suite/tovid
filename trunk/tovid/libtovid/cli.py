@@ -89,7 +89,7 @@ class Command:
             self.args.append(unicode(arg))
 
 
-    def run(self, capture=False, background=False):
+    def run(self, capture=False, background=False, silent=False):
         """Run the command and capture or display output.
 
             capture
@@ -99,6 +99,9 @@ class Command:
             background
                 False to wait for command to finish running,
                 True to run process in the background
+            silent
+                False to print each command as it runs,
+                True to run silently
 
         By default, this function displays all command output, and waits
         for the program to finish running, which is usually what you'd want.
@@ -108,6 +111,12 @@ class Command:
         This function does not allow special stream redirection. For that,
         use run_redir().
         """
+        if not silent:
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            print("Running command:")
+            print(unicode(self))
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
         if capture:
             self.run_redir(None, subprocess.PIPE, stderr=subprocess.PIPE)
         else:
@@ -133,11 +142,6 @@ class Command:
         redirection (ex. ``spumux < menu.mpg > menu_subs.mpg``), use this
         function instead of run(), and call wait() afterwards if needed.
         """
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print("Running command:")
-        print(unicode(self))
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-
         self.output = ''
         # Open files if string filenames were provided
         if isinstance(stdin, basestring):

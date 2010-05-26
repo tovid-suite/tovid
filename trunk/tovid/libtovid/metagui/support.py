@@ -22,6 +22,7 @@ import sys
 import traceback
 import math
 import base64
+import re
 
 # Python < 3.x
 try:
@@ -160,7 +161,7 @@ def get_photo_image(filename, width=0, height=0, background='', dither=False):
     cmd.add('gif:-')
 
     # Run the command, capturing the gif data from standard output
-    cmd.run(capture=True)
+    cmd.run(capture=True, silent=True)
     gif_data = cmd.get_output()
     # Create and return the PhotoImage from the gif data
     return tk.PhotoImage(data=base64.b64encode(gif_data))
@@ -657,7 +658,8 @@ class Style:
         root.option_clear()
         # Font
         root.option_add("*font", self.font)
-        root.option_add("*Text.font", ('Courier', 10, 'normal'))
+        #root.option_add("*Text.font", ('Courier', 10, 'normal'))
+        root.option_add("*Text.font", self.font)
         # Background color
         root.option_add("*Scale.troughColor", self.bgcolor)
         root.option_add("*Spinbox.background", self.bgcolor)
@@ -808,4 +810,89 @@ class ScrolledWindow (tk.Tk):
         v_scroll.grid(row=0, column=1, sticky='ns')
         self.canvas.configure(xscrollcommand=h_scroll.set,
                               yscrollcommand=v_scroll.set)
+
+
+class PrettyLabel (tk.Text):
+    """Like a Label, with automatic word-wrapping of paragraphs, and inference
+    of headings and preformatted text from basic markup cues.
+
+    """
+    def __init__(self, master, text):
+        """Create a pretty label for displaying the given text.
+        """
+        # Text widget with the same background color as the master
+        tk.Text.__init__(self, master, wrap='word', borderwidth=0, padx=10)
+        # Add the text with formatting applied
+        self.set_text(text)
+        # Make the text widget read-only
+        self.config(background=master.cget('background'))
+        self.config(state='disabled')
+
+
+    def rewrap(self, text):
+        """Rewrap the given text, by joining regular paragraphs into
+        single lines, and leaving preformatted text and headings alone.
+        """
+        # Start by splitting into chunks at double-line-breaks
+        lines = []
+        chunks = text.strip().split('\n\n')
+        for chunk in chunks:
+            # If this chunk contains newlines, they could be in paragraphs
+            # (which should wrap) or preformatted text (which should not be
+            # wrapped)
+            if '\n' in chunk:
+                parts = chunk.split('\n')
+                # Preformatted - append each line individually
+                if all(line.startswith(' ') for line in parts):
+                    lines.extend(parts)
+                # Paragraph - join lines with spaces
+                else:
+                    lines.append(' '.join(parts))
+            # No newline in chunk -- It's either a heading or a
+            # one-line paragraph, so append it as-is
+            else:
+                lines.append(chunk)
+            # Include an empty line where the \n\n was before
+            lines.append('')
+        return lines
+
+
+    def set_text(self, text):
+        """Set the widget to contain the given text, with formatting applied.
+        """
+        boldfont = ('Helvetica', 14, 'bold')
+        monofont = ('Courier', 12)
+
+        heading_re = re.compile('^[ A-Z]+$')
+        pre_re = re.compile('^ +(.+)$')
+
+        # Get wrapped lines
+        lines = self.rewrap(text)
+
+        lineno = 1
+        for line in lines:
+            L = str(lineno)
+            # Heading line
+            if heading_re.match(line):
+                # Capitalize each word in the heading
+                heading = ' '.join(word.capitalize() for word in line.split(' '))
+                self.insert('end', heading)
+                # Unique tag name for this heading
+                tag = 'heading' + L
+                self.tag_add(tag, L+'.0', L+'.end')
+                self.tag_config(tag, font=boldfont)
+            # Preformatted line
+            elif pre_re.match(line):
+                self.insert('end', line)
+                # Unique tag name for this line
+                tag = 'pre' + L
+                self.tag_add(tag, L+'.0', L+'.end')
+                self.tag_config(tag, font=monofont)
+            # Paragraph
+            else:
+                self.insert('end', line)
+            # Newline to separate each logical line
+            self.insert('end', '\n')
+            lineno += 1
+
 
