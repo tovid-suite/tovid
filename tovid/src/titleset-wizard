@@ -675,9 +675,9 @@ if os.path.isfile(img_file):
     pg1_label2.pack(side=TOP)
 
     # If Tcl supports it, generate an icon for the titlebar
-      try:
+    try:
         icon = create_image(img_file, background, icon=True)
-        tk.tk.call('wm', 'iconphotos', tk._w, icon)
+        tk.tk.call('wm', 'iconphoto', tk._w, icon)
     except TclError:
         print("Could not set window manager icons.  Maybe your Tkinter (Tcl)"
           " is too old? Continuing anyway.")
