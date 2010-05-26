@@ -821,8 +821,7 @@ class PrettyLabel (tk.Text):
         """Create a pretty label for displaying the given text.
         """
         # Text widget with the same background color as the master
-        tk.Text.__init__(self, master, wrap='word', borderwidth=0, padx=10, 
-          highlightbackground=master.cget('background'))
+        tk.Text.__init__(self, master, wrap='word', borderwidth=0, padx=10)
         # Add the text with formatting applied
         self.set_text(text)
         # background and unfocused border color same as master's background
