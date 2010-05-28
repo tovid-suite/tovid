@@ -1,14 +1,13 @@
-"""This module provides a simplified approach to creating GUIs for command-line
-programs. It's designed to make it easier for non-programmers to create GUIs.
+"""This module provides a simpler way to create GUIs for command-line programs.
 
 It assumes your GUI is a direct frontend to one or more command-line programs,
 with each command-line option having an associated GUI control widget. Several
 kinds of widget are provided, for setting Filename, Color, Number or Font, or
 for picking a Choice or Flag.
 
-You probably know of a handful of command-line applications that would be
-much better with a GUI, even a cheesy-looking Tkinter one. This module makes
-it easy to create one.
+You probably know a handful of command-line applications that could benefit
+from a GUI, even a cheesy-looking Tkinter one. This module makes it easy to
+create one.
 
 
 Define controls
