@@ -26,6 +26,11 @@ class Wizard(Frame):
         self.icon = icon
         self.master = master
         self.commands = []
+        self.is_running = BooleanVar()
+        self.is_running.set(True)
+        self.waitVar = BooleanVar()
+        self.waitVar.set(False)
+
         # button frame
         self.button_frame = Frame(master)
         self.button_frame.pack(side='bottom', fill=X, expand=1,  anchor='se')
@@ -78,10 +83,11 @@ class Wizard(Frame):
         pass
 
     def next(self):
-        self.pages[self.index].hide_page()
-        self.index += 1
-        self.pages[self.index].frame.pack(side='right')
-        self.pages[self.index].show_page()
+        if self.index < len(self.pages) - 1:
+            self.pages[self.index].hide_page()
+            self.index += 1
+            self.pages[self.index].frame.pack(side='right')
+            self.pages[self.index].show_page()
 
     def set_pagelist(self, pages):
         '''Set list of wizard page objects in Controlling Wizard page'''
@@ -119,9 +125,13 @@ class Wizard(Frame):
             # set is_running to false so the gui doesn't get run
             #is_running.set(False)
             # waitVar may cause things to hang, spring it
-            #setVar()
+            #self.set_var()
             quit()
 
+    def set_var(self):
+        """Set a BooleanVar() so tk.wait_var can exit
+        """
+        self.waitVar.set(True)
 
 class WizardPage(Frame):
     def __init__(self, master):
@@ -133,6 +143,12 @@ class WizardPage(Frame):
 
     def make_widgets(self):
         pass
+
+    def show_page(self):
+        self.draw()
+
+    def hide_page(self):
+        self.frame.pack_forget()
         
 class Page1(WizardPage):
     def __init__(self, master):
@@ -142,9 +158,9 @@ class Page1(WizardPage):
         self.frame = Frame(wizard)
         self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
         # page1 is packed by default
-        self.show_page()
+        self.draw()
 
-    def show_page(self):
+    def draw(self):
         text = '''INTRODUCTION
 
         Welcome to the tovid titleset wizard.  We will be making a complete DVD,
@@ -172,9 +188,6 @@ class Page1(WizardPage):
         self.label = PrettyLabel(self.frame, text, wizard.font)
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
 
-    def hide_page(self):
-        self.frame.pack_forget()
-
 class Page2(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
@@ -183,7 +196,7 @@ class Page2(WizardPage):
         self.frame = Frame(wizard)
         self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
 
-    def show_page(self):
+    def draw(self):
         text = '''GENERAL OPTIONS
 
         When you press the  [Next >>>]  button at the bottom of the wizard, we
@@ -204,6 +217,96 @@ class Page2(WizardPage):
         self.label = PrettyLabel(self.frame, text, wizard.font)
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
 
+class Page3(WizardPage):
+    def __init__(self, master):
+        WizardPage.__init__(self, master)
+
+    def make_widgets(self):
+        self.frame = Frame(wizard)
+        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+
+    def draw(self):
+        text = '''ROOT MENU (VMGM)
+
+        Now we will save options for your root (VMGM) menu.  The only REQUIRED
+        option is the titleset titles.  Since you can not save titles in the
+        GUI without loading videos you need to enter them here.  These titleset
+        names will appear as menu titles for the respective menu in your DVD.
+
+        Enter the names of your titlesets, one per line, pressing <ENTER> each
+        time.  Do not use quotes unless you want them to appear literally in
+        the title.
+
+        Press  [Next >>>]  when you are finished, and the tovid gui will come
+        up so you can enter any other options you want.  You can not enter
+        video files here, but most other options can be used.  There are now no
+        REQUIRED options however, as you will have already entered your root
+        menu link titles.
+
+        After making your selections, press [ Save to wizard ] in the GUI
+        '''
+        text = trim(text)
+        label1 = PrettyLabel(self.frame, text, wizard.font)
+        label1.pack(fill='both', expand=True, side='top', anchor='nw')
+        # create the listbox (note that size is in characters)
+        frame1 = LabelFrame(self.frame, text="Root 'menu link' titles")
+        frame1.pack(side='top', fill='y', expand=False)
+
+        self.listbox = Listbox(frame1, width=50, height=12)
+        self.listbox.pack(side='left', fill='y', expand=False, anchor='nw')
+
+        # create a vertical scrollbar to the right of the listbox
+        yscroll = Scrollbar(frame1, command=self.listbox.yview, orient='vertica')
+        yscroll.pack(side='right', fill='y', anchor='ne')
+        self.listbox.configure(yscrollcommand=yscroll.set)
+
+        # use entry widget to display/edit selection
+        self.enter1 = Entry(self.frame, width=50, text='Enter titles here')
+        self.enter1.pack(fill='y', expand=False)
+        # set focus on entry
+        self.enter1.select_range(0, 'end')
+        self.enter1.focus_set()
+        # pressing the return key will update edited line
+        self.enter1.bind('<Return>', self.set_list)
+        self.listbox.bind('<ButtonRelease-1>', self.get_list)
+
+    def set_list(self, event):
+        """Insert an edited line from the entry widget back into the listbox
+        """
+        try:
+            index = self.listbox.curselection()[0]
+            # delete old listbox line
+            self.listbox.delete(index)
+        except IndexError:
+            index = END
+        # insert edited item back into self.listbox at index
+        self.listbox.insert(index, self.enter1.get())
+        self.enter1.delete(0, END)
+        # don't add more than one empty index
+        next2last = self.listbox.size() -1
+        if not self.listbox.get(next2last) and not self.listbox.get(END):
+            self.listbox.delete(END)
+        # add a new empty index if we are at end of list
+        if self.listbox.get(END):
+            self.listbox.insert(END, self.enter1.get())
+        self.listbox.selection_set(END)
+
+    def get_list(event):
+        """Read the listbox selection and put the result in an entry widget
+        """
+        try:
+            # get selected line index
+            index = self.listbox.curselection()[0]
+            # get the line's text
+            seltext = self.listbox.get(index)
+            # delete previous text in enter1
+            self.enter1.delete(0, END)
+            # now display the selected text
+            self.enter1.insert(0, seltext)
+            self.enter1.focus_set()
+        except IndexError:
+            pass
+
 if __name__ == '__main__':
     tovid_prefix = commands.getoutput('tovid -prefix')
     img_file = os.path.join(tovid_prefix, 'lib', 'tovid', \
@@ -213,5 +316,7 @@ if __name__ == '__main__':
     wizard = Wizard(root, 'Tovid\nTitleset Wizard', img_file)
     page1 = Page1(wizard)
     page2 = Page2(wizard)
-    wizard.set_pagelist([page1, page2])
+    page3 = Page3(wizard)
+    pages = [page1, page2, page3]
+    wizard.set_pagelist(pages)
     mainloop()
