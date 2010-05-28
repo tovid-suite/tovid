@@ -32,7 +32,7 @@ from libtovid import cli
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.panel import Panel, Tabs
 from libtovid.metagui.support import \
-    (ConfigWindow, Style, ensure_type, askyesno, get_photo_image)
+    (ConfigWindow, Style, ensure_type, askyesno, get_photo_image, show_icons)
 from libtovid.metagui.control import Control, NoSuchControl
 
 
@@ -542,12 +542,7 @@ class GUI (tk.Tk):
         self.application.draw_toolbar(self.show_config, self.confirm_exit)
         # Set the application icon, if provided
         if self.icon_file:
-            self.icon = get_photo_image(self.icon_file, 32, 32)
-            try:
-                self.tk.call('wm', 'iconphoto', self._w, self.icon)
-            except tk.TclError:
-                print("Could not set window manager icons.  Maybe your "
-                      "Tkinter (Tcl) is too old? Continuing anyway.")
+            show_icons(self, self.icon_file)
 
 
     def show_config(self):
