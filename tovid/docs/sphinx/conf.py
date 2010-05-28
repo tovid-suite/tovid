@@ -80,7 +80,7 @@ exclude_trees = ['_build']
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-#add_module_names = True
+add_module_names = False
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -200,5 +200,5 @@ latex_documents = [
 #latex_use_modindex = True
 
 # Custom configuration
-autoclass_content = 'both'
+#autoclass_content = 'both'
 

@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 
 # Copyright 2007 Joe Friedrichsen <pengi.films@gmail.com>
-# 
+#
 # This file is part of tovid.
 
 """Relate a video's bitrate, size, and play time
@@ -13,7 +13,7 @@ A video file (a/v stream) has three related characteristics:
     - Encoded (average) bitrate
 
 These are related by their units: ``bitrate = size / length``. This module
-provides ways to calculate these values. 
+provides ways to calculate these values.
 
 You can predict/calculate any one of these characteristics given the
 other two. By default, a new AVstream object assumes you want to find
@@ -33,7 +33,7 @@ the average bitrate from a known play length and final size::
 
 Usually when putting video on a disc, the final output size is well
 defined and non-changing. By default, AVstream fixes this characteristic so
-that you can see how the bitrate changes for different amounts of time on 
+that you can see how the bitrate changes for different amounts of time on
 that disc::
 
     >>> avs.set_play_length(180)
@@ -76,6 +76,7 @@ class AVstream:
         - AVstream.bitrate.GiBph -- Gibibytes per hour
 
     There are four attributes:
+
         play_length
             the length of the video in minutes
         final_size

@@ -6,9 +6,9 @@ To use it, simply:
 
 It was stolen from an early version of a Gentoo module called output.py,
 copyright 1998-2003 Daniel Robbins, Gentoo Technologies, Inc., distributed
-under the GNU GPL v2:
+under the GNU GPL v2::
 
-# $Header: /home/cvsroot/gentoo-src/portage/pym/output.py,v 1.16 \
+    # $Header: /home/cvsroot/gentoo-src/portage/pym/output.py,v 1.16 \
     2003/05/29 08:34:55 carpaski Exp $
 
 Modified for inclusion in libtovid.
@@ -29,7 +29,8 @@ __all__ = [
     'yellow',
     'brown',
     'red',
-    'darkred']
+    'darkred',
+]
 
 codes = {
     'reset':     '\x1b[0m',
@@ -45,7 +46,8 @@ codes = {
     'yellow':    '\x1b[33;01m',
     'brown':     '\x1b[33;06m',
     'red':       '\x1b[31;01m',
-    'darkred':   '\x1b[31;06m'}
+    'darkred':   '\x1b[31;06m',
+}
 
 _do_color = True
 
