@@ -166,6 +166,18 @@ def get_photo_image(filename, width=0, height=0, background='', dither=False):
     # Create and return the PhotoImage from the gif data
     return tk.PhotoImage(data=base64.b64encode(gif_data))
 
+def show_icons(window, image):
+    '''Show window manager icons for window, if supported.
+    The icon argument is full path to the image to be used.
+    '''
+    icon = get_photo_image(image, 32, 32)
+    try:
+        window.tk.call('wm', 'iconphoto', window._w, icon)
+    except tk.TclError:
+        print("Could not set window manager icons.  Maybe your "
+              "Tkinter (Tcl) is too old? Continuing anyway.")   
+
+
 
 ### --------------------------------------------------------------------
 ### Classes
