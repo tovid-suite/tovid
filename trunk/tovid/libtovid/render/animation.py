@@ -1,15 +1,17 @@
 """This module provides classes and functions for working with animation.
 Two classes are provided:
 
-    Keyframe: A frame with a specific data value
-    Tween:    A data sequence interpolated from Keyframes
+    :class:`Keyframe`
+        A frame with a specific data value
+    :class:`Tween`
+        A data sequence interpolated from Keyframes
 
 The data being interpolated may represent color, opacity, location, or anything
 else that can be described numerically. Keyframe data may be scalar (single
 integers or decimal values) or vector (tuples such as (x, y) coordinates or
 (r, g, b) color values).
 
-For example, let's define three keyframes:
+For example, let's define three keyframes::
 
     >>> keys = [Keyframe(1, 0),
     ...         Keyframe(6, 50),
@@ -17,20 +19,20 @@ For example, let's define three keyframes:
 
 The value increases from 0 to 50 over frames 1-6, then back down to 10
 over frames 6-12. The values at intermediate frames (2-5 and 7-11) can be
-interpolated or "tweened" automatically, using the Tween class:
+interpolated or "tweened" automatically, using the Tween class::
 
     >>> tween = Tween(keys)
     >>> tween.data
     [0, 10, 20, 30, 40, 50, 43, 36, 30, 23, 16, 10]
 
-Another example using tweening of (x, y) coordinates:
+Another example using tweening of (x, y) coordinates::
 
     >>> keys = [Keyframe(1, (20, 20)),
     ...         Keyframe(6, (80, 20)),
     ...         Keyframe(12, (100, 100))]
 
 Here, a point on a two-dimensional plane starts at (20, 20), moving first
-to the right, to (80, 20), then diagonally to (100, 100).
+to the right, to (80, 20), then diagonally to (100, 100)::
 
     >>> tween = Tween(keys)
     >>> for (x, y) in tween.data:
@@ -53,10 +55,10 @@ to the right, to (80, 20), then diagonally to (100, 100).
 
 __all__ = [
     'Keyframe',
+    'Tween',
     'lerp',
     'cos_interp',
     'interpolate',
-    'tween',
 ]
 
 import copy
@@ -78,7 +80,7 @@ class Keyframe:
     The data can represent anything you like. For instance, opacity::
 
             100 |* Keyframe(1, 100)
-                |       
+                |
      opacity(%) |
                 |
               0 |____________________* Keyframe(30, 0)
@@ -102,25 +104,26 @@ class Keyframe:
 ### --------------------------------------------------------------------------
 
 def lerp(x, (x0, y0), (x1, y1)):
-    """Do linear interpolation between points (x0, y0), (x1, y1), and return
-    the 'y' of the given 'x'.
+    """Do linear interpolation between points ``(x0, y0)``, ``(x1, y1)``, and
+    return the ``y`` for the given ``x``.
 
     This form of interpolation simply connects two points with a straight
-    line. Blunt, but effective."""
+    line. Blunt, but effective.
+    """
     return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
 
 
 def cos_interp(x, (x0, y0), (x1, y1)):
-    """Do cosine-based interpolation between (x0, y0), (x1, y1) and return
-    the 'y' of the given 'x'.
+    """Do cosine-based interpolation between ``(x0, y0)``, ``(x1, y1)`` and
+    return the ``y`` for the given ``x``.
 
     Essentially, a crude alternative to polynomial spline interpolation; this
     method transitions between two values by matching a segment of the cosine
     curve [0, pi] (for decreasing value) or [pi, 2*pi] (for increasing value)
     to the interval between the given points.
 
-    It gives smoother results at inflection points than linear interpolation, 
-    but will result in "ripple" effects if keyframes are too dense or many.   
+    It gives smoother results at inflection points than linear interpolation,
+    but will result in "ripple" effects if keyframes are too dense or many.
     """
     # Map the interpolation area (domain of x) to [0, pi]
     x_norm = math.pi * (x - x0) / (x1 - x0)
@@ -159,6 +162,7 @@ def interpolate(frame, left, right, method):
         50
         >>> interpolate(40, left, right, 'linear')
         80
+
     """
     assert isinstance(left, Keyframe) and isinstance(right, Keyframe)
     # At or beyond endpoints, return endpoint value
@@ -190,6 +194,7 @@ def interpolate(frame, left, right, method):
             result.append(interp_val)
             dim += 1
         return tuple(result)
+
 
 class Tween:
     """An "in-between" sequence, calculated by interpolating the data in a
@@ -263,6 +268,7 @@ class Tween:
                 left = right
                 right = keys.pop(0)
             frame += 1
+
 
     def __getitem__(self, frame):
         """Return the interpolated data at the given frame. This allows

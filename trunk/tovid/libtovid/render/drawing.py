@@ -124,21 +124,22 @@ class Step:
     def __str__(self):
         return "%s%s" % (self.name, self.args)
 
+
 # Drawing class notes
-# 
-# The Drawing class has a number of methods (circle, rectangle, fill, stroke 
-# and many others) that need to operate on a Cairo surface. But we'd like to 
-# delay execution of actually drawing on that surface--otherwise, we can't 
+#
+# The Drawing class has a number of methods (circle, rectangle, fill, stroke
+# and many others) that need to operate on a Cairo surface. But we'd like to
+# delay execution of actually drawing on that surface--otherwise, we can't
 # easily render a given Drawing to a custom resolution.
-# 
-# Closures save the day here--that is, functions without "free variables". 
-# Anytime you "paint" on the Drawing, what's actually happening is a new 
-# function is getting created, whose sole purpose in life is to carry out that 
-# specific paint operation. These tiny, single-purpose functions are then 
-# added to a list of steps (self.steps) that will actually be executed at 
+#
+# Closures save the day here--that is, functions without "free variables".
+# Anytime you "paint" on the Drawing, what's actually happening is a new
+# function is getting created, whose sole purpose in life is to carry out that
+# specific paint operation. These tiny, single-purpose functions are then
+# added to a list of steps (self.steps) that will actually be executed at
 # rendering-time (i.e., when you do display() or save_png).
-# 
-# This not only lets us render a Drawing to different resolutions, but allows 
+#
+# This not only lets us render a Drawing to different resolutions, but allows
 # the possibility of rendering to different Cairo surfaces.
 
 class Drawing:
@@ -173,10 +174,12 @@ class Drawing:
         if self.autodraw and step.name in ['fill', 'stroke']:
             display(self, 640, 480, True)
 
+
     def doStep(self, func, *args):
         """Add the given Step, and execute it."""
         self.addStep(func, *args)
         func(self.cr)
+
 
     def history(self):
         """Return a formatted string of all steps in this Drawing."""
