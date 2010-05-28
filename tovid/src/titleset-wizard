@@ -7,7 +7,7 @@ from Tkinter import *
 from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
 from libtovid.metagui import Style
-from libtovid.metagui.support import PrettyLabel
+from libtovid.metagui.support import PrettyLabel, show_icons
 from libtovid.cli import _enc_arg
 from tkMessageBox import *
 from time import sleep
@@ -675,13 +675,7 @@ if os.path.isfile(img_file):
     pg1_label2.pack(side=TOP)
 
     # If Tcl supports it, generate an icon for the titlebar
-    try:
-        icon = create_image(img_file, background, icon=True)
-        tk.tk.call('wm', 'iconphoto', tk._w, icon)
-    except TclError:
-        print("Could not set window manager icons.  Maybe your Tkinter (Tcl)"
-          " is too old? Continuing anyway.")
-# No image file? Print a message and continue
+    show_icons(tk, img_file)
 else:
     print('%s does not exist' % img_file)
 
