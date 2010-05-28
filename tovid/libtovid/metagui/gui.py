@@ -544,7 +544,7 @@ class GUI (tk.Tk):
         if self.icon_file:
             self.icon = get_photo_image(self.icon_file, 32, 32)
             try:
-                self.application.tk.call('wm', 'iconphoto', self._w, self.icon)
+                self.tk.call('wm', 'iconphoto', self._w, self.icon)
             except tk.TclError:
                 print("Could not set window manager icons.  Maybe your "
                       "Tkinter (Tcl) is too old? Continuing anyway.")
