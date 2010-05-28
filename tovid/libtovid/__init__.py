@@ -37,7 +37,7 @@ except ImportError:
 # Configuration file reader/writer
 class Config (ConfigParser):
     """Interface for reading/writing tovid configuration files. Just a wrapper
-    around the standard library ConfigParser. Example usage:
+    around the standard library ConfigParser. Example usage::
 
         config = libtovid.Config()
         config.get('DEFAULT', 'work_dir')
