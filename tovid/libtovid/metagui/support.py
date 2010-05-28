@@ -1,4 +1,5 @@
-"""Supporting classes for metagui"""
+"""Supporting classes for metagui
+"""
 
 __all__ = [
     # Functions
@@ -175,7 +176,7 @@ def show_icons(window, image):
         window.tk.call('wm', 'iconphoto', window._w, icon)
     except tk.TclError:
         print("Could not set window manager icons.  Maybe your "
-              "Tkinter (Tcl) is too old? Continuing anyway.")   
+              "Tkinter (Tcl) is too old? Continuing anyway.")
 
 
 

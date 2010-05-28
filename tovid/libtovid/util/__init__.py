@@ -1,8 +1,4 @@
 __all__ = [
-    # Submodules
-    'output',
-    'filetypes',
-    'playtime',
     # Functions
     'escape',
     'float_to_ratio',
@@ -73,7 +69,7 @@ def indent_level(line):
 
 def trim(text):
     """Strip leading indentation from a block of text.
-    Borrowed from http://www.python.org/peps/pep-0257.html 
+    Borrowed from http://www.python.org/peps/pep-0257.html
     """
     if not text:
         return ''
