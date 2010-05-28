@@ -21,7 +21,7 @@ labels = ['General', 'VMGM menu', 'Titlesets']
 curdir = os.path.abspath('')
 newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
 
-def get_font(name='', size='', _style=''):
+def get_font(style_font, name='', size='', _style=''):
     """Get metagui font configuration
     """
     font = [name, size, _style]
@@ -627,10 +627,10 @@ button1.focus_set()
 inifile = os.path.expanduser('~/.metagui/config')
 style = Style()
 style.load(inifile)
-heading_font = get_font(size=style.font[1]+8, _style='bold')
-lrg_font = get_font(size=style.font[1]+4, _style='bold')
-medium_font = get_font(size=style.font[1]+2)
-bold_font = get_font(_style='bold')
+heading_font = get_font(style.font, size=style.font[1]+8, _style='bold')
+lrg_font = get_font(style.font, size=style.font[1]+4, _style='bold')
+medium_font = get_font(style.font, size=style.font[1]+2)
+bold_font = get_font(style.font, _style='bold')
 
 # bindings for exit
 tk.protocol("WM_DELETE_WINDOW", confirm_exit)
