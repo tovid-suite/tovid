@@ -7,7 +7,7 @@ from Tkinter import *
 from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
 from libtovid.metagui import Style
-from libtovid.metagui.support import PrettyLabel, show_icons
+from libtovid.metagui.support import PrettyLabel, show_icons, get_photo_image
 from libtovid.cli import _enc_arg
 from tkMessageBox import *
 from time import sleep
@@ -525,16 +525,6 @@ def confirm_exit(event=None):
         setVar()
         quit()
 
-
-def create_image(img_file, background, icon=False):
-    if icon:
-        opts = ' %s -resize 32x32! gif:-' % img_file
-    else:
-        opts = ' +dither -background %s %s -flatten gif:-' % (background, img_file)
-    cmd = shlex.split('convert %s' % opts)
-    im_dat = Popen(cmd, stdout=PIPE).communicate()[0]
-    return PhotoImage(data=b64encode(im_dat))
-
 def add_titleset(Event=None):
     text = 'Please enter a menu link title for your titleset'
     title = askstring('Titleset title', text)
@@ -668,7 +658,7 @@ pg1_label1.pack(side=TOP, pady=40)
 img_file = tovid_prefix + '/titleset-wizard.png'
 if os.path.isfile(img_file):
     background = tk.cget('background')
-    img = create_image(img_file, background)
+    img = get_photo_image(img_file, 0, 0, background)
 
     # Display the image in a label on all pages
     pg1_label2 = Label(frame1, image=img)
