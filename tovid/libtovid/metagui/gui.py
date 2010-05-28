@@ -97,17 +97,18 @@ class Executor (Widget):
         self.stdin_text.delete(0, 'end')
 
 
-    def execute(self, command, callback=lambda x:x):
+    def execute(self, command, callback=None):
         """Execute the given command, and call the given callback when done.
         """
-        if not isinstance(command, cli.Command):
-            raise TypeError("execute() requires a Command instance.")
-        else:
+        if isinstance(command, cli.Command):
             self.command = command
-        if not hasattr(callback, '__call__'):
-            raise TypeError("execute() callback must be a function")
         else:
+            raise TypeError("execute() requires a Command instance.")
+
+        if callback and hasattr(callback, '__call__'):
             self.callback = callback
+        else:
+            raise TypeError("execute() callback must be a function")
 
         # Temporary file to hold stdout/stderr from command
         name = self.command.program
@@ -172,7 +173,7 @@ class Executor (Widget):
 
     def write(self, line):
         """Write a line of text to the end of the log.
-        If the line contains '\r', overwrite the current line.
+        If the line contains ``\\r``, overwrite the current line.
         """
         if '\r' in line:
             curline = self.text.index('end-1c linestart')
