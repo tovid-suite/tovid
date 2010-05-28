@@ -39,12 +39,12 @@ class Menu:
     """A menu for navigating the titles on a video disc.
     """
     def __init__(self, filename='', videos=None):
-        """Create a menu linking to the given Videos."""
+        """Create a menu linking to the given :class:`Video`\s."""
         self.filename = filename
         self.videos = videos or []
 
     def add(self, video):
-        """Add a Video to the Menu."""
+        """Add a :class:`Video` to the Menu."""
         self.videos.append(video)
 
 
@@ -52,19 +52,19 @@ class Titleset:
     """A group of videos, with an optional Menu.
     """
     def __init__(self, menu=None, videos=None):
-        """Create a Titleset containing the given Videos.
+        """Create a Titleset containing the given :class:`Video`\s.
         """
         self.menu = menu
         self.videos = videos or []
 
     def add(self, video):
-        """Add a Video to the Titleset."""
+        """Add a :class:`Video` to the Titleset."""
         self.videos.append(video)
 
 
 class Disc:
-    """A video disc containing one or more Titlesets, and an optional
-    top Menu for navigating to each Titleset.
+    """A video disc containing one or more :class:`Titleset`\s, and an optional
+    top :class:`Menu` for navigating to each Titleset.
 
     """
     def __init__(self, name='Untitled', format='dvd', tvsys='ntsc',
@@ -78,7 +78,7 @@ class Disc:
             title
                 String containing the title of the disc
             titlesets
-                List of Titlesets
+                List of :class:`Titleset` objects
         """
         self.name = name
         self.format = format
@@ -145,7 +145,7 @@ def _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
 ###
 
 def vcdimager_xml(disc):
-    """Return the vcdimager XML string for the given Disc.
+    """Return the vcdimager XML string for the given :class:`Disc`.
     """
     assert isinstance(disc, Disc)
     # XML header (will be added later)
@@ -197,7 +197,7 @@ def vcdimager_xml(disc):
 
 
 def dvdauthor_xml(disc):
-    """Return the dvdauthor XML string for the given Disc.
+    """Return the dvdauthor XML string for the given :class:`Disc`.
     """
     assert isinstance(disc, Disc)
     # Root dvdauthor element

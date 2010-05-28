@@ -1,14 +1,8 @@
-"""This module provides a multimedia file class (MediaFile), for storing
-a profile of attributes including resolution, audio and video codecs and
-bitrates.
-
-A function is also provided:
-
-    standard_media(format, tvsys)
-        Return a MediaFile profile matching the given format and TV system
+"""This module provides a multimedia file class for storing a profile of
+attributes including resolution, audio and video codecs and bitrates.
 
 These can be used for getting a target MediaFile for encoding via
-one of the backends in libtovid.transcode.encode. For example::
+one of the backends in :mod:`libtovid.backend`. For example::
 
     >>> dvd = standard_media('dvd', 'ntsc')
     >>> print(dvd)
@@ -33,7 +27,7 @@ from libtovid import standard
 from libtovid.util import ratio_to_float
 
 # Analysis of MediaFile attributes
-# 
+#
 # acodec: ID, target
 # abitrate: ID, target
 # channels: ID
@@ -46,8 +40,8 @@ from libtovid.util import ratio_to_float
 # fps: ID, source, target
 # aspect: source
 # widescreen: target
-# 
-# 
+#
+#
 # Redundancies(?):
 # widescreen/aspect
 # scale/expand if aspect is known

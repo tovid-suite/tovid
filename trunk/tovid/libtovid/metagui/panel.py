@@ -181,7 +181,7 @@ class Panel (Widget):
 class HPanel (Panel):
     """A group of widgets or sub-panels, packed horizontally (left-to-right).
 
-    For example:
+    For example::
 
         HPanel("General",
             Filename(...),
@@ -205,7 +205,7 @@ class HPanel (Panel):
 class VPanel (Panel):
     """A group of widgets or sub-panels, packed vertically (top-to-bottom).
 
-    For example:
+    For example::
 
         VPanel("General",
             Filename(...),

@@ -2,13 +2,13 @@
 
 One high-level function is provided::
 
-    encode(infile, outfile, format, tvsys, method, ...)
+    encode(infile, outfile, format, tvsys, method, **kwargs)
 
-where "..." is optional keyword arguments (described below). For example::
+For example::
 
     encode('/video/foo.avi', '/video/bar.mpg', 'dvd', 'ntsc', 'ffmpeg')
 
-This will encode '/video/foo.avi' to NTSC DVD format using ffmpeg, saving
+This will encode ``/video/foo.avi`` to NTSC DVD format using ffmpeg, saving
 the result as '/video/bar.mpg'. The ``format``, ``tvsys``, and ``method``
 arguments are optional; if you do::
 
