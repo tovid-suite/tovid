@@ -21,13 +21,13 @@ labels = ['General', 'VMGM menu', 'Titlesets']
 curdir = os.path.abspath('')
 newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
 
-def get_font(style_font, name='', size='', _style=''):
+def get_font(font_descriptor, name='', size='', _style=''):
     """Get metagui font configuration
     """
     font = [name, size, _style]
-    for i in range(len(style.font)):
+    for i in range(len(font_descriptor)):
         if not font[i]:
-            font[i] = style.font[i]
+            font[i] = font_descriptor[i]
     return tuple(font)
 
 def move(amt):
