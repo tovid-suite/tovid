@@ -22,7 +22,7 @@ __all__ = [
     'Movement',
     'Translate',
     'Fade',
-    'FadeInOut'
+    'FadeInOut',
     'Colorfade',
     'Spectrum',
     'Scale',
@@ -88,19 +88,19 @@ class Effect:
 
 
 # New Effect template
-# 
+#
 # Copy and paste this code to create your own Effect
-# 
+#
 # The first line defines your effect's name. (Effect) means it inherits from
 # the base Effect class, and shares some properties with it.
 
 class MyEffect (Effect):
     """Modify this documentation string to describe what your effect does.
     """
-    # The __init__ function is called whenever a MyEffect is created. Make 
-    # sure your __init__ takes start and end arguments; additional arguments 
-    # (such as start_val and end_val below) allow someone using your effect 
-    # class to customize its behavior in some way. See the other effects below 
+    # The __init__ function is called whenever a MyEffect is created. Make
+    # sure your __init__ takes start and end arguments; additional arguments
+    # (such as start_val and end_val below) allow someone using your effect
+    # class to customize its behavior in some way. See the other effects below
     # for examples.
     def __init__(self, start, end, start_val, end_val):
         """Create a MyEffect lasting from start to end frame.
@@ -438,7 +438,7 @@ class KeyFunction (Effect):
         frame 30).
 
         The 'method' argument defines an interpolation method to use between
-        keyframes, and may be either 'linear' or 'cosine'. 
+        keyframes, and may be either 'linear' or 'cosine'.
         """
         # Call base constructor with start and end frames
         Effect.__init__(self, keyframes[0].frame, keyframes[-1].frame)

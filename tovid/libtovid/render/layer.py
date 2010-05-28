@@ -20,7 +20,6 @@ __all__ = [
     'Background',
     'Text',
     'ShadedText',
-    'TextBox',
     'Label',
     'VideoClip',
     'Image',
