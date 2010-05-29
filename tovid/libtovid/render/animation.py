@@ -1,9 +1,9 @@
 """This module provides classes and functions for working with animation.
 Two classes are provided:
 
-    :class:`Keyframe`
+    `Keyframe`
         A frame with a specific data value
-    :class:`Tween`
+    `Tween`
         A data sequence interpolated from Keyframes
 
 The data being interpolated may represent color, opacity, location, or anything
