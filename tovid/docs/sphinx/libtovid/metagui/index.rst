@@ -1,5 +1,7 @@
-metagui
-=======
+:mod:`metagui`
+==============
+
+.. automodule:: libtovid.metagui
 
 .. toctree::
     :maxdepth: 2
@@ -10,6 +12,4 @@ metagui
     support
     variable
     widget
-
-.. automodule:: libtovid.metagui
 

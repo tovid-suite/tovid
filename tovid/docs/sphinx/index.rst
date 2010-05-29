@@ -12,7 +12,6 @@ Contents:
     :maxdepth: 2
 
     libtovid/index
-    libtovid/metagui/index
 
 
 Indices and tables

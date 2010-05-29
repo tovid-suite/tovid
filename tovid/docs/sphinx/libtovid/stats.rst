@@ -1,5 +1,5 @@
-stats
-=====
+:mod:`stats`
+============
 
 .. automodule:: libtovid.stats
     :members:

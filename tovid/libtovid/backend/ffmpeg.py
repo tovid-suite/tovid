@@ -15,9 +15,9 @@ def encode(source, target, **kw):
     """Encode a multimedia video using ffmpeg.
 
         source
-            Input MediaFile
+            Input `~libtovid.media.MediaFile`
         target
-            Output MediaFile
+            Output `~libtovid.media.MediaFile`
         kw
             Keyword arguments to customize encoding behavior
 
@@ -81,7 +81,7 @@ def encode(source, target, **kw):
     else:
         cmd.add('-aspect', '4:3')
 
-    cmd.add(target.filename)    
+    cmd.add(target.filename)
     cmd.run()
 
 
@@ -90,11 +90,11 @@ def encode_audio(source, audiofile, target):
     to the given filename.
 
         source
-            Input MediaFile
+            Input `~libtovid.media.MediaFile`
         audiofile
             Filename for encoded audio
         target
-            Output MediaFile
+            Output `~libtovid.media.MediaFile`
 
     If no audio is present in the source file, encode silence.
     """
@@ -122,8 +122,8 @@ def encode_audio(source, audiofile, target):
 from libtovid.media import MediaFile
 
 def identify(filename):
-    """Identify a video file using ffmpeg, and return a MediaFile with
-    the video's specifications.
+    """Identify a video file using ffmpeg, and return a
+    `~libtovid.media.MediaFile` with the video's specifications.
     """
     result = MediaFile(filename)
 
@@ -131,7 +131,7 @@ def identify(filename):
     cmd.run(capture=True)
 
     # ffmpeg puts its output on stderr
-    output = cmd.get_error()
+    output = cmd.get_errors()
 
     video_line = re.compile(''
         'Stream (?P<tracknum>[^:]+): Video: ' # Track number (ex. #0.0)

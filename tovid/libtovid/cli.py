@@ -1,9 +1,9 @@
 """This module provides an interface for running command-line applications.
 Two primary classes are provided:
 
-    Command
+    `Command`
         For constructing and executing command-line commands
-    Pipe
+    `Pipe`
         For piping commands together
 
 Commands are constructed by specifying a program to run, and each separate
@@ -27,7 +27,7 @@ Commands may be connected together with pipes::
     >>> pipe.run()                                # doctest: +SKIP
     Hello nurse
 
-Command output may be captured and retrieved later with get_output()::
+Command output may be captured and retrieved later with `get_output`::
 
     >>> echo.run(capture=True)                    # doctest: +SKIP
     >>> echo.get_output()
@@ -93,23 +93,23 @@ class Command:
         """Run the command and capture or display output.
 
             capture
-                False to show command output/errors on stdout,
-                True to capture output/errors for retrieval
-                by get_output() and get_error()
+                ``False`` to show command output/errors on stdout,
+                ``True`` to capture output/errors for retrieval
+                by `get_output` and `get_errors`
             background
-                False to wait for command to finish running,
-                True to run process in the background
+                ``False`` to wait for command to finish running,
+                ``True`` to run process in the background
             silent
-                False to print each command as it runs,
-                True to run silently
+                ``False`` to print each command as it runs,
+                ``True`` to run silently
 
         By default, this function displays all command output, and waits
         for the program to finish running, which is usually what you'd want.
         Capture output if you don't want it printed immediately (and call
-        get_output() later to retrieve it).
+        `get_output` later to retrieve it).
 
         This function does not allow special stream redirection. For that,
-        use run_redir().
+        use `run_redir`.
         """
         if not silent:
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -135,12 +135,13 @@ class Command:
             stderr
                 Filename or File object to write errors to
 
-        Use None for regular system stdin/stdout/stderr (default behavior).
-        That is, if stdout=None, the command's standard output is printed.
+        Use ``None`` for regular system stdin/stdout/stderr (default behavior).
+        That is, if ``stdout=None``, the command's standard output is printed.
 
-        This function is used internally by run(); if you need to do stream
-        redirection (ex. ``spumux < menu.mpg > menu_subs.mpg``), use this
-        function instead of run(), and call wait() afterwards if needed.
+        This function is used internally by `run`; if you need to do
+        stream redirection (ex. ``spumux < menu.mpg > menu_subs.mpg``), use
+        this function instead of `run`, and call `wait` afterwards
+        if needed.
         """
         self.output = ''
         # Open files if string filenames were provided
@@ -157,10 +158,10 @@ class Command:
 
     def wait(self):
         """Wait for the command to finish running, and return the result
-        (``self.proc.returncode`` attribute).
+        (`self.proc.returncode`).
 
-        If a ``KeyboardInterrupt`` occurs (user pressed Ctrl-C), the
-        subprocess is killed (and ``KeyboardInterrupt`` re-raised).
+        If a :exc:`KeyboardInterrupt` occurs (user pressed Ctrl-C), the
+        subprocess is killed (and :exc:`KeyboardInterrupt` re-raised).
         """
         if not isinstance(self.proc, subprocess.Popen):
             print("**** Can't wait(): Command is not running")
@@ -182,8 +183,8 @@ class Command:
 
 
     def done(self):
-        """Return True if the command is finished running; False otherwise.
-        Only useful if the command is run in the background.
+        """Return ``True`` if the command is finished running; ``False``
+        otherwise. Only useful if the command is run in the background.
         """
         return self.proc.poll() != None
 
@@ -199,7 +200,7 @@ class Command:
         return self.output
 
 
-    def get_error(self):
+    def get_errors(self):
         """Wait for the command to finish running, and return a string
         containing the command's standard error output. Returns an empty
         string if the command has not been run yet.
@@ -207,7 +208,6 @@ class Command:
         if self.error == '' and isinstance(self.proc, subprocess.Popen):
             self.error = self.proc.communicate()[1]
         return self.error
-    get_errors = get_error
 
 
     def __str__(self):
@@ -233,7 +233,7 @@ class Command:
 
 
 class Pipe:
-    """A series of Commands, each having its output piped into the next.
+    """Several `Command` objects, each having its output piped into the next.
     """
     def __init__(self, *commands):
         """Create a new Pipe containing all the given Commands."""
@@ -255,8 +255,8 @@ class Pipe:
         redirection for piping.
 
             capture
-                False to show pipeline output on stdout,
-                True to capture output for retrieval by get_output()
+                ``False`` to show pipeline output on stdout,
+                ``True`` to capture output for retrieval by `get_output`
 
         """
         self.output = ''

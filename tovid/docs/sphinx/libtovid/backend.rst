@@ -1,41 +1,41 @@
-backend
-=======
+:mod:`backend`
+==============
 
 .. automodule:: libtovid.backend
 
 
-ffmpeg
-------
+:mod:`ffmpeg`
+-------------
 
 .. automodule:: libtovid.backend.ffmpeg
     :members:
 
-mpeg2enc
---------
+:mod:`mpeg2enc`
+---------------
 
 .. automodule:: libtovid.backend.mpeg2enc
     :members:
 
-mplayer
--------
+:mod:`mplayer`
+--------------
 
 .. automodule:: libtovid.backend.mplayer
     :members:
 
-mplex
------
+:mod:`mplex`
+------------
 
 .. automodule:: libtovid.backend.mplex
     :members:
 
-spumux
-------
+:mod:`spumux`
+-------------
 
 .. automodule:: libtovid.backend.spumux
     :members:
 
-transcode
----------
+:mod:`transcode`
+----------------
 
 .. automodule:: libtovid.backend.transcode
     :members:

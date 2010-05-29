@@ -63,6 +63,17 @@ def to_unicode(text):
 
 def indent_level(line):
     """Return the number of leading whitespace characters in the line.
+    Tab, newline, and carriage-return characters each count as a single space.
+
+    For example::
+
+        >>> indent_level('      foo')
+        6
+        >>> indent_level('foo')
+        0
+        >>> indent_level('\\r\\n\\t foo')
+        4
+
     """
     return len(line) - len(line.lstrip())
 
@@ -104,7 +115,10 @@ def ratio_to_float(ratio):
     For example::
 
         >>> ratio_to_float('4:3')
-        1.33333
+        1.3333333333333333
+
+        >>> ratio_to_float('16:9')
+        1.7777777777777777
 
     """
     values = ratio.split(':', 1)
@@ -118,10 +132,20 @@ def ratio_to_float(ratio):
 
 def float_to_ratio(number):
     """Convert a decimal number into an integer ratio string 'X:Y'.
-    Keeps three digits of precision.
+    Keeps three digits of precision. No attempt is made to find a
+    greatest common divisor.
+
+    For example::
+
+        >>> float_to_ratio(1.3333333333333333)
+        '1333:1000'
+
+        >>> float_to_ratio(16.0 / 9)
+        '1777:1000'
+
     """
-    numerator = float(number) * 1000
-    return "%g:1000" % numerator
+    numerator = int(number * 1000)
+    return "%d:1000" % numerator
 
 
 def tokenize(line, include_chars=''):

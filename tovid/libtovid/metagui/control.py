@@ -122,7 +122,7 @@ class Control (Widget):
                 Label shown in the GUI for the Control
             option
                 Command-line option associated with this Control,
-                or '' to create a positional argument
+                or empty to create a positional argument
             default
                 Default value for the Control
             help
@@ -130,7 +130,7 @@ class Control (Widget):
             toggles
                 Control widget may be toggled on/off
             labelside
-                Position of label (``left`` or ``top``). It's up to the
+                Position of label ('left' or 'top'). It's up to the
                 derived Control class to use this appropriately.
             kwargs
                 Keyword arguments of the form ``key1=arg1, key2=arg2``
@@ -260,7 +260,7 @@ class Control (Widget):
 
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
-        :func:`draw` must be called before this function.
+        `draw` must be called before this function.
         """
         args = []
         value = self.get()
@@ -707,7 +707,7 @@ class Flag (Control):
 
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
-        :func:`draw` must be called before this function.
+        `draw` must be called before this function.
         """
         args = []
         # If flag is true, and option is nonempty, append to args

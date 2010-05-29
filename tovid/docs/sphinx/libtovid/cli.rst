@@ -1,5 +1,5 @@
-cli
-===
+:mod:`cli`
+==========
 
 .. automodule:: libtovid.cli
     :members:
