@@ -2,14 +2,19 @@
 # a scratchpad for developing a class based wizard from
 # titleset-wizard.  Not much to look at here yet.
 import os.path
-import commands
 import shlex
+import commands
 from Tkinter import *
-from tkMessageBox import *
-from base64 import b64encode
+from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
-from libtovid.metagui.support import \
-  Style, get_photo_image, show_icons, PrettyLabel
+from libtovid.metagui import Style
+from libtovid.metagui.support import PrettyLabel, show_icons, get_photo_image
+from libtovid.cli import _enc_arg
+from tkMessageBox import *
+from time import sleep
+from tempfile import mktemp
+from sys import argv
+from base64 import b64encode
 from libtovid.util import trim
 
 # Wizard is a base, unchanging frame hold the wizard pages commands that are
@@ -21,7 +26,7 @@ class Wizard(Frame):
     def __init__(self, master, text, icon):
         Frame.__init__(self, master)
         self.pages = []
-        self.index = 0
+        self.index = IntVar()
         self.text = text
         self.icon = icon
         self.master = master
@@ -83,11 +88,15 @@ class Wizard(Frame):
         pass
 
     def next(self):
-        if self.index < len(self.pages) - 1:
-            self.pages[self.index].hide_page()
-            self.index += 1
-            self.pages[self.index].frame.pack(side='right')
-            self.pages[self.index].show_page()
+        index = wizard.index.get()
+        print index
+        try:
+            self.pages[index].hide_page()
+            wizard.index.set(index + 1)
+            self.pages[index+1].frame.pack(side='right')
+            self.pages[index+1].show_page()
+        except IndexError:
+            pass
 
     def set_pagelist(self, pages):
         '''Set list of wizard page objects in Controlling Wizard page'''
@@ -139,7 +148,11 @@ class WizardPage(Frame):
         Frame.pack(master)
         self.master = master
         wizard = self.master
+        # the script we will be using for options
+        cur_dir = os.path.abspath('')
+        self.script_file = cur_dir + '/todisc_commands.bash'
         self.make_widgets()
+
 
     def make_widgets(self):
         pass
@@ -149,6 +162,55 @@ class WizardPage(Frame):
 
     def hide_page(self):
         self.frame.pack_forget()
+
+    def run_gui(self, args=[], index='', script=''):
+        """Run the tovid GUI, collecting options, and saving to wizard
+        """
+        title = 'load saved script'
+        script = 'todisc_commands.bash'
+        set_env = []
+        if index:
+            print "DEBUG: setting os.environ['METAGUI_WIZARD'] =", "%s" %index
+            os.environ['METAGUI_WIZARD'] = '%s' %index
+        cmd = ['todiscgui'] + args
+        todiscgui_cmd = Popen(cmd, stdout=PIPE)
+        # sleep to avoid the 'void' of time before the GUI loads
+        sleep(0.5)
+        if wizard.master.state() is not 'withdrawn':
+            wizard.master.withdraw()
+        status = todiscgui_cmd.wait()
+        if status == 200:
+        # if script doesn't exist prompt for load.
+            if os.path.exists(self.script_file):
+                script = self.script_file
+            else:
+                err = 'A problem has occured with saving your options.\n'
+                err += 'The saved script file was not found.\n'
+                err += 'Please submit a bug report'
+                showerror(message=err)
+                return
+            # Read lines from the file and reassemble the command
+            todisc_opts = self.script_to_list(script)
+            os.remove(script)
+        else:
+            todisc_opts  = []
+        return todisc_opts
+
+    def get_gui_options(self):
+        pass
+
+    def script_to_list(self, infile):
+        """File contents to a list, trimming '-from-gui' and header
+        """
+        add_line = False
+        command = ''
+        for line in open(infile, 'r'):
+            if line.startswith('-'):
+                add_line = True
+            if add_line and not line.startswith('-from-gui'):
+                line = line.strip()
+                command += line.rstrip('\\')
+        return shlex.split(command)
         
 class Page1(WizardPage):
     def __init__(self, master):
@@ -216,6 +278,15 @@ class Page2(WizardPage):
         text = trim(text)
         self.label = PrettyLabel(self.frame, text, wizard.font)
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
+        # set next button to run gui etc before moving forward
+        wizard.next_button.configure(command=self.get_gui_options)
+
+    def get_gui_options(self):
+        index = wizard.index.get()
+        commands = self.run_gui([], index)
+        wizard.next_button.configure(command=wizard.next)
+        wizard.master.deiconify()
+        wizard.next()
 
 class Page3(WizardPage):
     def __init__(self, master):
@@ -269,6 +340,18 @@ class Page3(WizardPage):
         # pressing the return key will update edited line
         self.enter1.bind('<Return>', self.set_list)
         self.listbox.bind('<ButtonRelease-1>', self.get_list)
+        # set next button to run gui etc before moving forward
+        wizard.next_button.configure(command=self.get_gui_options)
+
+    def get_gui_options(self):
+        index = wizard.index.get()
+        run_cmds = ['-titles']
+        titles = list(self.listbox.get(0, END))
+        run_cmds.extend(titles)
+        commands = self.run_gui(run_cmds, index)
+        wizard.next_button.configure(command=wizard.next)
+        wizard.master.deiconify()
+        wizard.next()
 
     def set_list(self, event):
         """Insert an edited line from the entry widget back into the listbox
@@ -291,7 +374,7 @@ class Page3(WizardPage):
             self.listbox.insert(END, self.enter1.get())
         self.listbox.selection_set(END)
 
-    def get_list(event):
+    def get_list(self, event):
         """Read the listbox selection and put the result in an entry widget
         """
         try:
@@ -307,16 +390,47 @@ class Page3(WizardPage):
         except IndexError:
             pass
 
+
+class Page4(WizardPage):
+    def __init__(self, master):
+        WizardPage.__init__(self, master)
+
+    def make_widgets(self):
+        self.frame = Frame(wizard)
+        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+
+    def draw(self):
+        self.label = Label(self.frame, text='This is page 4')
+        self.label.pack()
+
+class Page5(WizardPage):
+    def __init__(self, master):
+        WizardPage.__init__(self, master)
+
+    def make_widgets(self):
+        self.frame = Frame(wizard)
+        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+
+    def draw(self):
+        self.label = Label(self.frame, text='This is page 5')
+        self.label.pack()
+
+
+
 if __name__ == '__main__':
+    # get tovid prefix
     tovid_prefix = commands.getoutput('tovid -prefix')
-    img_file = os.path.join(tovid_prefix, 'lib', 'tovid', \
-      'titleset-wizard.png')
+    tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
+    os.environ['PATH'] = tovid_prefix + os.pathsep + os.environ['PATH']
+    img_file = os.path.join(tovid_prefix, 'titleset-wizard.png')
     root = Tk()
     root.minsize(width=800, height=660)
     wizard = Wizard(root, 'Tovid\nTitleset Wizard', img_file)
     page1 = Page1(wizard)
     page2 = Page2(wizard)
     page3 = Page3(wizard)
-    pages = [page1, page2, page3]
+    page4 = Page4(wizard)
+    page5 = Page5(wizard)
+    pages = [page1, page2, page3, page4, page5]
     wizard.set_pagelist(pages)
     mainloop()
