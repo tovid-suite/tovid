@@ -1,8 +1,8 @@
 """This module is for defining XML elements and attributes, and for creating
 element hierarchies.
 
-To create a new element, use the Element class constructor, providing at least
-the element name::
+To create a new element, use the `Element` constructor, providing at
+least the element name::
 
     >>> video = Element('video')
 
@@ -26,7 +26,8 @@ To add children to an element, use the add method::
       <length>15</length>
     </video>
 
-See author.py and spumux.py for additional examples.
+See :mod:`libtovid.author` and :mod:`libtovid.backend.spumux` for additional
+examples.
 """
 
 __all__ = ['Element']
@@ -37,7 +38,7 @@ class Element (object):
     Attribute values may be set in the constructor, or by calling set() with a
     dictionary and/or attribute=value keywords.
 
-    Use add() or add_child() to create a hierarchy of Elements.
+    Use `add` or `add_child` to create a hierarchy of Elements.
     """
     def __init__(self, name, content='', **attributes):
         """Create a new Element with the given attributes.
@@ -133,7 +134,5 @@ class Element (object):
         """Return the XML closing tag for the Element.
         """
         return '</' + self.name + '>'
-
-
 
 

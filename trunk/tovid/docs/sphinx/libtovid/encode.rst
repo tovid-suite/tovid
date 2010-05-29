@@ -1,5 +1,5 @@
-encode
-======
+:mod:`encode`
+=============
 
 .. automodule:: libtovid.encode
     :members:

@@ -2,12 +2,12 @@
 """
 
 # Sample output from tcprobe:
-# 
+#
 # [tcprobe] RIFF data, AVI video
 # [avilib] V: 24.000 fps, codec=DIVX, frames=15691, width=1024, height=576
 # [avilib] A: 48000 Hz, format=0x2000, bits=0, channels=5, bitrate=448 kbps,
 # [avilib]    10216 chunks, 36614144 bytes, CBR
-# [tcprobe] summary for Elephants_1024.avi, (*) = not default, 0 = not 
+# [tcprobe] summary for Elephants_1024.avi, (*) = not default, 0 = not
 # detected
 # import frame size: -g 1024x576 [720x576] (*)
 #        frame rate: -f 24.000 [25.000] frc=0 (*)
@@ -26,8 +26,8 @@ from libtovid import cli
 from libtovid.media import MediaFile
 
 def identify(filename):
-    """Identify a video file using transcode (tcprobe), and return a MediaFile
-    with the video's specifications.
+    """Identify a video file using transcode (tcprobe), and return a
+    `~libtovid.media.MediaFile` with the video's specifications.
     """
     result = MediaFile(filename)
 
@@ -69,17 +69,17 @@ def identify(filename):
 
 
 def rip_frames(media, out_dir, frames='all', size=(0, 0)):
-    """Extract frame images from a MediaFile and return a list of frame image
-    files.
+    """Extract frame images from a `~libtovid.media.MediaFile` and return a
+    list of frame image files.
 
         media
-            MediaFile to extract images from
+            `~libtovid.media.MediaFile` to extract images from
         out_dir
             Directory where output images should be stored; images are saved
-            in a subdirectory of out_dir named after the input filename
+            in a subdirectory of ``out_dir`` named after the input filename
         frames
-            Which frames to rip: 'all' for all frames, 15 to rip frame 15;
-            [30, 90] to rip frames 30 through 90, etc.
+            Which frames to rip: ``'all'`` for all frames, ``15`` to rip frame
+            15; ``[30, 90]`` to rip frames 30 through 90, etc.
         size
             Resolution of frame images (default: original size), used
             for prescaling

@@ -19,9 +19,9 @@ def encode(source, target, **kw):
     """Encode a multimedia video using mplayer|yuvfps|mpeg2enc.
 
         source
-            Input MediaFile
+            Input `~libtovid.media.MediaFile`
         target
-            Output MediaFile
+            Output `~libtovid.media.MediaFile`
         kw
             Keyword arguments to customize encoding behavior
 
@@ -63,13 +63,13 @@ def encode_video(source, yuvfile, videofile, target):
     """Encode a yuv4mpeg stream to an MPEG video stream.
 
         source
-            Input MediaFile
+            Input `~libtovid.media.MediaFile`
         yuvfile
             Filename of .yuv stream coming from mplayer
         videofile
             Filename of .m[1|2]v to write encoded video stream to
         target
-            Output MediaFile
+            Output `~libtovid.media.MediaFile`
 
     """
     # TODO: Control over quality (bitrate/quantization) and disc split size,
@@ -125,7 +125,7 @@ from libtovid import standard
 
 def encode_frames(imagedir, outfile, format, tvsys, aspect, interlaced=False):
     """Convert an image sequence in the given directory to match a target
-    MediaFile, putting the output stream in outfile.
+    `~libtovid.media.MediaFile`, putting the output stream in outfile.
 
         imagedir
             Directory containing images (and only images)

@@ -2,10 +2,10 @@
 
 Defined here are two functions for adding subtitles to an MPEG file:
 
-    add_subpictures
-        Add image files (.png)
-    add_subtitles
-        Add subtitle files (.sub, .srt etc.)
+    `add_subpictures`
+        Add image files (``.png``)
+    `add_subtitles`
+        Add subtitle files (``.sub``, ``.srt`` etc.)
 
 Use these if you just want to add subpictures or subtitles, and don't want
 to think much about the XML internals.
@@ -23,7 +23,7 @@ from libtovid import cli
 from libtovid.backend import mplayer
 
 # spumux XML elements and valid attributes
-# 
+#
 # subpictures
 # stream
 # textsub
@@ -81,12 +81,12 @@ def _get_xmlfile(textsub_or_spu):
 
 
 def _mux_subs(subtitle, movie_filename, stream_id=0):
-    """Run spumux to multiplex the given subtitle with an .mpg file.
+    """Run spumux to multiplex the given subtitle with an ``.mpg`` file.
 
         subtitle
             Textsub or Spu element
         movie_filename
-            Name of an .mpg file to multiplex subtitle into
+            Name of an ``.mpg`` file to multiplex subtitle into
         stream_id
             Stream ID number to pass to spumux
     """
@@ -109,14 +109,14 @@ def _mux_subs(subtitle, movie_filename, stream_id=0):
 
 
 def add_subpictures(movie_filename, select, image=None, highlight=None):
-    """Adds PNG image subpictures to an .mpg video file to create a DVD menu.
+    """Adds ``.png`` subpictures to an ``.mpg`` video file to create a DVD menu.
 
         select
-            Image shown as the navigational selector or "cursor"
+            ``.png`` filename shown for the navigational selector or "cursor"
         image
-            Image shown for non-selected regions
+            ``.png`` filename shown for non-selected regions
         highlight
-            Image shown when "enter" is pressed
+            ``.png`` filename shown when "enter" is pressed
 
     All images must be indexed, 4-color, transparent, non-antialiased PNG.
     Button regions are auto-inferred.
@@ -134,13 +134,13 @@ def add_subpictures(movie_filename, select, image=None, highlight=None):
 
 
 def add_subtitles(movie_filename, sub_filenames):
-    """Adds one or more subtitle files to an .mpg video file.
+    """Adds one or more subtitle files to an ``.mpg`` video file.
 
         movie_filename
-            Name of .mpg file to add subtitles to
+            Name of ``.mpg`` file to add subtitles to
         sub_filenames
             Filename or list of filenames of subtitle
-            files to include (.sub/.srt etc.)
+            files to include (``.sub``, ``.srt`` etc.)
 
     """
     infile = mplayer.identify(movie_filename)

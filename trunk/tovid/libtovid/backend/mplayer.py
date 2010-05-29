@@ -16,9 +16,9 @@ def encode(source, target, **kw):
     """Encode a multimedia video using mencoder.
 
         source
-            Input MediaFile
+            Input `~libtovid.media.MediaFile`
         target
-            Output MediaFile
+            Output `~libtovid.media.MediaFile`
         kw
             Keyword arguments to customize encoding behavior
 
@@ -105,8 +105,8 @@ def encode(source, target, **kw):
 
 
 def identify(filename):
-    """Identify a video file using mplayer, and return a MediaFile with
-    the video's specifications.
+    """Identify a video file using mplayer, and return a
+    `~libtovid.media.MediaFile` with the video's specifications.
     """
     # TODO: Raise an exception if the file couldn't be identified
     # TODO: Infer aspect ratio
@@ -186,11 +186,11 @@ def rip_video(source, yuvfile, target):
     """Rip video to the given yuv4mpeg file.
 
         source
-            Input MediaFile
+            Input `~libtovid.media.MediaFile`
         yuvfile
             File to put ripped video in
         target
-            Output MediaFile
+            Output `~libtovid.media.MediaFile`
 
     """
     # TODO: Custom mplayer options, subtitles, interlacing,

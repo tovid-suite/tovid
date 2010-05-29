@@ -1,9 +1,8 @@
 # odict.py
 
-"""Ordered dictionary class, from a Python Cookbook recipe:
+"""Ordered dictionary class, from a recipe_ in the Python Cookbook.
 
-    http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
-
+.. _recipe: http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
 """
 
 __all__ = ['Odict']
@@ -117,13 +116,13 @@ def convert_list(choices):
     choices may be in one of several formats:
 
         string
-            'one|two|three'
+            ``'one|two|three'``
         list
-            ['one', 'two', 'three']
+            ``['one', 'two', 'three']``
         dict
-            {'a': "Choice A", 'b': "Choice B"}
+            ``{'a': "Choice A", 'b': "Choice B"}``
         list-of-lists
-            [['a', "Choice A"], ['b', "Choice B"], ..]
+            ``[['a', "Choice A"], ['b', "Choice B"], ..]``
 
     Note: the dict form does not preserve order. Use list-of-lists
     to maintain the specified order.
@@ -150,3 +149,4 @@ def convert_list(choices):
     else:
         raise TypeError("choices lists must either be"\
             "['a', 'b', 'c'] or [['a', 'A'], ['b', 'B']] style.")
+

@@ -1,34 +1,34 @@
-render
-======
+:mod:`render`
+=============
 
 .. automodule:: libtovid.render
-
-animation
----------
+`
+:mod:`animation`
+----------------
 
 .. automodule:: libtovid.render.animation
     :members:
 
-drawing
--------
+:mod:`drawing`
+--------------
 
 .. automodule:: libtovid.render.drawing
     :members:
 
-effect
-------
+:mod:`effect`
+-------------
 
 .. automodule:: libtovid.render.effect
     :members:
 
-flipbook
---------
+:mod:`flipbook`
+---------------
 
 .. automodule:: libtovid.render.flipbook
     :members:
 
-layer
------
+:mod:`layer`
+------------
 
 .. automodule:: libtovid.render.layer
     :members:

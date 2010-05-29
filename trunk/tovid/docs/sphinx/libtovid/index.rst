@@ -1,5 +1,7 @@
-libtovid
-========
+:mod:`libtovid`
+===============
+
+.. automodule:: libtovid
 
 .. toctree::
     :maxdepth: 2
@@ -10,6 +12,7 @@ libtovid
     deps
     encode
     media
+    metagui/index
     odict
     opts
     render
@@ -17,6 +20,4 @@ libtovid
     stats
     util
     xml
-
-.. automodule:: libtovid
 
