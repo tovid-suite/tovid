@@ -22,7 +22,6 @@ from libtovid.util import trim
 # as the functions they run. As such it will need to have a list of all of the
 # pages so it can pack and unpack them.
 class Wizard(Frame):
-    
     def __init__(self, master, text, icon):
         Frame.__init__(self, master)
         self.pages = []
@@ -30,8 +29,12 @@ class Wizard(Frame):
         self.text = text
         self.icon = icon
         self.master = master
+        self.root = self._root()
+        self.commands = []
+        # is_running for cancelling run_gui if exit is called
         self.is_running = BooleanVar()
         self.is_running.set(True)
+        # wait on [Next>>>] being pushed to continue titleset loop
         self.waitVar = BooleanVar()
         self.waitVar.set(False)
 
@@ -56,17 +59,15 @@ class Wizard(Frame):
     def draw(self):
         # get fonts
         font = self.font
-        heading_font = self.get_font(font, size=font[1]+8, _style='bold')
-        lrg_font = self.get_font(font, size=font[1]+4, _style='bold')
-        medium_font = self.get_font(font, size=font[1]+2)
-        bold_font = self.get_font(font, _style='bold')
+        self.lrg_font = self.get_font(font, size=font[1]+4, _style='bold')
+        self.medium_font = self.get_font(font, size=font[1]+2)
         if self.text:
             txt = self.text.split('\n')
-            applabel1 = Label(self.frame1, text=txt[0], font=lrg_font)
-            applabel1.pack(side='top', fill=BOTH, expand=1, anchor='nw')
+            app_label1 = Label(self.frame1, text=txt[0], font=self.lrg_font)
+            app_label1.pack(side='top', fill=BOTH, expand=1, anchor='nw')
         # icons and image
         if os.path.isfile(self.icon):
-            background = self.master.cget('background')
+            background = self.root.cget('background')
             img = get_photo_image(self.icon, 0, 0, background)
             self.img = img
             # Display the image in a label on all pages
@@ -79,20 +80,23 @@ class Wizard(Frame):
             print('%s does not exist' % img_file)
         # if 2 lines of text for image, split top and bottom
         if self.text and len(txt) > 1:
-            applabel2 = Label(self.frame1, text=txt[1], font=lrg_font)    
-            applabel2.pack(side='top', fill=BOTH, expand=1, anchor='nw')
-            
-        
+            app_label2 = Label(self.frame1, text=txt[1], font=self.lrg_font)    
+            app_label2.pack(side='top', fill=BOTH, expand=1, anchor='nw')
+
     def make_widgets(self):
         pass
 
     def next(self):
-        index = wizard.index.get()
+        index = self.index.get()
         try:
+            # test if we are at end of wizard
+            self.pages[index+1]
+            # hide current page, and increment index
             self.pages[index].hide_page()
-            wizard.index.set(index + 1)
-            self.pages[index+1].frame.pack(side='right')
-            self.pages[index+1].show_page()
+            self.index.set(index + 1)
+            # repack the containing frame and draw the next pages widgets
+            self.pages[index].frame.pack(side='right')
+            self.pages[index].show_page()
         except IndexError:
             pass
 
@@ -109,33 +113,34 @@ class Wizard(Frame):
                 font[i] = font_descriptor[i]
         return tuple(font)
 
-    def show_status(status):
+    def show_status(self, status):
         """Show status label on all pages, with timeout
         """
         if status == 0:
             text='\nOptions saved!\n'
         else:
             text='\nCancelled!\n'
-        status_frame = Frame(frame1, borderwidth=1, relief=RAISED)
+        font = self.medium_font
+        status_frame = Frame(self.frame1, borderwidth=1, relief=RAISED)
         status_frame.pack(pady=80)
-        label1 = Label(status_frame, text=text, font=medium_font, fg='blue')
+        label1 = Label(status_frame, text=text, font=font, fg='blue')
         label1.pack(side=TOP)
         label2 = Label(status_frame, text='ok', borderwidth=2, relief=GROOVE)
         label2.pack(side=TOP)
-        tk.after(1000, lambda: label2.configure(relief=SUNKEN))
-        tk.after(2000, lambda: status_frame.pack_forget())
+        self.root.after(1000, lambda: label2.configure(relief=SUNKEN))
+        self.root.after(2000, lambda: status_frame.pack_forget())
 
-    def confirm_exit(event=None):
+    def confirm_exit(self, event=None):
         """Exit the GUI, with confirmation prompt.
         """
         if askyesno(message="Exit?"):
             # set is_running to false so the gui doesn't get run
-            #is_running.set(False)
+            self.is_running.set(False)
             # waitVar may cause things to hang, spring it
-            #self.set_var()
+            self.set_waitvar()
             quit()
 
-    def set_var(self):
+    def set_waitvar(self):
         """Set a BooleanVar() so tk.wait_var can exit
         """
         self.waitVar.set(True)
@@ -145,10 +150,23 @@ class WizardPage(Frame):
         Frame.__init__(self, master)
         Frame.pack(master)
         self.master = master
-        wizard = self.master
+        self.root = self._root()
+        #self.wizard = self.master
+        # get tovid prefix
+        tovid_prefix = commands.getoutput('tovid -prefix')
+        self.tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
+        os.environ['PATH'] = self.tovid_prefix + os.pathsep + os.environ['PATH']
         # the script we will be using for options
         cur_dir = os.path.abspath('')
         self.script_file = cur_dir + '/todisc_commands.bash'
+        # get script header
+        shebang = '#!/usr/bin/env bash'
+        _path = 'PATH=' + tovid_prefix + ':$PATH'
+        _cmd = ['tovid', '--version']
+        _version = Popen(_cmd, stdout=PIPE).communicate()[0].strip()
+        identifier = '# tovid project script\n# tovid version %s' % _version
+        self.header = '%s\n\n%s\n\n%s\n\n' % (shebang, identifier, _path )
+        # initialize widgets, but don't show yet
         self.make_widgets()
 
 
@@ -166,6 +184,7 @@ class WizardPage(Frame):
         """
         title = 'load saved script'
         script = 'todisc_commands.bash'
+        set_env = []
         if index:
             print "DEBUG: setting os.environ['METAGUI_WIZARD'] =", "%s" %index
             os.environ['METAGUI_WIZARD'] = '%s' %index
@@ -173,8 +192,8 @@ class WizardPage(Frame):
         todiscgui_cmd = Popen(cmd, stdout=PIPE)
         # sleep to avoid the 'void' of time before the GUI loads
         sleep(0.5)
-        if wizard.master.state() is not 'withdrawn':
-            wizard.master.withdraw()
+        if self.root.state() is not 'withdrawn':
+            self.root.withdraw()
         status = todiscgui_cmd.wait()
         if status == 200:
         # if script doesn't exist prompt for load.
@@ -193,8 +212,8 @@ class WizardPage(Frame):
             todisc_opts  = []
         return todisc_opts
 
-    def get_gui_options(self):
-        pass
+    def page_controller(self):
+        self.master.next()
 
     def script_to_list(self, infile):
         """File contents to a list, trimming '-from-gui' and header
@@ -208,13 +227,45 @@ class WizardPage(Frame):
                 line = line.strip()
                 command += line.rstrip('\\')
         return shlex.split(command)
+
+    def write_script(self):
+        """Write out the final script to todisc_commands.bash
+        """
+        commands = self.master.commands
+        header = self.header
+        cmdout = open(self.script_file, 'w')
+        # add the shebang, PATH, and 'todisc \' lines
+        cmdout.writelines(header)
+        # flatten the list
+        all_lines = [line for sublist in commands for line in sublist]
+        # put the program name back into the beginning of the list
+        all_lines.insert(0, 'todisc')
+        words = [_enc_arg(arg) for arg in all_lines]
+        all_lines = words
+        # write every line with a '\' at the end, except the last
+        for line in all_lines[:-1]:
+            cmdout.write(line + ' \\\n')
+        # write the last line
+        cmdout.write(all_lines[-1])
+        cmdout.close()
+
+    def trim_list_header(self, cmds):
+            """Trim header (items before 1st '-' type option) from a list
+            """
+            # remove shebang, identifier and PATH
+            try:
+                while not cmds[0].startswith('-'):
+                    cmds.pop(0)
+            except IndexError:
+                pass
+            return cmds
         
 class Page1(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
     def make_widgets(self):
-        self.frame = Frame(wizard)
+        self.frame = Frame(self.master)
         self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
         # page1 is packed by default
         self.draw()
@@ -244,15 +295,22 @@ class Page1(WizardPage):
         configurable DVD button links.
         '''
         text = trim(text)
-        self.label = PrettyLabel(self.frame, text, wizard.font)
+        self.label = PrettyLabel(self.frame, text, self.master.font)
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
+        # set next button to page_controller()
+        self.master.next_button.configure(command=self.page_controller)
+
+    def page_controller(self):
+        index = self.master.index.get()
+        wizard = self.master
+        wizard.next()
 
 class Page2(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
     def make_widgets(self):
-        self.frame = Frame(wizard)
+        self.frame = Frame(self.master)
         self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
 
     def draw(self):
@@ -273,25 +331,36 @@ class Page2(WizardPage):
         Press  [Next >>>]  to begin ...
         '''
         text = trim(text)
-        self.label = PrettyLabel(self.frame, text, wizard.font)
+        self.label = PrettyLabel(self.frame, text, self.master.font)
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
-        # set next button to run gui etc before moving forward
-        wizard.next_button.configure(command=self.get_gui_options)
+        # set next button to page_controller()
+        self.master.next_button.configure(command=self.page_controller)
 
-    def get_gui_options(self):
-        index = wizard.index.get()
-        commands = self.run_gui([], index)
-        wizard.next_button.configure(command=wizard.next)
-        wizard.master.deiconify()
-        wizard.next()
+    def page_controller(self):
+        index = self.master.index.get()
+        wizard = self.master
+        move = True
+        cmds = self.run_gui([], index)
+        # append to list and go to next page unless GUI was cancelled out of
+        if not cmds:
+            status = 1
+            move = False
+        else:
+            status = 0
+            cmds = [l for l in cmds if l]
+            wizard.commands.append(cmds)
+        wizard.show_status(status)
+        self.root.deiconify()
+        if move:
+            wizard.next()
 
 class Page3(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
     def make_widgets(self):
-        self.frame = Frame(wizard)
-        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+        self.frame = Frame(self.master)
+        self.frame.pack(side='right')
 
     def draw(self):
         text = '''ROOT MENU (VMGM)
@@ -314,42 +383,159 @@ class Page3(WizardPage):
         After making your selections, press [ Save to wizard ] in the GUI
         '''
         text = trim(text)
-        label1 = PrettyLabel(self.frame, text, wizard.font)
+        label1 = PrettyLabel(self.frame, text, self.master.font)
         label1.pack(fill='both', expand=True, side='top', anchor='nw')
         # create the listbox (note that size is in characters)
-        frame1 = LabelFrame(self.frame, text="Root 'menu link' titles")
-        frame1.pack(side='top', fill='y', expand=False)
+        self.titlebox = WizardBoxes(self.frame, wizard=self.master,
+          frame_text="Root 'menu link' titles")
+        # set next button to page_controller()
+        self.master.next_button.configure(command=self.page_controller)
 
+    def page_controller(self):
+        index = self.master.index.get()
+        run_cmds = ['-titles']
+        titles = list(self.titlebox.get(0, END))
+        run_cmds.extend(titles)
+        commands = self.run_gui(run_cmds, index)
+        #self.master.next_button.configure(command=self.master.next)
+        self.root.deiconify()
+        self.master.next()
+
+
+class Page4(WizardPage):
+    def __init__(self, master):
+        WizardPage.__init__(self, master)
+
+    def make_widgets(self):
+        self.frame = Frame(self.master)
+        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+
+    def draw(self):
+        text1 = '''TITLESET MENUS
+
+        Okay, now you will enter options for each of your titlesets.  
+        The only REQUIRED option here is to load one or more video
+        files, but of course you should spruce up your menu by
+        exploring some of the other options!  The menu title for each
+        has been changed to the text you used for the menu links in 
+        the root menu - change this to whatever you want.
+
+        Follow the simple instructions that appear in the next and 
+        subsequent pages: 
+
+        you will need to press  [Next >>>]  for each titleset.
+        '''
+        text1 = trim(text1)
+        label1 = PrettyLabel(self.frame, text1, self.master.font)
+        label1.pack(fill='both', expand=True, side='top', anchor='nw')
+        # set next button to page_controller()
+        self.master.next_button.configure(command=self.page_controller)
+
+    def page_controller(self):
+        # FIXME this will run the gui for titlesets in a loop
+        # for now it just goes to the next page
+        self.master.next()
+
+class Page5(WizardPage):
+    def __init__(self, master):
+        WizardPage.__init__(self, master)
+
+    def make_widgets(self):
+        self.frame = Frame(self.master)
+        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+
+    def draw(self):
+        text = '''
+        If you are happy with your saved options, now you can either 
+        choose to run the script now in an xterm, or exit and run it 
+        later in your favorite terminal.
+
+        You can run it with:
+        bash %s
+
+        You may also edit the file with a text editor but do not 
+        change the headers (first 3 lines of text) or change the 
+        order of the sections:
+
+        1. General opts, 2. Root menu 3. Titleset menus
+
+        You may also load the file back onto this page of the GUI and 
+        make any changes you want, using the command:
+        tovid titlesets %s
+
+        Press [Run script now] or [Exit].
+        ''' % (self.script_file, self.script_file)
+        text = trim(text)
+        self.label = PrettyLabel(self.frame, text, self.master.font)
+        self.label.pack(fill=BOTH, expand=1, anchor='nw')
+        # create the listbox (note that size is in characters)
+        frame_text = "Double-click item to edit with GUI, or select " + \
+          "and  press [ Edit ] "
+        self.titlebox = WizardBoxes(self.frame, type='rerunlist',
+          wizard=self.master, frame_text=frame_text)
+        # set next button to run gui etc before moving forward
+        self.master.next_button.configure(command=self.run_in_xterm)
+
+    def run_in_xterm(self, script):
+        """Run the final script in an xterm, completing the project
+        """
+        script = self.script_file
+        cmd = \
+         ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
+        wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
+        tovid_cmd = 'bash %s' % script
+        cmd.append(tovid_cmd + wait_cmd)
+        self.root.withdraw()
+        command = Popen(cmd, stderr=PIPE)
+        self.root.deiconify()  
+
+class WizardBoxes(Frame):
+    def __init__(self, master=None, type='', wizard=None, frame_text=''):
+        Frame.__init__(self, master)
+        self.master = master
+        self.wizard = wizard
+        #self.page = self.master.master
+        self.type = type or 'entrylist'
+        self.frame_text = frame_text
+        self.draw()
+
+    def draw(self):
+        # create the listbox (note that size is in characters)
+        frame1 = LabelFrame(self.master, text=self.frame_text)
+        frame1.pack(side='top', fill='y', expand=False)
         self.listbox = Listbox(frame1, width=50, height=12)
         self.listbox.pack(side='left', fill='y', expand=False, anchor='nw')
+        self.get = self.listbox.get
 
         # create a vertical scrollbar to the right of the listbox
         yscroll = Scrollbar(frame1, command=self.listbox.yview, \
           orient='vertical')
         yscroll.pack(side='right', fill='y', anchor='ne')
         self.listbox.configure(yscrollcommand=yscroll.set)
-
-        # use entry widget to display/edit selection
-        self.enter1 = Entry(self.frame, width=50, text='Enter titles here')
-        self.enter1.pack(fill='y', expand=False)
-        # set focus on entry
-        self.enter1.select_range(0, 'end')
-        self.enter1.focus_set()
-        # pressing the return key will update edited line
-        self.enter1.bind('<Return>', self.set_list)
-        self.listbox.bind('<ButtonRelease-1>', self.get_list)
-        # set next button to run gui etc before moving forward
-        wizard.next_button.configure(command=self.get_gui_options)
-
-    def get_gui_options(self):
-        index = wizard.index.get()
-        run_cmds = ['-titles']
-        titles = list(self.listbox.get(0, END))
-        run_cmds.extend(titles)
-        commands = self.run_gui(run_cmds, index)
-        wizard.next_button.configure(command=wizard.next)
-        wizard.master.deiconify()
-        wizard.next()
+        if self.type == 'entrylist':
+            # use entry widget to display/edit selection
+            self.enter1 = Entry(self.master, width=50)
+            self.enter1.pack(fill='y', expand=False)
+            # set focus on entry
+            self.enter1.select_range(0, 'end')
+            self.enter1.focus_set()
+            # pressing the return key will update edited line
+            self.enter1.bind('<Return>', self.set_list)
+            self.listbox.bind('<ButtonRelease-1>', self.get_list)
+        elif self.type == 'rerunlist':
+            frame2 = Frame(self.master)
+            frame2.pack(fill='y', expand=False)
+            button2 = Button(frame2, text='Add titleset', \
+              command=self.add_titleset)
+            button2.pack(side=LEFT, anchor='w')
+            button1 = Button(frame2, text='Edit', command=self.rerun_options)
+            button1.pack(side=LEFT, fill=X, expand=1)
+            button2 = Button(frame2, text='Remove titleset', \
+              command=self.remove_titleset)
+            button2.pack(side=RIGHT, anchor='e')
+        else:
+            err = 'type argument must be "entrylist" or "rerunlist"'
+            raise ValueError(err)
 
     def set_list(self, event):
         """Insert an edited line from the entry widget back into the listbox
@@ -388,32 +574,65 @@ class Page3(WizardPage):
         except IndexError:
             pass
 
+    def add_titleset(self):
+        pass
 
-class Page4(WizardPage):
-    def __init__(self, master):
-        WizardPage.__init__(self, master)
+    def remove_titleset(self):
+        self.wizard.commands = ['tovid', 'disc', '-foo', 'bar']
+        pass
+        #self.wizard.commands =
 
-    def make_widgets(self):
-        self.frame = Frame(wizard)
-        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+    def rerun_options(self, Event=None):
+        """Run the gui with the selected options
+        """
+        # self.master is the WizardPage
+        commands = self.wizard.commands
+        try:
+            index = int(self.listbox.curselection()[0])
+        except IndexError:
+            showerror(message='Please select an options line first')
+            return
+        rerun_opts = []
+        os.environ['METAGUI_WIZARD'] = str(index+1)
+        # the GUI doesn't understand the titleset type options
+        remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
+        options = [ i for i in commands[index] if not i in remove ]
+        rerun_opts = self.run_gui(options, '%s' %(index+1))
+        if rerun_opts:
+            status = 0
+            # trim header from todisc_cmds
+            rerun_opts = self.trim_list_header(rerun_opts)
+            # fill the listbox again if vmgm opts changed
+            # add the 'tags' back around the option list if needed
+            if index == 1:
+                self.refill_listbox(self.listbox, rerun_opts)
+                rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
+            elif index >= 2:
+                rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
+            commands[index] = rerun_opts
+            # rewrite the saved script file
+            self.write_script()
+        else:
+            status = 1
+        tk.deiconify()
 
-    def draw(self):
-        self.label = Label(self.frame, text='This is page 4')
-        self.label.pack()
+        show_status(status)
 
-class Page5(WizardPage):
-    def __init__(self, master):
-        WizardPage.__init__(self, master)
-
-    def make_widgets(self):
-        self.frame = Frame(wizard)
-        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
-
-    def draw(self):
-        self.label = Label(self.frame, text='This is page 5')
-        self.label.pack()
-
-
+    def refill_listbox(self, listbox, opts):
+        """Repopulate the rerun listbox with option list titles
+        """
+        if '-titles' in opts:
+            new_titles = get_list_args(opts, '-titles')
+        else:
+            new_titles = opts
+        listbox.delete(0, END)
+        # insert or reinsert options list into titleset listbox
+        listbox.insert(END, 'General options')
+        listbox.insert(END, 'Root menu')
+        numtitles = len(new_titles)
+        #listbox.configure(height=numtitles+2)
+        for i in xrange(numtitles):
+            listbox.insert(END, new_titles[i])
 
 if __name__ == '__main__':
     # get tovid prefix
@@ -423,12 +642,15 @@ if __name__ == '__main__':
     img_file = os.path.join(tovid_prefix, 'titleset-wizard.png')
     root = Tk()
     root.minsize(width=800, height=660)
-    wizard = Wizard(root, 'Tovid\nTitleset Wizard', img_file)
-    page1 = Page1(wizard)
-    page2 = Page2(wizard)
-    page3 = Page3(wizard)
-    page4 = Page4(wizard)
-    page5 = Page5(wizard)
+    app = Wizard(root, 'Tovid\nTitleset Wizard', img_file)
+    # instantiate pages
+    page1 = Page1(app)
+    page2 = Page2(app)
+    page3 = Page3(app)
+    page4 = Page4(app)
+    page5 = Page5(app)
+    # let main wizard instance know about all the pages
     pages = [page1, page2, page3, page4, page5]
-    wizard.set_pagelist(pages)
+    app.set_pagelist(pages)
+    # run it
     mainloop()
