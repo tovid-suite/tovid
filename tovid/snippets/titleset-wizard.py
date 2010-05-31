@@ -30,7 +30,6 @@ class Wizard(Frame):
         self.text = text
         self.icon = icon
         self.master = master
-        self.commands = []
         self.is_running = BooleanVar()
         self.is_running.set(True)
         self.waitVar = BooleanVar()
@@ -89,7 +88,6 @@ class Wizard(Frame):
 
     def next(self):
         index = wizard.index.get()
-        print index
         try:
             self.pages[index].hide_page()
             wizard.index.set(index + 1)
@@ -168,7 +166,6 @@ class WizardPage(Frame):
         """
         title = 'load saved script'
         script = 'todisc_commands.bash'
-        set_env = []
         if index:
             print "DEBUG: setting os.environ['METAGUI_WIZARD'] =", "%s" %index
             os.environ['METAGUI_WIZARD'] = '%s' %index
@@ -327,7 +324,8 @@ class Page3(WizardPage):
         self.listbox.pack(side='left', fill='y', expand=False, anchor='nw')
 
         # create a vertical scrollbar to the right of the listbox
-        yscroll = Scrollbar(frame1, command=self.listbox.yview, orient='vertica')
+        yscroll = Scrollbar(frame1, command=self.listbox.yview, \
+          orient='vertical')
         yscroll.pack(side='right', fill='y', anchor='ne')
         self.listbox.configure(yscrollcommand=yscroll.set)
 
