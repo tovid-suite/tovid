@@ -53,6 +53,11 @@ try:
 except NameError:
     unicode = str
 
+class ProgramNotFound (ValueError):
+    """Raised when the program given to a command is not available.
+    """
+    pass
+
 class Command:
     """A command-line statement, consisting of a program and its arguments,
     with support for various modes of execution.
@@ -152,8 +157,11 @@ class Command:
         if isinstance(stderr, basestring):
             stderr = open(stderr, 'w')
         # Run the subprocess
-        self.proc = subprocess.Popen([self.program] + self.args,
-                          stdin=stdin, stdout=stdout, stderr=stderr)
+        try:
+            self.proc = subprocess.Popen([self.program] + self.args,
+                              stdin=stdin, stdout=stdout, stderr=stderr)
+        except OSError:
+            raise ProgramNotFound("Program '%s' not found." % self.program)
 
 
     def wait(self):
