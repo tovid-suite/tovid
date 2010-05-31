@@ -167,6 +167,7 @@ def get_photo_image(filename, width=0, height=0, background='', dither=False):
     # Create and return the PhotoImage from the gif data
     return tk.PhotoImage(data=base64.b64encode(gif_data))
 
+
 def show_icons(window, image):
     '''Show window manager icons for window, if supported.
     The icon argument is full path to the image to be used.
