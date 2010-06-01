@@ -652,7 +652,7 @@ function cleanup()
             yecho
             yecho "Do you want to keep the temporary files that were created ?"
             yecho "Please type \"yes\", or else they will be deleted"
-            yecho "(add '-noask' to your ~/.tovid/makempg.config to avoid"
+            yecho "(add '-noask' to the [mpg] section of ~/.tovid/tovid.ini to avoid"
             yecho "being asked this question in the future)"
             read input
             echo
