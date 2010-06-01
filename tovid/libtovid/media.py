@@ -1,7 +1,7 @@
 """This module provides a multimedia file class for storing a profile of
 attributes including resolution, audio and video codecs and bitrates.
 
-These can be used for getting a target MediaFile for encoding via
+These can be used for getting a target `MediaFile` for encoding via
 one of the backends in :mod:`libtovid.backend`. For example::
 
     >>> dvd = standard_media('dvd', 'ntsc')
@@ -97,7 +97,7 @@ class MediaFile:
 
 
 def standard_media(format, tvsys):
-    """Return a MediaFile compliant with a standard format and TV system.
+    """Return a `MediaFile` compliant with a standard format and TV system.
 
         format
             Standard format ('vcd', 'svcd', or 'dvd')
@@ -133,14 +133,14 @@ def correct_aspect(source, target, aspect='auto'):
     aspect ratio, without distorting the picture.
 
         source
-            Input MediaFile
+            Input `MediaFile`
         target
-            Output MediaFile
+            Output `MediaFile`
         aspect
             Aspect ratio to assume for input file (e.g., '4:3', '16:9')
             or 'auto' to use autodetection based on source aspect
 
-    Return a new target MediaFile with correct scaling, using letterboxing
+    Return a new target `MediaFile` with correct scaling, using letterboxing
     if appropriate, and anamorphic widescreen if available (DVD only).
     """
     assert isinstance(source, MediaFile)

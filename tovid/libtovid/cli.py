@@ -134,11 +134,11 @@ class Command:
         """Execute the command using the given stream redirections.
 
             stdin
-                Filename or File object to read input from
+                Filename or `file` object to read input from
             stdout
-                Filename or File object to write output to
+                Filename or `file` object to write output to
             stderr
-                Filename or File object to write errors to
+                Filename or `file` object to write errors to
 
         Use ``None`` for regular system stdin/stdout/stderr (default behavior).
         That is, if ``stdout=None``, the command's standard output is printed.
