@@ -134,7 +134,8 @@ class BuildDocs (Command):
     user_options = []
 
     def initialize_options(self):
-        pass
+        self.source = os.path.join('docs', 'src', 'en', 'tovid.t2t')
+        self.target = os.path.join('docs', 'man', 'tovid.1')
 
     def finalize_options(self):
         pass
@@ -142,13 +143,14 @@ class BuildDocs (Command):
     def run(self):
         """Build the tovid manual page.
         """
-        source = 'docs/src/en/tovid.t2t'
-        target = 'docs/man/tovid.1'
         # Build only if target does not exist, or if source is newer than target
         mod = os.path.getmtime
-        if not os.path.exists(target) or (mod(source) > mod(target)):
-            command = 'txt2tags -t man -i "%s" -o "%s"' % (source, target)
+        if not os.path.exists(self.target) or (mod(self.source) > mod(self.target)):
+            print("Rebuilding tovid manual page")
+            command = 'txt2tags -t man -i "%s" -o "%s"' % (self.source, self.target)
             os.system(command)
+        else:
+            print("Manual page already built, not building again")
 
 
 class BuildTovidInit (Command):
@@ -156,7 +158,10 @@ class BuildTovidInit (Command):
     user_options = []
 
     def initialize_options(self):
-        pass
+        self.source = os.path.join('src', 'tovid-init.in')
+        self.target = os.path.join('src', 'tovid-init')
+        # Touch the source file to ensure that it gets rebuilt
+        os.utime(self.source, None)
 
     def finalize_options(self):
         pass
@@ -164,17 +169,19 @@ class BuildTovidInit (Command):
     def run(self):
         """Build src/tovid-init from tovid-init.in.
         """
-        source = 'src/tovid-init.in'
-        target = 'src/tovid-init'
         # We basically just need to replace @VERSION@ in tovid-init.in with
         # the current version of tovid.
         lines = [line.replace('@VERSION@', _tovid_version)
-                 for line in open(source, 'r')]
+                 for line in open(self.source, 'r')]
         # Write all lines to the target file
-        outfile = open(target, 'w')
+        outfile = open(self.target, 'w')
         outfile.writelines(lines)
         outfile.close()
 
+
+# Build tovid-init with regular 'build' command
+build.sub_commands.append(('build_tovid_init', None))
+build.sub_commands.append(('build_docs', None))
 
 # The actual setup
 setup(
