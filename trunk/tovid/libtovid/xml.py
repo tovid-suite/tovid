@@ -12,13 +12,13 @@ To see an XML representation of the Element::
     <video></video>
 
 Since this is an empty element with no attributes yet, it's pretty boring.
-You can add or change attributes using the set method::
+You can add or change attributes using the `~Element.set` method::
 
     >>> video.set(file="Brian.mpg")
     >>> print(video)
     <video file="Brian.mpg"></video>
 
-To add children to an element, use the add method::
+To add children to an element, use the `~Element.add` method::
 
     >>> length = video.add('length', '15')
     >>> print(video)
