@@ -235,9 +235,9 @@ class Dropdowns (Panel):
     corresponding Control is displayed, along with a "remove" button to
     discard the control.
     """
-    def __init__(self, name='', *widgets, **kwargs):
-        Panel.__init__(self, name, *widgets, **kwargs)
-        ensure_type("Dropdown contents must be Controls", Control, *widgets)
+    def __init__(self, name='', *controls, **kwargs):
+        Panel.__init__(self, name, *controls, **kwargs)
+        ensure_type("Dropdown contents must be Controls", Control, *controls)
         # Controls, indexed by label
         self.controls = Odict()
         for control in self.widgets:

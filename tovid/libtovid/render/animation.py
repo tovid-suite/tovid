@@ -8,8 +8,8 @@ Two classes are provided:
 
 The data being interpolated may represent color, opacity, location, or anything
 else that can be described numerically. Keyframe data may be scalar (single
-integers or decimal values) or vector (tuples such as (x, y) coordinates or
-(r, g, b) color values).
+integers or decimal values) or vector (tuples such as ``(x, y)`` coordinates or
+``(r, g, b)`` color values).
 
 For example, let's define three keyframes::
 
@@ -25,7 +25,7 @@ interpolated or "tweened" automatically, using the Tween class::
     >>> tween.data
     [0, 10, 20, 30, 40, 50, 43, 36, 30, 23, 16, 10]
 
-Another example using tweening of (x, y) coordinates::
+Another example using tweening of ``(x, y)`` coordinates::
 
     >>> keys = [Keyframe(1, (20, 20)),
     ...         Keyframe(6, (80, 20)),
@@ -67,7 +67,7 @@ import math
 
 class Keyframe:
     """Associates a specific frame in an animation with a numeric value.
-    A Keyframe is a (frame, data) pair defining a "control point" on a graph::
+    A Keyframe is a ``(frame, data)`` pair defining a "control point" on a graph::
 
             100 |
                 |       Keyframe(10, 50)
@@ -87,7 +87,7 @@ class Keyframe:
                 1     10     20     30
                         frame
 
-    See the Tween class below for what you can do with these Keyframes,
+    See the `Tween` class below for what you can do with these Keyframes,
     once you have them.
     """
     def __init__(self, frame, data):
@@ -136,10 +136,9 @@ def cos_interp(x, (x0, y0), (x1, y1)):
     return y_min + y_diff * (math.cos(x_norm) + 1) / 2.0
 
 
-def interpolate(frame, left, right, method):
-    """Interpolate data between left and right Keyframes at the given frame,
-    using the given interpolation method ('linear' or 'cosine'). Return the
-    value at the given frame.
+def interpolate(frame, left, right, method='linear'):
+    """Return the interpolated value at ``frame``, between two `Keyframe`
+    endpoints, using the given interpolation method ('linear' or 'cosine').
 
     The left and right Keyframes mark the endpoints of the curve to be
     interpolated. For example, if a value changes from 50 to 80 over the
@@ -220,29 +219,29 @@ class Tween:
         6
         >>> tween[8]
         19
+
     """
     def __init__(self, keyframes, method='linear'):
         """Create an in-between sequence from a list of keyframes. The
         interpolation method can be 'linear' or 'cosine'.
 
-        See effect.py for implementation examples.
+        See `libtovid.render.effect` for implementation examples.
         """
         for keyframe in keyframes:
             assert isinstance(keyframe, Keyframe)
         self.keyframes = keyframes
         self.start = self.keyframes[0].frame
         self.end = self.keyframes[-1].frame
-        self.data = []
         self.method = method
         # Do the tweening
-        self._tween()
+        self.data = self._calculate()
 
 
-    def _tween(self):
+    def _calculate(self):
         """Perform in-betweening calculation on the current keyframes and
-        fill self.data with tweened values, indexed by frame number.
+        return a list of tweened values, indexed by frame number.
         """
-        self.data = []
+        data = []
         # TODO: Sort keyframes in increasing order by frame number (to ensure
         # keyframes[0] is the first frame, and keyframes[-1] is the last frame)
         # Make a copy of keyframes
@@ -252,8 +251,7 @@ class Tween:
 
         # If keyframe interval is empty, use constant data from first keyframe
         if first == last:
-            self.data = keys[0].data
-            return
+            return keys[0].data
 
         # Pop off keyframes as each interval is calculated
         left = keys.pop(0)
@@ -262,12 +260,14 @@ class Tween:
         # Interpolate until the last frame is reached
         while frame <= last:
             value = interpolate(frame, left, right, self.method)
-            self.data.append(value)
+            data.append(value)
             # Get the next interval, if it exists
             if frame == right.frame and len(keys) > 0:
                 left = right
                 right = keys.pop(0)
             frame += 1
+
+        return data
 
 
     def __getitem__(self, frame):

@@ -61,7 +61,7 @@ def exit_with_traceback(error_message):
 
 def ensure_type(message, required_type, *objects):
     """Ensure that the given objects are of the required type.
-    If not, print a message and exit_with_traceback.
+    If not, print a message and call `exit_with_traceback`.
     """
     for obj in objects:
         if not isinstance(obj, required_type):
@@ -84,11 +84,11 @@ def divide_list(items, pieces):
 
 
 def askyesno(title=None, message=None, **options):
-    """Show a popup with Yes / No options. Return True if Yes was clicked,
-    False if No was clicked.
+    """Show a popup with Yes / No options. Return ``True`` if Yes was clicked,
+    ``False`` if No was clicked.
 
     This function is to work around a bug in Tkinter 8.5 / Python 2.6, where
-    the askyesno function always returns False after a file dialog has been
+    the askyesno function always returns ``False`` after a file dialog has been
     displayed.
     """
     result = tkMessageBox._show(title, message,
@@ -101,7 +101,7 @@ def askyesno(title=None, message=None, **options):
 
 
 def get_photo_image(filename, width=0, height=0, background='', dither=False):
-    """Get a tk.PhotoImage from a given image file.
+    """Get a ``tk.PhotoImage`` from a given image file.
 
         filename
             Full path to the image file, in any format that 'convert'
@@ -188,9 +188,9 @@ def show_icons(window, image):
 class ScrollList (tk.Frame):
     """A Listbox with a scrollbar.
 
-    Similar to a tk.Listbox, a ScrollList shows a list of items. tk.Variables
-    may be associated with both the list of items, and the one that is currently
-    selected.
+    Similar to a ``tk.Listbox``, a ScrollList shows a list of items.
+    ``tk.Variable`` objects may be associated with both the list of items, and
+    the one that is currently selected.
     """
     def __init__(self, master=None, items=None,
                  selected=None):
@@ -269,9 +269,9 @@ class ScrollList (tk.Frame):
 
 
     def delete(self, first, last=None):
-        """Delete values in a given index range (first, last), not including
-        last itself. If last is None, delete only the item at first index.
-        Calls ``remove`` callbacks for each removed item.
+        """Delete values in a given index range (``first``, ``last``), not
+        including ``last`` itself. If ``last`` is ``None``, delete only the
+        item at index ``first``.  Calls ``remove`` callbacks for each removed item.
         """
         if first == last:
             return
@@ -285,7 +285,7 @@ class ScrollList (tk.Frame):
 
 
     def swap(self, index_a, index_b):
-        """Swap the element at index_a with the one at index_b.
+        """Swap the element at ``index_a`` with the one at ``index_b``.
         Calls ``swap`` callbacks for the swapped items.
         """
         # Use a temporary list, so self.items is only modified once
@@ -317,7 +317,7 @@ class ScrollList (tk.Frame):
 
 
     def select_index(self, index, select_in_linked=True):
-        """Select (highlight) the list item at the given index.
+        """Select (highlight) the list item at the given ``index``.
         Calls ``select`` callbacks for the selected item.
         """
         item_count = self.items.count()
@@ -372,11 +372,11 @@ class ScrollList (tk.Frame):
             action
                 May be 'insert', 'remove', 'select', or 'swap'
             function
-                Callback function, taking (index, value) arguments
-                index is 0-based; passes -1 for the last item
-
-        All callback functions (except 'swap') must take (index, value)
-        parameters. The 'swap' callback should accept (index_a, index_b).
+                Callback function to call for the given action
+                
+        All callback functions except 'swap' must take ``(index, value)``
+        parameters; the 'swap' callback should accept ``(index_a, index_b)``.
+        In all cases, ``index`` is 0-based, and -1 is passed for the last item.
         """
         if action not in ['insert', 'remove', 'select', 'swap']:
             raise ValueError("List callback action must be"
@@ -387,8 +387,8 @@ class ScrollList (tk.Frame):
 
 
     def summon_callbacks(self, action, index, item):
-        """Summon callbacks for the given action,
-        passing index and item to each.
+        """Summon callbacks for the given ``action``, passing ``index`` and
+        ``item`` to each.
         """
         if action not in ['insert', 'remove', 'select', 'swap']:
             raise ValueError("Callback action must be"
@@ -601,7 +601,7 @@ class FontChooser (Dialog):
 
 
     def render_font(self, fontname):
-        """Return a tk.PhotoImage preview of the given font.
+        """Return a `tk.PhotoImage` preview of the given font.
         """
         cmd = cli.Command('convert')
         cmd.add('-size',  '500x60')
@@ -737,7 +737,7 @@ class ConfigWindow (Dialog):
         """Create and display a configuration window.
 
             inifile
-                An .ini-style file to load/save settings from
+                An ``.ini``-style file to load/save settings from
         """
         self.style = style or Style()
         Dialog.__init__(self, master, "Configuration")
@@ -785,7 +785,7 @@ class ConfigWindow (Dialog):
 class ScrolledWindow (tk.Tk):
     """A top-level window with scrollbars.
 
-    To use as a container for other widgets, do:
+    To use as a container for other widgets, do::
 
         window = ScrolledWindow()
         button = tk.Button(window.frame, text="Click me", ...)

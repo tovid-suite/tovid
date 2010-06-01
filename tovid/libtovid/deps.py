@@ -4,7 +4,7 @@ For example::
     deps.require(deps.core)
 
 will look for all of tovid's core dependencies. If any cannot be found, the
-missing ones are printed and an exception is raised. Run deps.py from a prompt
+missing ones are printed and an exception is raised. Run ``deps.py`` from a prompt
 for further examples.
 
 In practice::
@@ -15,7 +15,7 @@ In practice::
         print("Exiting...")
         sys.exit(1)
 
-deps.core is an internal dictionary of tovid's core dependencies, where the
+`deps.core` is an internal dictionary of tovid's core dependencies, where the
 keys are the names, and the values are brief descriptions with URLs.
 
 Provided dependency dictionaries:
@@ -40,13 +40,14 @@ program names to look for::
 
     deps.require("more less cat")
 
-require also provides ways to print custom URLs and help when it cannot find
-dependencies. See help(deps.require) or keep reading.
+`require` also provides ways to print custom URLs and help when it cannot find
+dependencies. See ``help(deps.require)`` or keep reading.
 """
 
 __all__ = [
     'which',
     'require',
+    'MissingDep',
 ]
 
 import subprocess
@@ -129,7 +130,7 @@ def require(deps,
             description="oops"):
 
     """Assert that one or more dependencies exist on the system. If any
-    are missing, raise a ``MissingDep`` exception.
+    are missing, raise a `MissingDep` exception.
 
         deps
             Names of dependencies to assert. May be a single name,
@@ -145,6 +146,7 @@ def require(deps,
     (core, magick, etc.), its description is taken from there.
 
     Examples:
+
         require(all)
             Look for ALL dependencies that are defined internally.
 
