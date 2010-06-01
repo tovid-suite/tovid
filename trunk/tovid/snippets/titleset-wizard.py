@@ -89,18 +89,14 @@ class Wizard(Frame):
     def next(self):
         index = self.index.get()
         try:
-            # test if we are at end of wizard
-            self.pages[index+1]
-            # hide current page, and increment index
             self.pages[index].hide_page()
             self.index.set(index + 1)
-            # repack the containing frame and draw the next pages widgets
-            self.pages[index].frame.pack(side='right')
-            self.pages[index].show_page()
+            self.pages[index+1].frame.pack(side='right')
+            self.pages[index+1].show_page()
         except IndexError:
             pass
 
-    def set_pagelist(self, pages):
+    def set_pages(self, pages):
         '''Set list of wizard page objects in Controlling Wizard page'''
         self.pages = pages
 
@@ -175,9 +171,6 @@ class WizardPage(Frame):
 
     def show_page(self):
         self.draw()
-
-    def hide_page(self):
-        self.frame.pack_forget()
 
     def run_gui(self, args=[], index='', script=''):
         """Run the tovid GUI, collecting options, and saving to wizard
@@ -305,6 +298,9 @@ class Page1(WizardPage):
         wizard = self.master
         wizard.next()
 
+    def hide_page(self):
+        self.frame.pack_forget()
+
 class Page2(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
@@ -354,6 +350,9 @@ class Page2(WizardPage):
         if move:
             wizard.next()
 
+    def hide_page(self):
+        self.frame.pack_forget()
+
 class Page3(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
@@ -391,15 +390,27 @@ class Page3(WizardPage):
         # set next button to page_controller()
         self.master.next_button.configure(command=self.page_controller)
 
+    def save_list(self):
+        """Save the current listbox contents
+        """
+        # get a list of listbox lines
+        temp_list = list(self.titlebox.get(0, END))
+        return [ l for l in temp_list if l]
+
     def page_controller(self):
         index = self.master.index.get()
         run_cmds = ['-titles']
-        titles = list(self.titlebox.get(0, END))
-        run_cmds.extend(titles)
-        commands = self.run_gui(run_cmds, index)
+        self.titles = self.save_list()
+        run_cmds.extend(self.titles)
+        cmds = self.run_gui(run_cmds, index)
+        cmds = [l for l in cmds if l]
+        self.master.commands.append(cmds)
         #self.master.next_button.configure(command=self.master.next)
         self.root.deiconify()
         self.master.next()
+
+    def hide_page(self):
+        self.frame.pack_forget()
 
 
 class Page4(WizardPage):
@@ -432,9 +443,46 @@ class Page4(WizardPage):
         self.master.next_button.configure(command=self.page_controller)
 
     def page_controller(self):
+        print self.master.commands
+        self.master.next()
+
+    def hide_page(self):
+        self.frame.pack_forget()
+'''
+    def page_controller(self):
         # FIXME this will run the gui for titlesets in a loop
         # for now it just goes to the next page
-        self.master.next()
+        tk.withdraw()
+        options_list = save_list()
+        numtitles = len(save_list())
+
+        for i in range(numtitles):
+            run_cmds = ['-menu-title']
+            run_cmds.append(options_list[i])
+            if i < numtitles:
+                pg4_txt2 = 'Now we will work on titleset %s:\n"%s"\n\n'
+                pg4_txt2 += 'Press  [Next >>>]  to continue'
+                pg4_txt2 = pg4_txt2 % (int(i+1), options_list[i])
+                pg4_label2.configure(text=pg4_txt2)
+                pg4_frame3.pack()
+                see_me(pg4_label2)
+            # withdraw the wizard and run the GUI, collecting commands
+            tk.deiconify()
+            # pressing 'Next' sets the waitVar and continues
+            tk.wait_variable(waitVar)
+            if is_running.get() == 1:
+                get_commands = run_gui(run_cmds, '%s' %(i+3))
+            else:
+                quit()
+            if get_commands:
+                status = 0
+                get_commands = trim_list_header(get_commands)
+                # wrap the commands in titleset 'tags', then write out script
+                cmds = ['-titleset']
+                cmds.extend(get_commands)
+                cmds.append('-end-titleset')
+                todisc_cmds.append(cmds)
+'''
 
 class Page5(WizardPage):
     def __init__(self, master):
@@ -476,9 +524,11 @@ class Page5(WizardPage):
         # set next button to run gui etc before moving forward
         self.master.next_button.configure(command=self.run_in_xterm)
 
-    def run_in_xterm(self, script):
+    def run_in_xterm(self):
         """Run the final script in an xterm, completing the project
         """
+        if not askyesno(message="Run in xterm now?"):
+            return
         script = self.script_file
         cmd = \
          ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
@@ -651,6 +701,6 @@ if __name__ == '__main__':
     page5 = Page5(app)
     # let main wizard instance know about all the pages
     pages = [page1, page2, page3, page4, page5]
-    app.set_pagelist(pages)
+    app.set_pages(pages)
     # run it
     mainloop()
