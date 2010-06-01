@@ -29,9 +29,9 @@ import tempfile
 special_chars = '\\ #*:;&?!<>[]()"\''
 
 def safe_filename(filename, work_dir):
-    """Ensure the given filename is free of quirky or problematic characters.
-    If so, simply return the filename; if not, create a safe symlink in
-    work_dir to the original file, and return the symlink name.
+    """Ensure the given ``filename`` is free of quirky or problematic characters.
+    If so, simply return ``filename``; if not, create a safe symlink in
+    ``work_dir`` to the original file, and return the symlink name.
     """
     safename = filename
     for char in special_chars:
@@ -110,7 +110,7 @@ def trim(text):
 
 def ratio_to_float(ratio):
     """Convert a string expressing a numeric ratio, with X and Y parts
-    separated by a colon ':', into a decimal number.
+    separated by a colon ':', into a floating-point decimal number.
 
     For example::
 
@@ -208,9 +208,9 @@ def get_code_lines(filename):
 
 def get_file_type(filename):
     """Return 'image', 'audio', or 'video', if the given filename appears to be
-    any of those types; otherwise, return None. Determined by file's mimetype,
+    any of those types; otherwise, return ``None``. Determined by file's mimetype,
     which is based on filename extension, so possibly inaccurate. Returns
-    None for any directory or extensionless filename.
+    ``None`` for any directory or extensionless filename.
     """
     mimetype, encoding = mimetypes.guess_type(filename)
     # Get the base type (the part before '/')
