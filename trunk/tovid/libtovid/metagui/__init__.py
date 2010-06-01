@@ -40,14 +40,14 @@ values, and hints about how to draw the GUI control widget; they are specific
 to the flavor of Control being used.
 
 For a full list of available Control subclasses and how to use them,
-see the :mod:`libtovid.metagui.control` module.
+see the `~libtovid.metagui.control` module.
 
 
 Creating the GUI
 ----------------
 
 Controls can be grouped together either vertically or horizontally (using a
-VPanel or HPanel, respectively)::
+`~libtovid.metagui.panel.VPanel` or `~libtovid.metagui.panel.HPanel`, respectively)::
 
     general = VPanel('General',
         Filename('Background audio file', '-bgaudio'),
@@ -61,12 +61,13 @@ for setting menu length to a number between 0 and 120. You can nest panels
 inside one another for grouping; sub-panels have their own label and list of
 Controls or sub-Panels.
 
-Once you have a panel, you can create an Application::
+Once you have a panel, you can create an `~libtovid.metagui.gui.Application`::
 
     app = Application('todisc', [general])
 
-This says your application will run the 'todisc' command-line program,
-passing options set by the 'General' panel. Now, create the GUI::
+This says your application will run the 'todisc' command-line program, passing
+options set by the 'General' panel. Now, create the
+`~libtovid.metagui.gui.GUI`::
 
     gui = GUI('MyGUI', [app])
     gui.run()

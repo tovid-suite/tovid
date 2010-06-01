@@ -26,7 +26,7 @@ To add children to an element, use the add method::
       <length>15</length>
     </video>
 
-See :mod:`libtovid.author` and :mod:`libtovid.backend.spumux` for additional
+See `libtovid.author` and `libtovid.backend.spumux` for additional
 examples.
 """
 
@@ -35,7 +35,7 @@ __all__ = ['Element']
 class Element (object):
     """A named XML element having optional content, attributes, and children.
 
-    Attribute values may be set in the constructor, or by calling set() with a
+    Attribute values may be set in the constructor, or by calling `set` with a
     dictionary and/or attribute=value keywords.
 
     Use `add` or `add_child` to create a hierarchy of Elements.

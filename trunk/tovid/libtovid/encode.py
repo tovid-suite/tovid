@@ -9,7 +9,7 @@ For example::
     encode('/video/foo.avi', '/video/bar.mpg', 'dvd', 'ntsc', 'ffmpeg')
 
 This will encode ``/video/foo.avi`` to NTSC DVD format using ffmpeg, saving
-the result as '/video/bar.mpg'. The ``format``, ``tvsys``, and ``method``
+the result as ``/video/bar.mpg``. The ``format``, ``tvsys``, and ``method``
 arguments are optional; if you do::
 
     encode('/video/foo.avi', '/video/bar.mpg')
@@ -22,7 +22,12 @@ Keyword arguments may be used to further refine encoding behavior, for example::
            quality=7, interlace='bottom', ...)
 
 The supported keywords may vary by backend, but some keywords are supported
-by all backends.
+by all backends. The available backends are:
+
+    - `~libtovid.backend.ffmpeg`
+    - `~libtovid.backend.mplayer`
+    - `~libtovid.backend.mpeg2enc`
+    
 """
 
 __all__ = [
