@@ -118,7 +118,7 @@ class Wizard(Frame):
             text='\nCancelled!\n'
         font = self.medium_font
         status_frame = Frame(self.frame1, borderwidth=1, relief=RAISED)
-        status_frame.pack(pady=80)
+        status_frame.pack(pady=40)
         label1 = Label(status_frame, text=text, font=font, fg='blue')
         label1.pack(side=TOP)
         label2 = Label(status_frame, text='ok', borderwidth=2, relief=GROOVE)
