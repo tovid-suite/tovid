@@ -43,7 +43,7 @@ class Wizard(Frame):
 
         # button frame
         self.button_frame = Frame(master)
-        self.button_frame.pack(side='bottom', fill=X, expand=1,  anchor='se')
+        self.button_frame.pack(side='bottom', fill='x', expand=1,  anchor='se')
         self.exit_button = Button(self.button_frame, text='Exit', \
           command=self.confirm_exit)
         self.exit_button.pack(side='left', anchor='sw')
@@ -64,9 +64,10 @@ class Wizard(Frame):
         font = self.font
         self.lrg_font = self.get_font(font, size=font[1]+4, _style='bold')
         self.medium_font = self.get_font(font, size=font[1]+2)
+        self.heading_font = self.get_font(font, size=font[1]+8, _style='bold')
         if self.text:
             txt = self.text.split('\n')
-            app_label1 = Label(self.frame1, text=txt[0], font=self.lrg_font)
+            app_label1 = Label(self.frame1, text=txt[0], font=self.heading_font)
             app_label1.pack(side='top', fill=BOTH, expand=1, anchor='nw')
         # icons and image
         if os.path.isfile(self.icon):
@@ -75,7 +76,7 @@ class Wizard(Frame):
             self.img = img
             # Display the image in a label on all pages
             img_label = Label(self.frame1, image=self.img)
-            img_label.pack(side=TOP, fill=BOTH, expand=1, anchor='nw', pady=40)
+            img_label.pack(side=TOP, fill=BOTH, expand=1, anchor='nw', pady=20)
             # If Tcl supports it, generate an icon for the window manager
             show_icons(self.master, img_file)
         # No image file? Print a message and continue
@@ -83,7 +84,7 @@ class Wizard(Frame):
             print('%s does not exist' % img_file)
         # if 2 lines of text for image, split top and bottom
         if self.text and len(txt) > 1:
-            app_label2 = Label(self.frame1, text=txt[1], font=self.lrg_font)    
+            app_label2 = Label(self.frame1, text=txt[1], font=self.lrg_font)
             app_label2.pack(side='top', fill=BOTH, expand=1, anchor='nw')
 
     def make_widgets(self):
