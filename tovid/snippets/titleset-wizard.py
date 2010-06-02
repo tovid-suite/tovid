@@ -4,7 +4,6 @@
 import os.path
 import shlex
 import commands
-import sys
 from Tkinter import *
 from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
@@ -14,7 +13,7 @@ from libtovid.cli import _enc_arg
 from tkMessageBox import *
 from time import sleep
 from tempfile import mktemp
-from sys import argv
+from sys import argv, exit
 from base64 import b64encode
 from libtovid.util import trim
 
@@ -148,7 +147,10 @@ class WizardPage(Frame):
         Frame.pack(master)
         self.master = master
         self.root = self._root()
-        #self.wizard = self.master
+        # a temp file name for the final script name if it exists already
+        curdir = os.path.abspath('')
+        self.newname = \
+          mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
         # get tovid prefix
         tovid_prefix = commands.getoutput('tovid -prefix')
         self.tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
@@ -299,6 +301,39 @@ class WizardPage(Frame):
         widget.update()
         self.root.after(4000, lambda: widget.configure(foreground='black'))
 
+
+    def refill_listbox(self, listbox, opts):
+        """Repopulate the rerun listbox with option list titles
+        """
+        if '-titles' in opts:
+            new_titles = self.get_list_args(opts, '-titles')
+        else:
+            new_titles = opts
+        listbox.delete(0, END)
+        # insert or reinsert options list into titleset listbox
+        listbox.insert(END, 'General options')
+        listbox.insert(END, 'Root menu')
+        numtitles = len(new_titles)
+        #listbox.configure(height=numtitles+2)
+        for i in xrange(numtitles):
+            listbox.insert(END, new_titles[i])
+
+    def rename_script(self):
+        # if todisc_commands.bash exists in current dir, prompt for rename
+        rename_msg = 'The option file we will use:\n' + \
+        'todisc_commands.bash\n' + \
+        'exists in the current directory.\n' + \
+        'It will be renamed to:\n' + \
+        '%s' + \
+        '\nProceed ?'
+        rename_msg = rename_msg % (os.path.basename(self.newname))
+        if askokcancel(message=rename_msg):
+            os.rename(self.script_file, self.newname)
+        else:
+            self.master.show_status(1)
+            return
+
+
         
 class Page1(WizardPage):
     def __init__(self, master):
@@ -308,7 +343,8 @@ class Page1(WizardPage):
         self.frame = Frame(self.master)
         self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
         # page1 is packed by default
-        self.draw()
+        if len(sys.argv) < 2:
+            self.draw()
 
     def draw(self):
         text = '''INTRODUCTION
@@ -347,6 +383,12 @@ class Page1(WizardPage):
 
     def hide_page(self):
         self.frame.pack_forget()
+    
+    def move(self, page):
+        index = self.master.index.get()
+        print 'length of pages: ', len(self.master.pages)
+        #self.master.pages[index].hide_page()
+        self.master.after(1000, self.master.pages[3].show_page())
 
 class Page2(WizardPage):
     def __init__(self, master):
@@ -429,12 +471,10 @@ class Page3(WizardPage):
         After making your selections, press [ Save to wizard ] in the GUI
         '''
         text = trim(text)
-        label1 = PrettyLabel(self.frame, text, self.master.font)
+        label1 = PrettyLabel(self.frame, text, self.master.font, height=18)
         label1.pack(fill='both', expand=True, side='top', anchor='nw')
         # create the listbox (note that size is in characters)
-        self.titlebox = WizardBoxes(self.frame, wizard=self.master,
-          frame_text="Root 'menu link' titles")
-        #self.titlebox.refill_listbox(self.titlebox, self.master.commands)
+        self.titlebox = TitleBox(self.frame, text="Root 'menu link' titles")
         # set next button to page_controller()
         self.master.next_button.configure(command=self.page_controller)
 
@@ -448,10 +488,9 @@ class Page3(WizardPage):
     def page_controller(self):
         run_cmds = list(self.titlebox.get(0, END))
         run_cmds = [l for l in run_cmds if l]
-        # FIXME remove next line
-        run_cmds.insert(0, '-titles')
         if len(run_cmds) < 2:
-            showerror(message='At least two titlesets (titles) must be defined')
+            showerror(message=\
+              'At least two titlesets (titles) must be defined')
             return
         else:
             # withdraw the wizard and run the GUI, collecting commands
@@ -470,6 +509,7 @@ class Page3(WizardPage):
                 cmds.extend(get_commands)
                 cmds.append('-end-vmgm')
                 self.master.commands.append(cmds)
+                print self.master.commands[1]
             self.master.next()
             self.root.deiconify()
             self.master.show_status(status)
@@ -559,7 +599,11 @@ class Page4(WizardPage):
 class Page5(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
-
+        if len(sys.argv) > 1:
+            self.set_project_commands()
+            self.draw()
+            self.load_project()
+ 
     def make_widgets(self):
         self.frame = Frame(self.master)
         self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
@@ -586,16 +630,72 @@ class Page5(WizardPage):
         Press [Run script now] or [Exit].
         ''' % (self.script_file, self.script_file)
         text = trim(text)
-        self.label = PrettyLabel(self.frame, text, self.master.font)
+        self.heading_label = Label(self.frame, text='Finished', font=self.master.lrg_font)
+        self.label = PrettyLabel(self.frame, text,
+          self.master.font, height=18)
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
         # create the listbox (note that size is in characters)
         frame_text = "Double-click item to edit with GUI, or select " + \
           "and  press [ Edit ] "
-        self.titlebox = WizardBoxes(self.frame, type='rerunlist',
-          wizard=self.master, frame_text=frame_text)
-        self.titlebox.refill_listbox(self.titlebox, self.master.commands)
+        frame2 = LabelFrame(self.frame, text=frame_text)
+        self.listbox = Listbox(frame2)
+        self.listbox.pack(side='top', fill='both', expand=1)
+        frame2.pack(fill='y', expand=False)
+        button_frame = Frame(frame2)
+        button_frame.pack(fill=X, expand=1)
+        button2 = Button(button_frame, text='Add titleset', \
+          command=self.add_titleset)
+        button2.pack(side=LEFT, anchor='w')
+        button1 = Button(button_frame, text='Edit', command=self.rerun_options)
+        button1.pack(side=LEFT, fill='x', expand=1)
+        button3 = Button(button_frame, text='Remove titleset', \
+          command=self.remove_titleset)
+        button3.pack(side=RIGHT, anchor='e')
+        # the 2nd index contains the titleset titles (VMGM menu)
+        self.refill_listbox(self.listbox, self.master.commands[1])
         # set next button to run gui etc before moving forward
         self.master.next_button.configure(command=self.run_in_xterm)
+
+    def add_titleset(self):
+        pass
+
+    def remove_titleset(self):
+        pass
+
+    def rerun_options(self, Event=None):
+        """Run the gui with the selected options
+        """
+        # self.master is the WizardPage
+        commands = self.master.commands
+        try:
+            index = int(self.listbox.curselection()[0])
+        except IndexError:
+            showerror(message='Please select an options line first')
+            return
+        rerun_opts = []
+        os.environ['METAGUI_WIZARD'] = str(index+1)
+        # the GUI doesn't understand the titleset type options
+        remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
+        options = [ i for i in commands[index] if not i in remove ]
+        rerun_opts = self.run_gui(options, '%s' %(index+1))
+        if rerun_opts:
+            status = 0
+            # trim header from todisc_cmds
+            rerun_opts = self.trim_list_header(rerun_opts)
+            # fill the listbox again if vmgm opts changed
+            # add the 'tags' back around the option list if needed
+            if index == 1:
+                self.refill_listbox(self.listbox, rerun_opts)
+                rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
+            elif index >= 2:
+                rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
+            commands[index] = rerun_opts
+            # rewrite the saved script file
+            self.write_script()
+        else:
+            status = 1
+        self.root.deiconify()
+        self.master.show_status(status)
 
     def run_in_xterm(self):
         """Run the final script in an xterm, completing the project
@@ -615,19 +715,54 @@ class Page5(WizardPage):
     def hide_page(self):
         self.frame.pack_forget()
 
-class WizardBoxes(Frame):
-    def __init__(self, master=None, type='', wizard=None, frame_text=''):
+    def set_project_commands(self):
+        in_contents = self.script_to_list(argv[1])
+        in_cmds = in_contents[:]
+        all = [self.get_chunk(in_cmds, '-vmgm', '-end-vmgm')]
+        while '-titleset' in in_cmds:
+            all.append( self.get_chunk(in_cmds, '-titleset', '-end-titleset') )
+        all.insert(0, in_cmds)
+        self.master.commands = all
+
+    def load_project(self):
+        """Load a saved project script for editing with the wizard and GUI
+        """
+        self.heading_label.configure(text='Editing a saved project')
+        error_msg = 'This is not a saved tovid project script\n' + \
+          'Do you want to try to load it anyway?'
+        if not '# tovid project script\n' in open(argv[1], 'r'):
+            if not askyesno(message=error_msg):
+                showinfo(message='Cancelled')
+                quit()
+        #self.set_project_commands()
+        numtitles = len(self.master.commands[2:])
+        menu_titles = []
+        for l in self.master.commands[2:]:
+            menu_titles.extend(self.get_list_args(l, '-menu-title'))
+        print 'menu_titles are: ', menu_titles
+        self.listbox.pack(side=LEFT, anchor='w', fill=X, expand=1)
+        self.refill_listbox(self.listbox, menu_titles)
+        # write out todisc_commands.bash in current dir
+        # if it exists in current dir, prompt for rename
+        if os.path.exists(self.script_file):
+            self.rename_script()
+        self.write_script()
+        return all
+
+class TitleBox(Frame):
+    '''A Listbox in a LabelFrame with Entry associated with it
+       text: the label for the frame
+    '''
+    def __init__(self, master=None, text=''):
         Frame.__init__(self, master)
         self.master = master
-        self.wizard = wizard
         #self.page = self.master.master
-        self.type = type or 'entrylist'
-        self.frame_text = frame_text
+        self.text = text
         self.draw()
 
     def draw(self):
         # create the listbox (note that size is in characters)
-        frame1 = LabelFrame(self.master, text=self.frame_text)
+        frame1 = LabelFrame(self.master, text=self.text)
         frame1.pack(side='top', fill='y', expand=False)
         self.listbox = Listbox(frame1, width=50, height=12)
         self.listbox.pack(side='left', fill='y', expand=False, anchor='nw')
@@ -638,30 +773,15 @@ class WizardBoxes(Frame):
           orient='vertical')
         yscroll.pack(side='right', fill='y', anchor='ne')
         self.listbox.configure(yscrollcommand=yscroll.set)
-        if self.type == 'entrylist':
-            # use entry widget to display/edit selection
-            self.enter1 = Entry(self.master, width=50)
-            self.enter1.pack(fill='y', expand=False)
-            # set focus on entry
-            self.enter1.select_range(0, 'end')
-            self.enter1.focus_set()
-            # pressing the return key will update edited line
-            self.enter1.bind('<Return>', self.set_list)
-            self.listbox.bind('<ButtonRelease-1>', self.get_list)
-        elif self.type == 'rerunlist':
-            frame2 = Frame(self.master)
-            frame2.pack(fill='y', expand=False)
-            button2 = Button(frame2, text='Add titleset', \
-              command=self.add_titleset)
-            button2.pack(side=LEFT, anchor='w')
-            button1 = Button(frame2, text='Edit', command=self.rerun_options)
-            button1.pack(side=LEFT, fill=X, expand=1)
-            button2 = Button(frame2, text='Remove titleset', \
-              command=self.remove_titleset)
-            button2.pack(side=RIGHT, anchor='e')
-        else:
-            err = 'type argument must be "entrylist" or "rerunlist"'
-            raise ValueError(err)
+        # use entry widget to display/edit selection
+        self.enter1 = Entry(self.master, width=50)
+        self.enter1.pack(fill='y', expand=False)
+        # set focus on entry
+        self.enter1.select_range(0, 'end')
+        self.enter1.focus_set()
+        # pressing the return key will update edited line
+        self.enter1.bind('<Return>', self.set_list)
+        self.listbox.bind('<ButtonRelease-1>', self.get_list)
 
     def set_list(self, event):
         """Insert an edited line from the entry widget back into the listbox
@@ -700,65 +820,6 @@ class WizardBoxes(Frame):
         except IndexError:
             pass
 
-    def add_titleset(self):
-        pass
-
-    def remove_titleset(self):
-        self.wizard.commands = ['tovid', 'disc', '-foo', 'bar']
-        pass
-        #self.wizard.commands =
-
-    def rerun_options(self, Event=None):
-        """Run the gui with the selected options
-        """
-        # self.master is the WizardPage
-        commands = self.wizard.commands
-        try:
-            index = int(self.listbox.curselection()[0])
-        except IndexError:
-            showerror(message='Please select an options line first')
-            return
-        rerun_opts = []
-        os.environ['METAGUI_WIZARD'] = str(index+1)
-        # the GUI doesn't understand the titleset type options
-        remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
-        options = [ i for i in commands[index] if not i in remove ]
-        rerun_opts = self.run_gui(options, '%s' %(index+1))
-        if rerun_opts:
-            status = 0
-            # trim header from todisc_cmds
-            rerun_opts = self.trim_list_header(rerun_opts)
-            # fill the listbox again if vmgm opts changed
-            # add the 'tags' back around the option list if needed
-            if index == 1:
-                self.refill_listbox(self.listbox, rerun_opts)
-                rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
-            elif index >= 2:
-                rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
-            commands[index] = rerun_opts
-            # rewrite the saved script file
-            self.write_script()
-        else:
-            status = 1
-        tk.deiconify()
-
-        show_status(status)
-
-    def refill_listbox(self, listbox, opts):
-        """Repopulate the rerun listbox with option list titles
-        """
-        if '-titles' in opts:
-            new_titles = get_list_args(opts, '-titles')
-        else:
-            new_titles = opts
-        listbox.delete(0, END)
-        # insert or reinsert options list into titleset listbox
-        listbox.insert(END, 'General options')
-        listbox.insert(END, 'Root menu')
-        numtitles = len(new_titles)
-        #listbox.configure(height=numtitles+2)
-        for i in xrange(numtitles):
-            listbox.insert(END, new_titles[i])
 
 if __name__ == '__main__':
     # get tovid prefix
@@ -782,4 +843,4 @@ if __name__ == '__main__':
     try:
         mainloop()
     except KeyboardInterrupt:
-        sys.exit(1)
+        exit(1)
