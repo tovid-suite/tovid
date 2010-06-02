@@ -37,6 +37,9 @@ class Wizard(Frame):
         # wait on [Next>>>] being pushed to continue titleset loop
         self.waitVar = BooleanVar()
         self.waitVar.set(False)
+        # bindings for exit
+        self.root.protocol("WM_DELETE_WINDOW", self.confirm_exit)
+        self.root.bind('<Control-q>', self.confirm_exit)
 
         # button frame
         self.button_frame = Frame(master)
@@ -343,7 +346,7 @@ class Page1(WizardPage):
         self.frame = Frame(self.master)
         self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
         # page1 is packed by default
-        if len(sys.argv) < 2:
+        if len(argv) < 2:
             self.draw()
 
     def draw(self):
@@ -384,11 +387,6 @@ class Page1(WizardPage):
     def hide_page(self):
         self.frame.pack_forget()
     
-    def move(self, page):
-        index = self.master.index.get()
-        print 'length of pages: ', len(self.master.pages)
-        #self.master.pages[index].hide_page()
-        self.master.after(1000, self.master.pages[3].show_page())
 
 class Page2(WizardPage):
     def __init__(self, master):
@@ -579,7 +577,7 @@ class Page4(WizardPage):
             if self.master.is_running.get() == 1:
                 get_commands = self.run_gui(run_cmds, '%s' %(i+3))
             else:
-                return
+                quit()
             if get_commands:
                 status = 0
                 get_commands = self.trim_list_header(get_commands)
@@ -588,6 +586,9 @@ class Page4(WizardPage):
                 cmds.extend(get_commands)
                 cmds.append('-end-titleset')
                 self.master.commands.append(cmds)
+            else:
+                status = 0
+            self.master.show_status(status)
         self.write_script()
         self.master.next_button.configure(command=self.master.next)
         self.root.deiconify()
@@ -599,9 +600,10 @@ class Page4(WizardPage):
 class Page5(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
-        if len(sys.argv) > 1:
+        if len(argv) > 1:
             self.set_project_commands()
             self.draw()
+            # draw must be called before load_project
             self.load_project()
  
     def make_widgets(self):
@@ -701,6 +703,7 @@ class Page5(WizardPage):
         """Run the final script in an xterm, completing the project
         """
         if not askyesno(message="Run in xterm now?"):
+            self.master.show_status(1)
             return
         script = self.script_file
         cmd = \
