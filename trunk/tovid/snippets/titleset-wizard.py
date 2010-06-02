@@ -600,6 +600,7 @@ class Page4(WizardPage):
 class Page5(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
+        print 'len(argv) is: ', len(argv)
         if len(argv) > 1:
             self.set_project_commands()
             self.draw()
@@ -632,7 +633,8 @@ class Page5(WizardPage):
         Press [Run script now] or [Exit].
         ''' % (self.script_file, self.script_file)
         text = trim(text)
-        self.heading_label = Label(self.frame, text='Finished', font=self.master.lrg_font)
+        self.heading_label = Label(self.frame, text='Finished',
+          font=self.master.lrg_font)
         self.label = PrettyLabel(self.frame, text,
           self.master.font, height=18)
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
@@ -661,8 +663,35 @@ class Page5(WizardPage):
     def add_titleset(self):
         pass
 
-    def remove_titleset(self):
-        pass
+    def remove_titleset(Event=None):
+        mess1='You can only remove titlesets'
+        mess2='You must have at least 2 titlesets. Please add ' + \
+          'a new titleset [ Add titleset ]  before deleting one'
+        mess3='Please select a titleset to remove first'
+        try:
+            ind = int(self.listbox.curselection()[0])
+            if ind < 2:
+                showerror(message=mess1)
+                return
+            elif self.listbox.size() < 5:
+                showerror(message=mess2)
+                return
+        except IndexError:
+            if self.listbox.size() < 5:
+                mess = mess3 + '\n\n' + mess2
+            else:
+                mess = mess3
+            showerror(message=mess)
+            return
+        # get the index from listbox then delete it
+        item = self.listbox.get(ind)
+        self.listbox.delete(ind)
+        # remove the menu title from vmgm options
+        self.master.commands[1].remove(item)
+        # delete that index from commands
+        self.master.commands.pop(ind)
+        # write out the script again
+        self.write_script()
 
     def rerun_options(self, Event=None):
         """Run the gui with the selected options
@@ -759,7 +788,6 @@ class TitleBox(Frame):
     def __init__(self, master=None, text=''):
         Frame.__init__(self, master)
         self.master = master
-        #self.page = self.master.master
         self.text = text
         self.draw()
 
