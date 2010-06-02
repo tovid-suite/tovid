@@ -4,6 +4,7 @@
 import os.path
 import shlex
 import commands
+import sys
 from Tkinter import *
 from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
@@ -157,7 +158,7 @@ class WizardPage(Frame):
         self.script_file = cur_dir + '/todisc_commands.bash'
         # get script header
         shebang = '#!/usr/bin/env bash'
-        _path = 'PATH=' + tovid_prefix + ':$PATH'
+        _path = 'PATH=' + self.tovid_prefix + ':$PATH'
         _cmd = ['tovid', '--version']
         _version = Popen(_cmd, stdout=PIPE).communicate()[0].strip()
         identifier = '# tovid project script\n# tovid version %s' % _version
@@ -252,6 +253,52 @@ class WizardPage(Frame):
             except IndexError:
                 pass
             return cmds
+
+    def get_chunk(self, items, start, end):
+        """Extract a chunk [start ... end] from a list, and return the chunk.
+        The original list is modified in place.
+        """
+        # Find the starting index and test for 'end'
+        try:
+            index = items.index(start)
+            items.index(end)
+        # If start or end isn't in list, return empty list
+        except ValueError:
+            return []
+        # Pop items until end is reached
+        chunk = []
+        while items and items[index] != end:
+            chunk.append(items.pop(index))
+        # Pop the last item (==end)
+        chunk.append(items.pop(index))
+        return chunk
+
+    def get_list_args(self, items, option):
+        """Get option arguments from a list (to next item starting with '-')
+        """
+        try:
+            index = items.index(option)
+        # If item isn't in list, return empty list
+        except ValueError:
+            return []
+        # Append items until end is reached
+        chunk = []
+        try:
+            while items and not items[index+1].startswith('-'):
+                chunk.append(items[index+1])
+                index += 1
+        except IndexError:
+            pass
+        return chunk
+
+    def see_me(self, widget):
+        """Bring attention to widget by changing text colour
+        """
+        # 3000 and 4000 ms because show_status uses up 3000 already
+        self.root.after(3000, lambda: widget.configure(foreground='blue'))
+        widget.update()
+        self.root.after(4000, lambda: widget.configure(foreground='black'))
+
         
 class Page1(WizardPage):
     def __init__(self, master):
@@ -387,6 +434,7 @@ class Page3(WizardPage):
         # create the listbox (note that size is in characters)
         self.titlebox = WizardBoxes(self.frame, wizard=self.master,
           frame_text="Root 'menu link' titles")
+        #self.titlebox.refill_listbox(self.titlebox, self.master.commands)
         # set next button to page_controller()
         self.master.next_button.configure(command=self.page_controller)
 
@@ -398,16 +446,34 @@ class Page3(WizardPage):
         return [ l for l in temp_list if l]
 
     def page_controller(self):
-        index = self.master.index.get()
-        run_cmds = ['-titles']
-        self.titles = self.save_list()
-        run_cmds.extend(self.titles)
-        cmds = self.run_gui(run_cmds, index)
-        cmds = [l for l in cmds if l]
-        self.master.commands.append(cmds)
-        #self.master.next_button.configure(command=self.master.next)
-        self.root.deiconify()
-        self.master.next()
+        run_cmds = list(self.titlebox.get(0, END))
+        run_cmds = [l for l in run_cmds if l]
+        # FIXME remove next line
+        run_cmds.insert(0, '-titles')
+        if len(run_cmds) < 2:
+            showerror(message='At least two titlesets (titles) must be defined')
+            return
+        else:
+            # withdraw the wizard and run the GUI, collecting commands
+            run_cmds.insert(0,  '-titles')
+            index = self.master.index.get()
+            get_commands = self.run_gui(run_cmds, index)
+            # append to list and go to next page unless GUI was cancelled out of
+            if not get_commands:
+                status = 1
+                self.root.deiconify()
+                return
+            else:
+                status = 0
+                self.trim_list_header(get_commands)
+                cmds = ['-vmgm']
+                cmds.extend(get_commands)
+                cmds.append('-end-vmgm')
+                self.master.commands.append(cmds)
+            self.master.next()
+            self.root.deiconify()
+            self.master.show_status(status)
+
 
     def hide_page(self):
         self.frame.pack_forget()
@@ -437,52 +503,58 @@ class Page4(WizardPage):
         you will need to press  [Next >>>]  for each titleset.
         '''
         text1 = trim(text1)
-        label1 = PrettyLabel(self.frame, text1, self.master.font)
-        label1.pack(fill='both', expand=True, side='top', anchor='nw')
+        self.label1 = PrettyLabel(self.frame, text1, self.master.font)
+        self.label1.pack(fill='both', expand=True, side='top', anchor='nw')
+        self.frame2 = Frame(self.frame, borderwidth=2, relief=GROOVE)
+        self.label2 = Label(self.frame2, text='', font=self.master.font,
+          justify=LEFT, padx=10, pady=10)
+        self.label2.pack(fill='both', expand=True, side='top', anchor='nw')
         # set next button to page_controller()
         self.master.next_button.configure(command=self.page_controller)
 
     def page_controller(self):
-        print self.master.commands
-        self.master.next()
-
-    def hide_page(self):
-        self.frame.pack_forget()
-'''
-    def page_controller(self):
         # FIXME this will run the gui for titlesets in a loop
         # for now it just goes to the next page
-        tk.withdraw()
-        options_list = save_list()
-        numtitles = len(save_list())
+        self.root.withdraw()
+        options_list = self.get_list_args(self.master.commands[1], '-titles')
+        numtitles = len(options_list)
+        print 'numtitles are: ', numtitles
+        # set [Next >>>] button to set waitVar, allowing loop to continue
+        self.master.next_button.configure(command=self.master.set_waitvar)
 
         for i in range(numtitles):
             run_cmds = ['-menu-title']
             run_cmds.append(options_list[i])
             if i < numtitles:
-                pg4_txt2 = 'Now we will work on titleset %s:\n"%s"\n\n'
-                pg4_txt2 += 'Press  [Next >>>]  to continue'
-                pg4_txt2 = pg4_txt2 % (int(i+1), options_list[i])
-                pg4_label2.configure(text=pg4_txt2)
-                pg4_frame3.pack()
-                see_me(pg4_label2)
+                text2 = 'Now we will work on titleset %s:\n"%s"\n\n'
+                text2 += 'Press  [Next >>>]  to continue'
+                text2 = text2 % (int(i+1), options_list[i])
+                self.label2.configure(text=text2)
+                self.frame2.pack()
+                self.see_me(self.label2)
             # withdraw the wizard and run the GUI, collecting commands
-            tk.deiconify()
+            self.root.deiconify()
             # pressing 'Next' sets the waitVar and continues
-            tk.wait_variable(waitVar)
-            if is_running.get() == 1:
-                get_commands = run_gui(run_cmds, '%s' %(i+3))
+            self.master.wait_variable(self.master.waitVar)
+            if self.master.is_running.get() == 1:
+                get_commands = self.run_gui(run_cmds, '%s' %(i+3))
             else:
-                quit()
+                return
             if get_commands:
                 status = 0
-                get_commands = trim_list_header(get_commands)
+                get_commands = self.trim_list_header(get_commands)
                 # wrap the commands in titleset 'tags', then write out script
                 cmds = ['-titleset']
                 cmds.extend(get_commands)
                 cmds.append('-end-titleset')
-                todisc_cmds.append(cmds)
-'''
+                self.master.commands.append(cmds)
+        self.write_script()
+        self.master.next_button.configure(command=self.master.next)
+        self.root.deiconify()
+        self.master.next()
+
+    def hide_page(self):
+        self.frame.pack_forget()
 
 class Page5(WizardPage):
     def __init__(self, master):
@@ -521,6 +593,7 @@ class Page5(WizardPage):
           "and  press [ Edit ] "
         self.titlebox = WizardBoxes(self.frame, type='rerunlist',
           wizard=self.master, frame_text=frame_text)
+        self.titlebox.refill_listbox(self.titlebox, self.master.commands)
         # set next button to run gui etc before moving forward
         self.master.next_button.configure(command=self.run_in_xterm)
 
@@ -538,6 +611,9 @@ class Page5(WizardPage):
         self.root.withdraw()
         command = Popen(cmd, stderr=PIPE)
         self.root.deiconify()  
+
+    def hide_page(self):
+        self.frame.pack_forget()
 
 class WizardBoxes(Frame):
     def __init__(self, master=None, type='', wizard=None, frame_text=''):
@@ -703,4 +779,7 @@ if __name__ == '__main__':
     pages = [page1, page2, page3, page4, page5]
     app.set_pages(pages)
     # run it
-    mainloop()
+    try:
+        mainloop()
+    except KeyboardInterrupt:
+        sys.exit(1)
