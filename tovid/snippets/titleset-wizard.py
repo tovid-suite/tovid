@@ -740,7 +740,7 @@ class Page5(WizardPage):
         for l in self.master.commands[2:]:
             menu_titles.extend(self.get_list_args(l, '-menu-title'))
         print 'menu_titles are: ', menu_titles
-        self.listbox.pack(side=LEFT, anchor='w', fill=X, expand=1)
+        #self.listbox.pack(side=LEFT, anchor='w', fill=X, expand=1)
         self.refill_listbox(self.listbox, menu_titles)
         # write out todisc_commands.bash in current dir
         # if it exists in current dir, prompt for rename
