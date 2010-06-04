@@ -26,6 +26,7 @@ class Wizard(Frame):
     def __init__(self, master, text, icon):
         Frame.__init__(self, master)
         self.pages = []
+        self.pg = []
         self.index = IntVar()
         self.text = text
         self.icon = icon
@@ -41,6 +42,7 @@ class Wizard(Frame):
         # bindings for exit
         self.root.protocol("WM_DELETE_WINDOW", self.confirm_exit)
         self.root.bind('<Control-q>', self.confirm_exit)
+        self.root.title('Tovid titleset wizard')
 
         # button frame
         self.button_frame = Frame(master)
@@ -101,9 +103,13 @@ class Wizard(Frame):
         except IndexError:
             pass
 
-    def set_pages(self, pages):
-        '''Set list of wizard page objects in Controlling Wizard page'''
-        self.pages = pages
+    #def set_pages(self, pages):
+    #    '''Set list of wizard page objects in Controlling Wizard page'''
+    #    self.pages = pages
+    #    print 'self.pages are: ', pages
+
+    def set_pages(self, page):
+        self.pages.append(page)
 
     def get_font(self, font_descriptor, name='', size='', _style=''):
         """Get metagui font configuration
@@ -172,6 +178,7 @@ class WizardPage(Frame):
         self.header = '%s\n\n%s\n\n%s\n\n' % (shebang, identifier, _path )
         # initialize widgets, but don't show yet
         self.make_widgets()
+        self.master.set_pages(self)
 
 
     def make_widgets(self):
@@ -179,6 +186,7 @@ class WizardPage(Frame):
 
     def show_page(self):
         self.draw()
+        self.master.next_button.configure(command=self.page_controller)
 
     def run_gui(self, args=[], index='', script=''):
         """Run the tovid GUI, collecting options, and saving to wizard
@@ -378,8 +386,6 @@ class Page1(WizardPage):
         text = trim(text)
         self.label = PrettyLabel(self.frame, text, self.master.font)
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
-        # set next button to page_controller()
-        self.master.next_button.configure(command=self.page_controller)
 
     def page_controller(self):
         index = self.master.index.get()
@@ -418,8 +424,6 @@ class Page2(WizardPage):
         text = trim(text)
         self.label = PrettyLabel(self.frame, text, self.master.font)
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
-        # set next button to page_controller()
-        self.master.next_button.configure(command=self.page_controller)
 
     def page_controller(self):
         if os.path.exists(self.script_file):
@@ -456,10 +460,8 @@ class Page3(WizardPage):
         text = '''ROOT MENU (VMGM)
 
         Now we will save options for your root (VMGM) menu.  The only REQUIRED
-        option is the titleset titles.  Since you can not save titles in the
-        GUI without loading videos you need to enter them here.  These titleset
+        option is the titleset titles.  You need to enter them here.  These
         names will appear as menu titles for the respective menu in your DVD.
-
         Enter the names of your titlesets, one per line, pressing <ENTER> each
         time.  Do not use quotes unless you want them to appear literally in
         the title.
@@ -468,7 +470,8 @@ class Page3(WizardPage):
         up so you can enter any other options you want.  You can not enter
         video files here, but most other options can be used.  There are now no
         REQUIRED options however, as you will have already entered your root
-        menu link titles.
+        menu link titles. Hint: try using background audio or image/video, or
+        use a -showcase FILE for an image or video centrally displayed.
 
         After making your selections, press [ Save to wizard ] in the GUI
         '''
@@ -477,8 +480,6 @@ class Page3(WizardPage):
         label1.pack(fill='both', expand=True, side='top', anchor='nw')
         # create the listbox (note that size is in characters)
         self.titlebox = TitleBox(self.frame, text="Root 'menu link' titles")
-        # set next button to page_controller()
-        self.master.next_button.configure(command=self.page_controller)
 
     def save_list(self):
         """Save the current listbox contents
@@ -550,8 +551,6 @@ class Page4(WizardPage):
         self.label2 = Label(self.frame2, text='', font=self.master.font,
           justify=LEFT, padx=10, pady=10)
         self.label2.pack(fill='both', expand=True, side='top', anchor='nw')
-        # set next button to page_controller()
-        self.master.next_button.configure(command=self.page_controller)
 
     def page_controller(self):
         # FIXME this will run the gui for titlesets in a loop
@@ -773,6 +772,7 @@ class Page5(WizardPage):
         # the GUI doesn't understand the titleset type options
         remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
         options = [ i for i in commands[index] if not i in remove ]
+        print 'options are: ', options
         rerun_opts = self.run_gui(options, '%s' %(index+1))
         if rerun_opts:
             status = 0
@@ -790,6 +790,7 @@ class Page5(WizardPage):
                 mess +=  'to change the menu link title (shown in listbox)'
                 showinfo(message=mess)
             commands[index] = rerun_opts
+            print commands[index]
             # rewrite the saved script file
             self.write_script()
         else:
@@ -934,9 +935,6 @@ if __name__ == '__main__':
     page3 = Page3(app)
     page4 = Page4(app)
     page5 = Page5(app)
-    # let main wizard instance know about all the pages
-    pages = [page1, page2, page3, page4, page5]
-    app.set_pages(pages)
     # run it
     try:
         mainloop()
