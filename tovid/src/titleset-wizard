@@ -743,10 +743,18 @@ class Page5(WizardPage):
         self.listbox.delete(ind)
         # delete index and remove the menu title from vmgm options
         self.master.commands.pop(ind)
-        try:
-            self.master.commands[1].remove(item)
-        except ValueError:
-            print 'The title "%s" is not in the VMGM section...' %item
+        vmgm_cmds = [w for w in self.master.commands[1]]
+        # get options ( -titles title1 title2 ... ), removing them from original
+        vmgm_titles = self.get_option(vmgm_cmds, '-titles')
+        # remove -end-vmgm, remove title , add -end-vmgm
+        # ind-1 instead of ind-2 because '-titles' is in vmgm_titles
+        vmgm_cmds.pop(-1)
+        vmgm_titles.pop(ind-1)
+        vmgm_cmds.extend(vmgm_titles)
+        vmgm_cmds.append('-end-vmgm')
+        # delete old vmgm options from todisc_cmds and insert new
+        self.master.commands.pop(1)
+        self.master.commands.insert(1, vmgm_cmds)
         # write out the script again
         self.write_script()
 
@@ -831,8 +839,8 @@ class Page5(WizardPage):
         # self.set_project_commands() is already called to set commands
         numtitles = len(self.master.commands[2:])
         menu_titles = []
-        for l in self.master.commands[2:]:
-            menu_titles.extend(self.get_list_args(l, '-menu-title'))
+        l = self.master.commands[1]
+        menu_titles.extend(self.get_list_args(l, '-titles'))
         self.refill_listbox(self.listbox, menu_titles)
         # write out todisc_commands.bash in current dir
         # if it exists in current dir, prompt for rename
