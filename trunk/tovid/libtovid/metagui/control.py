@@ -221,7 +221,13 @@ class Control (Widget):
         # self.variable isn't defined until draw() is called
         if not self.variable:
             raise NotDrawn("Can't get() from '%s'" % self.name)
-        return self.variable.get()
+        # In some strange cases (like a Number control with an empty Entry)
+        # the get() method can raise a ValueError. If so, just return the
+        # control's default value.
+        try:
+            return self.variable.get()
+        except ValueError:
+            return self.default
 
 
     def set(self, value):
