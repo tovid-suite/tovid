@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
+    #'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -178,8 +179,11 @@ htmlhelp_basename = 'toviddoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'tovid.tex', u'tovid Documentation',
-   u'Eric Pierce', 'manual'),
+  ('index', 'tovid.tex', u'tovid Documentation', u'Eric Pierce', 'manual'),
+]
+
+man_pages = [
+  ('man/tovid', 'tovid', u'Make DVDs from video files', u'Eric Pierce', '1'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
