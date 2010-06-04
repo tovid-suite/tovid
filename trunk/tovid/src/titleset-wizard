@@ -591,7 +591,6 @@ class Page4(WizardPage):
                 status = 0
             self.master.show_status(status)
         self.write_script()
-        self.master.next_button.configure(command=self.master.next)
         self.root.deiconify()
         self.master.next()
 
@@ -657,10 +656,10 @@ class Page5(WizardPage):
         button3.pack(side=RIGHT, anchor='e')
         # the 2nd index contains the titleset titles (VMGM menu)
         self.refill_listbox(self.listbox, self.master.commands[1])
-        # set next button to run gui etc before moving forward
-        self.master.next_button.configure\
-          (command=self.run_in_xterm, text='Run script now')
 
+    def page_controller(self):
+        self.run_in_xterm()
+    
     # used to repopulate titleset titles after adding new one
     def get_option(self, items, option):
         """Get option and arguments from a list (to next item starting with '-')
