@@ -604,10 +604,10 @@ class Page5(WizardPage):
 
     def draw(self):
         text = '''
-        Edit your selections using the listbox below.  (Note that menu
-        link titles as shown in listbox are saved as titles in the
-        "Root menu" options.)  If you are happy with your saved options, 
-        run the script now in an xterm, or exit and run it later.
+        You can edit your selections using the listbox below.  (Note
+        that menu link titles as shown in listbox are saved as titles
+        in the "Root menu" options.)  If you are happy with your saved
+        options, run the script now in an xterm, or exit and run it later.
         You can run it with:
 
         bash %s
@@ -622,13 +622,14 @@ class Page5(WizardPage):
 
         tovid titlesets %s
 
-        Press [Run script now] or [Exit].
+        Edit your selections, or press [Run script now] or [Exit].
         ''' % (self.script_file, self.script_file)
         text = trim(text)
-        self.heading_label = Label(self.frame, text='Finished',
+        self.heading_label = Label(self.frame, text='Finished!',
           font=self.master.lrg_font)
         self.label = PrettyLabel(self.frame, text,
           self.master.font, height=18)
+        self.heading_label.pack(fill=BOTH, expand=1, anchor='nw')
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
         # create the listbox (note that size is in characters)
         frame_text = "Double-click item to edit with GUI, or select " + \
