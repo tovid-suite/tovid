@@ -103,11 +103,6 @@ class Wizard(Frame):
         except IndexError:
             pass
 
-    #def set_pages(self, pages):
-    #    '''Set list of wizard page objects in Controlling Wizard page'''
-    #    self.pages = pages
-    #    print 'self.pages are: ', pages
-
     def set_pages(self, page):
         self.pages.append(page)
 
@@ -152,6 +147,7 @@ class Wizard(Frame):
         """
         self.waitVar.set(True)
 
+
 class WizardPage(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
@@ -179,7 +175,6 @@ class WizardPage(Frame):
         # initialize widgets, but don't show yet
         self.make_widgets()
         self.master.set_pages(self)
-
 
     def make_widgets(self):
         pass
@@ -346,7 +341,6 @@ class WizardPage(Frame):
             self.master.show_status(1)
             return
 
-
         
 class Page1(WizardPage):
     def __init__(self, master):
@@ -388,9 +382,7 @@ class Page1(WizardPage):
         self.label.pack(fill=BOTH, expand=1, anchor='nw')
 
     def page_controller(self):
-        index = self.master.index.get()
-        wizard = self.master
-        wizard.next()
+        self.master.next()
 
     def hide_page(self):
         self.frame.pack_forget()
@@ -516,7 +508,6 @@ class Page3(WizardPage):
             self.root.deiconify()
             self.master.show_status(status)
 
-
     def hide_page(self):
         self.frame.pack_forget()
 
@@ -597,6 +588,7 @@ class Page4(WizardPage):
     def hide_page(self):
         self.frame.pack_forget()
 
+
 class Page5(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
@@ -656,6 +648,10 @@ class Page5(WizardPage):
         button3.pack(side=RIGHT, anchor='e')
         # the 2nd index contains the titleset titles (VMGM menu)
         self.refill_listbox(self.listbox, self.master.commands[1])
+        self.listbox.selection_set(END)
+        # set next button to run gui etc before moving forward                  
+        self.master.next_button.configure\
+          (command=self.run_in_xterm, text='Run script now')
 
     def page_controller(self):
         self.run_in_xterm()
@@ -730,15 +726,16 @@ class Page5(WizardPage):
                 showerror(message=mess2)
                 return
         except IndexError:
-            if self.listbox.size() < 5:
-                mess = mess3 + '\n\n' + mess2
-            else:
-                mess = mess3
-            showerror(message=mess)
             return
+            #if self.listbox.size() < 5:
+            #    mess = mess3 + '\n\n' + mess2
+            #else:
+            #    mess = mess3
+            #showerror(message=mess)
         # get the index from listbox then delete it
         item = self.listbox.get(ind)
         self.listbox.delete(ind)
+        self.listbox.selection_set('end')
         # delete index and remove the menu title from vmgm options
         self.master.commands.pop(ind)
         vmgm_cmds = [w for w in self.master.commands[1]]
@@ -771,7 +768,6 @@ class Page5(WizardPage):
         # the GUI doesn't understand the titleset type options
         remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
         options = [ i for i in commands[index] if not i in remove ]
-        print 'options are: ', options
         rerun_opts = self.run_gui(options, '%s' %(index+1))
         if rerun_opts:
             status = 0
@@ -836,17 +832,18 @@ class Page5(WizardPage):
             if not askyesno(message=error_msg):
                 showinfo(message='Cancelled')
                 quit()
-        # self.set_project_commands() is already called to set commands
         numtitles = len(self.master.commands[2:])
         menu_titles = []
         l = self.master.commands[1]
         menu_titles.extend(self.get_list_args(l, '-titles'))
         self.refill_listbox(self.listbox, menu_titles)
+        self.listbox.selection_set('end')
         # write out todisc_commands.bash in current dir
         # if it exists in current dir, prompt for rename
         if os.path.exists(self.script_file):
             self.rename_script()
         self.write_script()
+
 
 class TitleBox(Frame):
     '''A Listbox in a LabelFrame with Entry associated with it
@@ -919,6 +916,7 @@ class TitleBox(Frame):
             pass
 
 
+# Execution
 if __name__ == '__main__':
     # get tovid prefix
     tovid_prefix = commands.getoutput('tovid -prefix')
