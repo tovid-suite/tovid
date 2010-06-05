@@ -1,10 +1,10 @@
 """This module does colored console output by calling color-named functions.
-To use it, simply:
+To use it, simply::
 
-    >>> print(green("Looking good"))
-    >>> print(red("Uh-oh..."))
+    print(green("Looking good"))
+    print(red("Uh-oh..."))
 
-It was stolen from an early version of a Gentoo module called output.py,
+It was stolen from an early version of a Gentoo module called ``output.py``,
 copyright 1998-2003 Daniel Robbins, Gentoo Technologies, Inc., distributed
 under the GNU GPL v2::
 
@@ -52,13 +52,18 @@ codes = {
 _do_color = True
 
 def color(do_color):
-    """Turn colored output on (True) or off (False).
+    """Turn colored output on or off at a global level.
+    
+        do_color
+            ``True`` to enable colored output, ``False`` to disable
+
     """
     global _do_color
     _do_color = do_color
 
 def ctext(color, text):
-    """Return a string containing text in the given color."""
+    """Return a string containing text in the given color.
+    """
     if _do_color:
         return codes[color] + text + codes['reset']
     else:
