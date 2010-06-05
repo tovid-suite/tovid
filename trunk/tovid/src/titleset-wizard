@@ -635,6 +635,7 @@ class Page5(WizardPage):
         frame2 = LabelFrame(self.frame, text=frame_text)
         self.listbox = Listbox(frame2)
         self.listbox.pack(side='top', fill='both', expand=1)
+        self.listbox.bind('<Double-Button-1>', self.rerun_options)
         frame2.pack(fill='y', expand=False)
         button_frame = Frame(frame2)
         button_frame.pack(fill=X, expand=1)
@@ -699,12 +700,13 @@ class Page5(WizardPage):
         # add new titleset with just the 'tags' surrounding the new title
         self.master.commands.append(new_titleset)
         self.listbox.insert(END, title)
-        self.listbox.selection_clear(0, END)
-        self.listbox.selection_set(END)
+        self.set_selection(self.listbox)
         status = self.rerun_options()
+        self.set_selection(self.listbox)
         if status == 1:
+            # remove new title from listbox
             self.listbox.delete(END)
-            self.listbox.selection_set(END)
+            self.set_selection(self.listbox)
             self.master.commands.pop(-1)
             try:
                 self.master.commands[1].remove(title)
@@ -777,14 +779,19 @@ class Page5(WizardPage):
                 mess += '(as in listbox), rerun the "Root menu" options.'
                 showinfo(message=mess)
             commands[index] = rerun_opts
-            print commands[index]
             # rewrite the saved script file
             self.write_script()
+            self.set_selection(self.listbox)
         else:
             status = 1
         self.root.deiconify()
         self.master.show_status(status)
+        self.set_selection(self.listbox)
         return status
+
+    def set_selection(self, listbox):
+        listbox.selection_clear(0, END)
+        listbox.selection_set(END)
 
     def run_in_xterm(self):
         """Run the final script in an xterm, completing the project
