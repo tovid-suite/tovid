@@ -781,17 +781,17 @@ class Page5(WizardPage):
             commands[index] = rerun_opts
             # rewrite the saved script file
             self.write_script()
-            self.set_selection(self.listbox)
+            self.set_selection(self.listbox, index)
         else:
             status = 1
         self.root.deiconify()
         self.master.show_status(status)
-        self.set_selection(self.listbox)
+        self.set_selection(self.listbox, index)
         return status
 
-    def set_selection(self, listbox):
-        listbox.selection_clear(0, END)
-        listbox.selection_set(END)
+    def set_selection(self, listbox, index='end'):
+        listbox.selection_clear(0, index)
+        listbox.selection_set(index)
 
     def run_in_xterm(self):
         """Run the final script in an xterm, completing the project
