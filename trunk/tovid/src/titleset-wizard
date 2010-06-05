@@ -47,11 +47,11 @@ class Wizard(Frame):
         # button frame
         self.button_frame = Frame(master)
         self.button_frame.pack(side='bottom', fill='x', expand=1,  anchor='se')
-        self.exit_button = Button(self.button_frame, text='Exit', \
-          command=self.confirm_exit)
+        self.exit_button = Button(self.button_frame, text='Exit',
+                                       command=self.confirm_exit)
         self.exit_button.pack(side='left', anchor='sw')
-        self.next_button = Button(self.button_frame, text='Next>>>', \
-          command=self.next)
+        self.next_button = Button(self.button_frame, text='Next>>>',
+                                                  command=self.next)
         self.next_button.pack(side='right', anchor='se')
         # frame for icon and status display
         self.frame1 = Frame(master)
@@ -71,7 +71,7 @@ class Wizard(Frame):
         if self.text:
             txt = self.text.split('\n')
             app_label1 = Label(self.frame1, text=txt[0], font=self.heading_font)
-            app_label1.pack(side='top', fill=BOTH, expand=1, anchor='nw')
+            app_label1.pack(side='top', fill='both', expand=1, anchor='nw')
         # icons and image
         if os.path.isfile(self.icon):
             background = self.root.cget('background')
@@ -79,7 +79,8 @@ class Wizard(Frame):
             self.img = img
             # Display the image in a label on all pages
             img_label = Label(self.frame1, image=self.img)
-            img_label.pack(side=TOP, fill=BOTH, expand=1, anchor='nw', pady=20)
+            img_label.pack(side='top', fill='both', expand=1,
+                                        anchor='nw', pady=20)
             # If Tcl supports it, generate an icon for the window manager
             show_icons(self.master, img_file)
         # No image file? Print a message and continue
@@ -88,7 +89,7 @@ class Wizard(Frame):
         # if 2 lines of text for image, split top and bottom
         if self.text and len(txt) > 1:
             app_label2 = Label(self.frame1, text=txt[1], font=self.lrg_font)
-            app_label2.pack(side='top', fill=BOTH, expand=1, anchor='nw')
+            app_label2.pack(side='top', fill='both', expand=1, anchor='nw')
 
     def make_widgets(self):
         pass
@@ -126,9 +127,9 @@ class Wizard(Frame):
         status_frame = Frame(self.frame1, borderwidth=1, relief=RAISED)
         status_frame.pack(pady=40)
         label1 = Label(status_frame, text=text, font=font, fg='blue')
-        label1.pack(side=TOP)
+        label1.pack(side='top')
         label2 = Label(status_frame, text='ok', borderwidth=2, relief=GROOVE)
-        label2.pack(side=TOP)
+        label2.pack(side='top')
         self.root.after(1000, lambda: label2.configure(relief=SUNKEN))
         self.root.after(2000, lambda: status_frame.pack_forget())
 
@@ -156,8 +157,8 @@ class WizardPage(Frame):
         self.root = self._root()
         # a temp file name for the final script name if it exists already
         curdir = os.path.abspath('')
-        self.newname = \
-          mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
+        self.newname = mktemp(suffix='.bash', prefix='todisc_commands.',
+                                                             dir=curdir)
         # get tovid prefix
         tovid_prefix = commands.getoutput('tovid -prefix')
         self.tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
@@ -190,7 +191,6 @@ class WizardPage(Frame):
         script = 'todisc_commands.bash'
         set_env = []
         if index:
-            #print "DEBUG: setting os.environ['METAGUI_WIZARD'] =", "%s" %index
             os.environ['METAGUI_WIZARD'] = '%s' %index
         cmd = ['todiscgui'] + args
         todiscgui_cmd = Popen(cmd, stdout=PIPE)
@@ -317,23 +317,23 @@ class WizardPage(Frame):
             new_titles = self.get_list_args(opts, '-titles')
         else:
             new_titles = opts
-        listbox.delete(0, END)
+        listbox.delete(0, 'end')
         # insert or reinsert options list into titleset listbox
-        listbox.insert(END, 'General options')
-        listbox.insert(END, 'Root menu')
+        listbox.insert('end', 'General options')
+        listbox.insert('end', 'Root menu')
         numtitles = len(new_titles)
         #listbox.configure(height=numtitles+2)
         for i in xrange(numtitles):
-            listbox.insert(END, new_titles[i])
+            listbox.insert('end', new_titles[i])
 
     def rename_script(self):
         # if todisc_commands.bash exists in current dir, prompt for rename
         rename_msg = 'The option file we will use:\n' + \
-        'todisc_commands.bash\n' + \
-        'exists in the current directory.\n' + \
-        'It will be renamed to:\n' + \
-        '%s' + \
-        '\nProceed ?'
+          'todisc_commands.bash\n' + \
+          'exists in the current directory.\n' + \
+          'It will be renamed to:\n' + \
+          '%s' + \
+          '\nProceed ?'
         rename_msg = rename_msg % (os.path.basename(self.newname))
         if askokcancel(message=rename_msg):
             os.rename(self.script_file, self.newname)
@@ -341,14 +341,14 @@ class WizardPage(Frame):
             self.master.show_status(1)
             return
 
-        
+
 class Page1(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
     def make_widgets(self):
         self.frame = Frame(self.master)
-        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         # page1 is packed by default
         if len(argv) < 2:
             self.draw()
@@ -379,14 +379,14 @@ class Page1(WizardPage):
         '''
         text = trim(text)
         self.label = PrettyLabel(self.frame, text, self.master.font)
-        self.label.pack(fill=BOTH, expand=1, anchor='nw')
+        self.label.pack(fill='both', expand=1, anchor='nw')
 
     def page_controller(self):
         self.master.next()
 
     def hide_page(self):
         self.frame.pack_forget()
-    
+
 
 class Page2(WizardPage):
     def __init__(self, master):
@@ -394,7 +394,7 @@ class Page2(WizardPage):
 
     def make_widgets(self):
         self.frame = Frame(self.master)
-        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
 
     def draw(self):
         text = '''GENERAL OPTIONS
@@ -415,7 +415,7 @@ class Page2(WizardPage):
         '''
         text = trim(text)
         self.label = PrettyLabel(self.frame, text, self.master.font)
-        self.label.pack(fill=BOTH, expand=1, anchor='nw')
+        self.label.pack(fill='both', expand=1, anchor='nw')
 
     def page_controller(self):
         if os.path.exists(self.script_file):
@@ -477,11 +477,11 @@ class Page3(WizardPage):
         """Save the current listbox contents
         """
         # get a list of listbox lines
-        temp_list = list(self.titlebox.get(0, END))
+        temp_list = list(self.titlebox.get(0, 'end'))
         return [ l for l in temp_list if l]
 
     def page_controller(self):
-        run_cmds = list(self.titlebox.get(0, END))
+        run_cmds = list(self.titlebox.get(0, 'end'))
         run_cmds = [l for l in run_cmds if l]
         if len(run_cmds) < 2:
             showerror(message=\
@@ -518,7 +518,7 @@ class Page4(WizardPage):
 
     def make_widgets(self):
         self.frame = Frame(self.master)
-        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
 
     def draw(self):
         text1 = '''TITLESET MENUS
@@ -540,7 +540,7 @@ class Page4(WizardPage):
         self.label1.pack(fill='both', expand=True, side='top', anchor='nw')
         self.frame2 = Frame(self.frame, borderwidth=2, relief=GROOVE)
         self.label2 = Label(self.frame2, text='', font=self.master.font,
-          justify=LEFT, padx=10, pady=10)
+                                       justify='left', padx=10, pady=10)
         self.label2.pack(fill='both', expand=True, side='top', anchor='nw')
 
     def page_controller(self):
@@ -597,10 +597,10 @@ class Page5(WizardPage):
             self.draw()
             # draw must be called before load_project
             self.load_project()
- 
+
     def make_widgets(self):
         self.frame = Frame(self.master)
-        self.frame.pack(side='right', fill=BOTH, expand=1, anchor='nw')
+        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
 
     def draw(self):
         text = '''
@@ -616,8 +616,8 @@ class Page5(WizardPage):
         change the headers (first 3 lines of text) or change the 
         order of the sections:
 
-        1. General opts, 2. Root menu (-vmgm) 3. Titleset menus (-titleset)
-         
+        1. General opts  2. Root menu (-vmgm)  3. Titleset menus (-titleset)
+
         You may reload the file using the command:
 
         tovid titlesets %s
@@ -626,11 +626,11 @@ class Page5(WizardPage):
         ''' % (self.script_file, self.script_file)
         text = trim(text)
         self.heading_label = Label(self.frame, text='Finished!',
-          font=self.master.lrg_font)
+                                      font=self.master.lrg_font)
         self.label = PrettyLabel(self.frame, text,
-          self.master.font, height=18)
-        self.heading_label.pack(fill=BOTH, expand=1, anchor='nw')
-        self.label.pack(fill=BOTH, expand=1, anchor='nw')
+                      self.master.font, height=18)
+        self.heading_label.pack(fill='both', expand=1, anchor='nw')
+        self.label.pack(fill='both', expand=1, anchor='nw')
         # create the listbox (note that size is in characters)
         frame_text = "Double-click item to edit with GUI, or select " + \
           "and  press [ Edit ] "
@@ -641,24 +641,24 @@ class Page5(WizardPage):
         frame2.pack(fill='y', expand=False)
         button_frame = Frame(frame2)
         button_frame.pack(fill=X, expand=1)
-        button2 = Button(button_frame, text='Add titleset', \
-          command=self.add_titleset)
-        button2.pack(side=LEFT, anchor='w')
+        button2 = Button(button_frame, text='Add titleset',
+                                 command=self.add_titleset)
+        button2.pack(side='left', anchor='w')
         button1 = Button(button_frame, text='Edit', command=self.rerun_options)
-        button1.pack(side=LEFT, fill='x', expand=1)
-        button3 = Button(button_frame, text='Remove titleset', \
-          command=self.remove_titleset)
-        button3.pack(side=RIGHT, anchor='e')
+        button1.pack(side='left', fill='x', expand=1)
+        button3 = Button(button_frame, text='Remove titleset',
+                                 command=self.remove_titleset)
+        button3.pack(side='right', anchor='e')
         # the 2nd index contains the titleset titles (VMGM menu)
         self.refill_listbox(self.listbox, self.master.commands[1])
-        self.listbox.selection_set(END)
-        # set next button to run gui etc before moving forward                  
+        self.listbox.selection_set('end')
+        # set next button to run gui etc before moving forward
         self.master.next_button.configure\
           (command=self.run_in_xterm, text='Run script now')
 
     def page_controller(self):
         self.run_in_xterm()
-    
+
     # used to repopulate titleset titles after adding new one
     def get_option(self, items, option):
         """Get option and arguments from a list (to next item starting with '-')
@@ -679,7 +679,7 @@ class Page5(WizardPage):
             return chunk
         except IndexError:
             pass
- 
+
     def add_titleset(self, Event=None):
         text = 'Please enter a menu link title for your titleset'
         title = askstring('Titleset title', text)
@@ -701,13 +701,13 @@ class Page5(WizardPage):
         new_titleset = ['-titleset', '-menu-title', title, '-end-titleset']
         # add new titleset with just the 'tags' surrounding the new title
         self.master.commands.append(new_titleset)
-        self.listbox.insert(END, title)
+        self.listbox.insert('end', title)
         self.set_selection(self.listbox)
         status = self.rerun_options()
         self.set_selection(self.listbox)
         if status == 1:
             # remove new title from listbox
-            self.listbox.delete(END)
+            self.listbox.delete('end')
             self.set_selection(self.listbox)
             self.master.commands.pop(-1)
             try:
@@ -718,18 +718,19 @@ class Page5(WizardPage):
         self.write_script()
 
     def remove_titleset(self, Event=None):
+        ind = int(self.listbox.curselection()[0])
         mess1='You can only remove titlesets'
         mess2='You must have at least 2 titlesets. Please add ' + \
           'a new titleset [ Add titleset ]  before deleting one'
-        ind = int(self.listbox.curselection()[0])
         if ind < 2:
             showerror(message=mess1)
             return
         elif self.listbox.size() < 5:
             showerror(message=mess2)
             return
-        # get the index from listbox then delete it
-        item = self.listbox.get(ind)
+        if not askyesno(message='Remove titleset %s ?' % (ind - 1) ):
+            return
+        # delete the index from the listbox
         self.listbox.delete(ind)
         self.listbox.selection_set('end')
         # delete index and remove the menu title from vmgm options
@@ -799,13 +800,13 @@ class Page5(WizardPage):
             return
         script = self.script_file
         cmd = \
-         ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
+          ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
         wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
         tovid_cmd = 'bash %s' % script
         cmd.append(tovid_cmd + wait_cmd)
         self.root.withdraw()
         command = Popen(cmd, stderr=PIPE)
-        self.root.deiconify()  
+        self.root.deiconify()
 
     def hide_page(self):
         self.frame.pack_forget()
@@ -861,8 +862,8 @@ class TitleBox(Frame):
         self.get = self.listbox.get
 
         # create a vertical scrollbar to the right of the listbox
-        yscroll = Scrollbar(frame1, command=self.listbox.yview, \
-          orient='vertical')
+        yscroll = Scrollbar(frame1, command=self.listbox.yview,
+                                             orient='vertical')
         yscroll.pack(side='right', fill='y', anchor='ne')
         self.listbox.configure(yscrollcommand=yscroll.set)
         # use entry widget to display/edit selection
@@ -883,18 +884,18 @@ class TitleBox(Frame):
             # delete old listbox line
             self.listbox.delete(index)
         except IndexError:
-            index = END
+            index = 'end'
         # insert edited item back into self.listbox at index
         self.listbox.insert(index, self.enter1.get())
-        self.enter1.delete(0, END)
+        self.enter1.delete(0, 'end')
         # don't add more than one empty index
         next2last = self.listbox.size() -1
-        if not self.listbox.get(next2last) and not self.listbox.get(END):
-            self.listbox.delete(END)
+        if not self.listbox.get(next2last) and not self.listbox.get('end'):
+            self.listbox.delete('end')
         # add a new empty index if we are at end of list
-        if self.listbox.get(END):
-            self.listbox.insert(END, self.enter1.get())
-        self.listbox.selection_set(END)
+        if self.listbox.get('end'):
+            self.listbox.insert('end', self.enter1.get())
+        self.listbox.selection_set('end')
 
     def get_list(self, event):
         """Read the listbox selection and put the result in an entry widget
@@ -905,7 +906,7 @@ class TitleBox(Frame):
             # get the line's text
             seltext = self.listbox.get(index)
             # delete previous text in enter1
-            self.enter1.delete(0, END)
+            self.enter1.delete(0, 'end')
             # now display the selected text
             self.enter1.insert(0, seltext)
             self.enter1.focus_set()
