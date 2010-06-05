@@ -98,17 +98,15 @@ class Executor (Widget):
 
 
     def execute(self, command, callback=None):
-        """Execute the given command, and call the given callback when done.
+        """Execute the given `~libtovid.cli.Command`, and call the given callback when done.
         """
-        if isinstance(command, cli.Command):
-            self.command = command
-        else:
+        if not isinstance(command, cli.Command):
             raise TypeError("execute() requires a Command instance.")
+        if not callable(callback):
+            raise TypeError("execute() callback must be callable")
 
-        if callback and hasattr(callback, '__call__'):
-            self.callback = callback
-        else:
-            raise TypeError("execute() callback must be a function")
+        self.command = command
+        self.callback = callback
 
         # Temporary file to hold stdout/stderr from command
         name = self.command.program

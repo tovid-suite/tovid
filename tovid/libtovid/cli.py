@@ -27,17 +27,50 @@ Commands may be connected together with pipes::
     >>> pipe.run()                                # doctest: +SKIP
     Hello nurse
 
-Command output may be captured and retrieved later with `get_output`::
+The above can be easily accomplished using Python standard library functions
+like ``os.Popen`` or ``commands.getoutput``. This module was designed to
+simplify the task of executing long-running commands or command-line pipes in
+the background, and getting their output later. This behavior is controlled by
+the arguments to the `~Command.run` method.
+
+Normally, `~Command.run` prints all output on standard output. If instead you
+need to capture the output, pass ``capture=True``, then retrieve it later with
+`~Command.get_output`::
 
     >>> echo.run(capture=True)                    # doctest: +SKIP
     >>> echo.get_output()
     'Hello world\\n'
+
+If the command you're running will take a long time to run, and you don't want
+your program to be blocked while it's running, pass ``background=True``. If the
+command may produce a lot of output during execution, you'll probably want to
+capture it instead of printing it::
+
+    >>> find = Command('find', '/')               # doctest: +SKIP
+    >>> find.run(capture=True, background=True)
+
+In this way, your application can keep doing other things while the long-running
+command is executing; you can check whether it's done like so::
+
+    >>> find.done()
+    False
+    >>> find.done()
+    False
+    >>> find.done()
+    True
+
+Then, as before, use `~Command.get_output` to get the output, if you need it. If
+you need to get the standard error output, use `~Command.get_errors`.
 
 """
 # Note: Some of the run() tests above will fail doctest.testmod(), since output
 # from Command subprocesses is not seen as real output by doctest. The current
 # workaround is to use the "doctest: +SKIP" directive (new in python 2.5).
 # For other directives see http://www.python.org/doc/lib/doctest-options.html
+
+# TODO: Make the 'capture/get_output' mechanisms able to handle large amounts
+# of output, perhaps by logging to a temporary file and/or returning an iterator
+# for lines of output, instead of a flat string.
 
 __all__ = [
     'Command',

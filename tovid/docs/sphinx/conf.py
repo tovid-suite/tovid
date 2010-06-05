@@ -204,7 +204,10 @@ man_pages = [
 #latex_use_modindex = True
 
 # Custom configuration
-#autoclass_content = 'both'
 
+# Include both class-level and __init__ documentation
+autoclass_content = 'both'
+# Assume anything in plain `backticks` is a generic object
+# so it works for classes, functions, and whatever else
 default_role = 'obj'
 
