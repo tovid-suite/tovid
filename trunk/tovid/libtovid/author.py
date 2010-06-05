@@ -49,7 +49,7 @@ class Menu:
 
 
 class Titleset:
-    """A group of videos, with an optional Menu.
+    """A group of `Video`\s, with an optional `Menu`.
     """
     def __init__(self, menu=None, videos=None):
         """Create a Titleset containing the given `Video`\s.
@@ -94,7 +94,7 @@ class Disc:
 
 def _add_titleset(titleset, ts_id, segment_items, sequence_items, pbc):
     """Add titleset content to a vcdimager XML structure. This function is
-    used internally, mainly to keep vcdimager_xml() from being too long.
+    used internally, mainly to keep `vcdimager_xml` from being too long.
     """
     menu = titleset.menu
     videos = titleset.videos

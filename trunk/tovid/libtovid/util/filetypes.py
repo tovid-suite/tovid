@@ -15,8 +15,8 @@ import mimetypes
 
 
 def etc_mimetypes():
-    """Get mimetypes from /etc/mime.types and return a dict of {ext: typename}
-    in the same format as returned by mimetypes.types_map.
+    """Get mimetypes from ``/etc/mime.types`` and return a dict of ``{ext: typename}``
+    in the same format as returned by `mimetypes.types_map`.
     """
     if not os.path.exists('/etc/mime.types'):
         return {}
@@ -31,7 +31,7 @@ def etc_mimetypes():
 
 
 def match_types(containing):
-    """Return a list of (type, extensions) tuples for matching mimetypes.
+    """Return a list of ``(type, extensions)`` tuples for matching mimetypes.
 
         containing
             String or list of strings to match
@@ -47,7 +47,7 @@ def match_types(containing):
     to match any mimetype containing 'image' or 'mpeg'.
 
     The returned tuples are suitable for use as the 'filetypes' argument of
-    Tkinter file dialogs (askopenfilename etc.).
+    Tkinter file dialogs like `askopenfilename`.
     """
     if type(containing) == str:
         containing = [containing]
@@ -71,7 +71,7 @@ def match_types(containing):
 
 def get_extensions(containing):
     """Return a space-separated string of all extensions for matching types.
-    Like match_types, but only return the extensions.
+    Like `match_types`, but only return the extensions.
     """
     type_dict = dict(match_types(containing))
     ext_list = type_dict.values()

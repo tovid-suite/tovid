@@ -80,7 +80,9 @@ def indent_level(line):
 
 def trim(text):
     """Strip leading indentation from a block of text.
-    Borrowed from http://www.python.org/peps/pep-0257.html
+    Borrowed from `PEP 257`_.
+    
+    .. _PEP 257: http://www.python.org/peps/pep-0257.html
     """
     if not text:
         return ''
@@ -150,9 +152,9 @@ def float_to_ratio(number):
 
 def tokenize(line, include_chars=''):
     """Separate a text line into tokens, returning them in a list. By default,
-    tokens are space-separated, and each token consists of [a-z], [A-Z], [0-9],
-    or any of '.:-%()/'. Additional valid token characters may be specified by
-    passing them in the include_chars string.
+    tokens are space-separated, and each token consists of ``[a-z]``,
+    ``[A-Z]``, ``[0-9]``, or any of ``.:-%()/``. Additional valid token
+    characters may be specified by passing them in the include_chars string.
     """
     lexer = shlex.shlex(line, posix = True)
     # Rules for splitting tokens
@@ -195,7 +197,7 @@ def pretty_dict(a_dict):
 
 def get_code_lines(filename):
     """Return a list of all lines of code in the given file.
-    Whitespace and #-style comments are ignored.
+    Whitespace and lines beginning with ``#`` are ignored.
     """
     infile = open(filename, 'r')
     codelines = []
@@ -253,7 +255,7 @@ def wait(seconds):
 
 def imagemagick_version():
     """Return the version of ImageMagick that's currently installed,
-    as a list of integers (ex. [6, 3, 5, 10] for version 6.3.5.10).
+    as a list of integers (ex. ``[6, 3, 5, 10]`` for version 6.3.5.10).
     """
     command = 'convert -list configure | grep ^LIB_VERSION_NUMBER'
     lines = os.popen(command).readlines()
