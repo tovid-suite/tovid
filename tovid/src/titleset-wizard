@@ -604,21 +604,22 @@ class Page5(WizardPage):
 
     def draw(self):
         text = '''
-        If you are happy with your saved options, now you can either 
-        choose to run the script now in an xterm, or exit and run it 
-        later in your favorite terminal.
-
+        Edit your selections using the listbox below.  (Note that menu
+        link titles as shown in listbox are saved as titles in the
+        "Root menu" options.)  If you are happy with your saved options, 
+        run the script now in an xterm, or exit and run it later.
         You can run it with:
+
         bash %s
 
-        You may also edit the file with a text editor but do not 
+        You may edit the file with a text editor but do not 
         change the headers (first 3 lines of text) or change the 
         order of the sections:
 
-        1. General opts, 2. Root menu 3. Titleset menus
+        1. General opts, 2. Root menu (-vmgm) 3. Titleset menus (-titleset)
+         
+        You may reload the file using the command:
 
-        You may also load the file back onto this page of the GUI and 
-        make any changes you want, using the command:
         tovid titlesets %s
 
         Press [Run script now] or [Exit].
@@ -774,16 +775,12 @@ class Page5(WizardPage):
                 rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
             elif index >= 2:
                 rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
-                mess = 'Options saved.\n'
-                mess += 'If you want to change the Root menu link title '
-                mess += '(as in listbox), rerun the "Root menu" options.'
-                showinfo(message=mess)
             commands[index] = rerun_opts
             # rewrite the saved script file
             self.write_script()
-            self.set_selection(self.listbox, index)
         else:
             status = 1
+
         self.root.deiconify()
         self.master.show_status(status)
         self.set_selection(self.listbox, index)
