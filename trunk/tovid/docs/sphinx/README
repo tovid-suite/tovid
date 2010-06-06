@@ -1,7 +1,21 @@
 This directory contains tovid documentation for the Sphinx_ documentation generator.
 
-To use it, simply install Sphinx, then run ``make html`` in this directory.
-This will create an HTML hierarchy in ``_build/html``, including documentation
-on the ``libtovid`` module. Run ``make`` without any arguments to see other actions.
+To build HTML documentation, run::
+
+    $ make html
+
+from this directory.  This will create an HTML hierarchy in ``_build/html``,
+including documentation on the ``libtovid`` module. An HTMl version of the
+tovid manual page is also built; open ``_build/html/index.html`` to get an
+index of all built documentation.
+
+You can also build the tovid manual page via::
+
+    $ make manpage
+
+This builds ``_build/man/tovid.1``, which you can view with the ``man``
+utility.
+
+Run ``make`` without any arguments to see other actions.
 
 .. _Sphinx: http://sphinx.pocoo.org/
