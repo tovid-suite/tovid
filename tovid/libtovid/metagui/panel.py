@@ -163,12 +163,18 @@ class Panel (Widget):
     def get_args(self):
         """Return a list of all command-line options from contained widgets.
         """
-        if not self.widgets:
-            return []
         args = []
         for widget in self.widgets:
             args += widget.get_args()
         return args
+
+
+    def set_args(self, args):
+        """Set panel options from the given list of command-line arguments,
+        and remove any successfully parsed options and arguments from ``args``.
+        """
+        for widget in self.widgets:
+            widget.set_args(args)
 
 
     def enable(self, enabled=True):
