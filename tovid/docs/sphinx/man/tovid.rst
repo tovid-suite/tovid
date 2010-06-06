@@ -27,6 +27,7 @@ Usage
 ===============================================================================
 
 ::
+
  tovid COMMAND [OPTIONS]
 
 Where *COMMAND* is one of the following:
