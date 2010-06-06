@@ -1,5 +1,25 @@
 """This module provides a simpler way to create GUIs for command-line programs.
 
+Overview
+--------
+
+Command-line programs typically accept some number of *options*, many of which
+must be followed by some number of *arguments*. The arguments commonly represent
+filenames, numbers, text, fonts or colors, all of which should be displayed in
+a particular way in a GUI interface. This module was designed with many common
+option and argument types in mind.
+
+Each command-line option, and any arguments expected by it, are encapsulated in
+a `~control.Control`. Specialized controls exist for various kinds of options;
+for instance, one of the most common kinds is a `~control.Flag`, which simply
+enables or disables certain behavior. For instance, the ``ls`` program has an
+``-l`` flag for enabling a "long" output format. In metagui, this might be
+declared like::
+
+    Flag('Long listing', '-l')
+
+
+
 It assumes your GUI is a direct frontend to one or more command-line programs,
 with each command-line option having an associated GUI control widget. Several
 kinds of widget are provided, for setting Filename, Color, Number or Font, or
@@ -101,6 +121,7 @@ then, create the Application and GUI::
 
 If multiple panels are given to Application, a tabbed interface is created,
 with one tab for each panel.
+
 """
 
 # Export everything from support, control, panel, and gui modules

@@ -278,7 +278,7 @@ class Application (Widget):
             save_button.pack(anchor='w', side='left', fill='x', expand=True)
             save_button.config(command=self.save_exit, text='Save to wizard')
             run_button.pack_forget()
-#            exit_button.pack_forget()
+            #exit_button.pack_forget()
 
 
     def get_args(self):
@@ -288,6 +288,15 @@ class Application (Widget):
         for panel in self.panels:
             args += panel.get_args()
         return args
+
+
+    def set_args(self, args):
+        """Load application settings from a list of command-line arguments.
+        The list of args is modified in-place; if all args are successfully
+        parsed and loaded, the list will be empty when this method returns.
+        """
+        for panel in self.panels:
+            panel.set_args(args)
 
 
     def execute(self):
@@ -334,11 +343,13 @@ class Application (Widget):
         else:
             showinfo(title="Script saved", message="Saved '%s'" % filename)
 
+
     def save_exit(self):
         filename = os.getcwd() + os.path.sep + '%s_commands.bash' % self.program
         self.save_script(filename)
         # exit code borrowed from apache so wizard knows it has a file to read
         exit(200)
+
 
     def prompt_load_script(self):
         """Prompt for a script filename, then load current Control settings
@@ -403,6 +414,7 @@ class Application (Widget):
         print("Done reading '%s'" % filename)
 
 
+    # TODO: Relocate all this stuff into Control and its subclasses
     def load_args(self, args):
         """Load settings from a list of command-line arguments.
         """

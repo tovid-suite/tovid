@@ -50,6 +50,14 @@ class Widget (tk.Frame):
         return []
 
 
+    def set_args(self, args):
+        """Set widget options from the given list of command-line arguments,
+        and remove any successfully parsed options and arguments from ``args``.
+        Override this in derived classes.
+        """
+        pass
+
+
     def enable(self, enabled=True):
         """Enable or disable the Widget and all its children.
         """
