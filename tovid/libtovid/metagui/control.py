@@ -301,6 +301,18 @@ class Control (Widget):
         return args
 
 
+    def set_args(self, args):
+        """Set control options from the given list of command-line arguments,
+        and remove any successfully parsed options and arguments from ``args``.
+        """
+        # If this control's option is not in args, there's nothing to do
+        if self.option not in args:
+            return
+        # Get the index where the option appears
+        index = args.index(self.option)
+        # TODO
+
+
     def add_callback(self, callback):
         """Add a callback to this Control, which will be called anytime the
         Control's value is modified. The callback will be called with a single
