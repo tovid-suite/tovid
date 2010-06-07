@@ -1,32 +1,36 @@
 #!/usr/bin/env python
-# a scratchpad for developing a class based wizard from
-# titleset-wizard.  Not much to look at here yet.
+
 import os.path
 import shlex
 import commands
 from Tkinter import *
+from tkMessageBox import *
 from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
 from libtovid.metagui import Style
 from libtovid.metagui.support import PrettyLabel, show_icons, get_photo_image
 from libtovid.cli import _enc_arg
-from tkMessageBox import *
+from libtovid.util import trim
 from time import sleep
 from tempfile import mktemp
 from sys import argv, exit
 from base64 import b64encode
-from libtovid.util import trim
 
-# Wizard is a base, unchanging frame hold the wizard pages commands that are
-# processed and written out. It will have a left frame that displays the
-# wizard icon and title and the status panel. It will hold the [Next] and
-# [Exit] buttons as well as the functions they run. As such it will need
-# to have a list of all of the pages so it can pack and unpack them.
 class Wizard(Frame):
+    """A frame to hold the wizard pages.  It will also hold the commands
+       that will  be processed and written out as a script.  Its base frame
+       holds a frame common to all pages that displays an icon, title, and
+       status panel.  It also has a bottom frame that contains the [Next] and
+       [Exit] buttons.  It will hold a list of all of the wizard pages.
+
+       master: the Tk() instance called by __main__
+       icon: Path to an image file (gif) to display on the left frame
+       text: The text for the wizard title above the icon
+       
+    """
     def __init__(self, master, text, icon):
         Frame.__init__(self, master)
         self.pages = []
-        self.pg = []
         self.index = IntVar()
         self.text = text
         self.icon = icon
@@ -95,6 +99,7 @@ class Wizard(Frame):
         pass
 
     def next(self):
+        """Move to the next wizard page"""
         index = self.index.get()
         try:
             self.pages[index].hide_page()
@@ -105,6 +110,7 @@ class Wizard(Frame):
             pass
 
     def set_pages(self, page):
+        """Accept incoming list of wizard page instances"""
         self.pages.append(page)
 
     def get_font(self, font_descriptor, name='', size='', _style=''):
@@ -150,6 +156,9 @@ class Wizard(Frame):
 
 
 class WizardPage(Frame):
+    """Base class for the wizard pages.  As such it contains everythig
+       common to all wizard pages.
+    """
     def __init__(self, master):
         Frame.__init__(self, master)
         Frame.pack(master)
@@ -329,11 +338,11 @@ class WizardPage(Frame):
     def rename_script(self):
         # if todisc_commands.bash exists in current dir, prompt for rename
         rename_msg = 'The option file we will use:\n' + \
-          'todisc_commands.bash\n' + \
+          '"todisc_commands.bash"\n' + \
           'exists in the current directory.\n' + \
           'It will be renamed to:\n' + \
-          '%s' + \
-          '\nProceed ?'
+          '"%s"' + \
+          '\nPress Ok to rename it.\nPress Cancel to overwrite it'
         rename_msg = rename_msg % (os.path.basename(self.newname))
         if askokcancel(message=rename_msg):
             os.rename(self.script_file, self.newname)
@@ -343,6 +352,7 @@ class WizardPage(Frame):
 
 
 class Page1(WizardPage):
+    """Wizard intro page"""
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
@@ -389,6 +399,7 @@ class Page1(WizardPage):
 
 
 class Page2(WizardPage):
+    """Wizard general options page"""
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
@@ -441,6 +452,7 @@ class Page2(WizardPage):
         self.frame.pack_forget()
 
 class Page3(WizardPage):
+    """Wizard root menu page"""
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
@@ -513,6 +525,7 @@ class Page3(WizardPage):
 
 
 class Page4(WizardPage):
+    """Wizard titleset menu page"""
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
@@ -590,6 +603,10 @@ class Page4(WizardPage):
 
 
 class Page5(WizardPage):
+    """Final wizard page.  Here you can rerun options that have been saved
+       from the tovid GUI, and add or remove titlesets.  You can also
+       choose to run the final project in an xterm
+    """
     def __init__(self, master):
         WizardPage.__init__(self, master)
         if len(argv) > 1:
@@ -831,6 +848,7 @@ class Page5(WizardPage):
                 showinfo(message='Cancelled')
                 quit()
         numtitles = len(self.master.commands[2:])
+        print self.master.commands[2:]
         menu_titles = []
         l = self.master.commands[1]
         menu_titles.extend(self.get_list_args(l, '-titles'))
@@ -844,9 +862,9 @@ class Page5(WizardPage):
 
 
 class TitleBox(Frame):
-    '''A Listbox in a LabelFrame with Entry associated with it
+    """A Listbox in a LabelFrame with Entry associated with it
        text: the label for the frame
-    '''
+    """
     def __init__(self, master=None, text=''):
         Frame.__init__(self, master)
         self.master = master
@@ -901,9 +919,8 @@ class TitleBox(Frame):
         """Read the listbox selection and put the result in an entry widget
         """
         try:
-            # get selected line index
+            # get selected line index and text
             index = self.listbox.curselection()[0]
-            # get the line's text
             seltext = self.listbox.get(index)
             # delete previous text in enter1
             self.enter1.delete(0, 'end')
@@ -916,11 +933,12 @@ class TitleBox(Frame):
 
 # Execution
 if __name__ == '__main__':
-    # get tovid prefix
+    # get tovid prefix so we can find the app image file
     tovid_prefix = commands.getoutput('tovid -prefix')
     tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
     os.environ['PATH'] = tovid_prefix + os.pathsep + os.environ['PATH']
     img_file = os.path.join(tovid_prefix, 'titleset-wizard.png')
+    # instantiate Tk and Wizard
     root = Tk()
     root.minsize(width=800, height=660)
     app = Wizard(root, 'Tovid\nTitleset Wizard', img_file)
