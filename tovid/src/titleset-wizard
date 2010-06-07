@@ -728,7 +728,7 @@ class Page5(WizardPage):
             try:
                 self.master.commands[1].remove(title)
             except ValueError:
-                print '%s not in Root menu options' %title
+                print('%s not in Root menu options' %title)
             return
         self.write_script()
 
@@ -845,7 +845,6 @@ class Page5(WizardPage):
             if not askyesno(message=error_msg):
                 quit()
         numtitles = len(self.master.commands[2:])
-        print self.master.commands[2:]
         menu_titles = []
         l = self.master.commands[1]
         menu_titles.extend(self.get_list_args(l, '-titles'))
