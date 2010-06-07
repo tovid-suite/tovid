@@ -557,8 +557,6 @@ class Page4(WizardPage):
         self.label2.pack(fill='both', expand=True, side='top', anchor='nw')
 
     def page_controller(self):
-        # FIXME this will run the gui for titlesets in a loop
-        # for now it just goes to the next page
         self.root.withdraw()
         options_list = self.get_list_args(self.master.commands[1], '-titles')
         numtitles = len(options_list)
@@ -845,7 +843,6 @@ class Page5(WizardPage):
           'Do you want to try to load it anyway?'
         if not '# tovid project script\n' in open(argv[1], 'r'):
             if not askyesno(message=error_msg):
-                showinfo(message='Cancelled')
                 quit()
         numtitles = len(self.master.commands[2:])
         print self.master.commands[2:]
