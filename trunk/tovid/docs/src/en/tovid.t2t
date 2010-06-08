@@ -367,15 +367,18 @@ Here is a list of possible options you can pass:
 : **-use-makemenu**
     This will use **tovid menu** to create a menu with the provided titles.
 : **-static**
-    Main menu will just be static thumbs (not animated) (default: animated)
+    Main menu will consist of static thumbnail links. (default: animated)
+    If you use a video for -showcase or -background the it will still be
+    a 'moving' menu however.
 : **-background** IMAGE|VIDEO
     Menu background.  This can be a image file or an video file.  If it is a
     video file the background will be animated.  Pick a file of correct aspect
-    ratio: i.e. it should still look good when resized to 720x480 (PAL 720x576)
+    ratio: i.e. it should still look good when resized to 4:3 aspect ratio.
+    It will be resized to fill the entire background.
 : **-submenu-background** IMAGE
     Submenu background.  This can be only be an image file.  Pick a file of
     correct aspect ratio: i.e. it should still look good when resized to
-    720x480 (PAL 720x576)
+    4:3 aspect ratio.  It will be resized to fill the entire background.
 : **-menu-title**
     Title for the root menu - may be longer than thumbnail labels
     Also if you use \n in the title, you can use multi line titles, but you
