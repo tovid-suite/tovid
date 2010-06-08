@@ -5,16 +5,7 @@ To build HTML documentation, run::
     $ make html
 
 from this directory.  This will create an HTML hierarchy in ``_build/html``,
-including documentation on the ``libtovid`` module. An HTMl version of the
-tovid manual page is also built; open ``_build/html/index.html`` to get an
-index of all built documentation.
-
-You can also build the tovid manual page via::
-
-    $ make manpage
-
-This builds ``_build/man/tovid.1``, which you can view with the ``man``
-utility.
+including documentation on the ``libtovid`` module.
 
 Run ``make`` without any arguments to see other actions.
 
