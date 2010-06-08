@@ -368,7 +368,7 @@ Here is a list of possible options you can pass:
     This will use **tovid menu** to create a menu with the provided titles.
 : **-static**
     Main menu will consist of static thumbnail links. (default: animated)
-    If you use a video for -showcase or -background the it will still be
+    If you use a video for -showcase or -background then it will still be
     a 'moving' menu however.
 : **-background** IMAGE|VIDEO
     Menu background.  This can be a image file or an video file.  If it is a
