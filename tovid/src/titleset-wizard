@@ -410,7 +410,7 @@ class Page2(WizardPage):
     def draw(self):
         text = '''GENERAL OPTIONS
 
-        When you press the  [Next >>>]  button at the bottom of the wizard, we
+        When you press the  "Next >>>"  button at the bottom of the wizard, we
         will start the GUI and begin with general options applying to all
         titlesets.  For example you may wish to have all menus share a common
         font and fontsize of your choosing, for the menu link titles and/or the
@@ -422,7 +422,7 @@ class Page2(WizardPage):
 
         After making your selections, press [ Save to wizard ] in the GUI
 
-        Press  [Next >>>]  to begin ...
+        Press  "Next >>>"  to begin ...
         '''
         text = trim(text)
         self.label = PrettyLabel(self.frame, text, self.master.font)
@@ -650,7 +650,7 @@ class Page5(WizardPage):
         frame_text = "Double-click item to edit with GUI, or select " + \
           "and  press [ Edit ] "
         frame2 = LabelFrame(self.frame, text=frame_text)
-        self.listbox = Listbox(frame2)
+        self.listbox = Listbox(frame2, exportselection=0)
         self.listbox.pack(side='top', fill='both', expand=1)
         self.listbox.bind('<Double-Button-1>', self.rerun_options)
         frame2.pack(fill='y', expand=False)
@@ -733,7 +733,11 @@ class Page5(WizardPage):
         self.write_script()
 
     def remove_titleset(self, Event=None):
-        ind = int(self.listbox.curselection()[0])
+        try:
+            ind = int(self.listbox.curselection()[0])
+        except IndexError:
+            showerror(message='Please select an options line first')
+            return
         mess1='You can only remove titlesets'
         mess2='You must have at least 2 titlesets. Please add ' + \
           'a new titleset [ Add titleset ]  before deleting one'
