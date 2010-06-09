@@ -1751,6 +1751,10 @@ For example:
 : **-burn**
     Burn a DVD file-system in //DVD_DIR// (must contain a VIDEO_TS folder).
 
+: **-eject**
+    Eject the DVD tray after burning is complete. By default, the DVD is not
+    ejected.
+
 : **-device** //DEVICE// (default /dev/dvdrw)
     Burn the disc image to //DEVICE//, the Linux device file-system
     name of your DVD-recorder. Common examples might be /dev/dvdrw,

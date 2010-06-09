@@ -54,6 +54,7 @@ OPTIONS may be any of the following:
 
   -author              Create DVD filesystem from FILE.xml
   -burn                Burn DVD filesystem from DVD_DIR
+  -eject               Eject the DVD tray after burning
   -device DEVFS_NAME   DVD recorder device name (Default: /dev/dvdrw)
   -speed NUM           Burn speed (Default: automatic)
   -label DISC_LABEL    Disc label (Default: base name of FILE)
@@ -105,6 +106,9 @@ DVDRW_DEVICE="/dev/dvdrw"
 BURN_SPEED=""
 OUT_DIR="makedvd_out"
 DISC_LABEL=""
+# Undocumented growisofs feature to prevent ejecting after burning
+# (Default behavior of growisofs is to reload the tray after burning)
+PREVENT_EJECT="-use-the-force-luke=notray"
 
 # Grab DVD media information
 # Returns nothing, but sets the 'global' variables
@@ -191,6 +195,9 @@ while test $# -gt 1; do
         "-noask" ) NOASK=: ;;
         "-author" ) DO_AUTHOR=: ;;
         "-burn" )   DO_BURN=: ;;
+        "-eject" )
+            PREVENT_EJECT=""
+            ;;
         "-device" )
             # Get device name
             shift
@@ -444,7 +451,7 @@ else
     fi
 
     # Burn it already!
-    BURN_CMD="growisofs -use-the-force-luke=dao -dvd-compat $BURN_SPEED -Z $DVDRW_DEVICE -dvd-video -V \"$VOLID\" \"$OUT_DIR\""
+    BURN_CMD="growisofs -use-the-force-luke=dao $PREVENT_EJECT -dvd-compat $BURN_SPEED -Z $DVDRW_DEVICE -dvd-video -V \"$VOLID\" \"$OUT_DIR\""
     echo $SEPARATOR
     echo "Burning with growisofs $GROWISOFS_VER using the following command:"
     echo "$BURN_CMD"
