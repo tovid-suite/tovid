@@ -95,9 +95,6 @@ class Wizard(Frame):
             app_label2 = Label(self.frame1, text=txt[1], font=self.lrg_font)
             app_label2.pack(side='top', fill='both', expand=1, anchor='nw')
 
-    def make_widgets(self):
-        pass
-
     def next(self):
         """Move to the next wizard page"""
         index = self.index.get()
@@ -185,11 +182,7 @@ class WizardPage(Frame):
         # ititialize a frame, but don't pack yet
         self.frame = Frame(self.master)
         # initialize widgets, but don't show yet
-        self.make_widgets()
         self.master.set_pages(self)
-
-    def make_widgets(self):
-        pass
 
     def show_page(self):
         self.draw()
@@ -360,14 +353,12 @@ class Page1(WizardPage):
     """Wizard intro page"""
     def __init__(self, master):
         WizardPage.__init__(self, master)
-
-    def make_widgets(self):
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-        # page1 is packed by default
+        # draw the page by default unless script file arg passed
         if len(argv) < 2:
             self.draw()
 
     def draw(self):
+        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         text = '''INTRODUCTION
 
         Welcome to the tovid titleset wizard.  We will be making a complete DVD,
@@ -404,10 +395,8 @@ class Page2(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
-    def make_widgets(self):
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-
     def draw(self):
+        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         text = '''GENERAL OPTIONS
 
         When you press the  "Next >>>"  button at the bottom of the wizard, we
@@ -454,10 +443,8 @@ class Page3(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
-    def make_widgets(self):
-        self.frame.pack(side='right')
-
     def draw(self):
+        self.frame.pack(side='right')
         text = '''ROOT MENU (VMGM)
 
         Now we will save options for your root (VMGM) menu.  The only REQUIRED
@@ -523,10 +510,8 @@ class Page4(WizardPage):
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
-    def make_widgets(self):
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-
     def draw(self):
+        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         text1 = '''TITLESET MENUS
 
         Okay, now you will enter options for each of your titlesets.  
@@ -597,16 +582,15 @@ class Page5(WizardPage):
     """
     def __init__(self, master):
         WizardPage.__init__(self, master)
+        # set commands and draw this page if script file arg passed
         if len(argv) > 1:
             self.set_project_commands()
             self.draw()
             # draw must be called before load_project
             self.load_project()
 
-    def make_widgets(self):
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-
     def draw(self):
+        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         text = '''
         You can edit your selections using the listbox below.  (Note
         that menu link titles as shown in listbox are saved as titles
