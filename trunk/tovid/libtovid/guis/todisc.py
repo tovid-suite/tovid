@@ -775,7 +775,8 @@ _videos_are_chapters = Flag('Each video is a chapter',
 ### --------------------------------------------------------------------
 
 # Burning options
-_burn = Flag('Burn project on completion', '-burn', False)
+_burn = Flag('Burn project', '-burn', False, 'Burn project on completion')
+_eject = Flag('Eject', '-eject', False, 'Eject DVD when burn complete')
 
 _speed = Number('Speed', '-speed', 8,
     'Speed for burning',
@@ -855,7 +856,9 @@ main =  VPanel('Basic',
             'the "Playback" tab.  Do NOT use both settings.',
             1, 25, '', 'popup', 1), Label('per video')),
             VPanel('Burning',
+                HPanel('',
                 _burn,
+                _eject),
                 HPanel('',
                     _speed,
                     _device,
