@@ -37,10 +37,10 @@ class Wizard(Frame):
         self.master = master
         self.root = self._root()
         self.commands = []
-        # is_running for cancelling run_gui if exit is called
+        # for cancelling run_gui if exit is called
         self.is_running = BooleanVar()
         self.is_running.set(True)
-        # wait on [Next>>>] being pushed to continue titleset loop
+        # for waiting on [Next>>>] being pushed to continue titleset loop
         self.waitVar = BooleanVar()
         self.waitVar.set(False)
         # bindings for exit
@@ -182,6 +182,8 @@ class WizardPage(Frame):
         _version = Popen(_cmd, stdout=PIPE).communicate()[0].strip()
         identifier = '# tovid project script\n# tovid version %s' % _version
         self.header = '%s\n\n%s\n\n%s\n\n' % (shebang, identifier, _path )
+        # ititialize a frame, but don't pack yet
+        self.frame = Frame(self.master)
         # initialize widgets, but don't show yet
         self.make_widgets()
         self.master.set_pages(self)
@@ -192,6 +194,9 @@ class WizardPage(Frame):
     def show_page(self):
         self.draw()
         self.master.next_button.configure(command=self.page_controller)
+
+    def hide_page(self):
+        self.frame.pack_forget()
 
     def run_gui(self, args=[], index='', script=''):
         """Run the tovid GUI, collecting options, and saving to wizard
@@ -357,7 +362,6 @@ class Page1(WizardPage):
         WizardPage.__init__(self, master)
 
     def make_widgets(self):
-        self.frame = Frame(self.master)
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         # page1 is packed by default
         if len(argv) < 2:
@@ -394,9 +398,6 @@ class Page1(WizardPage):
     def page_controller(self):
         self.master.next()
 
-    def hide_page(self):
-        self.frame.pack_forget()
-
 
 class Page2(WizardPage):
     """Wizard general options page"""
@@ -404,7 +405,6 @@ class Page2(WizardPage):
         WizardPage.__init__(self, master)
 
     def make_widgets(self):
-        self.frame = Frame(self.master)
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
 
     def draw(self):
@@ -448,8 +448,6 @@ class Page2(WizardPage):
         if move:
             wizard.next()
 
-    def hide_page(self):
-        self.frame.pack_forget()
 
 class Page3(WizardPage):
     """Wizard root menu page"""
@@ -457,7 +455,6 @@ class Page3(WizardPage):
         WizardPage.__init__(self, master)
 
     def make_widgets(self):
-        self.frame = Frame(self.master)
         self.frame.pack(side='right')
 
     def draw(self):
@@ -520,9 +517,6 @@ class Page3(WizardPage):
             self.root.deiconify()
             self.master.show_status(status)
 
-    def hide_page(self):
-        self.frame.pack_forget()
-
 
 class Page4(WizardPage):
     """Wizard titleset menu page"""
@@ -530,7 +524,6 @@ class Page4(WizardPage):
         WizardPage.__init__(self, master)
 
     def make_widgets(self):
-        self.frame = Frame(self.master)
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
 
     def draw(self):
@@ -596,9 +589,6 @@ class Page4(WizardPage):
         self.root.deiconify()
         self.master.next()
 
-    def hide_page(self):
-        self.frame.pack_forget()
-
 
 class Page5(WizardPage):
     """Final wizard page.  Here you can rerun options that have been saved
@@ -614,7 +604,6 @@ class Page5(WizardPage):
             self.load_project()
 
     def make_widgets(self):
-        self.frame = Frame(self.master)
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
 
     def draw(self):
@@ -840,8 +829,6 @@ class Page5(WizardPage):
         command = Popen(cmd, stderr=PIPE)
         self.root.deiconify()
 
-    def hide_page(self):
-        self.frame.pack_forget()
 
     def set_project_commands(self):
         in_contents = self.script_to_list(argv[1])
