@@ -696,6 +696,18 @@ class Page5(WizardPage):
             pass
 
     def add_titleset(self, Event=None):
+        mess = 'Please select an options line first\n'
+        mess += 'The new titleset will be inserted after the selected option'
+        try:
+            ind = int(self.listbox.curselection()[0])
+        except IndexError:
+            showerror(message=mess)
+            return
+        if ind < 1:
+            err = 'Your titleset will be inserted AFTER the selected item\n'
+            err+= 'Titlesets can not be inserted here'
+            showerror(message=err)
+            return
         text = 'Please enter a menu link title for your titleset'
         title = askstring('Titleset title', text)
         # if nothing entered, return without changes
@@ -706,7 +718,7 @@ class Page5(WizardPage):
         # get options ( -titles title1 title2 ... ), removing them from original
         new_titles = self.get_option(vmgm_cmds, '-titles')
         # add new title, remove -end-vmgm, add -titles ... back, add -end-vmgm
-        new_titles.append(title)
+        new_titles.insert(ind, title)
         vmgm_cmds.pop(-1)
         vmgm_cmds.extend(new_titles)
         vmgm_cmds.append('-end-vmgm')
@@ -715,10 +727,10 @@ class Page5(WizardPage):
         self.master.commands.insert(1, vmgm_cmds)
         new_titleset = ['-titleset', '-menu-title', title, '-end-titleset']
         # add new titleset with just the 'tags' surrounding the new title
-        self.master.commands.append(new_titleset)
-        self.listbox.insert('end', title)
-        self.set_selection(self.listbox)
-        status = self.rerun_options()
+        self.master.commands.insert(ind+1, new_titleset)
+        self.listbox.insert(ind+1, title)
+        self.set_selection(self.listbox, ind)
+        status = self.rerun_options(index=ind+1)
         self.set_selection(self.listbox)
         if status == 1:
             # remove new title from listbox
@@ -769,16 +781,17 @@ class Page5(WizardPage):
         # write out the script again
         self.write_script()
 
-    def rerun_options(self, Event=None):
+    def rerun_options(self, Event=None, index=None):
         """Run the gui with the selected options
         """
         # self.master is the WizardPage
         commands = self.master.commands
-        try:
-            index = int(self.listbox.curselection()[0])
-        except IndexError:
-            showerror(message='Please select an options line first')
-            return
+        if not index:
+            try:
+                index = int(self.listbox.curselection()[0])
+            except IndexError:
+                showerror(message='Please select an options line first')
+                return
         rerun_opts = []
         os.environ['METAGUI_WIZARD'] = str(index+1)
         # the GUI doesn't understand the titleset type options
