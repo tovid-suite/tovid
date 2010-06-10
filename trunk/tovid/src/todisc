@@ -205,6 +205,7 @@ USE_MPLAYER_4AUDIO=false
 MENU_AUDIOLEN=""
 USER_AUDIOLENGTH=false
 BURN=false
+EJECT=''
 BURN_DEVICE="/dev/dvdrw"
 QUICK_MENU=false
 BG_CLR='#101010'
@@ -1282,7 +1283,7 @@ EOF
     # this unfortunate block helps user by testing for incompatible options
     # within titlesets, exiting BEFORE having done previous titlesets
     general_options="-no-vmgm -skip-vmgm -out -quick-nav -burn -device
-    -speed -no-confirm-backup"
+    -speed -eject -no-confirm-backup"
     GREP="egrep -w -q --"
     for opt in $general_options; do
         if $GREP $opt <<< "${tsetopts[@]} ${vmgmopts[@]}" \
@@ -1428,7 +1429,8 @@ parse_rotateargs()
 
 burn_disc()
 {
-    BURN_CMD=(tovid dvd -burn -device "$BURN_DEVICE" $BURN_SPEED \"$BURN_TGT\")
+    BURN_CMD=(tovid dvd -burn -device $EJECT "$BURN_DEVICE" \
+    $BURN_SPEED \"$BURN_TGT\")
     yecho
     echo "You have indicated you want to burn the $BURN_TGT_STR"
     echo "Would you like to burn the ${BURN_TGT_STR/ *} now ?"
@@ -3184,6 +3186,8 @@ while test $# -gt 0; do
             SPEED="$1"
             BURN_SPEED="-speed $SPEED"
             ;;
+        "-eject" )
+            EJECT="-eject"
         "-quick-menu" )
             QUICK_MENU=:
             ;;
