@@ -36,6 +36,7 @@ and what arguments it expects.
 import sys
 import os
 import subprocess
+import signal
 import time
 import shlex
 import shutil
@@ -145,6 +146,7 @@ class Frontend:
             proc.wait()
         except KeyboardInterrupt:
             print("\n!!! tovid was manually interrupted. Exiting.")
+            os.kill(proc.pid, signal.SIGTERM)
             proc.kill()
             # Sleep a second to let the script clean up
             time.sleep(1)
