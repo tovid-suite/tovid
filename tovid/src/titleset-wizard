@@ -658,7 +658,7 @@ class Page5(WizardPage):
         # If item is dragged to a new location, swap
         loc = self.listbox.nearest(event.y)
         # disable 1st two items which can not be dragged to
-        if loc <=1:
+        if loc <=1 and self.curindex >1:
             self.listbox.itemconfig(1,selectbackground=self.master.background,
                                                      selectforeground='black')
             self.listbox.itemconfig(0,selectbackground=self.master.background,
@@ -697,7 +697,7 @@ class Page5(WizardPage):
         """
         # Change the mouse cursor back to the default arrow.
         self.root.config(cursor="")
-        # since we are not in drag mode anymore, enable 1st 2 indexes again
+        # since we are not in drag mode anymore, 'enable' 1st 2 indexes again
         selectbackground = self.listbox.cget('selectbackground')
         selectforeground = self.listbox.cget('selectforeground')
         self.listbox.itemconfig(1,selectbackground=selectbackground,
