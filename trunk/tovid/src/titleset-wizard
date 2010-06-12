@@ -15,6 +15,7 @@ from time import sleep
 from tempfile import mktemp
 from sys import argv, exit
 from base64 import b64encode
+from copy import deepcopy
 
 class Wizard(Frame):
     """A frame to hold the wizard pages.  It will also hold the commands
@@ -25,7 +26,8 @@ class Wizard(Frame):
 
        master: the Tk() instance called by __main__
        icon: Path to an image file (gif) to display on the left frame
-       text: The text for the wizard title above the icon
+       text: The text for the wizard title above and/or below the icon
+             Use \n to break title into above\nbelow.
        
     """
     def __init__(self, master, text, icon):
@@ -329,7 +331,6 @@ class WizardPage(Frame):
         listbox.insert('end', 'General options')
         listbox.insert('end', 'Root menu')
         numtitles = len(new_titles)
-        #listbox.configure(height=numtitles+2)
         for i in xrange(numtitles):
             listbox.insert('end', new_titles[i])
 
@@ -643,6 +644,61 @@ class Page5(WizardPage):
         # set next button to run gui etc before moving forward
         self.master.next_button.configure\
           (command=self.run_in_xterm, text='Run script now')
+        # Add bindings for drag/drop
+        self.listbox.bind('<Button-1>', self.set_index)
+        self.listbox.bind('<B1-Motion>', self.drag)
+        self.listbox.bind('<ButtonRelease-1>', self.drop)
+
+
+    def drag(self, event):
+        """Event handler when an item in the list is dragged.
+        """
+        # If item is dragged to a new location, swap
+        loc = self.listbox.nearest(event.y)
+        if loc > 1 and self.curindex > 1:
+            if loc != self.curindex and self.listbox.size() > 0:
+                self.swap(self.curindex, loc)
+                self.curindex = loc
+
+    def swap(self, index_a, index_b):
+        """Swap the element at ``index_a`` with the one at ``index_b``.
+        Calls ``swap`` callbacks for the swapped items.
+        """
+        # Use temporary lists
+        temp_commands = deepcopy(self.master.commands)
+        self.master.commands[index_a] = temp_commands[index_b]
+        self.master.commands[index_b] = temp_commands[index_a]
+        # modify sublist (commands[1]) 
+        self.mod_sublist('', index_a,index_b)
+        temp_list = self.listbox.get(0, 'end')
+        temp_list = list(temp_list)
+        try:
+            item_a = temp_list[index_a]
+            item_b = temp_list[index_b]
+            temp_list[index_a] = item_b
+            temp_list[index_b] = item_a
+        except IndexError:
+            # should not happen
+            print 'index out of range!'
+        # Set the updated list
+        self.listbox.delete(0, 'end')
+        self.listbox.insert(0, *temp_list)
+
+    def drop(self, event):
+        """Event handler when an item in the list is "dropped".
+        """
+        # Change the mouse cursor back to the default arrow.
+        self.root.config(cursor="")
+        # rewrite script
+        self.write_script()
+
+    def set_index(self, Event=None):
+        """Called when item in listbox selected.  Set curindex and change
+           cursor to double-arrow after delay, which will hopefully allow
+           double-click without changing the cursor, which would look strange.
+        """
+        self.curindex = self.listbox.nearest(Event.y)
+        self.after(50, lambda:self.root.config(cursor="double_arrow"))
 
     def page_controller(self):
         self.run_in_xterm()
@@ -687,28 +743,19 @@ class Page5(WizardPage):
         if not title:
             self.master.show_status(1)
             return
-        vmgm_cmds = [w for w in self.master.commands[1]]
-        # get options ( -titles title1 title2 ... ), removing them from original
-        new_titles = self.get_option(vmgm_cmds, '-titles')
-        # add new title, remove -end-vmgm, add -titles ... back, add -end-vmgm
-        new_titles.insert(ind, title)
-        vmgm_cmds.pop(-1)
-        vmgm_cmds.extend(new_titles)
-        vmgm_cmds.append('-end-vmgm')
-        # delete old vmgm options from todisc_cmds and insert new
-        self.master.commands.pop(1)
-        self.master.commands.insert(1, vmgm_cmds)
+        self.mod_sublist(title, ind)
+        print self.master.commands[1]
         new_titleset = ['-titleset', '-menu-title', title, '-end-titleset']
         # add new titleset with just the 'tags' surrounding the new title
         self.master.commands.insert(ind+1, new_titleset)
         self.listbox.insert(ind+1, title)
-        self.set_selection(self.listbox, ind)
+        self.set_selection(ind)
         status = self.rerun_options(index=ind+1)
-        self.set_selection(self.listbox)
+        self.set_selection(index='end')
         if status == 1:
             # remove new title from listbox
             self.listbox.delete('end')
-            self.set_selection(self.listbox)
+            self.set_selection(index='end')
             self.master.commands.pop(-1)
             try:
                 self.master.commands[1].remove(title)
@@ -739,20 +786,37 @@ class Page5(WizardPage):
         self.listbox.selection_set('end')
         # delete index and remove the menu title from vmgm options
         self.master.commands.pop(ind)
+        self.mod_sublist('', ind)
+        self.write_script()
+
+    def mod_sublist(self, item='', *index):
+        """Modify commands sublist.  If 2 indexes, just swap items.  If one
+           index the default behavior is to delete the index from the sublist
+           and remove it from commands, but if item is passed, add it as a
+           new index instead.
+        """
         vmgm_cmds = [w for w in self.master.commands[1]]
         # get options ( -titles title1 title2 ... ), removing them from original
         vmgm_titles = self.get_option(vmgm_cmds, '-titles')
         # remove -end-vmgm, remove title , add -end-vmgm
-        # ind-1 instead of ind-2 because '-titles' is in vmgm_titles
+        # index-1 instead of ind-2 because '-titles' is in vmgm_titles
         vmgm_cmds.pop(-1)
-        vmgm_titles.pop(ind-1)
+        if len(index) > 1:
+            temp_list = [i for i in vmgm_titles]
+            vmgm_titles[index[0]-1] = temp_list[index[1]-1]
+            vmgm_titles[index[1]-1] = temp_list[index[0]-1]
+        else:
+            index = index[0]
+            # if item is passed, add it as a title
+            if item:
+                vmgm_titles.insert(index, item) 
+            else:
+                vmgm_titles.pop(index-1)
         vmgm_cmds.extend(vmgm_titles)
         vmgm_cmds.append('-end-vmgm')
         # delete old vmgm options from todisc_cmds and insert new
         self.master.commands.pop(1)
         self.master.commands.insert(1, vmgm_cmds)
-        # write out the script again
-        self.write_script()
 
     def rerun_options(self, Event=None, index=None):
         """Run the gui with the selected options
@@ -790,12 +854,12 @@ class Page5(WizardPage):
 
         self.root.deiconify()
         self.master.show_status(status)
-        self.set_selection(self.listbox, index)
+        self.set_selection(index)
         return status
 
-    def set_selection(self, listbox, index='end'):
-        listbox.selection_clear(0, index)
-        listbox.selection_set(index)
+    def set_selection(self, index='end'):
+        self.listbox.selection_clear(0, index)
+        self.listbox.selection_set(index)
 
     def run_in_xterm(self):
         """Run the final script in an xterm, completing the project
