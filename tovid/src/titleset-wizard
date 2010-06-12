@@ -9,8 +9,9 @@ from tkSimpleDialog import askstring
 from subprocess import Popen, PIPE
 from libtovid.metagui import Style
 from libtovid.metagui.support import PrettyLabel, show_icons, get_photo_image
-from libtovid.cli import _enc_arg
+from libtovid.cli import _enc_arg, Command
 from libtovid.util import trim
+from libtovid.metagui.gui import Executor
 from time import sleep
 from tempfile import mktemp
 from sys import argv, exit
@@ -649,7 +650,8 @@ class Page5(WizardPage):
         self.listbox.selection_set('end')
         # set next button to run gui etc before moving forward
         self.master.next_button.configure\
-          (command=self.run_in_xterm, text='Run script now')
+          (command=self.page_controller, text='Run script')
+          #(command=self.run_in_xterm, text='Run script now')
         # Add bindings for drag/drop
         self.listbox.bind('<Button-1>', self.set_index)
         self.listbox.bind('<B1-Motion>', self.drag)
@@ -724,7 +726,9 @@ class Page5(WizardPage):
         self.after(50, lambda:self.root.config(cursor="double_arrow"))
 
     def page_controller(self):
-        self.run_in_xterm()
+        #self.run_in_xterm()
+        self.master.index.set(4)
+        self.master.next()
 
     # used to repopulate titleset titles after adding new one
     def get_option(self, items, option):
@@ -930,6 +934,18 @@ class Page5(WizardPage):
             self.rename_script()
         self.write_script()
 
+class Page6(WizardPage):
+    def __init__(self, master):
+        WizardPage.__init__(self, master)
+
+    def draw(self):
+        #self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
+        executor = Executor()
+        executor.draw(self.root)
+        executor.pack(fill='both', expand=1, anchor='nw')
+        command = Command('bash', self.script_file)
+        executor.execute(command, executor.configure)
+
 
 class TitleBox(Frame):
     """A Listbox in a LabelFrame with Entry associated with it
@@ -1018,6 +1034,7 @@ if __name__ == '__main__':
     page3 = Page3(app)
     page4 = Page4(app)
     page5 = Page5(app)
+    page6 = Page6(app)
     # run it
     try:
         mainloop()
