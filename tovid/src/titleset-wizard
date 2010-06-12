@@ -595,7 +595,7 @@ class Page5(WizardPage):
     def draw(self):
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         text = '''
-        You can edit your selections using the listbox below.  (Note
+        Edit or reorder your selections using the listbox below.  (Note
         that menu link titles as shown in listbox are saved as titles
         in the "Root menu" options.)  If you are happy with your saved
         options, run the script now in an xterm, or exit and run it later.
@@ -623,15 +623,10 @@ class Page5(WizardPage):
         self.heading_label.pack(fill='both', expand=1, anchor='nw')
         self.label.pack(fill='both', expand=1, anchor='nw')
         # create the listbox (note that size is in characters)
-        frame_text = "Double-click item to edit with GUI, or select " + \
-          "and  press [ Edit ] "
+        frame_text = "Edit items, or add, remove or drag/drop titlesets"
         frame2 = LabelFrame(self.frame, text=frame_text)
-        self.listbox = Listbox(frame2, exportselection=0)
-        self.listbox.pack(side='top', fill='both', expand=1)
-        self.listbox.bind('<Double-Button-1>', self.rerun_options)
-        frame2.pack(fill='y', expand=False)
         button_frame = Frame(frame2)
-        button_frame.pack(fill=X, expand=1)
+        button_frame.pack(side='bottom', fill=X, expand=1, anchor='sw')
         button2 = Button(button_frame, text='Add titleset',
                                  command=self.add_titleset)
         button2.pack(side='left', anchor='w')
@@ -640,6 +635,15 @@ class Page5(WizardPage):
         button3 = Button(button_frame, text='Remove titleset',
                                  command=self.remove_titleset)
         button3.pack(side='right', anchor='e')
+        self.listbox = Listbox(frame2, width=50, exportselection=0)
+        self.listbox.pack(side='left', fill='both', expand=1)
+        self.listbox.bind('<Double-Button-1>', self.rerun_options)
+        # create a vertical scrollbar to the right of the listbox
+        yscroll = Scrollbar(frame2, command=self.listbox.yview,
+                                             orient='vertical')
+        yscroll.pack(side='right', fill='y', anchor='ne')
+        self.listbox.configure(yscrollcommand=yscroll.set)
+        frame2.pack(side='left', fill='y', expand=False)
         # the 2nd index contains the titleset titles (VMGM menu)
         self.refill_listbox(self.listbox, self.master.commands[1])
         self.listbox.selection_set('end')
@@ -940,7 +944,10 @@ class TitleBox(Frame):
     def draw(self):
         # create the listbox (note that size is in characters)
         frame1 = LabelFrame(self.master, text=self.text)
-        frame1.pack(side='top', fill='y', expand=False)
+        frame1.pack(side='left', fill='y', expand=False)
+        # use entry widget to display/edit selection
+        self.enter1 = Entry(frame1, width=50)
+        self.enter1.pack(side='bottom', fill='both', expand=False)
         self.listbox = Listbox(frame1, width=50, height=12)
         self.listbox.pack(side='left', fill='y', expand=False, anchor='nw')
         self.get = self.listbox.get
@@ -950,9 +957,6 @@ class TitleBox(Frame):
                                              orient='vertical')
         yscroll.pack(side='right', fill='y', anchor='ne')
         self.listbox.configure(yscrollcommand=yscroll.set)
-        # use entry widget to display/edit selection
-        self.enter1 = Entry(self.master, width=50)
-        self.enter1.pack(fill='y', expand=False)
         # set focus on entry
         self.enter1.select_range(0, 'end')
         self.enter1.focus_set()
