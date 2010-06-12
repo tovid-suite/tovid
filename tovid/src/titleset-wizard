@@ -583,6 +583,8 @@ class Page5(WizardPage):
     """
     def __init__(self, master):
         WizardPage.__init__(self, master)
+        self.curindex = 0
+        self.lastindex = 0
         # set commands and draw this page if script file arg passed
         if len(argv) > 1:
             self.set_project_commands()
@@ -689,8 +691,10 @@ class Page5(WizardPage):
         """
         # Change the mouse cursor back to the default arrow.
         self.root.config(cursor="")
-        # rewrite script
-        self.write_script()
+        # curindex and lastindex are the same if no drag occured
+        if self.curindex != self.lastindex:
+            # rewrite script
+            self.write_script()
 
     def set_index(self, Event=None):
         """Called when item in listbox selected.  Set curindex and change
@@ -698,6 +702,7 @@ class Page5(WizardPage):
            double-click without changing the cursor, which would look strange.
         """
         self.curindex = self.listbox.nearest(Event.y)
+        self.lastindex = self.curindex
         self.after(50, lambda:self.root.config(cursor="double_arrow"))
 
     def page_controller(self):
@@ -744,7 +749,6 @@ class Page5(WizardPage):
             self.master.show_status(1)
             return
         self.mod_sublist(title, ind)
-        print self.master.commands[1]
         new_titleset = ['-titleset', '-menu-title', title, '-end-titleset']
         # add new titleset with just the 'tags' surrounding the new title
         self.master.commands.insert(ind+1, new_titleset)
