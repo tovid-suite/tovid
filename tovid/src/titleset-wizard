@@ -74,14 +74,14 @@ class Wizard(Frame):
         self.lrg_font = self.get_font(font, size=font[1]+4, _style='bold')
         self.medium_font = self.get_font(font, size=font[1]+2)
         self.heading_font = self.get_font(font, size=font[1]+8, _style='bold')
+        self.background = self.root.cget('background')
         if self.text:
             txt = self.text.split('\n')
             app_label1 = Label(self.frame1, text=txt[0], font=self.heading_font)
             app_label1.pack(side='top', fill='both', expand=1, anchor='nw')
         # icons and image
         if os.path.isfile(self.icon):
-            background = self.root.cget('background')
-            img = get_photo_image(self.icon, 0, 0, background)
+            img = get_photo_image(self.icon, 0, 0, self.background)
             self.img = img
             # Display the image in a label on all pages
             img_label = Label(self.frame1, image=self.img)
@@ -657,6 +657,12 @@ class Page5(WizardPage):
         """
         # If item is dragged to a new location, swap
         loc = self.listbox.nearest(event.y)
+        # disable 1st two items which can not be dragged to
+        if loc <=1:
+            self.listbox.itemconfig(1,selectbackground=self.master.background,
+                                                     selectforeground='black')
+            self.listbox.itemconfig(0,selectbackground=self.master.background,
+                                                     selectforeground='black')
         if loc > 1 and self.curindex > 1:
             if loc != self.curindex and self.listbox.size() > 0:
                 self.swap(self.curindex, loc)
@@ -691,6 +697,13 @@ class Page5(WizardPage):
         """
         # Change the mouse cursor back to the default arrow.
         self.root.config(cursor="")
+        # since we are not in drag mode anymore, enable 1st 2 indexes again
+        selectbackground = self.listbox.cget('selectbackground')
+        selectforeground = self.listbox.cget('selectforeground')
+        self.listbox.itemconfig(1,selectbackground=selectbackground,
+                                  selectforeground=selectforeground)
+        self.listbox.itemconfig(0,selectbackground=selectbackground,
+                                   selectforeground=selectforeground)
         # curindex and lastindex are the same if no drag occured
         if self.curindex != self.lastindex:
             # rewrite script
@@ -698,11 +711,11 @@ class Page5(WizardPage):
 
     def set_index(self, Event=None):
         """Called when item in listbox selected.  Set curindex and change
-           cursor to double-arrow after delay, which will hopefully allow
-           double-click without changing the cursor, which would look strange.
+           cursor to double-arrow.  lastindex==curindex if no drag occurs.
         """
         self.curindex = self.listbox.nearest(Event.y)
         self.lastindex = self.curindex
+        # delay 50ms so double-click doesn't look strange
         self.after(50, lambda:self.root.config(cursor="double_arrow"))
 
     def page_controller(self):
