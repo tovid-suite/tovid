@@ -650,6 +650,9 @@ class Page5(WizardPage):
         self.listbox.bind('<Button-1>', self.set_index)
         self.listbox.bind('<B1-Motion>', self.drag)
         self.listbox.bind('<ButtonRelease-1>', self.drop)
+        self.selectbackground = self.listbox.cget('selectbackground')
+        self.selectforeground = self.listbox.cget('selectforeground')
+        self.foreground = self.listbox.cget('foreground')
 
 
     def drag(self, event):
@@ -660,9 +663,9 @@ class Page5(WizardPage):
         # disable 1st two items which can not be dragged to
         if loc <=1 and self.curindex >1:
             self.listbox.itemconfig(1,selectbackground=self.master.background,
-                                                     selectforeground='black')
+                             selectforeground=self.foreground)
             self.listbox.itemconfig(0,selectbackground=self.master.background,
-                                                     selectforeground='black')
+                             selectforeground=self.foreground)
         if loc > 1 and self.curindex > 1:
             if loc != self.curindex and self.listbox.size() > 0:
                 self.swap(self.curindex, loc)
@@ -698,12 +701,10 @@ class Page5(WizardPage):
         # Change the mouse cursor back to the default arrow.
         self.root.config(cursor="")
         # since we are not in drag mode anymore, 'enable' 1st 2 indexes again
-        selectbackground = self.listbox.cget('selectbackground')
-        selectforeground = self.listbox.cget('selectforeground')
-        self.listbox.itemconfig(1,selectbackground=selectbackground,
-                                  selectforeground=selectforeground)
-        self.listbox.itemconfig(0,selectbackground=selectbackground,
-                                   selectforeground=selectforeground)
+        self.listbox.itemconfig(1,selectbackground=self.selectbackground,
+                                  selectforeground=self.selectforeground)
+        self.listbox.itemconfig(0,selectbackground=self.selectbackground,
+                                   selectforeground=self.selectforeground)
         # curindex and lastindex are the same if no drag occured
         if self.curindex != self.lastindex:
             # rewrite script
