@@ -79,7 +79,7 @@ __all__ = [
 
 import subprocess
 import signal
-from os import environ
+import os
 
 # Small workaround for Python 3.x
 try:
@@ -266,7 +266,7 @@ class Command:
         """Return a bash script for running the given command.
         """
         script = '#!/usr/bin/env bash' + '\n\n'
-        script_path = environ['PATH'].rsplit(':')
+        script_path = os.environ['PATH'].rsplit(':')
         script += 'PATH=' + script_path[0] + ':$PATH'  + '\n\n'
         # Write arguments, one per line with backslash-continuation
         words = [_enc_arg(arg) for arg in [self.program] + self.args]
