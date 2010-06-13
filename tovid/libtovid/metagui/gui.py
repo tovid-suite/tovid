@@ -20,6 +20,8 @@ try:
     from tkFileDialog import \
         (asksaveasfilename, askopenfilename)
     from tkMessageBox import showinfo, showerror
+    import Tix
+
 # Python 3.x
 except ImportError:
     import tkinter as tk
@@ -27,6 +29,7 @@ except ImportError:
     from tkinter.filedialog import \
         (asksaveasfilename, askopenfilename)
     from tkinter.messagebox import showinfo, showerror
+    import tkinter.tix as Tix
 
 from libtovid import cli
 from libtovid.metagui.widget import Widget
@@ -457,8 +460,10 @@ class Application (Widget):
                 control.set(control.vartype(value))
 
 
-
-class GUI (tk.Tk):
+# This uses Tix.Tk as a base class, to allow Tix widgets within
+# (since for some reason a Tix.ComboBox doesn't like to be inside
+# a Tkinter.Tk root window)
+class GUI (Tix.Tk):
     """GUI with one or more Applications
     """
     def __init__(self, title, width, height, application, **kwargs):
@@ -480,7 +485,7 @@ class GUI (tk.Tk):
             icon
                 Full path to an image to use as the titlebar icon
         """
-        tk.Tk.__init__(self)
+        Tix.Tk.__init__(self)
 
         # Ensure that one or more Application instances were provided
         ensure_type("GUI needs Application", Application, application)
