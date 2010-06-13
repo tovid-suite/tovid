@@ -791,7 +791,9 @@ class ConfigWindow (Dialog):
         self.fontfamily.pack(side='top', fill='both', expand=True)
         # Font size
         tk.Label(master, text="Font size").pack(side='top')
-        self.fontsize = ComboBox(master, choices=[8, 10, 12, 15, 18, 24])
+        size_var = tk.StringVar()
+        self.fontsize = tk.Spinbox(master, from_=8, to=24, textvariable=size_var)
+        self.fontsize.variable = size_var
         self.fontsize.pack(side='top')
         # Font style
         tk.Label(master, text="Font style").pack(side='top')

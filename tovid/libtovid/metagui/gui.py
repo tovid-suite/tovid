@@ -63,7 +63,7 @@ class Executor (Widget):
         # Log output text area
         self.text = ScrolledText(self, width=1, height=1,
             highlightbackground='gray', highlightcolor='gray', relief='groove',
-            font=('Courier', 12, 'normal'))
+            font=('Nimbus Sans L', 12, 'normal'))
         self.text.pack(fill='both', expand=True)
         # Bottom frame to hold the next four widgets
         frame = tk.Frame(self)
