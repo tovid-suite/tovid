@@ -3,6 +3,7 @@
 import os.path
 import shlex
 import commands
+import tkFont
 from Tkinter import *
 from tkMessageBox import *
 from tkSimpleDialog import askstring
@@ -57,10 +58,10 @@ class Wizard(Frame):
         self.exit_button = Button(self.button_frame, text='Exit',
                                        command=self.confirm_exit)
         self.exit_button.pack(side='left', anchor='sw')
-        self.next_button = Button(self.button_frame, text='Next>>>',
+        self.next_button = Button(self.button_frame, text='Next >>',
                                                   command=self.next)
         self.next_button.pack(side='right', anchor='se')
-        self.prev_button = Button(self.button_frame, text='<<<  Previous',
+        self.prev_button = Button(self.button_frame, text='<< Back',
                                                     command=self.previous)
         # frame for icon and status display
         self.frame1 = Frame(master)
@@ -193,10 +194,11 @@ class WizardPage(Frame):
         self.master.set_pages(self)
 
     def show_page(self):
-        index = self.master.pages.index(self)
-        self.master.index.set(index)
+        wizard = self.master
+        index = wizard.pages.index(self)
+        wizard.index.set(index)
         self.draw()
-        self.master.next_button.configure(command=self.page_controller)
+        wizard.next_button.configure(command=self.page_controller)
 
     def hide_page(self):
         self.frame.pack_forget()
@@ -431,8 +433,8 @@ class Page2(WizardPage):
     def page_controller(self):
         if os.path.exists(self.script_file):
             self.rename_script()
-        index = self.master.index.get()
         wizard = self.master
+        index = wizard.index.get()
         move = True
         cmds = self.run_gui([], index)
         # append to list and go to next page unless GUI was cancelled out of
@@ -488,6 +490,7 @@ class Page3(WizardPage):
         return [ l for l in temp_list if l]
 
     def page_controller(self):
+        wizard = self.master
         run_cmds = list(self.titlebox.get(0, 'end'))
         run_cmds = [l for l in run_cmds if l]
         if len(run_cmds) < 2:
@@ -497,7 +500,7 @@ class Page3(WizardPage):
         else:
             # withdraw the wizard and run the GUI, collecting commands
             run_cmds.insert(0,  '-titles')
-            index = self.master.index.get()
+            index = wizard.index.get()
             get_commands = self.run_gui(run_cmds, index)
             # append to list and go to next page unless GUI was cancelled out of
             if not get_commands:
@@ -510,10 +513,10 @@ class Page3(WizardPage):
                 cmds = ['-vmgm']
                 cmds.extend(get_commands)
                 cmds.append('-end-vmgm')
-                self.master.commands.append(cmds)
-            self.master.next()
+                wizard.commands.append(cmds)
+            wizard.next()
             self.root.deiconify()
-            self.master.show_status(status)
+            wizard.show_status(status)
 
 
 class Page4(WizardPage):
@@ -546,11 +549,12 @@ class Page4(WizardPage):
         self.label2.pack(fill='both', expand=True, side='top', anchor='nw')
 
     def page_controller(self):
+        wizard = self.master
         self.root.withdraw()
-        options_list = self.get_list_args(self.master.commands[1], '-titles')
+        options_list = self.get_list_args(wizard.commands[1], '-titles')
         numtitles = len(options_list)
         # set [Next >>>] button to set waitVar, allowing loop to continue
-        self.master.next_button.configure(command=self.master.set_waitvar)
+        wizard.next_button.configure(command=wizard.set_waitvar)
 
         for i in range(numtitles):
             run_cmds = ['-menu-title']
@@ -565,8 +569,8 @@ class Page4(WizardPage):
             # withdraw the wizard and run the GUI, collecting commands
             self.root.deiconify()
             # pressing 'Next' sets the waitVar and continues
-            self.master.wait_variable(self.master.waitVar)
-            if self.master.is_running.get() == 1:
+            wizard.wait_variable(wizard.waitVar)
+            if wizard.is_running.get() == 1:
                 get_commands = self.run_gui(run_cmds, '%s' %(i+3))
             else:
                 quit()
@@ -577,13 +581,18 @@ class Page4(WizardPage):
                 cmds = ['-titleset']
                 cmds.extend(get_commands)
                 cmds.append('-end-titleset')
-                self.master.commands.append(cmds)
+                wizard.commands.append(cmds)
             else:
                 status = 0
-            self.master.show_status(status)
+                wizard.commands.extend(run_cmds)
+                message='You have cancelled out of a titleset run. ' + \
+                  'The titleset will still appear in the listbox on the ' + \
+                  'last page, you may edit, remove or reorder it there.'
+                showinfo(message=message)
+            wizard.show_status(status)
         self.write_script()
         self.root.deiconify()
-        self.master.next()
+        wizard.next()
 
 
 class Page5(WizardPage):
@@ -605,6 +614,7 @@ class Page5(WizardPage):
             self.load_project()
 
     def draw(self):
+        wizard = self.master
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         text = '''
         Edit or reorder your selections using the listbox below.  (Note
@@ -629,10 +639,10 @@ class Page5(WizardPage):
         ''' % (self.script_file, self.script_file)
         text = trim(text)
         self.heading_label = Label(self.frame, text='Finished!',
-                                      font=self.master.lrg_font)
+                                      font=wizard.lrg_font)
         self.label = PrettyLabel(self.frame, text,
-                      self.master.font, height=18)
-        self.heading_label.pack(fill='both', expand=1, anchor='nw')
+                      wizard.font, height=18)
+        self.heading_label.pack(fill='both', expand=1, anchor='nw', pady=5)
         self.label.pack(fill='both', expand=1, anchor='nw')
         # create the listbox (note that size is in characters)
         frame_text = "Edit items, or add, remove or drag/drop titlesets"
@@ -657,10 +667,10 @@ class Page5(WizardPage):
         self.listbox.configure(yscrollcommand=yscroll.set)
         frame2.pack(side='left', fill='y', expand=False)
         # the 2nd index contains the titleset titles (VMGM menu)
-        self.refill_listbox(self.listbox, self.master.commands[1])
+        self.refill_listbox(self.listbox, wizard.commands[1])
         self.listbox.selection_set('end')
         # set next button to run gui etc before moving forward
-        self.master.next_button.configure\
+        wizard.next_button.configure\
           (command=self.page_controller, text='Run script')
         # Add bindings for drag/drop
         self.listbox.bind('<Button-1>', self.set_index)
@@ -691,10 +701,11 @@ class Page5(WizardPage):
         """Swap the element at ``index_a`` with the one at ``index_b``.
         Calls ``swap`` callbacks for the swapped items.
         """
+        wizard = self.master
         # Use temporary lists
-        temp_commands = deepcopy(self.master.commands)
-        self.master.commands[index_a] = temp_commands[index_b]
-        self.master.commands[index_b] = temp_commands[index_a]
+        temp_commands = deepcopy(wizard.commands)
+        wizard.commands[index_a] = temp_commands[index_b]
+        wizard.commands[index_b] = temp_commands[index_a]
         # modify sublist (commands[1]) 
         self.mod_sublist('', index_a,index_b)
         temp_list = self.listbox.get(0, 'end')
@@ -765,6 +776,7 @@ class Page5(WizardPage):
             pass
 
     def add_titleset(self, Event=None):
+        wizard = self.master
         mess = 'Please select an options line first\n'
         mess += 'The new titleset will be inserted after the selected option'
         try:
@@ -781,12 +793,12 @@ class Page5(WizardPage):
         title = askstring('Titleset title', text)
         # if nothing entered, return without changes
         if not title:
-            self.master.show_status(1)
+            wizard.show_status(1)
             return
         self.mod_sublist(title, ind)
         new_titleset = ['-titleset', '-menu-title', title, '-end-titleset']
         # add new titleset with just the 'tags' surrounding the new title
-        self.master.commands.insert(ind+1, new_titleset)
+        wizard.commands.insert(ind+1, new_titleset)
         self.listbox.insert(ind+1, title)
         self.set_selection(ind)
         status = self.rerun_options(index=ind+1)
@@ -795,9 +807,9 @@ class Page5(WizardPage):
             # remove new title from listbox
             self.listbox.delete('end')
             self.set_selection(index='end')
-            self.master.commands.pop(-1)
+            wizard.commands.pop(-1)
             try:
-                self.master.commands[1].remove(title)
+                wizard.commands[1].remove(title)
             except ValueError:
                 print('%s not in Root menu options' %title)
             return
@@ -834,7 +846,8 @@ class Page5(WizardPage):
            and remove it from commands, but if item is passed, add it as a
            new index instead.
         """
-        vmgm_cmds = [w for w in self.master.commands[1]]
+        wizard = self.master
+        vmgm_cmds = [w for w in wizard.commands[1]]
         # get options ( -titles title1 title2 ... ), removing them from original
         vmgm_titles = self.get_option(vmgm_cmds, '-titles')
         # remove -end-vmgm, remove title , add -end-vmgm
@@ -854,8 +867,8 @@ class Page5(WizardPage):
         vmgm_cmds.extend(vmgm_titles)
         vmgm_cmds.append('-end-vmgm')
         # delete old vmgm options from todisc_cmds and insert new
-        self.master.commands.pop(1)
-        self.master.commands.insert(1, vmgm_cmds)
+        wizard.commands.pop(1)
+        wizard.commands.insert(1, vmgm_cmds)
 
     def rerun_options(self, Event=None, index=None):
         """Run the gui with the selected options
@@ -935,14 +948,22 @@ class Page6(WizardPage):
         WizardPage.__init__(self, master)
 
     def draw(self):
-        self.master.next_button.pack_forget()
-        self.master.prev_button.pack(side='right', anchor='se')
+        wizard = self.master
+        wizard.next_button.pack_forget()
+        wizard.prev_button.pack(side='right', anchor='se')
+        text='Running saved project'
+        self.label = Label(self.root, text=text, font=wizard.lrg_font)
+        self.label.pack(side='top', fill='both', expand=1, anchor='nw', pady=5)
         self.executor = Executor()
         self.executor.draw(self.root)
-        self.executor.pack(side='right', fill='both', expand=1, anchor='nw')
-        self.executor.text.configure(height=30)
-        self.executor.text.configure(font=('Helvetica', 12, 'normal'))
-        cmds = self.master.commands
+        self.executor.pack(side='right', fill='both', expand=1,
+                                          padx=20, anchor='nw')
+        font = tkFont.Font(family='Helvetica', size=12, weight='normal')
+        # find out what height to give executor based on font metrics
+        font_height = font.metrics('linespace')
+        log_height = 580/font_height
+        self.executor.text.configure(height=log_height, font=font)
+        cmds = wizard.commands
         command = Command('bash', self.script_file)
         all_lines = [repr(line) for sublist in cmds for line in sublist]
         self.executor.notify("Running command: todisc " + ' '.join(all_lines))
@@ -950,15 +971,17 @@ class Page6(WizardPage):
 
     def previous(self):
         """Move to the previous wizard page"""
+        wizard = self.master
         try:
-            self.master.prev_button.pack_forget()
-            index = self.master.index.get()
-            prev = self.master.pages[index-1]
-            self.master.index.set(index-1)
+            wizard.prev_button.pack_forget()
+            index = wizard.index.get()
+            prev = wizard.pages[index-1]
+            wizard.index.set(index-1)
             self.executor.pack_forget()
+            self.label.pack_forget()
             prev.frame.pack(side='right')
-            self.master.next_button.pack(side='right', anchor='se')
-            self.master.next_button.configure\
+            wizard.next_button.pack(side='right', anchor='se')
+            wizard.next_button.configure\
             (command=prev.page_controller, text='Run script')
         except IndexError:
             pass
