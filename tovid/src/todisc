@@ -3188,6 +3188,7 @@ while test $# -gt 0; do
             ;;
         "-eject" )
             EJECT="-eject"
+            ;;
         "-quick-menu" )
             QUICK_MENU=:
             ;;
