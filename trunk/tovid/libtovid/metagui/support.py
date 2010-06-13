@@ -31,12 +31,15 @@ try:
     from tkSimpleDialog import Dialog
     import tkMessageBox
     from ConfigParser import ConfigParser
+    import Tix
+
 # Python 3.x
 except ImportError:
     import tkinter as tk
     from tkinter.simpledialog import Dialog
     import tkinter.messagebox as tkMessageBox
     from configparser import ConfigParser
+    import tkinter.tix as Tix
 
 from libtovid import cli
 from libtovid.util import imagemagick_fonts
@@ -373,7 +376,7 @@ class ScrollList (tk.Frame):
                 May be 'insert', 'remove', 'select', or 'swap'
             function
                 Callback function to call for the given action
-                
+
         All callback functions except 'swap' must take ``(index, value)``
         parameters; the 'swap' callback should accept ``(index_a, index_b)``.
         In all cases, ``index`` is 0-based, and -1 is passed for the last item.
@@ -449,6 +452,35 @@ class DragList (ScrollList):
 
 
 class ComboBox (tk.Frame):
+    def __init__(self, master, choices=None,
+                 variable=None, command=None):
+        """Create a ComboBox.
+
+            master
+                Tk Widget that will contain the ComboBox
+            choices
+                ListVar or Python list of available choices
+            variable
+                Tk StringVar to store currently selected choice in
+            command
+                Function to call when an item in the list is selected
+        """
+        tk.Frame.__init__(self, master)
+        self.variable = variable or tk.StringVar()
+        # Create and pack the Tix ComboBox
+        self.combo = Tix.ComboBox(self, editable=True)
+        self.combo.config(variable=self.variable, command=command)
+        self.combo.pack(side='left', expand=True, fill='both')
+        # Make the entry box background white
+        self.combo.subwidget('entry').config(bg='#ffffff')
+        # Add choices, if specified
+        if choices:
+            for index, choice in enumerate(choices):
+                self.combo.insert(index, choice)
+
+
+
+class OldComboBox (tk.Frame):
     """A dropdown menu with several choices.
     """
     def __init__(self, master, choices=None,
