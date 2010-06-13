@@ -940,6 +940,7 @@ class Page6(WizardPage):
         self.executor.draw(self.root)
         self.executor.pack(side='right', fill='both', expand=1, anchor='nw')
         self.executor.text.configure(height=30)
+        self.executor.text.configure(font=('Helvetica', 12, 'normal'))
         cmds = self.master.commands
         command = Command('bash', self.script_file)
         all_lines = [repr(line) for sublist in cmds for line in sublist]
