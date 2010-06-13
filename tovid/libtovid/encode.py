@@ -27,12 +27,13 @@ by all backends. The available backends are:
     - `~libtovid.backend.ffmpeg`
     - `~libtovid.backend.mplayer`
     - `~libtovid.backend.mpeg2enc`
-    
+
 """
 
 __all__ = [
     'encode',
-    'get_encoder',
+    'eval_keywords',
+    'fit',
 ]
 
 from libtovid.backend import ffmpeg, mplayer, mpeg2enc
@@ -56,24 +57,44 @@ _bitrate_limits = {
 
 def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
            **kwargs):
-    """Encode a multimedia file according to a target profile, saving the
-    encoded file to outfile.
+    """Encode a multimedia file ``infile`` according to a target profile,
+    saving the encoded file to ``outfile``.
 
         infile
             Input filename
         outfile
-            Desired output filename (.mpg implied)
+            Desired output filename (``.mpg`` implied)
         format
             One of 'vcd', 'svcd', 'dvd' (case-insensitive)
         tvsys
             One of 'ntsc', 'pal' (case-insensitive)
         method
-            Encoding backend: 'ffmpeg', 'mencoder', or 'mpeg2enc'
+            Encoding backend: `~libtovid.backend.ffmpeg`,
+            `~libtovid.backend.mplayer`, or `~libtovid.backend.mpeg2enc`
         kwargs
             Additional keyword arguments (name=value)
 
-    The supported keyword arguments vary by encoding method. See the encoding
-    functions for what is available in each.
+    For example::
+
+        encode('/video/foo.avi', '/video/bar.mpg', 'dvd', 'ntsc', 'ffmpeg')
+
+    This will encode ``/video/foo.avi`` to NTSC DVD format using ffmpeg, saving
+    the result as '/video/bar.mpg'. The ``format``, ``tvsys``, and ``method``
+    arguments are optional; if you do::
+
+        encode('/video/foo.avi', '/video/bar.mpg')
+
+    then encoding will be DVD NTSC, using ffmpeg.
+
+    Keyword arguments may be used to further refine encoding behavior, for example::
+
+        encode('foo.avi', 'foo.mpg', 'dvd', 'pal',
+               quality=7, interlace='bottom', ...)
+
+    The supported keywords may vary by backend, but some keywords are supported
+    by all backends.
+
+
     """
     source = mplayer.identify(infile)
     # Add .mpg to outfile if not already present
@@ -103,7 +124,13 @@ def encode(infile, outfile, format='dvd', tvsys='ntsc', method='ffmpeg',
     encode_method(source, target, **kwargs)
 
 
-def get_encoder(backend):
+# --------------------------------------------------------------------------
+#
+# Helper functions
+#
+# --------------------------------------------------------------------------
+
+def _get_encoder(backend):
     """Get an encoding function."""
     if backend == 'ffmpeg':
         return ffmpeg.encode
@@ -112,12 +139,6 @@ def get_encoder(backend):
     elif backend == 'mpeg2enc':
         return mpeg2enc.encode
 
-
-# --------------------------------------------------------------------------
-#
-# Helper functions
-#
-# --------------------------------------------------------------------------
 
 def eval_keywords(source, target, **kwargs):
     """Interpret keywords that affect other keywords, and return the result.
@@ -141,17 +162,17 @@ def eval_keywords(source, target, **kwargs):
     # Set quant and vbitrate to fit desired size
     if 'fit' in kwargs:
         kwargs['quant'], kwargs['vbitrate'] = \
-            _fit(source, target, kwargs['fit'])
+            fit(source, target, kwargs['fit'])
     return kwargs
 
 
-def _fit(source, target, fit_size):
+def fit(source, target, fit_size):
     """Return video (quantization, bitrate) to fit a video into a given size.
 
         source
-            MediaFile input (the video being encoded)
+            `~libtovid.media.MediaFile` input (the video being encoded)
         target
-            MediaFile output (desired target profile)
+            `~libtovid.media.MediaFile` output (desired target profile)
         fit_size
             Desired encoded file size, in MiB
 
@@ -180,8 +201,5 @@ def _fit(source, target, fit_size):
         return (quant, upper)
     else:
         return (quant, vid_bitrate)
-
-
-
 
 
