@@ -935,7 +935,8 @@ class Page6(WizardPage):
         WizardPage.__init__(self, master)
 
     def draw(self):
-        self.master.prev_button.pack(side='left', anchor='sw')
+        self.master.next_button.pack_forget()
+        self.master.prev_button.pack(side='right', anchor='se')
         self.executor = Executor()
         self.executor.draw(self.root)
         self.executor.pack(side='right', fill='both', expand=1, anchor='nw')
@@ -950,11 +951,13 @@ class Page6(WizardPage):
     def previous(self):
         """Move to the previous wizard page"""
         try:
+            self.master.prev_button.pack_forget()
             index = self.master.index.get()
             prev = self.master.pages[index-1]
             self.master.index.set(index-1)
             self.executor.pack_forget()
             prev.frame.pack(side='right')
+            self.master.next_button.pack(side='right', anchor='se')
             self.master.next_button.configure\
             (command=prev.page_controller, text='Run script')
         except IndexError:
