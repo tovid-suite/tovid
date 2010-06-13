@@ -599,6 +599,8 @@ class Page5(WizardPage):
         if len(argv) > 1:
             self.set_project_commands()
             self.draw()
+            index = self.master.pages.index(self)
+            self.master.index.set(index)
             # draw must be called before load_project
             self.load_project()
 
@@ -936,8 +938,12 @@ class Page6(WizardPage):
         self.master.prev_button.pack(side='left', anchor='sw')
         self.executor = Executor()
         self.executor.draw(self.root)
-        self.executor.pack(fill='both', expand=1, anchor='nw')
+        self.executor.pack(side='right', fill='both', expand=1, anchor='nw')
+        self.executor.text.configure(height=30)
+        cmds = self.master.commands
         command = Command('bash', self.script_file)
+        all_lines = [repr(line) for sublist in cmds for line in sublist]
+        self.executor.notify("Running command: todisc " + ' '.join(all_lines))
         self.executor.execute(command, self.executor.configure)
 
     def previous(self):
