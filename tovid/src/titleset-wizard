@@ -60,6 +60,8 @@ class Wizard(Frame):
         self.next_button = Button(self.button_frame, text='Next>>>',
                                                   command=self.next)
         self.next_button.pack(side='right', anchor='se')
+        self.prev_button = Button(self.button_frame, text='<<<  Previous',
+                                                    command=self.previous)
         # frame for icon and status display
         self.frame1 = Frame(master)
         self.frame1.pack(side='left', anchor='nw', padx=10, pady=80)
@@ -103,11 +105,14 @@ class Wizard(Frame):
         index = self.index.get()
         try:
             self.pages[index].hide_page()
-            self.index.set(index + 1)
             self.pages[index+1].frame.pack(side='right')
             self.pages[index+1].show_page()
         except IndexError:
             pass
+
+    def previous(self):
+        index = self.index.get()
+        self.pages[index].previous()
 
     def set_pages(self, page):
         """Accept incoming list of wizard page instances"""
@@ -188,6 +193,8 @@ class WizardPage(Frame):
         self.master.set_pages(self)
 
     def show_page(self):
+        index = self.master.pages.index(self)
+        self.master.index.set(index)
         self.draw()
         self.master.next_button.configure(command=self.page_controller)
 
@@ -358,6 +365,8 @@ class Page1(WizardPage):
         # draw the page by default unless script file arg passed
         if len(argv) < 2:
             self.draw()
+        index = self.master.pages.index(self)
+        self.master.index.set(index)
 
     def draw(self):
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
@@ -580,7 +589,7 @@ class Page4(WizardPage):
 class Page5(WizardPage):
     """Final wizard page.  Here you can rerun options that have been saved
        from the tovid GUI, and add or remove titlesets.  You can also
-       choose to run the final project in an xterm
+       choose to run the final project
     """
     def __init__(self, master):
         WizardPage.__init__(self, master)
@@ -599,8 +608,8 @@ class Page5(WizardPage):
         Edit or reorder your selections using the listbox below.  (Note
         that menu link titles as shown in listbox are saved as titles
         in the "Root menu" options.)  If you are happy with your saved
-        options, run the script now in an xterm, or exit and run it later.
-        You can run it with:
+        options, run the script now , or exit and run it later.
+        You can run it later with:
 
         bash %s
 
@@ -651,7 +660,6 @@ class Page5(WizardPage):
         # set next button to run gui etc before moving forward
         self.master.next_button.configure\
           (command=self.page_controller, text='Run script')
-          #(command=self.run_in_xterm, text='Run script now')
         # Add bindings for drag/drop
         self.listbox.bind('<Button-1>', self.set_index)
         self.listbox.bind('<B1-Motion>', self.drag)
@@ -726,9 +734,12 @@ class Page5(WizardPage):
         self.after(50, lambda:self.root.config(cursor="double_arrow"))
 
     def page_controller(self):
-        #self.run_in_xterm()
-        self.master.index.set(4)
-        self.master.next()
+        wizard = self.master
+        index = wizard.index.get()
+        self.frame.pack_forget()
+        wizard.index.set(index + 1)
+        wizard.pages[index+1].frame.pack(side='right')
+        wizard.pages[index+1].show_page()
 
     # used to repopulate titleset titles after adding new one
     def get_option(self, items, option):
@@ -887,23 +898,6 @@ class Page5(WizardPage):
         self.listbox.selection_clear(0, index)
         self.listbox.selection_set(index)
 
-    def run_in_xterm(self):
-        """Run the final script in an xterm, completing the project
-        """
-        if not askyesno(message="Run in xterm now?"):
-            self.master.show_status(1)
-            return
-        script = self.script_file
-        cmd = \
-          ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
-        wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
-        tovid_cmd = 'bash %s' % script
-        cmd.append(tovid_cmd + wait_cmd)
-        self.root.withdraw()
-        command = Popen(cmd, stderr=PIPE)
-        self.root.deiconify()
-
-
     def set_project_commands(self):
         in_contents = self.script_to_list(argv[1])
         in_cmds = in_contents[:]
@@ -939,13 +933,25 @@ class Page6(WizardPage):
         WizardPage.__init__(self, master)
 
     def draw(self):
-        #self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-        executor = Executor()
-        executor.draw(self.root)
-        executor.pack(fill='both', expand=1, anchor='nw')
+        self.master.prev_button.pack(side='left', anchor='sw')
+        self.executor = Executor()
+        self.executor.draw(self.root)
+        self.executor.pack(fill='both', expand=1, anchor='nw')
         command = Command('bash', self.script_file)
-        executor.execute(command, executor.configure)
+        self.executor.execute(command, self.executor.configure)
 
+    def previous(self):
+        """Move to the previous wizard page"""
+        try:
+            index = self.master.index.get()
+            prev = self.master.pages[index-1]
+            self.master.index.set(index-1)
+            self.executor.pack_forget()
+            prev.frame.pack(side='right')
+            self.master.next_button.configure\
+            (command=prev.page_controller, text='Run script')
+        except IndexError:
+            pass
 
 class TitleBox(Frame):
     """A Listbox in a LabelFrame with Entry associated with it
