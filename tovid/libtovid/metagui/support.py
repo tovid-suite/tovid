@@ -32,6 +32,7 @@ try:
     import tkMessageBox
     from ConfigParser import ConfigParser
     import Tix
+    import tkFont
 
 # Python 3.x
 except ImportError:
@@ -40,6 +41,7 @@ except ImportError:
     import tkinter.messagebox as tkMessageBox
     from configparser import ConfigParser
     import tkinter.tix as Tix
+    import tkinter.font as tkFont
 
 from libtovid import cli
 from libtovid.util import imagemagick_fonts
@@ -785,8 +787,7 @@ class ConfigWindow (Dialog):
         """
         # Font family
         tk.Label(master, text="Font family").pack(side='top')
-        self.fontfamily = ComboBox(master,
-                                   choices=['Helvetica', 'Courier', 'Times'])
+        self.fontfamily = ComboBox(master, choices=sorted(tkFont.families()))
         self.fontfamily.pack(side='top', fill='both', expand=True)
         # Font size
         tk.Label(master, text="Font size").pack(side='top')
