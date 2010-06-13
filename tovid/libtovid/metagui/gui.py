@@ -144,12 +144,15 @@ class Executor (Widget):
         """Poll for process completion, and update the output window.
         """
         # Read from output file and print to log window
-        data = self.outfile.read()
-        if data:
-            # Split on newlines (but not on \r)
-            lines = data.split('\n')
-            for line in lines:
-                self.write(line)
+        try:
+            data = self.outfile.read()
+            if data:
+                # Split on newlines (but not on \r)
+                lines = data.split('\n')
+                for line in lines:
+                    self.write(line)
+        except ValueError:
+            pass
 
         # Stop if command is done, or poll again
         if self.command.done():
