@@ -198,7 +198,7 @@ class ScrollList (tk.Frame):
     the one that is currently selected.
     """
     def __init__(self, master=None, items=None,
-                 selected=None):
+                 selected=None, **kwargs):
         """Create a ScrollList widget.
 
             master
@@ -207,6 +207,13 @@ class ScrollList (tk.Frame):
                 ListVar or Python list of items to show in listbox
             selected
                 Tk StringVar to store currently selected choice in
+
+        Keyword arguments:
+
+            width
+                Width of the listbox, in characters
+            height
+                Height of the listbox, in characters
         """
         tk.Frame.__init__(self, master)
 
@@ -221,7 +228,8 @@ class ScrollList (tk.Frame):
         self.scrollbar = tk.Scrollbar(self, orient='vertical',
                                       command=self.scroll)
         self.listbox = tk.Listbox(self, listvariable=self.items,
-                                  width=45, height=7,
+                                  width=kwargs.get('width', 45),
+                                  height=kwargs.get('height', 7),
                                   yscrollcommand=self.scrollbar.set,
                                   exportselection=0)
         self.listbox.pack(side='left', fill='both', expand=True)
@@ -455,7 +463,8 @@ class DragList (ScrollList):
 
 class ComboBox (tk.Frame):
     def __init__(self, master, choices=None,
-                 variable=None, command=None):
+                 variable=None, command=None,
+                 **kwargs):
         """Create a ComboBox.
 
             master
@@ -470,10 +479,11 @@ class ComboBox (tk.Frame):
         tk.Frame.__init__(self, master)
         self.variable = variable or tk.StringVar()
         # Create and pack the Tix ComboBox
-        self.combo = Tix.ComboBox(self, editable=True)
+        self.combo = Tix.ComboBox(self, editable=True, **kwargs)
         self.combo.config(variable=self.variable, command=command)
         self.combo.pack(side='left', expand=True, fill='both')
         # Make the entry box background white
+        # FIXME: This doesn't do anything when editable=False
         self.combo.subwidget('entry').config(bg='#ffffff')
         # Add choices, if specified
         if choices:
@@ -481,114 +491,14 @@ class ComboBox (tk.Frame):
                 self.combo.insert(index, choice)
 
 
-
-class OldComboBox (tk.Frame):
-    """A dropdown menu with several choices.
-    """
-    def __init__(self, master, choices=None,
-                 variable=None, command=None):
-        """Create a ComboBox.
-
-            master
-                Tk Widget that will contain the ComboBox
-            choices
-                ListVar or Python list of available choices
-            variable
-                Tk StringVar to store currently selected choice in
-            command
-                Function to call when an item in the list is selected
-        """
-        tk.Frame.__init__(self, master)
-        if type(choices) == list:
-            choices = ListVar(self, choices)
-        self.choices = choices or ListVar()
-        self.variable = variable or tk.StringVar()
-        self.command = command
-        self.curindex = 0
-
-        # Text and button
-        # Fit to width of longest choice
-        _width = max([len(str(c)) for c in self.choices.get()])
-        self.text = tk.Entry(self, textvariable=self.variable, width=_width)
-        self.text.pack(side='left', expand=True, fill='both')
-        self.button = tk.Button(self, text="...", command=self.open)
-        self.button.pack(side='left')
-
-        # Dropdown list, displayed when button is clicked
-        self.dropdown = tk.Toplevel(self)
-        # Don't draw window manager frame around the dropdown
-        self.dropdown.wm_overrideredirect(1)
-        # Hide until later
-        self.dropdown.withdraw()
-
-        # List of choices
-        self.chooser = tk.Listbox(self.dropdown, background='#ffffff',
-                                  listvariable=self.choices, width=_width,
-                                  height=self.choices.count())
-        # Use alternating white/gray for choices
-        #for index in range(0, len(self.choices), 2):
-        #    self.chooser.itemconfig(index, bg='LightGray')
-        self.chooser.bind('<Button-1>', self.choose, '+')
-        self.bind_all('<Button>', self.close, '+')
-        self.chooser.bind('<Motion>', self.highlight)
-        self.chooser.grid()
-
-
-    def open(self):
-        """Open/close a panel showing the list of choices.
-        """
-        if self.dropdown.winfo_viewable():
-            self.dropdown.withdraw()
-        else:
-            # Align dropdown list with the text box
-            x = self.text.winfo_rootx()
-            y = self.text.winfo_rooty()
-            self.dropdown.wm_geometry("+%d+%d" % (x, y))
-            # Show list
-            self.dropdown.deiconify()
-
-        # Highlight the current selection
-        self.chooser.itemconfig(self.curindex, background='LightGray')
-
-
-    def close(self, event=None):
-        """Close the panel showing the list of choices.
-        """
-        try:
-            if self.dropdown.winfo_viewable():
-                self.dropdown.withdraw()
-        except tk.TclError:
-            pass
-
-
-    def highlight(self, event=None):
-        """Event handler to highlight an entry on mouse-over.
-        """
-        for index in range(self.choices.count()):
-            self.chooser.itemconfig(index, background='White')
-        index = self.chooser.nearest(event.y)
-        self.chooser.itemconfig(index, background='LightGray')
-
-
-    def choose(self, event=None):
-        """Make a selection from the list, and set the variable.
-        """
-        self.curindex = self.chooser.nearest(event.y)
-        self.variable.set(self.chooser.get(self.curindex))
-        self.close()
-        # Callback, if any
-        if self.command:
-            self.command()
-
-
 class FontChooser (Dialog):
-    """A widget for choosing a font.
+    """A widget for choosing an ImageMagick font name.
     """
     # Cache of PhotoImage previews, indexed by font name
     _cache = {}
 
     def __init__(self, parent=None):
-        Dialog.__init__(self, parent, "Font chooser")
+        Dialog.__init__(self, parent, "ImageMagick font chooser")
         # Defined in body()
         self.fontlist = None
         self.preview = None
@@ -786,34 +696,58 @@ class ConfigWindow (Dialog):
         have the initial focus. Called by the Dialog base class constructor.
         """
         # Font family
+        families = sorted(tkFont.families())
         tk.Label(master, text="Font family").pack(side='top')
-        self.fontfamily = ComboBox(master, choices=sorted(tkFont.families()))
+        self.fontfamily = ScrollList(master, families)
+        self.fontfamily.callback('select', self.refresh)
         self.fontfamily.pack(side='top', fill='both', expand=True)
+        # Font style
+        tk.Label(master, text="Font style").pack(side='top')
+        self.fontstyle = ScrollList(master, ['normal', 'bold'], height=2)
+        self.fontstyle.callback('select', self.refresh)
+        self.fontstyle.pack(side='top')
         # Font size
         tk.Label(master, text="Font size").pack(side='top')
         size_var = tk.StringVar()
-        self.fontsize = tk.Spinbox(master, from_=8, to=24, textvariable=size_var)
+        self.fontsize = tk.Spinbox(master, from_=8, to=24,
+           textvariable=size_var, command=self.refresh)
         self.fontsize.variable = size_var
         self.fontsize.pack(side='top')
-        # Font style
-        tk.Label(master, text="Font style").pack(side='top')
-        self.fontstyle = ComboBox(master, choices=['normal', 'bold'])
-        self.fontstyle.pack(side='top')
+        # Preview area
+        preview_frame = tk.LabelFrame(master, text="Preview")
+        preview_frame.pack(side='top', fill='both')
+        self.preview = tk.Label(preview_frame,
+            text="The quick brown fox")
+        self.preview.pack(side='top')
         # Use initial values loaded from .ini file
         family, size, style = self.style.font
-        self.fontfamily.variable.set(family)
+        self.fontfamily.selected.set(family)
         self.fontsize.variable.set(size)
-        self.fontstyle.variable.set(style)
+        self.fontstyle.selected.set(style)
+        # Refresh the preview
+        self.refresh()
         # Return widget with initial focus
         return self.fontfamily
+
+
+    def get_font(self):
+        """Return a ``(family, size, style)`` tuple for the current font.
+        """
+        return (self.fontfamily.selected.get(),
+                self.fontsize.variable.get(),
+                self.fontstyle.selected.get())
+
+
+    def refresh(self, *args):
+        """Refresh the preview to show the current font.
+        """
+        self.preview.config(font=self.get_font())
 
 
     def apply(self):
         """Apply the selected configuration settings.
         """
-        self.style.font = (self.fontfamily.variable.get(),
-                           self.fontsize.variable.get(),
-                           self.fontstyle.variable.get())
+        self.style.font = self.get_font()
         self.result = self.style
 
 
