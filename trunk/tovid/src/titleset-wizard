@@ -961,10 +961,13 @@ class Page6(WizardPage):
         font = tkFont.Font(family='Helvetica', size=12, weight='normal')
         # find out what height to give executor based on font metrics
         font_height = font.metrics('linespace')
-        log_height = 580/font_height
+        log_height = 540/font_height
         self.executor.text.configure(height=log_height, font=font)
+        self.button = Button(self.executor.frame, text='Run project now',
+                                                    command=self.execute)
+        self.button.pack(side='right')
         cmds = wizard.commands
-        command = Command('bash', self.script_file)
+        self.command = Command('bash', self.script_file)
         cmd = ''
         all_lines = [line for sublist in cmds for line in sublist]
         for line in all_lines:
@@ -973,7 +976,9 @@ class Page6(WizardPage):
             else:
                 cmd += ' ' + line
         self.executor.notify("Running command: todisc " + cmd)
-        self.executor.execute(command, self.executor.configure)
+
+    def execute(self):
+        self.executor.execute(self.command, self.executor.configure)
 
     def previous(self):
         """Move to the previous wizard page"""
