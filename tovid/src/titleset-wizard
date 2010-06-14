@@ -968,13 +968,10 @@ class Page6(WizardPage):
         self.button.pack(side='right')
         cmds = wizard.commands
         self.command = Command('bash', self.script_file)
+        all_lines = [_enc_arg(line) for sublist in cmds for line in sublist]
         cmd = ''
-        all_lines = [line for sublist in cmds for line in sublist]
         for line in all_lines:
-            if ' ' in line:
-                cmd += " \"%s\"" %line
-            else:
-                cmd += ' ' + line
+            cmd += ' ' + line
         self.executor.notify("Running command: todisc " + cmd)
 
     def execute(self):
