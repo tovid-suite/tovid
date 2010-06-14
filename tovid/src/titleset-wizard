@@ -965,8 +965,14 @@ class Page6(WizardPage):
         self.executor.text.configure(height=log_height, font=font)
         cmds = wizard.commands
         command = Command('bash', self.script_file)
-        all_lines = [repr(line) for sublist in cmds for line in sublist]
-        self.executor.notify("Running command: todisc " + ' '.join(all_lines))
+        cmd = ''
+        all_lines = [line for sublist in cmds for line in sublist]
+        for line in all_lines:
+            if ' ' in line:
+                cmd += " \"%s\"" %line
+            else:
+                cmd += ' ' + line
+        self.executor.notify("Running command: todisc " + cmd)
         self.executor.execute(command, self.executor.configure)
 
     def previous(self):
