@@ -66,22 +66,22 @@ class Executor (Widget):
             font=('Nimbus Sans L', 12, 'normal'))
         self.text.pack(fill='both', expand=True)
         # Bottom frame to hold the next four widgets
-        frame = tk.Frame(self)
+        self.frame = tk.Frame(self)
         # Text area for stdin input to the program
-        label = tk.Label(frame, text="Input:")
+        label = tk.Label(self.frame, text="Input:")
         label.pack(side='left')
-        self.stdin_text = tk.Entry(frame)
+        self.stdin_text = tk.Entry(self.frame)
         self.stdin_text.pack(side='left', fill='x', expand=True)
         self.stdin_text.bind('<Return>', self.send_stdin)
         # Button to stop the process
-        self.kill_button = tk.Button(frame, text="Kill", command=self.kill)
+        self.kill_button = tk.Button(self.frame, text="Kill", command=self.kill)
         self.kill_button.pack(side='left')
         # Button to save log output
-        self.save_button = tk.Button(frame, text="Save log",
+        self.save_button = tk.Button(self.frame, text="Save log",
                                      command=self.save_log)
         self.save_button.pack(side='left')
         # Pack the bottom frame
-        frame.pack(anchor='nw', fill='x')
+        self.frame.pack(anchor='nw', fill='x')
         # Disable stdin box and kill button until execution starts
         self.stdin_text.config(state='disabled')
         self.kill_button.config(state='disabled')
