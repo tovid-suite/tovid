@@ -4,6 +4,7 @@ import os.path
 import shlex
 import commands
 import tkFont
+import re
 from Tkinter import *
 from tkMessageBox import *
 from tkSimpleDialog import askstring
@@ -47,6 +48,11 @@ class Wizard(Frame):
         # for waiting on [Next>>>] being pushed to continue titleset loop
         self.waitVar = BooleanVar()
         self.waitVar.set(False)
+        # pid for xterm, to allow clean exit
+        self.xterm_pid = ''
+        # need this to make sure we don't have zombie processes
+        self.xterm_is_running = BooleanVar()
+        self.xterm_is_running.set(False)
         # bindings for exit
         self.root.protocol("WM_DELETE_WINDOW", self.confirm_exit)
         self.root.bind('<Control-q>', self.confirm_exit)
@@ -148,12 +154,30 @@ class Wizard(Frame):
     def confirm_exit(self, event=None):
         """Exit the GUI, with confirmation prompt.
         """
+        mess = 'Xterm is still open: is todisc still running? '
+        mess += 'If so, please ctrl-c in the terminal if you wish to exit, '
+        mess += 'and close the terminal by pressing <ENTER> in it, '
+        if self.xterm_is_running.get() == True:
+            showwarning(message=mess)
+            return
         if askyesno(message="Exit?"):
             # set is_running to false so the gui doesn't get run
             self.is_running.set(False)
             # waitVar may cause things to hang, spring it
             self.set_waitvar()
-            quit()
+            # make sure we don't create zombie xterm processes
+            self.kill_pid(self.xterm_pid)
+            self.root.quit()
+
+    def kill_pid(self, pid):
+        """Test and kill xterm pid in case of premature exit"""
+        if not pid:
+            return
+        test_pid = commands.getstatusoutput('kill -0 %s' %pid)
+        if test_pid[0] == 0:
+            pid = '%s' %pid
+            cmd = ['kill', pid]
+            Popen(cmd, stderr=PIPE)
 
     def set_waitvar(self):
         """Set a BooleanVar() so tk.wait_var can exit
@@ -257,6 +281,7 @@ class WizardPage(Frame):
         commands = self.master.commands
         header = self.header
         cmdout = open(self.script_file, 'w')
+        os.chmod(self.script_file, 0775)
         # add the shebang, PATH, and 'todisc \' lines
         cmdout.writelines(header)
         # flatten the list
@@ -948,51 +973,123 @@ class Page6(WizardPage):
         WizardPage.__init__(self, master)
 
     def draw(self):
+        self.frame.pack_forget()
         wizard = self.master
         wizard.next_button.pack_forget()
         wizard.prev_button.pack(side='right', anchor='se')
-        text='Running saved project'
-        self.label = Label(self.root, text=text, font=wizard.lrg_font)
-        self.label.pack(side='top', fill='both', expand=1, anchor='nw', pady=5)
-        self.executor = Executor()
-        self.executor.draw(self.root)
-        self.executor.pack(side='right', fill='both', expand=1,
-                                          padx=20, anchor='nw')
-        font = tkFont.Font(family='Helvetica', size=12, weight='normal')
-        # find out what height to give executor based on font metrics
-        font_height = font.metrics('linespace')
-        log_height = 540/font_height
-        self.executor.text.configure(height=log_height, font=font)
-        self.button = Button(self.executor.frame, text='Run project now',
-                                                    command=self.execute)
-        self.button.pack(side='right')
         cmds = wizard.commands
-        self.command = Command('bash', self.script_file)
+        self.command = Command(self.script_file)
+
         all_lines = [_enc_arg(line) for sublist in cmds for line in sublist]
         cmd = ''
         for line in all_lines:
             cmd += ' ' + line
-        self.executor.notify("Running command: todisc " + cmd)
+        self.cmd = 'todisc ' + cmd
+        text1='Running saved project'
+        self.cmd_str = '\n\n\nThe command that will run:' + '\n\n' + '[todisc ' \
+          + cmd + ']'
+        self.label = Label(self.master, text=text1, font=wizard.lrg_font)
+        self.label.pack(side='top', fill='both', expand=1, anchor='nw', pady=5)
+        font = tkFont.Font(family='Helvetica', size=12, weight='normal')
+        self.cmd_label = Label(self.master, text=self.cmd_str,
+        font=self.master.font, justify='left', wraplength=500)
+        self.cmd_label.pack(fill='both', expand=1)
+        self.root.after(200, self.poll)
+        self.button = Button(self.master, text='Run project now',
+                                            command=self.run_in_xterm)
+        self.button.pack(side='bottom')
+        self.return_code = BooleanVar()
+        self.return_code.set(False)
 
     def execute(self):
-        self.executor.execute(self.command, self.executor.configure)
+        """Run todisc to process the project commands"""
+        if askyesno(message="Run the following command?\n %s" %self.cmd):
+            self.run_in_xterm()
+        else:
+            self.previous()
+
+    def run_in_xterm(self):
+        ''' run the final script in an xterm, completing the project '''
+        self.master.xterm_is_running.set(True)
+        self.cmd_label.pack_forget()
+        self.button.pack_forget()
+        self.master.prev_button.configure(state='disabled')
+        self.frame = Frame(self.master, container=1, height=540, width=600)
+        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
+        lines = '60x25+0+0'
+        cmd = ['xterm', '-sb', '-fn', '10x20', '-sb',
+          '-bg', self.master.background, '-rightbar',  '-title', 'todisc',
+          '-geometry', lines, '-e', 'sh', '-c']
+        try:
+            id = self.root.tk.call('winfo', 'id', self.frame)
+            frame_id = '%s' %int(id, 16)
+        except TclError, ValueError:
+            frame_id = ''
+        help = commands.getoutput('xterm -help')
+        if re.search('-into ', help) and frame_id:
+            cmd.insert(1, frame_id)
+            cmd.insert(1, '-into')
+        wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
+        tovid_cmd = 'bash %s' % self.script_file
+        cmd.append(tovid_cmd + wait_cmd)
+        command = Popen(cmd, stderr=PIPE)
+        self.master.xterm_pid = command.pid
+        self.poll()
+
+    def poll(self):
+        try:
+            self.frame.winfo_class()
+        except TclError:
+            self.master.xterm_is_running.set(False)
+            self.frame = Frame(self.master)
+            self.frame.pack(fill='both', expand=1)
+            self.cmd_label.pack(fill='both', expand=1)
+            self.button.pack(side='bottom')
+            self.master.prev_button.configure(state='normal')
+        self.root.after(200, self.poll)
 
     def previous(self):
         """Move to the previous wizard page"""
         wizard = self.master
-        try:
-            wizard.prev_button.pack_forget()
-            index = wizard.index.get()
-            prev = wizard.pages[index-1]
-            wizard.index.set(index-1)
-            self.executor.pack_forget()
-            self.label.pack_forget()
-            prev.frame.pack(side='right')
-            wizard.next_button.pack(side='right', anchor='se')
-            wizard.next_button.configure\
-            (command=prev.page_controller, text='Run script')
-        except IndexError:
-            pass
+        index = wizard.index.get()
+        prev = wizard.pages[index-1]
+        wizard.index.set(index-1)
+        # premature exit will leave xterm running
+        # TODO fix frames so only 1 frame needs to be pack_forget 'ed
+        # instead of the mess below
+        wizard.prev_button.pack_forget()
+        self.frame.pack_forget()
+        self.label.pack_forget()
+        self.cmd_label.pack_forget()
+        self.button.pack_forget()
+        prev.frame.pack(side='right')
+        wizard.next_button.pack(side='right', anchor='se')
+        wizard.next_button.configure\
+        (command=prev.page_controller, text='Run script')
+
+class Messagebox(Frame):
+    def __init__(self, master, use=None, text=''):
+        Frame.__init__(self, master)
+        self.master = master
+        self.use = use
+        #self.overrideredirect(1)
+        self.top = Toplevel(self.master, use=use)
+        text = text
+        label = Label(self.top, text=text, wraplength=400)
+        label.pack()
+        button1 = Button(self.top, text='Yes', command=self.yes)
+        button2 = Button(self.top, text='No', command=self.no)
+        button1.pack(side='left')
+        button2.pack(side='left')
+
+    def yes(self, event=None):
+        self.master.return_code.set(True)
+        print 'from yes() return_code is: ', self.master.return_code.get()
+        self.top.destroy()
+
+    def no(self, event=None):
+        self.master.return_code.set(False)
+        self.top.destroy()
 
 class TitleBox(Frame):
     """A Listbox in a LabelFrame with Entry associated with it
