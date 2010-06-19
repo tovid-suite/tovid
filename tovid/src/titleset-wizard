@@ -14,7 +14,6 @@ from libtovid.metagui import Style
 from libtovid.metagui.support import PrettyLabel, show_icons, get_photo_image
 from libtovid.cli import _enc_arg, Command
 from libtovid.util import trim
-from libtovid.metagui.gui import Executor
 from time import sleep
 from tempfile import mktemp
 from sys import argv, exit
@@ -1042,8 +1041,6 @@ class Page6(WizardPage):
         self.container.pack(side='right', fill='both',
               pady=30, padx=20, expand=1, anchor='nw')
         lines = '80x44+0+0'
-        #cmd = ['xterm', '-sb', '-si', '-fn', '7x13', '-rv', '-sb', '-rightbar',
-        #'-title', 'todisc', '-geometry', lines, '-e', 'sh', '-c']
         cmd = 'xterm -sb -si -fn 7x13 -rv -sb -rightbar -g %s -e sh -c' %lines
         cmd = shlex.split(cmd)
         try:
@@ -1064,7 +1061,6 @@ class Page6(WizardPage):
         read input
         """ %(self.script_file, self.logfile)
         cmd.append(tovid_cmd)
-        print cmd
         command = Popen(cmd, stderr=PIPE)
         self.after(200, self.poll)
 
