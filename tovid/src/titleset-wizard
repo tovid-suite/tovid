@@ -1055,9 +1055,13 @@ class Page6(WizardPage):
         if re.search('-into ', help) and frame_id:
             cmd.insert(1, frame_id)
             cmd.insert(1, '-into')
-        wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
-        tovid_cmd = 'bash %s' % self.script_file + '| tee -a %s' %self.logfile
-        cmd.append(tovid_cmd + wait_cmd)
+        tovid_cmd = """
+        bash %s | tee -a %s
+        echo
+        echo "Press Enter to exit terminal"
+        read input
+        """ %(self.script_file, self.logfile)
+        cmd.append(tovid_cmd)
         command = Popen(cmd, stderr=PIPE)
         self.after(200, self.poll)
 
