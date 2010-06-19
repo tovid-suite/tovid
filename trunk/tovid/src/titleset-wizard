@@ -1042,8 +1042,10 @@ class Page6(WizardPage):
         self.container.pack(side='right', fill='both',
               pady=30, padx=20, expand=1, anchor='nw')
         lines = '80x44+0+0'
-        cmd = ['xterm', '-sb', '-si', '-fn', '7x13', '-rv', '-sb', '-rightbar',
-        '-title', 'todisc', '-geometry', lines, '-e', 'sh', '-c']
+        #cmd = ['xterm', '-sb', '-si', '-fn', '7x13', '-rv', '-sb', '-rightbar',
+        #'-title', 'todisc', '-geometry', lines, '-e', 'sh', '-c']
+        cmd = 'xterm -sb -si -fn 7x13 -rv -sb -rightbar -g %s -e sh -c' %lines
+        cmd = shlex.split(cmd)
         try:
             id = self.root.tk.call('winfo', 'id', self.container)
             frame_id = '%s' %int(id, 16)
@@ -1062,6 +1064,7 @@ class Page6(WizardPage):
         read input
         """ %(self.script_file, self.logfile)
         cmd.append(tovid_cmd)
+        print cmd
         command = Popen(cmd, stderr=PIPE)
         self.after(200, self.poll)
 
