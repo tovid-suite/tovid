@@ -1088,8 +1088,9 @@ class Page6(WizardPage):
 
     def save_log(self, event=None):
         logfile = asksaveasfilename(initialfile='todisc_output.log')
-        writelog = open(logfile, 'w')
-        writelog.writelines(self.log_contents)
+        if logfile:
+            log = open(logfile, 'w')
+            log.writelines(self.log_contents)
 
 # unfinished and unused
 class Messagebox(Frame):
