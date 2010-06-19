@@ -8,6 +8,7 @@ import re
 from Tkinter import *
 from tkMessageBox import *
 from tkSimpleDialog import askstring
+from tkFileDialog import asksaveasfilename
 from subprocess import Popen, PIPE
 from libtovid.metagui import Style
 from libtovid.metagui.support import PrettyLabel, show_icons, get_photo_image
@@ -282,6 +283,7 @@ class WizardPage(Frame):
         cmdout = open(self.script_file, 'w')
         os.chmod(self.script_file, 0775)
         # add the shebang, PATH, and 'todisc \' lines
+        cmdout = open(self.script_file, 'w')
         cmdout.writelines(header)
         # flatten the list
         all_lines = [line for sublist in commands for line in sublist]
@@ -975,6 +977,7 @@ class Page6(WizardPage):
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         self.container = None
         wizard = self.master
+        # next/previous button becomes 'Back<<' again
         wizard.next_button.pack_forget()
         wizard.prev_button.pack(side='right', anchor='se')
 
@@ -993,9 +996,16 @@ class Page6(WizardPage):
         self.cmd_label = Label(self.frame, text=self.cmd_str,
         font=self.master.font, justify='left', wraplength=500)
         self.cmd_label.pack(fill='both', expand=1)
-        self.button = Button(self.frame, text='Run project now',
+        self.button_frame = Frame(self.frame)
+        self.button_frame.pack(side='bottom')
+        self.run_button = Button(self.button_frame, text='Run project now',
                                             command=self.run_in_xterm)
-        self.button.pack(side='bottom')
+        self.run_button.pack(side='left')
+        self.save_button = Button(self.button_frame, text='Save log',
+                                            command=self.save_log)
+        self.save_button.pack(side='left')
+        # disable the save log button till xterm is run
+        self.save_button.configure(state='disabled')
 
 
     def previous(self):
@@ -1005,9 +1015,11 @@ class Page6(WizardPage):
         index = wizard.index.get()
         prev = wizard.pages[index-1]
         wizard.index.set(index-1)
+        # next/previous button becomes 'Next>>' again
         wizard.prev_button.pack_forget()
         prev.frame.pack(side='right')
         wizard.next_button.pack(side='right', anchor='se')
+        # the next button from previous page runs a new function now
         wizard.next_button.configure\
         (command=self.repack, text='Run script')
 
@@ -1026,40 +1038,55 @@ class Page6(WizardPage):
         self.frame.pack_forget()
         self.master.xterm_is_running.set(True)
         self.master.prev_button.configure(state='disabled')
-        self.container = Frame(self.master, container=1, height=540, width=600)
-        self.container.pack(side='right', fill='both', expand=1, anchor='nw')
-        lines = '60x25+0+0'
-        cmd = ['xterm', '-sb', '-fn', '10x20', '-sb',
-          '-bg', self.master.background, '-rightbar',  '-title', 'todisc',
-          '-geometry', lines, '-e', 'sh', '-c']
+        self.container = Frame(self.master, container=1, height=600, width=600)
+        self.container.pack(side='right', fill='both',
+              pady=30, padx=20, expand=1, anchor='nw')
+        lines = '80x44+0+0'
+        cmd = ['xterm', '-sb', '-si', '-fn', '7x13', '-rv', '-sb', '-rightbar',
+        '-title', 'todisc', '-geometry', lines, '-e', 'sh', '-c']
         try:
             id = self.root.tk.call('winfo', 'id', self.container)
             frame_id = '%s' %int(id, 16)
         except TclError, ValueError:
             frame_id = ''
         help = commands.getoutput('xterm -help')
+        self.logfile = mktemp(suffix='.log', prefix='todisc_commands.',
+                                                             dir='/tmp')
         if re.search('-into ', help) and frame_id:
             cmd.insert(1, frame_id)
             cmd.insert(1, '-into')
         wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
-        tovid_cmd = 'bash %s' % self.script_file
+        tovid_cmd = 'bash %s' % self.script_file + '| tee -a %s' %self.logfile
         cmd.append(tovid_cmd + wait_cmd)
         command = Popen(cmd, stderr=PIPE)
         self.after(200, self.poll)
 
     def poll(self):
+        # container is not created yet ?
         if not self.container:
             return
+        # check if xterm has been started
         if not self.master.xterm_is_running.get() == True:
+            # this appears to be useless but seemed a good thing at the time
             self.root.after_cancel(self.root.check)
             return
         try:
+            # bogus call to container to see if it has been destroyed
             self.container.winfo_class()
         except TclError:
             self.master.xterm_is_running.set(False)
             self.frame.pack(fill='both', expand=1, anchor='nw')
             self.master.prev_button.configure(state='normal')
+            self.log_contents = commands.getoutput('tr "\r" "\n" < %s' \
+              %self.logfile)
+            os.remove(self.logfile)
+            self.save_button.configure(state='normal')
         self.root.check = self.root.after(200, self.poll)
+
+    def save_log(self, event=None):
+        logfile = asksaveasfilename(initialfile='todisc_output.log')
+        writelog = open(logfile, 'w')
+        writelog.writelines(self.log_contents)
 
 # unfinished and unused
 class Messagebox(Frame):
