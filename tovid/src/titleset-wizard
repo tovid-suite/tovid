@@ -965,8 +965,10 @@ class Page5(WizardPage):
         # write out todisc_commands.bash in current dir
         # if it exists in current dir, prompt for rename
         if os.path.exists(self.script_file):
+            mess = '%s has been loaded for editing.  Your ' %self.script_file
+            mess += 'new edits will be saved to the same file.  Continue?'
             if askokcancel\
-              (message='This will overwrite %s, continue?' %self.script_file):
+              (message=mess):
                 pass
             else:
                 quit()
