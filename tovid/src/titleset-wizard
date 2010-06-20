@@ -778,6 +778,7 @@ class Page5(WizardPage):
         wizard.index.set(index + 1)
         wizard.pages[index+1].frame.pack(side='right')
         wizard.pages[index+1].show_page()
+        wizard.pages[index+1].set_cmd_label()
 
     # used to repopulate titleset titles after adding new one
     def get_option(self, items, option):
@@ -986,18 +987,10 @@ class Page6(WizardPage):
         wizard.next_button.pack_forget()
         wizard.prev_button.pack(side='right', anchor='se')
 
-        cmds = wizard.commands
-        all_lines = [_enc_arg(line) for sublist in cmds for line in sublist]
-        cmd = ''
-        for line in all_lines:
-            cmd += ' ' + line
-        self.cmd = 'todisc ' + cmd
         text1='Running saved project'
-        self.cmd_str = '\n\n\nThe command that will run:' + '\n\n' + '[todisc ' \
-          + cmd + ']'
         self.label = Label(self.frame, text=text1, font=wizard.lrg_font)
         self.label.pack(side='top', fill='both', expand=1, anchor='nw', pady=5)
-        font = tkFont.Font(family='Helvetica', size=12, weight='normal')
+        self.cmd_str = ''
         self.cmd_label = Label(self.frame, text=self.cmd_str,
         font=self.master.font, justify='left', wraplength=500)
         self.cmd_label.pack(fill='both', expand=1)
@@ -1013,6 +1006,16 @@ class Page6(WizardPage):
         # disable the save log button till xterm is run
         self.save_button.configure(state='disabled')
 
+    def set_cmd_label(self):
+        cmds = self.master.commands
+        all_lines = [_enc_arg(line) for sublist in cmds for line in sublist]
+        cmd = ''
+        for line in all_lines:
+            cmd += ' ' + line
+        self.cmd = 'todisc ' + cmd
+        self.cmd_str = '\n\n\nThe command that will run:' + '\n\n' + '[todisc ' \
+          + cmd + ']'
+        self.cmd_label.configure(text=self.cmd_str)
 
     def previous(self):
         """Move to the previous wizard page"""
@@ -1036,6 +1039,7 @@ class Page6(WizardPage):
         index = wizard.pages.index(self)
         wizard.index.set(index)
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
+        self.set_cmd_label()
         wizard.prev_button.pack(side='right', anchor='se')
         wizard.next_button.pack_forget()
 
