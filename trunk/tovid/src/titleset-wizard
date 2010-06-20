@@ -84,6 +84,10 @@ class Wizard(Frame):
         self.lrg_font = self.get_font(font, size=font[1]+4, _style='bold')
         self.medium_font = self.get_font(font, size=font[1]+2)
         self.heading_font = self.get_font(font, size=font[1]+8, _style='bold')
+        fixed = commands.getoutput\
+          ('xlsfonts |egrep misc-fixed.*semicondexsed--12-.*-100-.*iso8859-1$')
+        # if fixed fails use Helvetica instead: Courier is too light
+        self.fixed_font = tkFont.Font(font=fixed or ('Helvetica', 10, 'normal'))
         self.background = self.root.cget('background')
         if self.text:
             txt = self.text.split('\n')
@@ -990,9 +994,14 @@ class Page6(WizardPage):
         text1='Running saved project'
         self.label = Label(self.frame, text=text1, font=wizard.lrg_font)
         self.label.pack(side='top', fill='both', expand=1, anchor='nw', pady=5)
+        cmd_labelfont = wizard.get_font(wizard.font, _style='bold')
+        self.cmd_title = Label(self.frame,
+          font=cmd_labelfont, text='\n\n\nThe command that will run:')
+        self.cmd_title.pack(fill='both', expand=1)
         self.cmd_str = ''
-        self.cmd_label = Label(self.frame, text=self.cmd_str,
-        font=self.master.font, justify='left', wraplength=500)
+        index = wizard.index.get()
+        self.cmd_label = Label(self.frame, text=self.cmd_str, justify='left',
+        font=wizard.fixed_font, wraplength=560, fg='white', bg='black')
         self.cmd_label.pack(fill='both', expand=1)
         self.termtitle = Label(self.master, text='\nFocus mouse in terminal')
         self.button_frame = Frame(self.frame)
@@ -1012,10 +1021,8 @@ class Page6(WizardPage):
         cmd = ''
         for line in all_lines:
             cmd += ' ' + line
-        self.cmd = 'todisc ' + cmd
-        self.cmd_str = '\n\n\nThe command that will run:' + '\n\n' + '[todisc ' \
-          + cmd + ']'
-        self.cmd_label.configure(text=self.cmd_str)
+        self.cmd = '\ntodisc ' + cmd + '\n'
+        self.cmd_label.configure(text=self.cmd)
 
     def previous(self):
         """Move to the previous wizard page"""
