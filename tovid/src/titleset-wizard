@@ -1002,8 +1002,8 @@ class Page6(WizardPage):
         font=wizard.fixed_font, wraplength=560, fg='white', bg='black')
         self.cmd_label.pack(fill='both', expand=1)
         self.termtitle = Label(self.master, text='\nFocus mouse in terminal')
-        self.button_frame = Frame(self.frame)
-        self.button_frame.pack(side='bottom', fill='both', expand=1, pady=20)
+        self.button_frame = Frame(self.frame, borderwidth=2, relief='groove')
+        self.button_frame.pack(side='bottom', fill='both', expand=1)
         self.run_button = Button(self.button_frame, text='Run project now',
                                             command=self.run_in_xterm)
         self.run_button.pack(side='left', fill='both', expand=1)
