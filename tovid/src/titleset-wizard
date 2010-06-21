@@ -84,10 +84,8 @@ class Wizard(Frame):
         self.lrg_font = self.get_font(font, size=font[1]+4, _style='bold')
         self.medium_font = self.get_font(font, size=font[1]+2)
         self.heading_font = self.get_font(font, size=font[1]+8, _style='bold')
-        fixed = commands.getoutput\
-          ('xlsfonts |egrep misc-fixed.*semicondexsed--12-.*-100-.*iso8859-1$')
-        # if fixed fails use Helvetica instead: Courier is too light
-        self.fixed_font = tkFont.Font(font=fixed or ('Helvetica', 10, 'normal'))
+        fixed = '-misc-fixed-*-r-normal--13-100-100-100-c-70-iso8859-1'
+        self.fixed_font = tkFont.Font(font=fixed)
         self.background = self.root.cget('background')
         if self.text:
             txt = self.text.split('\n')
@@ -1021,7 +1019,8 @@ class Page6(WizardPage):
         cmd = ''
         for line in all_lines:
             cmd += ' ' + line
-        self.cmd = '\ntodisc ' + cmd + '\n'
+        prompt = commands.getoutput('printf "[${USER}@$(hostname -s) ] $ "')
+        self.cmd = '\n' + prompt + 'todisc' + cmd + '\n'
         self.cmd_label.configure(text=self.cmd)
 
     def previous(self):
