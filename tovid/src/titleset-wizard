@@ -1020,7 +1020,12 @@ class Page6(WizardPage):
         for line in all_lines:
             cmd += ' ' + line
         prompt = commands.getoutput('printf "[${USER}@$(hostname -s) ] $ "')
-        self.cmd = '\n' + prompt + 'todisc' + cmd + '\n'
+        # probably not necessary, but ...
+        if 'not found' in prompt:
+            prompt = '[me@mymachine ] $ '
+        
+        #self.cmd = '\n' + prompt + 'todisc' + cmd + '\n'
+        self.cmd = '\n%stodisc%s\n' %(prompt, cmd)
         self.cmd_label.configure(text=self.cmd)
 
     def previous(self):
