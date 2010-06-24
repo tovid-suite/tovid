@@ -156,10 +156,10 @@ class Wizard(Frame):
     def confirm_exit(self, event=None):
         """Exit the GUI, with confirmation prompt.
         """
-        mess = 'Xterm is still open: is todisc still running? '
-        mess += 'If so, please ctrl-c in the terminal if you wish to quit. '
-        mess += 'In any case, you will need to close the terminal '
-        mess += 'by pressing <ENTER> in it.'
+        mess = 'Xterm is still open: is todisc still running?  ' + \
+          'If so, please ctrl-c in the terminal if you wish to quit.  ' + \
+          'In any case, you will need to close the terminal ' + \
+          'by pressing <ENTER> in it.'
         if self.xterm_is_running.get() == True:
             showwarning(message=mess)
             return
@@ -248,9 +248,9 @@ class WizardPage(Frame):
             if os.path.exists(self.script_file):
                 script = self.script_file
             else:
-                err = 'A problem has occured with saving your options.\n'
-                err += 'The saved script file was not found.\n'
-                err += 'Please submit a bug report'
+                err = 'A problem has occured with saving your options.  ' + \
+                  'The saved script file was not found.  ' + \
+                  'Please submit a bug report'
                 showerror(message=err)
                 return
             # Read lines from the file and reassemble the command
@@ -587,8 +587,8 @@ class Page4(WizardPage):
             run_cmds = ['-menu-title']
             run_cmds.append(options_list[i])
             if i < numtitles:
-                text2 = 'Now we will work on titleset %s:\n"%s"\n\n'
-                text2 += 'Press  [Next >>>]  to continue'
+                text2 = 'Now we will work on titleset %s:\n"%s"\n\n' + \
+                  'Press  [Next >>>]  to continue'
                 text2 = text2 % (int(i+1), options_list[i])
                 self.label2.configure(text=text2)
                 self.frame2.pack()
@@ -805,16 +805,16 @@ class Page5(WizardPage):
 
     def add_titleset(self, Event=None):
         wizard = self.master
-        mess = 'Please select an options line first\n'
-        mess += 'The new titleset will be inserted after the selected option'
+        mess = 'Please select an options line first.  ' + \
+          'The new titleset will be inserted after the selected option'
         try:
             ind = int(self.listbox.curselection()[0])
         except IndexError:
             showerror(message=mess)
             return
         if ind < 1:
-            err = 'Your titleset will be inserted AFTER the selected item\n'
-            err+= 'Titlesets can not be inserted here'
+            err = 'Your titleset will be inserted AFTER the selected item: ' + \
+              'Titlesets can not be inserted here.'
             showerror(message=err)
             return
         text = 'Please enter a menu link title for your titleset'
@@ -850,8 +850,8 @@ class Page5(WizardPage):
             showerror(message='Please select an options line first')
             return
         mess1='You can only remove titlesets'
-        mess2='You must have at least 2 titlesets. Please add ' + \
-          'a new titleset [ Add titleset ]  before deleting one'
+        mess2='You must have at least 2 titlesets.  Please add ' + \
+          'a new titleset [ Add titleset ]  before deleting one.'
         if ind < 2:
             showerror(message=mess1)
             return
@@ -954,7 +954,7 @@ class Page5(WizardPage):
         """Load a saved project script for editing with the wizard and GUI
         """
         self.heading_label.configure(text='Editing a saved project')
-        error_msg = 'This is not a saved tovid project script\n' + \
+        error_msg = 'This is not a saved tovid project script.  ' + \
           'Do you want to try to load it anyway?'
         if not '# tovid project script\n' in open(argv[1], 'r'):
             if not askyesno(message=error_msg):
@@ -968,8 +968,8 @@ class Page5(WizardPage):
         # write out todisc_commands.bash in current dir
         # if it exists in current dir, prompt for rename
         if os.path.exists(self.script_file):
-            mess = '%s has been loaded for editing.  Your ' %self.script_file
-            mess += 'new edits will be saved to the same file.  Continue?'
+            mess = '%s has been loaded for editing.  Your ' %self.script_file + \
+              'new edits will be saved to the same file.  Continue?'
             if askokcancel\
               (message=mess):
                 pass
@@ -1023,8 +1023,6 @@ class Page6(WizardPage):
         # probably not necessary, but ...
         if 'not found' in prompt:
             prompt = '[me@mymachine ] $ '
-        
-        #self.cmd = '\n' + prompt + 'todisc' + cmd + '\n'
         self.cmd = '\n%stodisc%s\n' %(prompt, cmd)
         self.cmd_label.configure(text=self.cmd)
 
