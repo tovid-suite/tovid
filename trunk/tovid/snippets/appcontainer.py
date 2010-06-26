@@ -22,8 +22,8 @@ class AppContainer(Frame):
     def __init__(self, master, width, height, callback=None):
         Frame.__init__(self, master)
         self.master = master
-        self.wth = width 
-        self.ht = height
+        self.width = width 
+        self.height = height
         self.callback = callback
         self.is_running = BooleanVar()
         self.is_running.set(False)
@@ -38,9 +38,8 @@ class AppContainer(Frame):
            then get X11 identifier for it (converted to base 10).
            Return the identifier
         """
-        self.frame = LabelFrame(self.master, container=1, width=self.wth, height=self.ht,
-                                                             text='Xterm', borderwidth=0)
-        self.frame.pack(fill='both', expand=1)
+        self.frame = Frame(self.master, container=1, borderwidth=1,
+                              width=self.width, height=self.height)
         id = self.tk.call('winfo', 'id', self.frame)
         self.frame_id = '%s' %int(id, 16)
         return self.frame_id
@@ -48,6 +47,7 @@ class AppContainer(Frame):
     def run(self, command):
         """Execute self.command, call the callback from self.master"""
         self.is_running.set(True)
+        self.frame.pack(fill='both', expand=1)
         cmd = Popen(command, stderr=PIPE, stdout=PIPE)
         self.after(200, self.poll())
         self.callback()
@@ -69,19 +69,19 @@ class AppContainer(Frame):
 ###############################################################################
 if __name__ == '__main__':
 
-    def demo_xterm():
+    def demo(app):
         def callback():
             """Called upon creation and exiting of container app,
                Set a BooleanVar() to track whether the app is running.
             """
             if container.is_running.get() == True:
-                xterm_is_running.set(True)
+                app_is_running.set(True)
                 
             else:
-                xterm_is_running.set(False)
+                app_is_running.set(False)
                 root_frame.pack_forget()
                 label.pack(side='top', fill='both', expand=1)
-                label.configure(text='xterm has exited')
+                label.configure(text='application has exited')
                 button.pack(side='bottom')
 
         def execute():
@@ -96,8 +96,12 @@ if __name__ == '__main__':
             container.run(command)
 
         def confirm_exit():
-            if xterm_is_running.get() == 1:
-                showerror(message="Close the xterm by typing 'exit', before exiting this demo")
+            if app_is_running.get() == 1:
+                if app == 'xterm':
+                    text = "Close the xterm by typing 'exit', before exiting this demo"
+                elif app == 'mplayer':
+                    text = "Close mplayer first, before exiting this demo"
+                showerror(message=text)
                 return
             quit()
 
@@ -109,21 +113,21 @@ if __name__ == '__main__':
         root.bind('<Control-q>', confirm_exit)
         root.title('AppContainer demo')
         # run button
-        button = Button(root, text='Run xterm', command=execute)
+        button = Button(root, text='Run application', command=execute)
         button.pack(side='bottom')
         # frame for container
         root_frame = Frame(root)
         # label to show when container app not running
         label = Label(root, text='')
         # BooleanVar that tracks if container app is running through callback()
-        xterm_is_running = BooleanVar()
-        xterm_is_running.set(False)
+        app_is_running = BooleanVar()
+        app_is_running.set(False)
         # initialize but don't pack the container class
         container = AppContainer(root_frame, 660, 500, callback)
 
         root.mainloop()
     if len(argv) < 2:
-        demo_xterm()
+        demo('xterm')
     """
     # setting chapters with mplayer demo - coming soon
     elif os.exists(argv[1]):
