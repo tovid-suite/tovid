@@ -4,6 +4,9 @@ from Tkinter import *
 from subprocess import Popen, PIPE
 from tkMessageBox import *
 from sys import argv
+from os import path, mkfifo
+from tempfile import mkdtemp
+import time
 
 class AppContainer(Frame):
     """A frame container for an external application.
@@ -47,7 +50,7 @@ class AppContainer(Frame):
     def run(self, command):
         """Execute self.command, call the callback from self.master"""
         self.is_running.set(True)
-        self.frame.pack(fill='both', expand=1)
+        self.frame.pack()
         cmd = Popen(command, stderr=PIPE, stdout=PIPE)
         self.after(200, self.poll())
         self.callback()
@@ -88,11 +91,63 @@ if __name__ == '__main__':
             label.pack_forget()
             button.pack_forget()
             root_frame.pack(fill='both', expand=1)
-            id = container.get_id()
-            geometry = '80x40+0+0'
+            xid = container.get_id()
             font = '-misc-fixed-medium-r-normal--13-100-100-100-c-70-iso8859-1'
-            command = 'xterm -geometry %s -fn %s  -into %s &' %(geometry, font, id)
+            if app == 'xterm':
+                geometry = '80x40+0+0'
+                command = 'xterm -geometry %s -fn %s  -into %s &' \
+                  %(geometry, font, xid)
+
+            elif app == 'mplayer':
+                def send_command(text):
+                    cmd = commands.getstatusoutput('echo %s > %s' %(text, cmd_pipe))
+                    #pipe =  open(cmd_pipe, 'w')
+                    #pipe.write(text)
+                    #pipe.close()
+ 
+                def set_chapter(event=None):
+                    send_command('edl_mark')
+
+                def exit_mplayer():
+                    # send bogus edl command so mplayer sends last edl_mark 
+                    send_command('edl_mark')
+                    # send quit and destroy frame
+                    send_command('quit')
+                    container.frame.destroy()
+                    # need a sleep to make sure mplayer gives up its data
+                    time.sleep(1)
+                    f = open(editlist)
+                    c = f.read()
+                    f.close()
+                    # convert text from opened file to HH:MM:SS
+                    times = [ float(t) for t in shlex.split(c) if not t == '0' ]
+                    # remove bogus edl_mark
+                    times.pop(-1)
+                    # insert mandatory 1st chapter
+                    times.insert(0, 0.0)
+                    chapters = []
+                    for t in times:
+                        chapters.append(time.strftime('%H:%M:%S', time.gmtime(t)))
+                    time_codes = "'%s'" %','.join(chapters)
+                    print '-chapters %s' %time_codes
+
+                dir = mkdtemp(prefix='tovid-')
+                cmd_pipe = path.join(dir, 'slave.fifo')
+                mkfifo(cmd_pipe)
+                editlist = path.join(dir, 'editlist')
+                command = 'mplayer -nomouseinput -xy 400 \
+                -slave -input file=%s -edlout  \
+                %s -wid %s %s > /tmp/mplayer.log 2>&1' %(cmd_pipe, editlist, xid, media_file)
+                but_frame = Frame(root_frame)
+                but_frame.pack(side='bottom')
+                b1 = Button(but_frame, command=set_chapter, text='set chapter')
+                b1.pack(side='left')
+                b2 = Button(but_frame, command=exit_mplayer, text='Exit')
+                b2.pack(side='left')
+                
             command = shlex.split(command)
+            print ' '.join(command)
+            container.frame.configure(width=600, height=450)
             container.run(command)
 
         def confirm_exit():
@@ -123,13 +178,14 @@ if __name__ == '__main__':
         app_is_running = BooleanVar()
         app_is_running.set(False)
         # initialize but don't pack the container class
-        container = AppContainer(root_frame, 660, 500, callback)
-
-        root.mainloop()
+        container = AppContainer(root_frame, 640, 480, callback)
+        try:
+            root.mainloop()
+        except KeyboardInterrupt:
+            print 'KeyboardInterrupt'
     if len(argv) < 2:
         demo('xterm')
-    """
     # setting chapters with mplayer demo - coming soon
-    elif os.exists(argv[1]):
+    elif path.exists(argv[1]):
         media_file = argv[1]
-    """
+        demo('mplayer')
