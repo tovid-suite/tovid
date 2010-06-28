@@ -15,7 +15,7 @@ class AppContainer(Frame):
        width:  the width of the application
        callback: called on application exit (AppContainer is 'destroyed' then)
 
-       After creating a container instance, call container.get_id()
+       After creating a container instance, call container.set()
        to find out the X11 id of the container(ie. for xterm -into id)
        Then call container.run(command), where command is the command
        that starts the external app.
@@ -36,22 +36,25 @@ class AppContainer(Frame):
         """Pack self in self.master"""
         self.pack(fill='both', expand=1)
 
-    def get_id(self):
+    def set(self, program):
         """Create and pack container frame,
            then get X11 identifier for it (converted to base 10).
            Return the identifier
         """
         self.frame = Frame(self.master, container=1, borderwidth=1,
                               width=self.width, height=self.height)
-        id = self.tk.call('winfo', 'id', self.frame)
-        self.frame_id = '%s' %int(id, 16)
-        return self.frame_id
+        _id = self.tk.call('winfo', 'id', self.frame)
+        if program == 'mplayer':
+            return _id
+        else:
+            return '%s' %int(_id, 16)
 
     def run(self, command):
         """Execute self.command, call the callback from self.master"""
+        global cmd
         self.is_running.set(True)
         self.frame.pack()
-        cmd = Popen(command, stderr=PIPE, stdout=PIPE)
+        cmd = Popen(command, stderr=PIPE)
         self.after(200, self.poll())
         self.callback()
 
@@ -72,12 +75,12 @@ class AppContainer(Frame):
 ###############################################################################
 if __name__ == '__main__':
 
-    def demo(app):
+    def demo(program):
         def callback():
             """Called upon creation and exiting of container app,
                Set a BooleanVar() to track whether the app is running.
             """
-            if container.is_running.get() == True:
+            if app.is_running.get() == True:
                 app_is_running.set(True)
                 
             else:
@@ -90,15 +93,15 @@ if __name__ == '__main__':
         def execute():
             label.pack_forget()
             button.pack_forget()
-            root_frame.pack(fill='both', expand=1)
-            xid = container.get_id()
+            root_frame.pack(side='top', fill='both', expand=1)
+            xid = app.set(program)
             font = '-misc-fixed-medium-r-normal--13-100-100-100-c-70-iso8859-1'
-            if app == 'xterm':
+            if program  == 'xterm':
                 geometry = '80x40+0+0'
                 command = 'xterm -geometry %s -fn %s  -into %s &' \
                   %(geometry, font, xid)
 
-            elif app == 'mplayer':
+            elif program == 'mplayer':
                 def send_command(text):
                     cmd = commands.getstatusoutput('echo %s > %s' %(text, cmd_pipe))
                     #pipe =  open(cmd_pipe, 'w')
@@ -111,18 +114,21 @@ if __name__ == '__main__':
                 def exit_mplayer():
                     # send bogus edl command so mplayer sends last edl_mark 
                     send_command('edl_mark')
+                    # remove button frame so it doesn't get made repeatedly
+                    but_frame.pack_forget()
                     # send quit and destroy frame
                     send_command('quit')
-                    container.frame.destroy()
+                    app.frame.destroy()
                     # need a sleep to make sure mplayer gives up its data
-                    time.sleep(1)
+                    time.sleep(0.2)
                     f = open(editlist)
                     c = f.read()
                     f.close()
                     # convert text from opened file to HH:MM:SS
                     times = [ float(t) for t in shlex.split(c) if not t == '0' ]
                     # remove bogus edl_mark
-                    times.pop(-1)
+                    if times:
+                        times.pop(-1)
                     # insert mandatory 1st chapter
                     times.insert(0, 0.0)
                     chapters = []
@@ -130,31 +136,34 @@ if __name__ == '__main__':
                         chapters.append(time.strftime('%H:%M:%S', time.gmtime(t)))
                     time_codes = "'%s'" %','.join(chapters)
                     print '-chapters %s' %time_codes
+                    output = cmd.communicate()
+                    log = open('/tmp/mplayer.log', 'w')
+                    log.writelines(output)
+                    log.close()
 
                 dir = mkdtemp(prefix='tovid-')
                 cmd_pipe = path.join(dir, 'slave.fifo')
                 mkfifo(cmd_pipe)
                 editlist = path.join(dir, 'editlist')
-                command = 'mplayer -nomouseinput -xy 400 \
+                command = 'mplayer  -nomouseinput \
                 -slave -input file=%s -edlout  \
-                %s -wid %s %s > /tmp/mplayer.log 2>&1' %(cmd_pipe, editlist, xid, media_file)
-                but_frame = Frame(root_frame)
+                %s -wid %s %s ' %(cmd_pipe, editlist, xid, media_file)
                 but_frame.pack(side='bottom')
-                b1 = Button(but_frame, command=set_chapter, text='set chapter')
                 b1.pack(side='left')
-                b2 = Button(but_frame, command=exit_mplayer, text='Exit')
                 b2.pack(side='left')
+                b1.configure(command=set_chapter)
+                b2.configure(command=exit_mplayer)
                 
             command = shlex.split(command)
             print ' '.join(command)
-            container.frame.configure(width=600, height=450)
-            container.run(command)
+            app.frame.configure(width=600, height=450)
+            app.run(command)
 
         def confirm_exit():
             if app_is_running.get() == 1:
-                if app == 'xterm':
+                if program == 'xterm':
                     text = "Close the xterm by typing 'exit', before exiting this demo"
-                elif app == 'mplayer':
+                elif program == 'mplayer':
                     text = "Close mplayer first, before exiting this demo"
                 showerror(message=text)
                 return
@@ -174,11 +183,15 @@ if __name__ == '__main__':
         root_frame = Frame(root)
         # label to show when container app not running
         label = Label(root, text='')
+        # button frame (used by mplayer only)
+        but_frame = Frame(root_frame)
+        b1 = Button(but_frame, text='set chapter')
+        b2 = Button(but_frame, text='Exit')
         # BooleanVar that tracks if container app is running through callback()
         app_is_running = BooleanVar()
         app_is_running.set(False)
         # initialize but don't pack the container class
-        container = AppContainer(root_frame, 640, 480, callback)
+        app = AppContainer(root_frame, 640, 480, callback)
         try:
             root.mainloop()
         except KeyboardInterrupt:
