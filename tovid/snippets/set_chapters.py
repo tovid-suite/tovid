@@ -9,7 +9,9 @@ from sys import argv
 from os import path, mkfifo, devnull
 from tempfile import mkdtemp
 
-
+##############################################################################
+#                              functions                                     #
+##############################################################################
 def send_command(text):
     commands.getstatusoutput('echo %s  > %s' %(text, cmd_pipe))
     commands.getstatusoutput('echo > %s' %cmd_pipe)
@@ -70,13 +72,13 @@ def poll():
     output = commands.getoutput(tail)
     # restart mplayer with same commands if it exits without user intervention
     if '(End of file)' in output:
-        # save editlist and rewrite it, as mplayer overwrites it on restart
+        # save editlist, as mplayer overwrites it on restart
         o = open(editlist, 'r')
         chapter_var.set(chapter_var.get() + o.read())
         o.close()
         cmd = Popen(mplayer_cmd, stderr=open(devnull, 'w'), stdout=open(log, "w"))
         send_command('osd 3')
-    root.after(200, lambda:poll())
+    root.after(200, poll)
 
 def identify(file):
     output = commands.getoutput('mplayer -vo null -ao null -frames 30 \
@@ -100,6 +102,13 @@ def hide_status():
     label2.configure(text='', relief='flat', borderwidth=0)
     label1.configure(text='')
 
+##############################################################################
+#              start Tk instance and set tk variables
+##############################################################################
+
+if len(sys.argv) < 2:
+    print("Usage: set_chapters.py video")
+    exit()
 root = Tk()
 root.minsize(660, 600)
 seek_var = IntVar()
@@ -110,39 +119,54 @@ is_running.set(True)
 # bindings for exit
 #root.protocol("WM_DELETE_WINDOW", confirm_exit)
 #root.bind('<Control-q>', confirm_exit)
-root.title('AppContainer demo')
+root.title('Set chapters')
+
+##############################################################################
+#                                   widgets                                  #
+##############################################################################
+
+# label to display chapters after mplayer exit
 info_label = Label(root, wraplength=500, justify='left')
 info_label.pack(side='bottom', fill='both', expand=1)
+# frame and label to show status of setting chapter
 status_frame = Frame(root)
 label1 = Label(status_frame, text='', fg='blue')
 label2 = Label(status_frame)
+# frame to hold mplayer container
 root_frame = Frame(root)
 root_frame.pack(side='top', fill='both', expand=1, pady=40)
 frame = Frame(root_frame, container=1)
 frame.pack()
+# button frame and buttons
 button_frame = Frame(root_frame)
 button_frame.pack(side='bottom', fill='x', expand=1)
 exit_button = Button(button_frame, command=exit_mplayer, text='exit')
 mark_button = Button(button_frame, command=set_chapter, text='set chapter')
 pause_button = Button(button_frame, command=pause, text='pause/play')
+# frame and seek scale
 seek_frame = Frame(root_frame)
 seek_frame.pack(side='left', fill='x', expand=1, padx=30)
 seek_scale = Scale(seek_frame, from_=0, to=100, tickinterval=10,
 orient='horizontal', label='Use slider to seek to point in file (%)')
 seek_scale.bind('<ButtonRelease-1>', seek)
+# pack the button and scale in their frames
 seek_scale.pack(side='left', fill='x', expand=1)
 pause_button.pack(side='left')
 mark_button.pack(side='left', fill='both', expand=1)
 exit_button.pack(side='right')
-
+# X11 identifier for the container frame
 xid = root.tk.call('winfo', 'id', frame)
+# temporary directory for fifo, edit list and log
 dir = mkdtemp(prefix='tovid-')
 cmd_pipe = path.join(dir, 'slave.fifo')
 mkfifo(cmd_pipe)
 editlist = path.join(dir, 'editlist')
 log = path.join(dir, 'mplayer.log')
 media_file = sys.argv[1]
-# try to get aspect ratio
+
+##############################################################################
+#        try to get aspect ratio and set dimensions of video container       #
+##############################################################################
 v_width = 600
 media_info = identify(media_file)
 asr = re.findall('ID_VIDEO_ASPECT=.*', media_info)
@@ -158,7 +182,10 @@ if asr and asr > 0.0:
 else:
     v_height = int(v_width/1.333)
 frame.configure(width=v_width, height=v_height)
-# disable keyboard input with nodefault-bindings...
+
+###############################################################################
+#                 start mplayer and poll for end of file                      #
+###############################################################################
 mplayer_cmd =  'mplayer -wid %s -nomouseinput -slave \
   -input nodefault-bindings:conf=/dev/null:file=%s \
   -edlout %s %s ' %(xid, cmd_pipe, editlist, media_file)
@@ -168,6 +195,8 @@ poll()
 # show osd time and remaining time
 send_command('osd 3')
 
-
+##############################################################################
+#                                 run it                                     #
+##############################################################################
 if __name__ == '__main__':
     root.mainloop()
