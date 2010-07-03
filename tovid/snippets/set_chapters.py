@@ -146,12 +146,13 @@ frame.pack()
 button_frame = Frame(root_frame)
 button_frame.pack(side='bottom', fill='x', expand=1)
 exit_button = Button(button_frame, command=exit_mplayer, text='exit')
-mark_button = Button(button_frame, command=set_chapter, text='set chapter')
+mark_button = Button(button_frame, command=set_chapter,
+fg='black', activeforeground='black', text='set chapter')
 pause_button = Button(button_frame, command=pause,
                   width=5, textvariable=pauseplay)
 framestep_button = Button(button_frame, text='frame step', command=framestep)
-forward_button = Button(button_frame, text='forward', command=forward)
-back_button = Button(button_frame, text='back', command=back)
+forward_button = Button(button_frame, text='forward >', command=forward)
+back_button = Button(button_frame, text='< back', command=back)
 # frame and seek scale
 seek_frame = Frame(root_frame)
 seek_frame.pack(side='left', fill='x', expand=1, padx=30)
@@ -160,12 +161,12 @@ orient='horizontal', label='Use slider to seek to point in file (%)')
 seek_scale.bind('<ButtonRelease-1>', seek)
 # pack the button and scale in their frames
 seek_scale.pack(side='left', fill='x', expand=1)
-pause_button.pack(side='left')
+exit_button.pack(side='left')
 back_button.pack(side='left')
-mark_button.pack(side='left', fill='both', expand=1)
+pause_button.pack(side='left')
 framestep_button.pack(side='left')
 forward_button.pack(side='left')
-exit_button.pack(side='right')
+mark_button.pack(side='left', fill='both', expand=1)
 # X11 identifier for the container frame
 xid = root.tk.call('winfo', 'id', frame)
 # temporary directory for fifo, edit list and log
