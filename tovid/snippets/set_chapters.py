@@ -12,23 +12,47 @@ from tempfile import mkdtemp
 ##############################################################################
 #                              functions                                     #
 ##############################################################################
-def send_command(text):
-    commands.getstatusoutput('echo %s  > %s' %(text, cmd_pipe))
-    commands.getstatusoutput('echo > %s' %cmd_pipe)
+def send(text):
+    commands.getstatusoutput('echo -e "%s"  > %s' %(text, cmd_pipe))
 
 def seek(event=None):
-    send_command('seek %s 3' %seek_scale.get())
+    send('seek %s 3\n' %seek_scale.get())
 
 def pause():
-    send_command('pause')
+    # this is counter-intuitive, as we set to the opposite for pause/play label
+    # pauseplay ==play and we're in pause mode, ==pause and we're in play mode
+    if pauseplay.get() == 'pause':
+        pauseplay.set('play')
+    else:
+        pauseplay.set('pause')
+    send('pause\n')
+
+def forward():
+    send('seek 10\n')
+    pauseplay.set('pause')
+
+def back():
+    send('seek -10\n')
+    pauseplay.set('pause')
+
+def framestep():
+    # step frame by frame forward
+    send('pausing frame_step\n')
+    pauseplay.set('play')
 
 def confirm_exit():
-    # TBA
-    pass
-    
+    if is_running.get():
+        showerror(message='Please exit mplayer before quitting program')  
+    else:
+        quit()
+
 def exit_mplayer():
     is_running.set(False)
-    send_command('quit')
+    # unpause so mplayer doesn't hang
+    if pauseplay.get() == 'play':
+        send('mute 1\n')
+        send('pause\n')
+    send('quit\n')
     time.sleep(0.3)
     frame.destroy()
     root_frame.pack_forget()
@@ -40,8 +64,8 @@ def set_chapter():
     # send chapter mark twice so mplayer writes the data
     # we only take the 1st mark on each line
     for i in range(2):
-        send_command('edl_mark')
-    show_status('Chapter set!')
+        send('edl_mark\n')
+    send("osd_show_text 'chapter point saved' 2000 3\n")
 
 def get_chapters():
     # need a sleep to make sure mplayer gives up its data
@@ -77,30 +101,13 @@ def poll():
         chapter_var.set(chapter_var.get() + o.read())
         o.close()
         cmd = Popen(mplayer_cmd, stderr=open(devnull, 'w'), stdout=open(log, "w"))
-        send_command('osd 3')
+        send('osd 3\n')
     root.after(200, poll)
 
 def identify(file):
     output = commands.getoutput('mplayer -vo null -ao null -frames 30 \
       -channels 6 -identify %s' %file)
     return output
-
-def show_status(message):
-    """Show status of setting chapter, with timeout
-    """
-    status_frame.configure(relief='raised', borderwidth=1)
-    status_frame.pack(side='top', anchor='n')
-    label1.configure(text=message)
-    label2.configure(text='ok', relief='groove', borderwidth=1)
-    label1.pack(side='top')
-    label2.pack(side='top')
-    root.after(1000, lambda: label2.configure(relief=SUNKEN))
-    root.after(2000, hide_status)
-
-def hide_status():
-    status_frame.configure(relief='flat', borderwidth=0)
-    label2.configure(text='', relief='flat', borderwidth=0)
-    label1.configure(text='')
 
 ##############################################################################
 #              start Tk instance and set tk variables
@@ -116,9 +123,11 @@ seek_var.set(0)
 chapter_var = StringVar()
 is_running = BooleanVar()
 is_running.set(True)
+pauseplay = StringVar() 
+pauseplay.set('pause')
 # bindings for exit
-#root.protocol("WM_DELETE_WINDOW", confirm_exit)
-#root.bind('<Control-q>', confirm_exit)
+root.protocol("WM_DELETE_WINDOW", confirm_exit)
+root.bind('<Control-q>', confirm_exit)
 root.title('Set chapters')
 
 ##############################################################################
@@ -128,10 +137,6 @@ root.title('Set chapters')
 # label to display chapters after mplayer exit
 info_label = Label(root, wraplength=500, justify='left')
 info_label.pack(side='bottom', fill='both', expand=1)
-# frame and label to show status of setting chapter
-status_frame = Frame(root)
-label1 = Label(status_frame, text='', fg='blue')
-label2 = Label(status_frame)
 # frame to hold mplayer container
 root_frame = Frame(root)
 root_frame.pack(side='top', fill='both', expand=1, pady=40)
@@ -142,7 +147,11 @@ button_frame = Frame(root_frame)
 button_frame.pack(side='bottom', fill='x', expand=1)
 exit_button = Button(button_frame, command=exit_mplayer, text='exit')
 mark_button = Button(button_frame, command=set_chapter, text='set chapter')
-pause_button = Button(button_frame, command=pause, text='pause/play')
+pause_button = Button(button_frame, command=pause,
+                  width=5, textvariable=pauseplay)
+framestep_button = Button(button_frame, text='frame step', command=framestep)
+forward_button = Button(button_frame, text='forward', command=forward)
+back_button = Button(button_frame, text='back', command=back)
 # frame and seek scale
 seek_frame = Frame(root_frame)
 seek_frame.pack(side='left', fill='x', expand=1, padx=30)
@@ -152,7 +161,10 @@ seek_scale.bind('<ButtonRelease-1>', seek)
 # pack the button and scale in their frames
 seek_scale.pack(side='left', fill='x', expand=1)
 pause_button.pack(side='left')
+back_button.pack(side='left')
 mark_button.pack(side='left', fill='both', expand=1)
+framestep_button.pack(side='left')
+forward_button.pack(side='left')
 exit_button.pack(side='right')
 # X11 identifier for the container frame
 xid = root.tk.call('winfo', 'id', frame)
@@ -165,7 +177,7 @@ log = path.join(dir, 'mplayer.log')
 media_file = sys.argv[1]
 
 ##############################################################################
-#        try to get aspect ratio and set dimensions of video container       #
+#           get aspect ratio and set dimensions of video container           #
 ##############################################################################
 v_width = 600
 media_info = identify(media_file)
@@ -193,7 +205,8 @@ mplayer_cmd = shlex.split(mplayer_cmd)
 cmd = Popen(mplayer_cmd, stderr=open(devnull, 'w'), stdout=open(log, "w"))
 poll()
 # show osd time and remaining time
-send_command('osd 3')
+send('osd 3\n')
+send('osd_show_property_text "${metadata/title}" 3000 3')
 
 ##############################################################################
 #                                 run it                                     #
