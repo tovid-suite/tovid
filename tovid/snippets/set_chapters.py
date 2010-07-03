@@ -4,7 +4,6 @@ import commands
 import re
 from Tkinter import *
 from subprocess import Popen, PIPE, STDOUT
-from tkMessageBox import *
 from sys import argv
 from os import path, mkfifo, devnull
 from tempfile import mkdtemp
@@ -42,7 +41,7 @@ def framestep():
 
 def confirm_exit():
     if is_running.get():
-        showerror(message='Please exit mplayer before quitting program')  
+        send("osd_show_text 'press exit before quitting program' 4000 3\n")
     else:
         quit()
 
@@ -145,28 +144,31 @@ frame.pack()
 # button frame and buttons
 button_frame = Frame(root_frame)
 button_frame.pack(side='bottom', fill='x', expand=1)
-exit_button = Button(button_frame, command=exit_mplayer, text='exit')
-mark_button = Button(button_frame, command=set_chapter,
-fg='black', activeforeground='black', text='set chapter')
-pause_button = Button(button_frame, command=pause,
-                  width=5, textvariable=pauseplay)
-framestep_button = Button(button_frame, text='frame step', command=framestep)
-forward_button = Button(button_frame, text='forward >', command=forward)
-back_button = Button(button_frame, text='< back', command=back)
+control_frame = Frame(button_frame, borderwidth=1, relief='groove')
+control_frame.pack()
+apply_frame = Frame(button_frame, borderwidth=1, relief='groove')
+#apply_frame.pack()
+exit_button = Button(control_frame, command=exit_mplayer, text='exit')
+mark_button = Button(control_frame, command=set_chapter,text='set chapter')
+pause_button = Button(control_frame, command=pause,
+                  width=12, textvariable=pauseplay)
+framestep_button = Button(control_frame, text='step >', command=framestep)
+forward_button = Button(control_frame, text='seek >', command=forward)
+back_button = Button(control_frame, text='< seek', command=back)
 # frame and seek scale
 seek_frame = Frame(root_frame)
 seek_frame.pack(side='left', fill='x', expand=1, padx=30)
 seek_scale = Scale(seek_frame, from_=0, to=100, tickinterval=10,
 orient='horizontal', label='Use slider to seek to point in file (%)')
 seek_scale.bind('<ButtonRelease-1>', seek)
-# pack the button and scale in their frames
+# pack the buttons and scale in their frames
+mark_button.pack(side='bottom', fill='both', expand=1)
 seek_scale.pack(side='left', fill='x', expand=1)
 exit_button.pack(side='left')
 back_button.pack(side='left')
 pause_button.pack(side='left')
 framestep_button.pack(side='left')
 forward_button.pack(side='left')
-mark_button.pack(side='left', fill='both', expand=1)
 # X11 identifier for the container frame
 xid = root.tk.call('winfo', 'id', frame)
 # temporary directory for fifo, edit list and log
@@ -207,7 +209,6 @@ cmd = Popen(mplayer_cmd, stderr=open(devnull, 'w'), stdout=open(log, "w"))
 poll()
 # show osd time and remaining time
 send('osd 3\n')
-send('osd_show_property_text "${metadata/title}" 3000 3')
 
 ##############################################################################
 #                                 run it                                     #
