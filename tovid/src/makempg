@@ -287,12 +287,7 @@ function runtime_error()
 # ******************************************************************************
 # Execute the given command-line string, with appropriate stream redirection
 # Args: $@ == text string containing complete command-line
-# To filter/prettify the subprocess output before writing it to the log file,
-# set the LOG_FILTER variable before calling this function, to e.g.
-#    LOG_FILTER="sed {s/\r/\n/g}"    # Replace LF with CR/LF
 # ******************************************************************************
-CRLF="sed {s/\r/\n/g}"  # Turn carriage-returns into newlines
-FOLD="fold -bs"
 function cmd_exec()
 {
     if $FAKE; then
@@ -301,8 +296,7 @@ function cmd_exec()
         yecho
         return
     else
-        LOG_FILTER="$CRLF"
-        eval "$@" 2>&1 | $LOG_FILTER >> "$LOG_FILE" &
+        eval "$@" 2>&1 | strings >> "$LOG_FILE" &
         PIDS="$PIDS $!"
     fi
 }
@@ -1888,7 +1882,6 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; the
     yecho "Encoding video and audio with the following command:"
     yecho "$FF_ENC_CMD"
 
-    LOG_FILTER="$CRLF"
     cmd_exec "$FF_ENC_CMD"
 
     if $FAKE; then
@@ -1930,7 +1923,6 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     run_audio_cmd()
     {
-        LOG_FILTER="$CRLF"
         "${AUDIO_CMD[@]}" >> "$LOG_FILE" 2>&1 &
         #$PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy \
         #$AUDIO_MAP "${AUDIO_STREAM[@]}" >> "$LOG_FILE" 2>&1
@@ -2043,7 +2035,6 @@ if ! $FORCE_ENCODING && $VIDEO_OK; then
 
 
     # Copy the video stream
-    LOG_FILTER="$CRLF"
     cmd_exec "$VID_COPY_CMD"
 
 
@@ -2078,7 +2069,6 @@ else
         file_output_progress "$YUV_STREAM" "Ripping raw uncompressed video stream"
     fi
 
-    LOG_FILTER="$CRLF"
     cmd_exec "$VID_ENC_CMD"
 
     # For parallel encoding, nothing further yet
