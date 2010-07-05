@@ -12,12 +12,16 @@ from tempfile import mkdtemp
 #                              functions                                     #
 ##############################################################################
 def send(text):
-    commands.getstatusoutput('echo -e "%s"  > %s' %(text, cmd_pipe))
+    """send command to mplayer's slave fifo"""
+    if is_running.get():
+        commands.getstatusoutput('echo -e "%s"  > %s' %(text, cmd_pipe))
 
 def seek(event=None):
+    """seek in video according to value set by slider"""
     send('seek %s 3\n' %seek_scale.get())
 
 def pause():
+    """send pause to mplayer via slave and set button var to opposite value"""
     # this is counter-intuitive, as we set to the opposite for pause/play label
     # pauseplay ==play and we're in pause mode, ==pause and we're in play mode
     if pauseplay.get() == 'pause':
@@ -27,47 +31,52 @@ def pause():
     send('pause\n')
 
 def forward():
+    """seek forward 10 seconds and make sure button var is set to 'pause'"""
     send('seek 10\n')
     pauseplay.set('pause')
 
 def back():
+    """seek backward 10 seconds and make sure button var is set to 'pause'"""
     send('seek -10\n')
     pauseplay.set('pause')
 
 def framestep():
-    # step frame by frame forward
+    """step frame by frame forward and set button var to 'play'"""
     send('pausing frame_step\n')
     pauseplay.set('play')
 
 def confirm_exit():
-    if is_running.get():
-        send("osd_show_text 'press exit before quitting program' 4000 3\n")
-    else:
-        quit()
+    """on exit, make sure that mplayer is not running before quit"""
+    send("osd_show_text 'press exit before quitting program' 4000 3\n")
+    quit()
 
 def exit_mplayer():
-    is_running.set(False)
+    """close mplayer, then get chapters from the editlist"""
     # unpause so mplayer doesn't hang
     if pauseplay.get() == 'play':
         send('mute 1\n')
         send('pause\n')
     send('quit\n')
+    is_running.set(False)
     time.sleep(0.3)
     frame.destroy()
     root_frame.pack_forget()
     output = '-chapters ' + get_chapters()
     info_label.configure(text=output)
-    print output
+
 
 def set_chapter():
-    # send chapter mark twice so mplayer writes the data
-    # we only take the 1st mark on each line
+    """send chapter mark (via slave) twice so mplayer writes the data.
+       we only take the 1st mark on each line
+    """
     for i in range(2):
         send('edl_mark\n')
     send("osd_show_text 'chapter point saved' 2000 3\n")
 
 def get_chapters():
     # need a sleep to make sure mplayer gives up its data
+    if not path.exists(editlist):
+        return '00:00:00'
     time.sleep(0.5)
     f = open(editlist)
     c = f.readlines()
@@ -77,24 +86,19 @@ def get_chapters():
     s = [ i.split()[0]  for i  in chapter_var.get().splitlines() if i]
     c.extend(s)
     times = [ float(shlex.split(i)[0]) for i in c ]
-    # insert mandatory 1st chapter
-    times.insert(0, 0.0)
-    times.sort()
-    chapters = []
-    for t in times:
+    chapters = ['00:00:00']
+    for t in sorted(times):
         fraction = '.' + str(t).split('.')[1]
         chapters.append(time.strftime('%H:%M:%S', time.gmtime(t)) + fraction)
-        time_codes = "'%s'" %','.join(chapters)
-    return time_codes
+    return "'%s'" %','.join(chapters)
 
 def poll():
-    #cmd = "tail -n 1  %s | sed -r 's/.*([0-9].*\/.*[0-9]+).*/\1/;s/\/.*//g'" %log
     if not is_running.get():
         return
     tail = 'tail -n 1 %s' %log
-    output = commands.getoutput(tail)
+    log_output = commands.getoutput(tail)
     # restart mplayer with same commands if it exits without user intervention
-    if '(End of file)' in output:
+    if '(End of file)' in log_output:
         # save editlist, as mplayer overwrites it on restart
         o = open(editlist, 'r')
         chapter_var.set(chapter_var.get() + o.read())
@@ -133,21 +137,21 @@ root.title('Set chapters')
 #                                   widgets                                  #
 ##############################################################################
 
-# label to display chapters after mplayer exit
-info_label = Label(root, wraplength=500, justify='left')
-info_label.pack(side='bottom', fill='both', expand=1)
 # frame to hold mplayer container
 root_frame = Frame(root)
 root_frame.pack(side='top', fill='both', expand=1, pady=40)
-frame = Frame(root_frame, container=1)
+holder_frame = Frame(root_frame, bg='black')
+holder_frame.pack()
+# label to display chapters after mplayer exit
+info_label = Label(root, wraplength=500, justify='left')
+info_label.pack(side='bottom', fill='both', expand=1)
+frame = Frame(holder_frame, container=1, bg='', colormap='new')
 frame.pack()
 # button frame and buttons
 button_frame = Frame(root_frame)
 button_frame.pack(side='bottom', fill='x', expand=1)
 control_frame = Frame(button_frame, borderwidth=1, relief='groove')
 control_frame.pack()
-apply_frame = Frame(button_frame, borderwidth=1, relief='groove')
-#apply_frame.pack()
 exit_button = Button(control_frame, command=exit_mplayer, text='exit')
 mark_button = Button(control_frame, command=set_chapter,text='set chapter')
 pause_button = Button(control_frame, command=pause,
@@ -155,7 +159,7 @@ pause_button = Button(control_frame, command=pause,
 framestep_button = Button(control_frame, text='step >', command=framestep)
 forward_button = Button(control_frame, text='seek >', command=forward)
 back_button = Button(control_frame, text='< seek', command=back)
-# frame and seek scale
+# seek frame and scale widget
 seek_frame = Frame(root_frame)
 seek_frame.pack(side='left', fill='x', expand=1, padx=30)
 seek_scale = Scale(seek_frame, from_=0, to=100, tickinterval=10,
@@ -186,7 +190,8 @@ v_width = 600
 media_info = identify(media_file)
 asr = re.findall('ID_VIDEO_ASPECT=.*', media_info)
 # get last occurence as the first is 0.0 with mplayer
-asr = sorted(asr, reverse=True)[0].split('=')[1]
+if asr:
+    asr = sorted(asr, reverse=True)[0].split('=')[1]
 try:
     asr = float(asr)
 except ValueError:
@@ -203,12 +208,13 @@ frame.configure(width=v_width, height=v_height)
 ###############################################################################
 mplayer_cmd =  'mplayer -wid %s -nomouseinput -slave \
   -input nodefault-bindings:conf=/dev/null:file=%s \
-  -edlout %s %s ' %(xid, cmd_pipe, editlist, media_file)
+  -edlout %s %s' %(xid, cmd_pipe, editlist, media_file)
 mplayer_cmd = shlex.split(mplayer_cmd)
 cmd = Popen(mplayer_cmd, stderr=open(devnull, 'w'), stdout=open(log, "w"))
 poll()
 # show osd time and remaining time
 send('osd 3\n')
+#send('pausing_keep_force loadfile %s\n' %media_file)
 
 ##############################################################################
 #                                 run it                                     #
