@@ -24,11 +24,20 @@ def pause():
     """send pause to mplayer via slave and set button var to opposite value"""
     # this is counter-intuitive, as we set to the opposite for pause/play label
     # pauseplay ==play and we're in pause mode, ==pause and we're in play mode
-    if pauseplay.get() == 'pause':
-        pauseplay.set('play')
+    if is_running.get():
+        if pauseplay.get() == 'pause':
+            pauseplay.set('play')
+        else:
+            pauseplay.set('pause')
+        send('pause\n')
     else:
+        # start the video for the 1st time
+        cmd = Popen(mplayer_cmd, stderr=open(devnull, 'w'), stdout=open(log, "w"))
+        is_running.set(True)
+        poll()
+        # show osd time and remaining time
+        send('osd 3\n')
         pauseplay.set('pause')
-    send('pause\n')
 
 def forward():
     """seek forward 10 seconds and make sure button var is set to 'pause'"""
@@ -53,6 +62,8 @@ def confirm_exit():
 def exit_mplayer():
     """close mplayer, then get chapters from the editlist"""
     # unpause so mplayer doesn't hang
+    if not is_running.get():
+        return
     if pauseplay.get() == 'play':
         send('mute 1\n')
         send('pause\n')
@@ -125,9 +136,9 @@ seek_var = IntVar()
 seek_var.set(0)
 chapter_var = StringVar()
 is_running = BooleanVar()
-is_running.set(True)
+is_running.set(False)
 pauseplay = StringVar() 
-pauseplay.set('pause')
+pauseplay.set('play')
 # bindings for exit
 root.protocol("WM_DELETE_WINDOW", confirm_exit)
 root.bind('<Control-q>', confirm_exit)
@@ -204,17 +215,13 @@ else:
 frame.configure(width=v_width, height=v_height)
 
 ###############################################################################
-#                 start mplayer and poll for end of file                      #
+#            mplayer command.  It will be run by the "play" button.           #
 ###############################################################################
+
 mplayer_cmd =  'mplayer -wid %s -nomouseinput -slave \
   -input nodefault-bindings:conf=/dev/null:file=%s \
   -edlout %s %s' %(xid, cmd_pipe, editlist, media_file)
 mplayer_cmd = shlex.split(mplayer_cmd)
-cmd = Popen(mplayer_cmd, stderr=open(devnull, 'w'), stdout=open(log, "w"))
-poll()
-# show osd time and remaining time
-send('osd 3\n')
-#send('pausing_keep_force loadfile %s\n' %media_file)
 
 ##############################################################################
 #                                 run it                                     #
