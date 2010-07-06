@@ -202,6 +202,7 @@ ID_VIDEO_WIDTH="0"
 ID_VIDEO_HEIGHT="0"
 ID_VIDEO_FPS="0.000"
 V_DURATION="0"
+ID_AUDIO_BITRATE="0"
 # mplayer executable to use
 MPLAYER="mplayer"
 # No custom mplayer opts
@@ -1224,6 +1225,11 @@ if $DO_FIT; then
     LENGTH=$V_DURATION
     MPEG_OVERHEAD=$(bc_math "$FIT_SIZE / 100")
     AUD_VID_SIZE=$(bc_math "$FIT_SIZE - $MPEG_OVERHEAD")
+    # When the audio is already compliant and the bitrate is known we
+    # can calculate a more accurate size.
+    if $AUDIO_OK && test "$ID_AUDIO_BITRATE" != "0"; then
+        AUD_BITRATE=$(echo "scale = 0; $ID_AUDIO_BITRATE / 1000" | bc)
+    fi
     AUDIO_SIZE=$(bc_math "$AUD_BITRATE * $LENGTH / (8 *1024)")
     VIDEO_SIZE=$(bc_math "$AUD_VID_SIZE - $AUDIO_SIZE")
     VID_BITRATE=$(bc_math "$VIDEO_SIZE*8*1024 / $LENGTH")
