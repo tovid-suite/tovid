@@ -56,8 +56,11 @@ def framestep():
 
 def confirm_exit():
     """on exit, make sure that mplayer is not running before quit"""
-    send("osd_show_text 'press exit before quitting program' 4000 3\n")
-    quit()
+    if is_running.get():
+        send("osd_show_text 'press exit before quitting program' 4000 3\n")
+    else:
+        sys.stdout.write(get_chapters() + '\n')
+        quit()
 
 def exit_mplayer():
     """close mplayer, then get chapters from the editlist"""
