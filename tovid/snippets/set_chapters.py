@@ -22,8 +22,8 @@ def seek(event=None):
 
 def pause():
     """send pause to mplayer via slave and set button var to opposite value"""
-    # this is counter-intuitive, as we set to the opposite for pause/play label
-    # pauseplay ==play and we're in pause mode, ==pause and we're in play mode
+    # mplayer's 'pause' pauses if playing and plays if paused
+    # pauseplay ==play in pause mode, and ==pause in play mode (button text)
     if is_running.get():
         if pauseplay.get() == 'pause':
             pauseplay.set('play')
@@ -132,8 +132,6 @@ if len(sys.argv) < 2:
     exit()
 root = Tk()
 root.minsize(660, 600)
-seek_var = IntVar()
-seek_var.set(0)
 chapter_var = StringVar()
 is_running = BooleanVar()
 is_running.set(False)
@@ -195,7 +193,7 @@ log = path.join(dir, 'mplayer.log')
 media_file = sys.argv[1]
 
 ##############################################################################
-#           get aspect ratio and set dimensions of video container           #
+#  get aspect ratio and set dimensions of video container, get video length  #
 ##############################################################################
 v_width = 600
 media_info = identify(media_file)
@@ -211,8 +209,13 @@ except ValueError:
 if asr and asr > 0.0:
     v_height = int(v_width/asr)
 else:
+    # default to 4:3 if identify fails
     v_height = int(v_width/1.333)
 frame.configure(width=v_width, height=v_height)
+# unused
+vid_len = re.findall('ID_LENGTH=.*', media_info)
+if vid_len:
+    video_length = vid_len[0].split('=')[1]
 
 ###############################################################################
 #            mplayer command.  It will be run by the "play" button.           #
