@@ -181,7 +181,7 @@ class BuildTovidInit (Command):
 
 # Build tovid-init with regular 'build' command
 build.sub_commands.append(('build_tovid_init', None))
-build.sub_commands.append(('build_docs', None))
+#build.sub_commands.append(('build_docs', None))
 
 # The actual setup
 setup(
@@ -238,6 +238,7 @@ setup(
             'src/todiscgui',
             'src/tovid-stats',
             'src/titleset-wizard',
+            'src/set_chapters',
 
             # Icons used in the GUIs
             'icons/hicolor/128x128/apps/tovid.png',
