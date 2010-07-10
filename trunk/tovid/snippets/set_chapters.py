@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import time
 import shlex
 import commands
@@ -59,24 +61,20 @@ def confirm_exit():
     if is_running.get():
         send("osd_show_text 'press exit before quitting program' 4000 3\n")
     else:
-        sys.stdout.write(get_chapters() + '\n')
+        sys.stdout.write(get_chapters())
         quit()
 
 def exit_mplayer():
     """close mplayer, then get chapters from the editlist"""
     # unpause so mplayer doesn't hang
-    if not is_running.get():
-        return
-    if pauseplay.get() == 'play':
-        send('mute 1\n')
-        send('pause\n')
-    send('quit\n')
-    is_running.set(False)
+    if is_running.get():
+        if pauseplay.get() == 'play':
+            send('mute 1\n')
+            send('pause\n')
+        send('quit\n')
+        is_running.set(False)
     time.sleep(0.3)
-    frame.destroy()
-    root_frame.pack_forget()
-    output = '-chapters ' + get_chapters()
-    info_label.configure(text=output)
+    confirm_exit()
 
 
 def set_chapter():
@@ -104,7 +102,7 @@ def get_chapters():
     for t in sorted(times):
         fraction = '.' + str(t).split('.')[1]
         chapters.append(time.strftime('%H:%M:%S', time.gmtime(t)) + fraction)
-    return "'%s'" %','.join(chapters)
+    return '%s' %','.join(chapters)
 
 def poll():
     if not is_running.get():
@@ -164,7 +162,7 @@ button_frame = Frame(root_frame)
 button_frame.pack(side='bottom', fill='x', expand=1)
 control_frame = Frame(button_frame, borderwidth=1, relief='groove')
 control_frame.pack()
-exit_button = Button(control_frame, command=exit_mplayer, text='exit')
+exit_button = Button(control_frame, command=exit_mplayer, text='done !')
 mark_button = Button(control_frame, command=set_chapter,text='set chapter')
 pause_button = Button(control_frame, command=pause,
                   width=12, textvariable=pauseplay)
