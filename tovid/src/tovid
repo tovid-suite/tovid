@@ -22,6 +22,7 @@ Where 'command' is one of the following:
     gui         Start the tovid GUI                         todiscgui
     mpg         Encode videos to MPEG format                tovid
     titlesets   Start the titleset wizard                   (new)
+    chapters    Set video chapter points with mplayer       (new)
 
 The following general options are also available:
     --prefix | -prefix      Return the tovid install prefix
@@ -55,6 +56,7 @@ _scripts = {
     'mpg': 'makempg',
     'batch': 'tovid-batch',
     'titlesets': 'titleset-wizard',
+    'chapters': 'set_chapters',
 }
 
 
@@ -147,7 +149,6 @@ class Frontend:
         except KeyboardInterrupt:
             print("\n!!! tovid was manually interrupted. Exiting.")
             os.kill(proc.pid, signal.SIGTERM)
-            proc.kill()
             # Sleep a second to let the script clean up
             time.sleep(1)
             sys.exit(1)
