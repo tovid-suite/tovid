@@ -3,15 +3,58 @@
 """A GUI for the todisc command-line program.
 """
 
+import Tkinter as tk
 import os
+import fnmatch
+import commands
+import shlex
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
 from libtovid.util import filetypes
-import os
-import fnmatch
-from libtovid.cli import Command
-import commands
+from subprocess import Popen, PIPE
+
+# class for widgets that allow setting chapter points
+class OutputToList(ListToOne):
+    def __init__(self,
+                 parent,
+                 label="ListToOne",
+                 option='',
+                 default=None,
+                 help='',
+                 filter=lambda x: x,
+                 side='left',
+                 command='',
+                 text='',
+                 **kwargs):
+        control._SubList.__init__(self, parent, label, option, default, help,
+                          Text(), filter, side, **kwargs)
+        self.command = command
+        self.text = text
+
+    def draw(self, master):
+        """Draw the parent copy and related list Control,
+        side by side in the given master.
+        """
+        control._SubList.draw(self, master, allow_add_remove=True)
+        if self.command:
+            button = tk.Button(self.control, text=self.text,
+            command=self.run_command, state='disabled')
+            button.pack(side='left')
+        # 1:1, parent listbox is linked to this one
+        self.parent_listbox.link(self.listbox)
+        # Add callbacks to handle changes in parent
+        self.add_callbacks()
+
+    def run_command(self, event=None):
+        selected = self.parent_listbox.selected.get()
+        if self.command and selected:
+            command = shlex.split(self.command)
+            command.append(selected)
+            result = Popen(command, stdout=PIPE)
+            result.wait()
+            self.control.variable.set(result.communicate()[0])
+
 
 # Define a few supporting functions
 def to_title(filename):
@@ -731,7 +774,7 @@ _playall = Flag('"Play all" button', '-playall', False,
     'Create a "Play All" button that jumps to the 1st title and plays '
     'all the videos in succession before returning to the main menu.')
 
-_chapters = ListToOne('-files', 'Chapters', '-chapters', None,
+_chapters = OutputToList('-files', 'Chapters', '-chapters', None,
     'Number of chapters or HH:MM:SS string for each video. '
     'If only one value is given, use that for all videos. '
     'For grouped videos, use a "+" separator for joining '
@@ -742,7 +785,7 @@ _chapters = ListToOne('-files', 'Chapters', '-chapters', None,
     'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.  '
     'If using -no-menu and passing just integer(s), then the value '
     'represents the chapter INTERVAL not the number of chapters',
-    Text(),
+    command='set_chapters', text='set with mplayer',
     side='top',
     filter=strip_all)
 
