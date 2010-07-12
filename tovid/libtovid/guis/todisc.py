@@ -11,6 +11,7 @@ import shlex
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
+from libtovid.metagui.control import _SubList
 from libtovid.util import filetypes
 from subprocess import Popen, PIPE
 
@@ -24,11 +25,12 @@ class OutputToList(ListToOne):
                  help='',
                  filter=lambda x: x,
                  side='left',
+                 control=Text(),
                  command='',
                  text='',
                  **kwargs):
-        control._SubList.__init__(self, parent, label, option, default, help,
-                          Text(), filter, side, **kwargs)
+        _SubList.__init__(self, parent, label, option, default, help,
+                          control, filter, side, **kwargs)
         self.command = command
         self.text = text
 
@@ -36,7 +38,7 @@ class OutputToList(ListToOne):
         """Draw the parent copy and related list Control,
         side by side in the given master.
         """
-        control._SubList.draw(self, master, allow_add_remove=False)
+        _SubList.draw(self, master, allow_add_remove=False)
         if self.command:
             button = tk.Button(self.control, text=self.text,
             command=self.run_command, state='disabled')
