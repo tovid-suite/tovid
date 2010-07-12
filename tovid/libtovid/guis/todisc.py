@@ -14,7 +14,7 @@ from libtovid.metagui import *
 from libtovid.util import filetypes
 from subprocess import Popen, PIPE
 
-# class for widgets that allow setting chapter points
+# class for control that allow setting chapter points
 class OutputToList(ListToOne):
     def __init__(self,
                  parent,
@@ -36,7 +36,7 @@ class OutputToList(ListToOne):
         """Draw the parent copy and related list Control,
         side by side in the given master.
         """
-        control._SubList.draw(self, master, allow_add_remove=True)
+        control._SubList.draw(self, master, allow_add_remove=False)
         if self.command:
             button = tk.Button(self.control, text=self.text,
             command=self.run_command, state='disabled')
