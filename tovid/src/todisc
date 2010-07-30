@@ -426,8 +426,9 @@ runtime_error()
     yecho "todisc encountered an error:"
     yecho "    $@"
     echo
-    echo "Check the contents of $LOG_FILE to see what went wrong."
-    echo "See the tovid website ($TOVID_HOME_PAGE) for what to do next."
+    echo "The error should be shown above, also check the contents of 
+    $LOG_FILE to see what went wrong." |format_output
+    echo "See the tovid website ($TOVID_HOME_PAGE) for possible further info."
     echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     cleanup
@@ -479,7 +480,8 @@ confirm_preview()
         echo "without seeing more previews, then type: 'exit', else you will "
         echo "continue on with other previews even if you don't type 'yes'."
         echo
-        confirm_msg="read above paragraph and then $confirm_msg"
+        confirm_msg="Type yes to continue, press <ENTER> to abort but see "
+        confirm_msg="$confirm_msg other previews, or type 'exit' to quit."
     fi
     echo "If you are happy with the preview, $confirm_msg"
     read input
@@ -1390,7 +1392,8 @@ EOF
                 done
                 titleset_cmd=( todisc -titleset-mode -basedir "$WORK_DIR" \
                 -title_count "$num_titles" -tset_num ${count}-${tset} \
-                "${GEN_OPTS[@]}" $NO_CONFIRM_BACKUP "${TITLESET_OPTS[@]}" $vmgm_playall )
+                "${GEN_OPTS[@]}" $NO_CONFIRM_BACKUP "${TITLESET_OPTS[@]}" \
+                $vmgm_playall )
                 yecho
                 yecho "Working on the menu for titleset number $tset"
                 yecho
@@ -1577,29 +1580,52 @@ quick_menu()
         outdir="$WORK_DIR/bg"
         qm_seek="-ss $BG_SEEK"
     fi
-    # find out where vhook lives for ffmpeg
-    ffmpeg_prefix=$(which ffmpeg)
-    ffmpeg_prefix=$(sed 's/\/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
-    imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
+    filters=$(ffmpeg -filters 2>/dev/null)
+    if grep -q overlay <<< "$filters"; then
+        echo "libavfilter overlay filter is present"
+        libavfilter=1
+        if ! grep -q crop <<< "$filters"; then
+            echo "but no crop filter found, can not use libavfilter"
+            libavfilter=0
+        fi
+        ((libavfilter)) && echo "Using libavfilter for -quick-menu"
+    else
+        yecho
+        yecho "No overlay filter found, can not use libavfilter.  
+        Trying vhooks now ..."
+        
+    fi
+    if ! ((libavfilter)); then
+        # find out where vhook lives for ffmpeg
+        ffmpeg_prefix=$(which ffmpeg)
+        ffmpeg_prefix=$(sed 's/\/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
+        imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
 
-    # check for badly compiled or otherwise unusable vhook
-    if $QM_PREVIEW && [[ $MENU_NUM -eq $MN ]]; then
-        ! [[ -s "$imlib2_vhook" ]] && runtime_error "Missing ffmpeg's vhook's"
-        yecho
-        yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
-        convert  -resize $VIDSIZE! xc:"#101010" "$WORK_DIR/dummy.jpg"
-        dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
-        -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
-        -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
-        -y "$WORK_DIR/dummy.mpg")
-        if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
-            runtime_error "There was a problem making a dummy.mpg with ffmpeg"
+        # check for badly compiled or otherwise unusable vhook
+        if $QM_PREVIEW && [[ $MENU_NUM -eq $MN ]]; then
+            if [[ -s "$imlib2_vhook" ]]; then
+                yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
+                convert  -resize $VIDSIZE! xc:"#101010" "$WORK_DIR/dummy.jpg"
+                dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
+                -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
+                -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
+                -y "$WORK_DIR/dummy.mpg")
+                if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
+                    runtime_error "There was a problem making a dummy.mpg with ffmpeg"
+                fi
+                if ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
+                -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
+                    use_vhooks=1
+                fi
+            fi
         fi
-        if ! ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
-        -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
-            runtime_error "Your ffmpeg's vhook is broken.  No 'quick-menu' :("
+        if ! ((use_vhooks)); then
+            runtime_error "You are not able to use -quick-menu:
+            you must use the experimental ffmpeg with libavfilter 
+            or an older (depricated) version of ffmpeg with vhooks.
+            See this post for details on installing ffmpeg with filters: 
+            http://ubuntuforums.org/showthread.php?p=9629369"
         fi
-        yecho
     fi
     $QM_PREVIEW && yecho "Creating a quick-menu preview image"
     # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
@@ -1620,11 +1646,19 @@ quick_menu()
             TOPPAD="-padtop $SC_Y"
             QM_TMP_FRAMESIZE=$SHOWCASE_SIZE
         fi
-        PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_seek \
-        -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" -s $QM_TMP_FRAMESIZE \
-        -acodec copy $TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD \
-        -r $FRAME_RATE -b 15000k -padcolor $BG_CLR \
-        -y  "$WORK_DIR/quick_tmp.avi")
+        if ((libavfilter)); then
+            PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_seek \
+            -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" -s $QM_TMP_FRAMESIZE \
+            -acodec copy -vf pad=720:480:$SC_X:$SC_Y \
+            -r $FRAME_RATE -b 15000k \
+            -y  "$WORK_DIR/quick_tmp.avi")
+        else
+            PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_seek \
+            -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" -s $QM_TMP_FRAMESIZE \
+            -acodec copy $TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD \
+            -r $FRAME_RATE -b 15000k -padcolor $BG_CLR \
+            -y  "$WORK_DIR/quick_tmp.avi")
+        fi
         yecho
         yecho "Running ${PAD_CMD[@]}"|fold -bs
         "${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
@@ -1633,18 +1667,28 @@ quick_menu()
     # use vhook to add the titles in
     ! $QM_PREVIEW && yecho
     if ! $QM_PREVIEW; then
-        yecho "Using ffmpeg's vhook to add titles and background"
+        yecho "Using ffmpeg to add titles and background"
     fi
     # don't seek if we already made a padded video with a seek
     $QUICKMENU_IS_SHOWCASE || $RESIZE_BG && qm_seek=""
-    VHOOK_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_seek -s $VIDSIZE -i  \
-    "$PRE_VHOOK_FILE" -an -f mpeg2video -r $FRAME_RATE -tvstd $TV_STANDARD \
-    -b 7000k -maxrate 8000k -bufsize 224KiB -aspect 4:3 \
-    -vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
-    -y "$WORK_DIR/intro.m2v")
+    if ((libavfilter)); then
+        overlay_filter="movie=0:png:$WORK_DIR/quick_menu_bg.png "
+        overlay_filter="$overlay_filter [wm];[in][wm] overlay=0:0:1 [out]"
+        QUICKMENU_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_seek -s $VIDSIZE -i \
+        "$PRE_VHOOK_FILE" -an -f mpeg2video -r $FRAME_RATE -tvstd $TV_STANDARD \
+        -b 7000k -maxrate 8000k -bufsize 224KiB -aspect 4:3 \
+        -vf "$overlay_filter" -y "$WORK_DIR/intro.m2v")
+    elif ((use_vhooks)); then
+        QUICKMENU_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_seek -s $VIDSIZE -i  \
+        "$PRE_VHOOK_FILE" -an -f mpeg2video -r $FRAME_RATE -tvstd $TV_STANDARD \
+        -b 7000k -maxrate 8000k -bufsize 224KiB -aspect 4:3 \
+        -vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
+        -y "$WORK_DIR/intro.m2v")
+    fi
     $QM_PREVIEW && yecho
-    $QM_PREVIEW && yecho "Running ${VHOOK_CMD[@]}" | fold -bs
-    "${VHOOK_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
+    #$QM_PREVIEW && yecho "Running ${QUICKMENU_CMD[@]}" | fold -bs
+    yecho "Running ${QUICKMENU_CMD[@]}" | fold -bs
+    "${QUICKMENU_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
     ! $QM_PREVIEW && yecho
     # create preview images if called for
     if $QM_PREVIEW; then
@@ -2202,7 +2246,7 @@ make_mask()
 ##############################################################################
 
 
-trap 'cleanup; exit 13' TERM INT
+trap 'cleanup; exit 13' TERM INT HUP
 
 # ***********************************
 # EXECUTION BEGINS HERE
@@ -2435,6 +2479,9 @@ while test $# -gt 0; do
             ;;
         "-static" )
             STATIC=:
+            ;;
+        "-animated" )
+            STATIC=false
             ;;
         "-menu-fade" )
             shift
@@ -3244,9 +3291,9 @@ done
 ##############################################################################
 #                      Sanity checks and preliminaries                       #
 ##############################################################################
+
 # get script pid so we can kill the parent if doing recursive todisc's
 TODISC_PIDS="$TODISC_PIDS $$"
-
 # make sure dvd-slideshow is installed if user passed -use-dvd-slideshow
 $USE_DVD_SLIDESHOW && assert_dep dvd-slideshow \
 "The program dvd-slideshow was not found - you can get it from
@@ -6279,9 +6326,13 @@ if $QUICK_MENU; then
 
         # cut out transparent hole in background with this 'cookie cutter'
         convert "$WORK_DIR/cookie_cutter.png" "$WORK_DIR/pics/template.png" \
-        -compose Xor -composite "$WORK_DIR/quick_menu_bg.png"
+        -compose Xor -composite -depth 8 -colorspace RGB -type TrueColorMatte \
+        "$WORK_DIR/quick_menu_bg.png"
     else
-        cp "$WORK_DIR/pics/template.png" "$WORK_DIR/quick_menu_bg.png"
+        #cp "$WORK_DIR/pics/template.png" "$WORK_DIR/quick_menu_bg.png"
+        convert "$WORK_DIR/pics/template.png" \
+        -depth 8 -colorspace RGB -type TrueColorMatte \
+        "$WORK_DIR/quick_menu_bg.png"
     fi
 fi
 $QUICK_MENU && quick_menu preview
@@ -6986,7 +7037,8 @@ if $DO_MENU; then
         echo "Creating a black background"
         BG_PIC="$WORK_DIR/pics/template.jpg"
         if $QUICK_MENU; then
-            convert  -size $VIDSIZE xc:none "$BG_PIC"
+            convert  -size $VIDSIZE xc:none \
+            -depth 8 -colorspace RGB -type TrueColorMatte "$BG_PIC"
         else
             convert  -size $VIDSIZE xc:$BG_CLR "$BG_PIC"
         fi
