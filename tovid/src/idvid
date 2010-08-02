@@ -745,6 +745,11 @@ function idvid_main ()
                         test "$V_TV" = "PAL" && MATCH=:
                     fi
                     ;;
+                "dvd" )
+                    if test -n "$V_DVD" && test -n "$A_DVD"; then
+                        MATCH=:
+                    fi
+                    ;;
             esac
         fi
 
