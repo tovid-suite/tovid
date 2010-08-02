@@ -745,10 +745,9 @@ function idvid_main ()
                         test "$V_TV" = "PAL" && MATCH=:
                     fi
                     ;;
-                "dvd" )
-                    if test -n "$V_DVD" && test -n "$A_DVD"; then
-                        MATCH=:
-                    fi
+                * )
+                    usage_error "'$MATCH_FORMAT' \
+                        is not a recognized argument to '-isformat'"
                     ;;
             esac
         fi
