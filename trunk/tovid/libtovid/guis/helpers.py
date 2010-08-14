@@ -18,11 +18,15 @@ class VideoGui(tk.Frame):
     def __init__(self, master, args='', title=None, callback=None):
         """Initialize GUI
 
-        Arguments:
-        master: widget that will conain this GUI
-        args: additional arguments to mplayer command, inserted
-        at the end of the command just before the 'FILE' argument.
-        title: the wm title given to the master widget.
+           master
+               widget that will conain this GUI
+           args
+               additional arguments to mplayer command, inserted
+               at the end of the command just before the 'FILE' argument.
+           title
+               the wm title given to the master widget.
+           callback
+               a function run at program exit, before cleanup of temp files
         """
         tk.Frame.__init__(self, master)
 
@@ -216,10 +220,6 @@ class VideoGui(tk.Frame):
             if os.path.exists(self.tempdir):
                 os.rmdir(self.tempdir)
             quit()
-
-    def pre_exit(self):
-        """override this function to run custom commands on exit"""
-        pass
 
 
 class SetChapters(VideoGui):
