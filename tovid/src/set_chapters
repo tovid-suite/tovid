@@ -13,9 +13,11 @@ if not path.exists(video):
     print('Error: %s does not exist' %video)
     exit()
 
+def print_chapters():
+    sys.stdout.write(app.get_chapters() + '\n')
+
 root = tk.Tk()
-root.variable = tk.StringVar()
-app = SetChapters(root, '-menu', 'Mplayer')
+app = SetChapters(root, '-menu', 'Mplayer', print_chapters)
 app.pack()
 app.run(video)
 
