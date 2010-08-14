@@ -15,7 +15,7 @@ class VideoGui(tk.Frame):
     Without subclassing it only contains a 'play/pause button
     and an 'exit' button.
     """
-    def __init__(self, master, args='', title=None):
+    def __init__(self, master, args='', title=None, callback=None):
         """Initialize GUI
 
         Arguments:
@@ -37,6 +37,7 @@ class VideoGui(tk.Frame):
             except AttributeError:
                 print "Error: " + \
                   "VideoGui master must be a root window for 'title' option"
+        self.callback = callback
                 
         self.is_running = tk.BooleanVar()
         self.is_running.set(False)
@@ -183,7 +184,7 @@ class VideoGui(tk.Frame):
 
     def exit_mplayer(self):
         """
-        Close mplayer if it is running, then exit, running any pre_exit commands
+        Close mplayer if it is running, then exit, running callback if it exists
         """
         # unpause so mplayer doesn't hang
         if self.is_running.get():
@@ -206,7 +207,8 @@ class VideoGui(tk.Frame):
                 self.send(mess)
         else:
             # run any custom commands on exit
-            self.pre_exit()
+            if callable(self.callback):
+                self.callback()
             # remove temporary files and directory
             for f in self.cmd_pipe, self.log, self.editlist:
                 if os.path.exists(f):
@@ -221,8 +223,8 @@ class VideoGui(tk.Frame):
 
 
 class SetChapters(VideoGui):
-    def __init__(self, master, args='', title=None):
-        VideoGui.__init__(self, master, args, title)
+    def __init__(self, master, args='', title=None, callback=None):
+        VideoGui.__init__(self, master, args, title, callback)
 
         self.chapter_var = tk.StringVar()
 
@@ -307,6 +309,3 @@ class SetChapters(VideoGui):
         return '%s' %','.join(chapters)
 
 
-    def pre_exit(self):
-        # not finished yet.  This will set the chapters variable of the Control
-        sys.stdout.write(self.get_chapters())
