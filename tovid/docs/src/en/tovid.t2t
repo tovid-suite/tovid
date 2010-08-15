@@ -64,9 +64,9 @@ Two configuration files are created the first time you run tovid:
 : **~/.tovid/preferences**
     Defines working directory for all scripts.
     In addition you can define the output directory for makempg here.
-: **~/.tovid/tovid.config**
-    Includes command-line options that should always be passed to
-    makempg.
+: **~/.tovid/tovid.ini**
+    Includes command-line options that should be passed to the various
+    **tovid** sub-commands.
 
 Edit these files if you wish to change your configuration.
 
