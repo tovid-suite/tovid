@@ -8,6 +8,7 @@ from os import path
 if len(sys.argv) < 2:
     print("Usage: set_chapters.py video")
     exit()
+
 video = sys.argv[1]
 if not path.exists(video):
     print('Error: %s does not exist' %video)
