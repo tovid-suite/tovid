@@ -17,7 +17,7 @@ def print_chapters():
     sys.stdout.write(app.get_chapters() + '\n')
 
 root = tk.Tk()
-app = SetChapters(root, '-menu', 'Mplayer', print_chapters)
+app = SetChapters(root, '-menu', 'Mplayer', print_chapters, style='standalone')
 app.pack()
 app.run(video)
 
