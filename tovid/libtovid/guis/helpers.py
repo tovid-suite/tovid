@@ -10,12 +10,12 @@ from tempfile import mkdtemp
 
 class VideoGui(tk.Frame):
     """A basic GUI to play video files.  It runs mplayer in slave mode
-    so that command can be sent to it via fifo.
+    so that commands can be sent to it via fifo.
 
     Without subclassing it only contains a 'play/pause button
     and an 'exit' button.
     """
-    def __init__(self, master, args='', title=None, callback=None):
+    def __init__(self, master, args='', title='', callback=None, style='popup'):
         """Initialize GUI
 
            master
@@ -27,6 +27,8 @@ class VideoGui(tk.Frame):
                the wm title given to the master widget.
            callback
                a function run at program exit, before cleanup of temp files
+           style
+               may be one of 'popup' (default), 'standalone', or 'embedded'(TBA)
         """
         tk.Frame.__init__(self, master)
 
@@ -42,6 +44,7 @@ class VideoGui(tk.Frame):
                 print "Error: " + \
                   "VideoGui master must be a root window for 'title' option"
         self.callback = callback
+        self.style = style
                 
         self.is_running = tk.BooleanVar()
         self.is_running.set(False)
@@ -58,15 +61,15 @@ class VideoGui(tk.Frame):
     def draw(self):
         """Draw the GUI in self.master and get X11 identifier for container"""
         self.root_frame = tk.Frame(self)
-        self.root_frame.pack(side='top', fill='both', expand=1, pady=40)
-        self.grab_set()
+        self.root_frame.pack(side='top', fill='both', expand=1, pady=20)
         self.container = tk.Frame(self.root_frame, bg='black', container=1, colormap='new')
         self.container.pack()
         # X11 identifier for the container frame
         self.xid = self.tk.call('winfo', 'id', self.container)
         # bindings for exit
-        self._root().protocol("WM_DELETE_WINDOW", self.confirm_exit)
-        self._root().bind('<Control-q>', self.confirm_exit)
+        if self.style == 'standalone':
+            self._root().protocol("WM_DELETE_WINDOW", self.confirm_exit)
+            self._root().bind('<Control-q>', self.confirm_exit)
         self.add_widgets()
 
     def add_widgets(self):
@@ -219,12 +222,28 @@ class VideoGui(tk.Frame):
                     os.remove(f)
             if os.path.exists(self.tempdir):
                 os.rmdir(self.tempdir)
-            quit()
+            if self.style == 'standalone':
+                self.quit()
+            else:
+                self.destroy()
 
 
 class SetChapters(VideoGui):
-    def __init__(self, master, args='', title=None, callback=None):
-        VideoGui.__init__(self, master, args, title, callback)
+    """A GUI to set video chapter points using mplayer"""
+    def __init__(self, master, args='', title='', callback=None, style='popup'):
+        """
+        master
+            Pack into this widget
+        args
+            Additional args to pass to mplayer
+        title
+            Window manager titlebar title (master must be root window for this)
+        callback
+            Function to run on application exit, run before temp file cleanup
+        style
+            Can one of: 'popup' (default), 'standalone', or 'embedded'(TBA)
+        """
+        VideoGui.__init__(self, master, args, title, callback, style)
 
         self.chapter_var = tk.StringVar()
 
