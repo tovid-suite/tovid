@@ -7,18 +7,20 @@ import Tkinter as tk
 import os
 import fnmatch
 import commands
-import shlex
-import sys
+import time
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
-from libtovid.metagui.control import _SubList
-from libtovid.util import filetypes
 from libtovid.guis.helpers import SetChapters
-from subprocess import Popen, PIPE
+from libtovid.util import filetypes
+from libtovid.metagui.control import _SubList
 
 # class for control that allow setting chapter points
-class OutputToList(ListToOne):
+class Chapters(ListToOne):
+    """A popup version of the ListToOne Control, that also
+       allows setting chapter points with a mplayer GUI
+       (SetChapters).  This Control is specific to the tovid GUI.
+    """
     def __init__(self,
                  parent,
                  label="ListToOne",
@@ -30,15 +32,49 @@ class OutputToList(ListToOne):
                  control=Text(),
                  text='',
                  **kwargs):
-        _SubList.__init__(self, parent, label, option, default, help,
+        """initialize Chapters
+           text
+               The text for the button that calls mplayer
+           For other options see help(control.ListToOne) 
+        """
+        ListToOne.__init__(self, parent, label, option, default, help,
                           control, filter, side, **kwargs)
         self.text = text
+        self.parent = parent
 
     def draw(self, master):
-        """Draw the parent copy and related list Control,
-        side by side in the given master.
+        """initialize Toplevel popup, video/chapters lists, and mplayer GUI.
+        Only pack the video/chapter lists (_SubList).  Withdraw until called.
         """
-        _SubList.draw(self, master, allow_add_remove=False)
+        chapters_button = tk.Button(master, text='edit', command=self.popup)
+        chapters_button.pack()
+        # popup to hold lists and mplayer
+        self.top = tk.Toplevel(master)
+        self.top.withdraw()
+        self.top.minsize(660, 660)
+        self.top.title('Chapters')
+        # text and label for instructions
+        txt = 'Auto chapters:\n' + \
+        '   1. Enter single value (integer) for all videos on 1st line.\n' + \
+        '   2. Or, use a different auto chapter value for each video.\n' + \
+        'HH:MM:SS format:\n' + \
+        '   1. Enter timecode for each video, eg. 00:00:00,00:05:00 ...\n' + \
+        '   2. Or use the "Set with mplayer" button to use a GUI'
+        self.top.label = tk.Label(self.top, text=txt, justify=tk.LEFT)
+        self.top.label.pack(side=tk.TOP)
+        self.top_button = tk.Button(self.top, text='Okay', command=self.top.withdraw)
+        # frames to hold the _Sublist and mplayer
+        self.sublist_frame = tk.Frame(self.top)
+        self.mplayer_frame = tk.Frame(self.top)
+        # bindings for initial toplevel window
+        self.top.protocol("WM_DELETE_WINDOW", self.top.withdraw)
+        self.top.bind('<Escape>', self.withdraw_popup)
+        # pack the _SubList frame and draw _SubList
+        self.sublist_frame.pack(expand=1, fill=tk.BOTH)
+        _SubList.draw(self, self.sublist_frame, allow_add_remove=False)
+        self.top_button.pack(side='bottom')
+
+        # a button to allow setting chapters in mplayer GUI
         button = tk.Button(self.control, text=self.text,
         command=self.run_mplayer, state='disabled')
         button.pack(side='left')
@@ -47,27 +83,65 @@ class OutputToList(ListToOne):
         # Add callbacks to handle changes in parent
         self.add_callbacks()
 
-    def print_chapters(self):
-        self.control.variable.set(self.mpl.get_chapters())
-        self._root().protocol("WM_DELETE_WINDOW", self.master._root().confirm_exit)
-        self.top.destroy()
-
+    # unused
+    def getgeo(self):
+        """set screen location of popup, relative to master"""
+        self.rootx = self._root().winfo_rootx()
+        self.rooty = self._root().winfo_rooty()
+        self.root_geo = self._root().winfo_geometry()
+        self.top.geometry('%dx%d+%d+%d' %(660, 660, self.rootx, self.rooty) )
+        
+    def popup(self):
+            """popup the list of chapters, with button to run mplayer"""
+            #self.getgeo()
+            self.after(100, lambda:self.top.deiconify())
+            videolist = self.parent_listbox
+            self.top.transient(self.parent._root())
+            if videolist.items.count() and not videolist.selected.get():
+                self.parent_listbox.select_index(0)
+            # don't make it easy to erase a chapters string with a keypress
+            self.control.selection_clear()
+    
     def run_mplayer(self, event=None):
-        videolist = self.parent_listbox
-        if not videolist.items.count():
-            return
-        elif not videolist.selected.get():
-            self.parent_listbox.select_index(0)
+        """run the mplayer GUI to set chapters"""
         selected = self.parent_listbox.selected.get()
-        self.top = tk.Toplevel(self)
-        self.top.transient(self)
-        self.top.grab_set()
-        self.mpl = SetChapters(self.top, '-menu', 'Mplayer', self.print_chapters)
-        # disable close button while mplayer running, both top and _root()
-        self.top.protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
-        self._root().protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
-        self.mpl.pack()
-        self.mpl.run(selected)
+        if selected:
+            # unpack label and sublist frame
+            self.sublist_frame.pack_forget()
+            self.top.label.pack_forget()
+            self.top_button.pack_forget()
+            # initialize mplayer GUI
+            self.mpl = SetChapters(self.mplayer_frame, '-menu', '', self.on_exit)
+            self.mplayer_frame.pack()
+            self.mpl.pack()
+            self.mpl.run(selected)
+            # disable close button while mplayer running, both top and _root()
+            self.top.protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
+            self.master._root().protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
+            # disable usage of _root() window while mplayer running
+            self.top.grab_set()
+            self.top.bind('<Escape>', self.mpl.confirm_exit)
+
+    def on_exit(self):
+        """callback run when mplayer GUI exits. This sets the chapters list
+           to the timecodes set by the mplayer gui, repacks the label and the
+           list frame, sets/resets bindings, and releases the grab_set().
+        """
+        self.control.variable.set(self.mpl.get_chapters())
+        # don't make it easy to erase a chapters string with a keypress
+        self.control.selection_clear()
+        self.mplayer_frame.pack_forget()
+        # repack label
+        self.top.label.pack(side=tk.TOP)
+        self.sublist_frame.pack(expand=1, fill=tk.BOTH)
+        self.top_button.pack(side='bottom')
+        self.top.protocol("WM_DELETE_WINDOW", self.top.withdraw)
+        self.top.grab_release()
+        self.master._root().protocol("WM_DELETE_WINDOW", self.master._root().confirm_exit)
+        self.top.bind('<Escape>', self.withdraw_popup)
+
+    def withdraw_popup(self, event=None):
+        self.top.withdraw()
 
 
 # Define a few supporting functions
@@ -788,7 +862,7 @@ _playall = Flag('"Play all" button', '-playall', False,
     'Create a "Play All" button that jumps to the 1st title and plays '
     'all the videos in succession before returning to the main menu.')
 
-_chapters = OutputToList('-files', 'Chapters', '-chapters', None,
+_chapters = Chapters('-files', 'Chapters', '-chapters', None,
     'Number of chapters or HH:MM:SS string for each video. '
     'If only one value is given, use that for all videos. '
     'For grouped videos, use a "+" separator for joining '
@@ -799,7 +873,7 @@ _chapters = OutputToList('-files', 'Chapters', '-chapters', None,
     'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.  '
     'If using -no-menu and passing just integer(s), then the value '
     'represents the chapter INTERVAL not the number of chapters',
-    command='set_chapters', text='set with mplayer',
+    text='set with mplayer',
     side='top',
     filter=strip_all)
 
@@ -906,12 +980,7 @@ main =  VPanel('Basic',
                     _submenus, _ani_submenus, side='left')
             ),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
-            VPanel('Chapters', Number('', '-chapters', 6,
-            'Number of chapters for each video.  '
-            'You can instead set chapters or time codes individually '
-            'for each video by using the "Chapters" tab on '
-            'the "Playback" tab.  Do NOT use both settings.',
-            1, 25, '', 'popup', 1), Label('per video')),
+            VPanel('Chapters', _chapters),
             VPanel('Burning',
                 HPanel('',
                 _burn,
@@ -1140,7 +1209,6 @@ playback = Tabs("Playback",
             _outlinewidth,
         ),
     ),
-    VPanel('Chapters', _chapters),
     VPanel('Grouped Videos', _group),
 )
 
@@ -1152,8 +1220,8 @@ encoding = VPanel('Encoding',
         tovid.AUDIO,
         tovid.BEHAVIOR,
     ),
-    SpacedText('Custom tovid options', '', '',
-         'Space-separated list of custom options to pass to tovid.'),
+    SpacedText('Custom makempg options', '', '',
+         'Space-separated list of custom options to pass to makempg.'),
 )
 
 ### --------------------------------------------------------------------
