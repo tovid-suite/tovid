@@ -8,11 +8,13 @@ import os
 import fnmatch
 import commands
 import shlex
+import sys
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
 from libtovid.metagui.control import _SubList
 from libtovid.util import filetypes
+from libtovid.guis.helpers import SetChapters
 from subprocess import Popen, PIPE
 
 # class for control that allow setting chapter points
@@ -26,12 +28,10 @@ class OutputToList(ListToOne):
                  filter=lambda x: x,
                  side='left',
                  control=Text(),
-                 command='',
                  text='',
                  **kwargs):
         _SubList.__init__(self, parent, label, option, default, help,
                           control, filter, side, **kwargs)
-        self.command = command
         self.text = text
 
     def draw(self, master):
@@ -39,23 +39,35 @@ class OutputToList(ListToOne):
         side by side in the given master.
         """
         _SubList.draw(self, master, allow_add_remove=False)
-        if self.command:
-            button = tk.Button(self.control, text=self.text,
-            command=self.run_command, state='disabled')
-            button.pack(side='left')
+        button = tk.Button(self.control, text=self.text,
+        command=self.run_mplayer, state='disabled')
+        button.pack(side='left')
         # 1:1, parent listbox is linked to this one
         self.parent_listbox.link(self.listbox)
         # Add callbacks to handle changes in parent
         self.add_callbacks()
 
-    def run_command(self, event=None):
+    def print_chapters(self):
+        self.control.variable.set(self.mpl.get_chapters())
+        self._root().protocol("WM_DELETE_WINDOW", self.master._root().confirm_exit)
+        self.top.destroy()
+
+    def run_mplayer(self, event=None):
+        videolist = self.parent_listbox
+        if not videolist.items.count():
+            return
+        elif not videolist.selected.get():
+            self.parent_listbox.select_index(0)
         selected = self.parent_listbox.selected.get()
-        if self.command and selected:
-            command = shlex.split(self.command)
-            command.append(selected)
-            result = Popen(command, stdout=PIPE)
-            result.wait()
-            self.control.variable.set(result.communicate()[0])
+        self.top = tk.Toplevel(self)
+        self.top.transient(self)
+        self.top.grab_set()
+        self.mpl = SetChapters(self.top, '-menu', 'Mplayer', self.print_chapters)
+        # disable close button while mplayer running, both top and _root()
+        self.top.protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
+        self._root().protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
+        self.mpl.pack()
+        self.mpl.run(selected)
 
 
 # Define a few supporting functions
