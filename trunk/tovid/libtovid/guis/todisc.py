@@ -100,7 +100,7 @@ class Chapters(ListToOne):
             if videolist.items.count() and not videolist.selected.get():
                 self.parent_listbox.select_index(0)
             # don't make it easy to erase a chapters string with a keypress
-            self.control.selection_clear()
+            #self.control.selection_clear()
     
     def run_mplayer(self, event=None):
         """run the mplayer GUI to set chapters"""
@@ -129,7 +129,7 @@ class Chapters(ListToOne):
         """
         self.control.variable.set(self.mpl.get_chapters())
         # don't make it easy to erase a chapters string with a keypress
-        self.control.selection_clear()
+        #self.control.selection_clear()
         self.mplayer_frame.pack_forget()
         # repack label
         self.top.label.pack(side=tk.TOP)
@@ -143,6 +143,13 @@ class Chapters(ListToOne):
     def withdraw_popup(self, event=None):
         self.top.withdraw()
 
+    def select(self, index, value):
+        """Select an item in the list and enable editing.
+           List select method overriden in order to clear entry selection.
+        """
+        List.select(self, index, value)
+        # don't make it easy to erase a chapters string with a keypress
+        self.control.selection_clear()
 
 # Define a few supporting functions
 def to_title(filename):
