@@ -95,7 +95,7 @@ class Chapters(ListToOne):
             """popup the list of chapters, with button to run mplayer GUI"""
             videolist = self.parent_listbox
             self.top.transient(self.parent._root())
-            self.getgeo()
+            #self.getgeo()
             self.after(100, lambda:self.top.deiconify())
             if videolist.items.count() and not videolist.selected.get():
                 self.parent_listbox.select_index(0)
@@ -106,12 +106,12 @@ class Chapters(ListToOne):
         if selected:
             # initialize mplayer GUI
             self.mpl = SetChapters(self.mplayer_frame, '-menu', '', self.on_exit)
-            self.mplayer_frame.pack()
             self.mpl.pack()
             # unpack label
             self.sublist_frame.pack_forget()
             self.top.label.pack_forget()
             self.top_button.pack_forget()
+            self.mplayer_frame.pack()
             self.mpl.run(selected)
             # disable close button while mplayer running, both top and _root()
             self.top.protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
