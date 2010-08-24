@@ -104,14 +104,14 @@ class Chapters(ListToOne):
         """run the mplayer GUI to set chapters"""
         selected = self.parent_listbox.selected.get()
         if selected:
-            # unpack label
-            self.top.label.pack_forget()
-            self.top_button.pack_forget()
             # initialize mplayer GUI
             self.mpl = SetChapters(self.mplayer_frame, '-menu', '', self.on_exit)
-            self.sublist_frame.pack_forget()
             self.mplayer_frame.pack()
             self.mpl.pack()
+            # unpack label
+            self.sublist_frame.pack_forget()
+            self.top.label.pack_forget()
+            self.top_button.pack_forget()
             self.mpl.run(selected)
             # disable close button while mplayer running, both top and _root()
             self.top.protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
