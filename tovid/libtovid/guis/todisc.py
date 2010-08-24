@@ -99,8 +99,6 @@ class Chapters(ListToOne):
             self.top.transient(self.parent._root())
             if videolist.items.count() and not videolist.selected.get():
                 self.parent_listbox.select_index(0)
-            # don't make it easy to erase a chapters string with a keypress
-            #self.control.selection_clear()
     
     def run_mplayer(self, event=None):
         """run the mplayer GUI to set chapters"""
@@ -128,8 +126,6 @@ class Chapters(ListToOne):
            list frame, sets/resets bindings, and releases the grab_set().
         """
         self.control.variable.set(self.mpl.get_chapters())
-        # don't make it easy to erase a chapters string with a keypress
-        #self.control.selection_clear()
         self.mplayer_frame.pack_forget()
         # repack label
         self.top.label.pack(side=tk.TOP)
