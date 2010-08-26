@@ -41,6 +41,8 @@ class Chapters(ListToOne):
                           control, filter, side, **kwargs)
         self.text = text
         self.parent = parent
+        self.top_width = 540
+        self.top_height = 540
 
     def draw(self, master):
         """initialize Toplevel popup, video/chapters lists, and mplayer GUI.
@@ -51,7 +53,7 @@ class Chapters(ListToOne):
         # popup to hold lists and mplayer
         self.top = tk.Toplevel(master)
         self.top.withdraw()
-        self.top.minsize(660, 660)
+        self.top.minsize(540, 540)
         self.top.title('Chapters')
         # text and label for instructions
         txt = 'Auto chapters:\n' + \
@@ -59,7 +61,7 @@ class Chapters(ListToOne):
         '   2. Or, use a different auto chapter value for each video.\n' + \
         'HH:MM:SS format:\n' + \
         '   1. Enter timecode for each video, eg. 00:00:00,00:05:00 ...\n' + \
-        '   2. Or use the "Set with mplayer" button to use a GUI'
+        '   2. Or use the "set with mplayer" button to use a GUI'
         self.top.label = tk.Label(self.top, text=txt, justify=tk.LEFT)
         self.top.label.pack(side=tk.TOP)
         self.top_button = tk.Button(self.top, text='Okay', command=self.top.withdraw)
@@ -83,19 +85,29 @@ class Chapters(ListToOne):
         # Add callbacks to handle changes in parent
         self.add_callbacks()
 
-    # unused
-    def getgeo(self):
-        """set screen location of popup, relative to master"""
-        self.rootx = self._root().winfo_rootx()
-        self.rooty = self._root().winfo_rooty()
-        self.root_geo = self._root().winfo_geometry()
-        self.top.geometry('%dx%d+%d+%d' %(660, 660, self.rootx, self.rooty) )
+    def get_geo(self, widget):
+        """Get geometry of a widget.
+           Returns List (integers): width, height, Xpos, Ypos
+        """
+        geo = widget.winfo_geometry()
+        return  [ int(x) for x in geo.replace('x', '+').split('+') ]
+
+    def center_popup(self, master, width, height):
+        """Get centered screen location of popup, relative to master.
+           Returns geometry string in form of 'WxH+Xpos+Ypos'
+        """
+        root_width, root_height, rootx, rooty = self.get_geo(master)
+        xoffset = (root_width - width) / 2
+        yoffset = (root_height - height) / 2
+        return '%dx%d+%d+%d' %(width, height, rootx + xoffset, rooty + yoffset)
         
     def popup(self):
             """popup the list of chapters, with button to run mplayer GUI"""
             videolist = self.parent_listbox
             self.top.transient(self.parent._root())
-            #self.getgeo()
+            w = self.top_width
+            h = self.top_height
+            self.top.geometry(self.center_popup(self.parent._root(), w, h))
             self.after(100, lambda:self.top.deiconify())
             if videolist.items.count() and not videolist.selected.get():
                 self.parent_listbox.select_index(0)
