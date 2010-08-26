@@ -104,7 +104,10 @@ class VideoGui(tk.Frame):
         """Get aspect ratio and set dimensions of video container.
            Called by run().
         """
-        v_width = 600
+        if self.style == 'standalone':
+            v_width = 600
+        else:
+            v_width = 540
         media_info = self.identify(video)
         asr = re.findall('ID_VIDEO_ASPECT=.*', media_info)
         # get last occurence as the first is 0.0 with mplayer
@@ -206,7 +209,7 @@ class VideoGui(tk.Frame):
     def confirm_exit(self, event=None):
         """on exit, make sure that mplayer is not running before quit"""
         if self.is_running.get():
-            mess = "osd_show_text 'press exit before quitting program' 4000 3\n"
+            mess = "osd_show_text 'please exit mplayer first' 4000 3\n"
             if not self.show_osd:
                 self.send('osd 3\n%s' %mess)
                 self.after(2500, lambda:self.send('osd 0\n'))
