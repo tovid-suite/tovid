@@ -98,7 +98,7 @@ class Chapters(ListToOne):
         """
         root_width, root_height, rootx, rooty = self.get_geo(master)
         xoffset = (root_width - width) / 2
-        yoffset = (root_height - height) / 2
+        yoffset = ((root_height - height) / 2 ) - 15
         return '%dx%d+%d+%d' %(width, height, rootx + xoffset, rooty + yoffset)
         
     def popup(self):
