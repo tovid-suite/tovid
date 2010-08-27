@@ -314,7 +314,7 @@ class SetChapters(VideoGui):
     def get_chapters(self):
         # need a sleep to make sure mplayer gives up its data
         if not os.path.exists(self.editlist):
-            return '00:00:00'
+            return
         time.sleep(0.5)
         f = open(self.editlist)
         c = f.readlines()
