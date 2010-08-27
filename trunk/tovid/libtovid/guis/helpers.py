@@ -4,9 +4,18 @@ import shlex
 import commands
 import re
 import os
-import sys
+import fnmatch
+from libtovid.metagui import *
+from libtovid.metagui.control import _SubList
+from libtovid.util import filetypes
 from subprocess import Popen, PIPE, STDOUT
 from tempfile import mkdtemp
+
+__all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
+'find_masks', 'nodupes', 'video_filetypes', 'image_filetypes',
+'visual_filetypes', 'dvd_video_files', 'av_filetypes', 'sys_dir',
+'thumb_masks', 'home_dir', 'tovid_prefix', 'tovid_icon', 'os_path',
+'heading_text', '_files_and_titles', '_out' ]
 
 class VideoGui(tk.Frame):
     """A basic GUI to play video files.  It runs mplayer in slave mode
@@ -332,3 +341,255 @@ class SetChapters(VideoGui):
             return '%s' %','.join(chapters)
 
 
+# class for control that allow setting chapter points
+class Chapters(ListToOne):
+    """A popup version of the ListToOne Control, that also
+       allows setting chapter points with a mplayer GUI
+       (SetChapters).  This Control is specific to the tovid GUI.
+    """
+    def __init__(self,
+                 parent,
+                 label="ListToOne",
+                 option='',
+                 default=None,
+                 help='',
+                 filter=lambda x: x,
+                 side='left',
+                 control=Text(),
+                 text='',
+                 **kwargs):
+        """initialize Chapters
+           text
+               The text for the button that calls mplayer
+           For other options see help(control.ListToOne) 
+        """
+        ListToOne.__init__(self, parent, label, option, default, help,
+                          control, filter, side, **kwargs)
+        self.text = text
+        self.parent = parent
+        self.top_width = 540
+        self.top_height = 540
+
+    def draw(self, master):
+        """initialize Toplevel popup, video/chapters lists, and mplayer GUI.
+        Only pack the video/chapter lists (_SubList).  Withdraw until called.
+        """
+        chapters_button = tk.Button(master, text='edit', command=self.popup)
+        chapters_button.pack()
+        # popup to hold lists and mplayer
+        self.top = tk.Toplevel(master)
+        self.top.withdraw()
+        self.top.minsize(540, 540)
+        self.top.title('Chapters')
+        # text and label for instructions
+        txt = 'Auto chapters:\n' + \
+        '   1. Enter single value (integer) for all videos on 1st line.\n' + \
+        '   2. Or, use a different auto chapter value for each video.\n' + \
+        'HH:MM:SS format:\n' + \
+        '   1. Enter timecode for each video, eg. 00:00:00,00:05:00 ...\n' + \
+        '   2. Or use the "set with mplayer" button to use a GUI'
+        self.top.label = tk.Label(self.top, text=txt, justify=tk.LEFT)
+        self.top.label.pack(side=tk.TOP)
+        self.top_button = tk.Button(self.top, text='Okay', command=self.top.withdraw)
+        # frames to hold the _Sublist and mplayer
+        self.sublist_frame = tk.Frame(self.top)
+        self.mplayer_frame = tk.Frame(self.top)
+        # bindings for initial toplevel window
+        self.top.protocol("WM_DELETE_WINDOW", self.top.withdraw)
+        self.top.bind('<Escape>', self.withdraw_popup)
+        # pack the _SubList frame and draw _SubList
+        self.sublist_frame.pack(expand=1, fill=tk.BOTH)
+        _SubList.draw(self, self.sublist_frame, allow_add_remove=False)
+        self.top_button.pack(side='bottom')
+
+        # a button to allow setting chapters in mplayer GUI
+        button = tk.Button(self.control, text=self.text,
+        command=self.run_mplayer, state='disabled')
+        button.pack(side='left')
+        # 1:1, parent listbox is linked to this one
+        self.parent_listbox.link(self.listbox)
+        # Add callbacks to handle changes in parent
+        self.add_callbacks()
+
+    def get_geo(self, widget):
+        """Get geometry of a widget.
+           Returns List (integers): width, height, Xpos, Ypos
+        """
+        geo = widget.winfo_geometry()
+        return  [ int(x) for x in geo.replace('x', '+').split('+') ]
+
+    def center_popup(self, master, width, height):
+        """Get centered screen location of popup, relative to master.
+           Returns geometry string in form of 'WxH+Xpos+Ypos'
+        """
+        root_width, root_height, rootx, rooty = self.get_geo(master)
+        xoffset = (root_width - width) / 2
+        # subtract 15 pixels for WM titlebar (still looks OK if there is none)
+        yoffset = ((root_height - height) / 2 ) - 15
+        return '%dx%d+%d+%d' %(width, height, rootx + xoffset, rooty + yoffset)
+        
+    def popup(self):
+            """popup the list of chapters, with button to run mplayer GUI"""
+            videolist = self.parent_listbox
+            self.top.transient(self.parent._root())
+            w = self.top_width
+            h = self.top_height
+            self.top.geometry(self.center_popup(self.parent._root(), w, h))
+            self.after(100, lambda:self.top.deiconify())
+            if videolist.items.count() and not videolist.selected.get():
+                self.parent_listbox.select_index(0)
+    
+    def run_mplayer(self, event=None):
+        """run the mplayer GUI to set chapters"""
+        selected = self.parent_listbox.selected.get()
+        if selected:
+            # initialize mplayer GUI
+            self.mpl = SetChapters(self.mplayer_frame, '-menu', '', self.on_exit)
+            self.mpl.pack()
+            # unpack label
+            self.sublist_frame.pack_forget()
+            self.top.label.pack_forget()
+            self.top_button.pack_forget()
+            self.mplayer_frame.pack()
+            self.mpl.run(selected)
+            # disable close button while mplayer running, both top and _root()
+            self.top.protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
+            self.master._root().protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
+            # disable usage of _root() window while mplayer running
+            self.top.grab_set()
+            self.top.bind('<Escape>', self.mpl.confirm_exit)
+
+    def on_exit(self):
+        """callback run when mplayer GUI exits. This sets the chapters list
+           to the timecodes set by the mplayer gui, repacks the label and the
+           list frame, sets/resets bindings, and releases the grab_set().
+        """
+        if self.mpl.get_chapters():
+            self.control.variable.set(self.mpl.get_chapters())
+        self.mplayer_frame.pack_forget()
+        # repack label
+        self.top.label.pack(side=tk.TOP)
+        self.sublist_frame.pack(expand=1, fill=tk.BOTH)
+        self.top_button.pack(side='bottom')
+        self.top.protocol("WM_DELETE_WINDOW", self.top.withdraw)
+        self.top.grab_release()
+        self.master._root().protocol("WM_DELETE_WINDOW", self.master._root().confirm_exit)
+        self.top.bind('<Escape>', self.withdraw_popup)
+
+    def withdraw_popup(self, event=None):
+        self.top.withdraw()
+
+    def select(self, index, value):
+        """Select an item in the list and enable editing.
+           List select method overriden in order to clear entry selection.
+        """
+        List.select(self, index, value)
+        # don't make it easy to erase a chapters string with a keypress
+        self.control.selection_clear()
+
+# Define a few supporting functions
+def to_title(filename):
+    basename = os.path.basename(filename)
+    firstdot = basename.find('.')
+    if firstdot >= 0:
+        return basename[0:firstdot]
+    else:
+        return basename
+
+def strip_all(filename):
+    return ''
+
+def find_masks(dir, pattern):
+    file_list=[]
+    ext = pattern.replace('*', '')
+    for path, dirs, files in os.walk(os.path.abspath(dir)):
+        for filename in fnmatch.filter(files, pattern):
+            file_list+=[ filename.replace(ext, '') ]
+    return file_list
+
+def nodupes(seq):
+    noDupes = []
+    [noDupes.append(i) for i in seq if not noDupes.count(i)]
+    return noDupes
+
+# List of file-type selections for Filename controls
+image_filetypes = [filetypes.image_files]
+image_filetypes.append(filetypes.all_files)
+#image_filetypes.extend(filetypes.match_types('image'))  # confusing
+# video file-types from filetypes needs some additions
+v_filetypes = 'm2v vob ts '
+v_filetypes += filetypes.get_extensions('video').replace('*.', '')
+v_filetypes += ' mp4 mpeg4 mp4v divx mkv ogv ogm ram rm rmvb wmv'
+vid_filetypes = filetypes.new_filetype('Video files', v_filetypes)
+video_filetypes = [vid_filetypes]
+video_filetypes += [filetypes.all_files]
+
+# some selectors can use video or audio
+av_filetypes = [ filetypes.all_files, filetypes.audio_files, vid_filetypes ]
+
+# some selectors can use image or video
+visual_filetypes = [ filetypes.all_files, filetypes.image_files, vid_filetypes ]
+
+# DVD video
+dvdext = 'vob mpg mpeg mpeg2'
+dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
+
+# Users can use their own thumb masks.  Add to thumb mask control drop-down
+masks = [ 'none', 'normal', 'oval', 'vignette', 'plectrum', 'arch', 'spiral', \
+'blob', 'star', 'flare' ]
+# $PREFIX/lib/tovid is already added to end of PATH
+os_path = os.environ['PATH'].rsplit(':')
+sys_dir = os_path[-1] + '/masks'
+home_dir = os.path.expanduser("~") + '/.tovid/masks'
+for dir in sys_dir, home_dir:
+    masks.extend(find_masks(dir, '*.png'))
+thumb_masks =  '|'.join(nodupes(masks))
+tovid_prefix = commands.getoutput('tovid -prefix')
+tovid_icon = os.path.join(tovid_prefix, 'lib', 'tovid', 'tovid.png')
+
+### configuration for titleset wizard ( 'tovid titlesets' )
+wizard = os.getenv('METAGUI_WIZARD')
+if wizard == '1':
+    # General options
+    heading_text = 'General options applying to all titlesets.\n'
+    heading_text += 'Required: "Output name" at bottom of window'
+elif wizard == '2':
+    # Root menu options
+    heading_text = 'Root menu options.  Use any options that do not depend\n'
+    heading_text += 'on video files or slideshows being loaded. Required: None'
+    heading_text += '\nChange "Menu title" from the default to suit your needs'
+elif wizard >= '3':
+    # titleset options
+    heading_text = 'Options for titleset %s\n' %(int(wizard) - 2)
+    heading_text += 'Required: 1 or more videos and/or slideshows'
+else:
+    heading_text = 'You can author (and burn) a DVD with a simple menu '
+    heading_text += 'using ONLY this "Basic" pane\n'
+    heading_text += 'Required: video files (and/or slideshows) and "Output name"'
+
+if wizard == '2':
+    # Root menu options
+    _files = List('Do not load any files for Root menu !', '-files', None,
+        '',
+        Filename('', filetypes=video_filetypes))
+    _files_and_titles = ListToOne(_files, 'Root menu link titleset titles',
+        '-titles', None,
+        'The titles for the Root menu link titleset titles',
+        Text(),
+        filter=to_title)
+else:
+    _files = List('Video files', '-files', None,
+        'List of video files to include on the disc',
+        Filename('', filetypes=video_filetypes))
+    _files_and_titles = ListToOne(_files, 'Video titles', '-titles', None,
+        'Titles to display in the main menu, one for each video file on the disc',
+        Text(),
+        filter=to_title)
+
+if wizard and wizard != '1':
+    # 'Output name' only for General Options ( '1' )
+    _out = Label(' ')
+else:
+    _out = Filename('Output name', '-out', '',
+        'Name to use for the output directory where the disc will be created.',
+        'save', 'Choose an output name')
