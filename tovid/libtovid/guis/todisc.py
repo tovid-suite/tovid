@@ -138,7 +138,8 @@ class Chapters(ListToOne):
            to the timecodes set by the mplayer gui, repacks the label and the
            list frame, sets/resets bindings, and releases the grab_set().
         """
-        self.control.variable.set(self.mpl.get_chapters())
+        if self.mpl.get_chapters():
+            self.control.variable.set(self.mpl.get_chapters())
         self.mplayer_frame.pack_forget()
         # repack label
         self.top.label.pack(side=tk.TOP)
