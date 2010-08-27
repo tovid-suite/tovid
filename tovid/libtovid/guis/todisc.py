@@ -98,6 +98,7 @@ class Chapters(ListToOne):
         """
         root_width, root_height, rootx, rooty = self.get_geo(master)
         xoffset = (root_width - width) / 2
+        # subtract 15 pixels for WM titlebar (still looks OK if there is none)
         yoffset = ((root_height - height) / 2 ) - 15
         return '%dx%d+%d+%d' %(width, height, rootx + xoffset, rooty + yoffset)
         
@@ -1174,7 +1175,8 @@ thumbnails = VPanel("Thumbnails",
                 _thumb_shape,
                 _thumb_framesize,
                 _thumb_frame_color,
-                HPanel('', _thumb_columns, _align),
+                _thumb_columns,
+                _align,
                 ),
         ),
         VPanel("Showcase thumbnail",
