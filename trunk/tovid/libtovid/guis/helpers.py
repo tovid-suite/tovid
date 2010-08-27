@@ -328,6 +328,7 @@ class SetChapters(VideoGui):
         for t in sorted(times):
             fraction = '.' + str(t).split('.')[1]
             chapters.append(time.strftime('%H:%M:%S', time.gmtime(t)) + fraction)
-        return '%s' %','.join(chapters)
+        if c:
+            return '%s' %','.join(chapters)
 
 
