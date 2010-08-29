@@ -15,12 +15,13 @@ if not path.exists(video):
     exit()
 
 def print_chapters():
-    sys.stdout.write(app.get_chapters() + '\n')
+    if app.get_chapters():
+        sys.stdout.write(app.get_chapters() + '\n')
 
 root = tk.Tk()
 app = SetChapters(root, '-menu', 'Mplayer', print_chapters, style='standalone')
-app.pack()
 app.run(video)
+app.pack()
 
 root.mainloop()
 
