@@ -704,7 +704,10 @@ Here is a list of possible options you can pass:
     chapters.  Each title must be quoted, and the number of titles given
     must equal the total number of chapters for all videos.  In other words
     if you use -chapters 4 6 8 , you must give 18 chapter titles, in the same
-    order that the videos were passed in.
+    order that the videos were passed in.  Note: if you are passing in options
+    on the command line to the 'tovid disc' GUI, you must repeat the option
+    **-chapter-titles** for each video, accompanied by its respective chapter
+    titles. (you can also choose to use this syntax for the todisc script.)
 
 : **-chapter-font** FONT
     Use FONT as the font for submenu chapters.
