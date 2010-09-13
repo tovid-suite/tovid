@@ -1849,12 +1849,26 @@ if $USE_FFMPEG; then
     [[ $TARGET = "DVD-VCD" ]] && FF_ADD_ARGS="$FF_ADD_ARGS -g 12" # experiment FIXME
 
     # Padding, for any letterboxing to be done
-    FF_VPAD=""
-    FF_HPAD=""
-    FF_VPIX=$(expr \( $TGT_HEIGHT \- $INNER_HEIGHT \) \/ 2)
-    FF_HPIX=$(expr \( $TGT_WIDTH \- $INNER_WIDTH \) \/ 2)
-    test "$FF_VPIX" -ne 0 && FF_VPAD="-padtop $FF_VPIX -padbottom $FF_VPIX"
-    test "$FF_HPIX" -ne 0 && FF_HPAD="-padleft $FF_HPIX -padright $FF_HPIX"
+    FF_PAD=''
+    FF_VPIX=0
+    FF_HPIX=0
+    FF_VPIX=$(( (TGT_HEIGHT - INNER_HEIGHT) / 2 ))
+    FF_HPIX=$(( (TGT_WIDTH - INNER_WIDTH) / 2 ))
+    PAD=0
+    (( FF_VPIX )) || (( FF_HPIX )) && PAD=1
+    # changed options: -pad{side} to -vfilters pad= , to -vf pad=. Check this.
+    ff_opts=$(ffmpeg --help 2>&1)
+    if grep -q -w -- -vf <<< "$ff_opts" && ((PAD)); then
+        FF_PAD="-vf pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
+    elif grep -q -w -- -vfilters <<< "$ff_opts" && ((PAD)); then
+        FF_PAD="-vfilters pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
+    else
+        FF_HPAD=''
+        FF_VPAD=''
+        ((FF_HPIX)) && FF_HPAD="-padleft $FF_HPIX -padright $FF_HPIX"
+        ((FF_VPIX)) && FF_VPAD="-padtop $FF_VPIX -padbottom $FF_VPIX"
+        ((PAD)) && FF_PAD="$FF_HPAD $FF_VPAD"
+    fi 
 
     # Target TV system
     test "$TVSYS" = "PAL" && FF_TARGET="-target pal"
@@ -1882,7 +1896,7 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; the
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
         $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
-        $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT $FF_CHANNEL_MAP"
+        $FF_SIZE $FF_PAD $FF_ASPECT $FF_CHANNEL_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
     yecho "Encoding video and audio with the following command:"
@@ -2057,7 +2071,7 @@ else
     fi
     VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $FF_VPAD $FF_HPAD $FF_ASPECT -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $FF_PAD $FF_ASPECT -y \"$VIDEO_STREAM\""
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
