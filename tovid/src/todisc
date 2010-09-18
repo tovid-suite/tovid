@@ -8408,7 +8408,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
                 else
                     { convert -size $SHOWCASE_SIZE "$pic" $SC_RAISE miff:- |
                     convert - $SHOWCASE_FRAME -background none $ROTATE $WAVE miff:- |
-                    convert - -$QUALITY  resize ${SHOWCASE_SIZE}! "$pic"  ; } \
+                    convert - $QUALITY  resize ${SHOWCASE_SIZE}! "$pic"  ; } \
                       2>> "$LOG_FILE" &
                 fi
             fi
