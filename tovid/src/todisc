@@ -1757,8 +1757,8 @@ make_dummy()
 {
     yecho "Creating a blank mpeg for the vmgm menu"
     convert  -resize $VIDSIZE! xc:"#101010" "$WORK_DIR/dummy.jpg"
-    ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l 30 -L 1 -b1 \
-    -j "$WORK_DIR/dummy.jpg")
+    ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l 30 \
+    -L 1 -b1 -j "$WORK_DIR/dummy.jpg")
     ENC_CMD2=(ffmpeg -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
     -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
     echo "Running: ${ENC_CMD1[@]} | ${ENC_CMD2[@]}" |
@@ -2009,7 +2009,7 @@ do_transitions()
         transition_pids="$transition_pids $!"
         ((num_procs++))
         if ((num_procs == max_procs || i == fade_frames-1)); then
-            wait $transition_pids
+            wait $transition_pids 2>/dev/null
             unset transition_pids num_procs
         fi
         let fade_slide=fade_slide+1
@@ -4675,13 +4675,20 @@ if $SHOWCASE && ! $TEXTMENU; then
     ((NUM_FILES >= 6)) && SPLIT=4
     ((NUM_FILES >= 8)) && SPLIT=5
 fi
-# Montage geometry: closer together for large arrangements
+# HACK ALERT
+# ffmpeg has been buggy in 2010 with setting aspect ratio, -vf aspect workaround
+if ffmpeg -filters 2>&1 | grep -q -w aspect; then
+    ASPECT="-vf aspect=4:3"  # for menu.  Always 4:3 aspect
+    SS_ASPECT="-vf aspect=4:3" # for slideshows.  Always 4:3 aspect
+else
+    ASPECT="-aspect 4:3"
+    SS_ASPECT="-aspect 4:3"
+fi
 AUDIO_EXT="ac3"
 SAMPLERATE="48000"
 MPLEX_FORMAT="8"
-FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB -aspect 4:3"
-SS_FFMOPTS="-b 8000k -maxrate 9000k -bufsize 224KiB -aspect 4:3"
-ASPECT="-aspect $ASPECT_RATIO"
+FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB $ASPECT"
+SS_FFMOPTS="-b 8000k -maxrate 9000k -bufsize 224KiB $SS_ASPECT"
 SHOWCASE_SIZE=384x256
 BURN_TGT="$OUT_DIR"
 BURN_TGT_STR="DVD directory"
@@ -8009,7 +8016,7 @@ if $SUB_MENU; then
                                 -composite "$WORK_DIR/animenu/$a/${f##*/}" ; } &
                                 smpids="$smpids $!"
                                 if ((num_procs==max_procs)); then
-                                    wait $smpids
+                                    wait $smpids 2>/dev/null
                                     unset num_procs smpids
                                 fi
                                 # rm -f "$f"
@@ -8078,7 +8085,7 @@ if $SUB_MENU; then
                     if ((num_procs==max_procs || a == smframes-1 )); then
                         spin "\rProcessing frame $((a+1)) of $smframes  " >&2
                         cat "${ppm_fifos[@]}"
-                        wait $smpids
+                        wait $smpids 2>/dev/null
                         unset smpids num_procs ppm_fifos
                     fi
 
@@ -8415,7 +8422,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
             impids="$impids $!"
             if ((num_procs==max_procs || p >= (${#SC_PICS[@]}-1) )); then
                 spin "\rProcessing frame $this_pic of $LAST_PIC  "
-                wait $impids
+                wait $impids 2>/dev/null
                 unset impids num_procs
             fi
         done
@@ -8682,7 +8689,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
         $WORK_DIR/bg/$(($frame + 1)).jpg &
         bgfade_pids="$bgfade_pids $!"
         if ((num_procs >= max_procs || frame == BG_FADEIN_ENDFRAME)); then
-            wait $bgfade_pids
+            wait $bgfade_pids 2>/dev/null
             unset bgfade_pids num_procs
         fi
     done
@@ -8896,7 +8903,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
         if ((num_procs==max_procs || frame >= ANIMENU_ENDFRAME-1)) && $cat_fifos; then
             spin  "\rProcessing frame $(($frame + 1))  " >&2
             cat "${ppm_fifos[@]}"
-            wait $impids
+            wait $impids 2>/dev/null
             rm -f "${rmpics[@]}"
             unset num_procs ppm_fifos impids rmpics
         fi
@@ -9032,7 +9039,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
             if ((num_procs==max_procs || count >= FRAMES)); then
                 cat "${ppm_fifos[@]}"
-                wait $impids
+                wait $impids 2>/dev/null
                 rm -f "${rmpics[@]}"
                 unset num_procs ppm_fifos impids rmpics
                 # remove now unneeded images to keep disc usage low
@@ -9096,7 +9103,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
             if ((num_procs==max_procs || count >= FRAMES)); then
                 cat "${ppm_fifos[@]}"
-                wait $impids
+                wait $impids 2>/dev/null
                 rm -f "${rmpics[@]}"
                 unset num_procs ppm_fifos impids rmpics
             fi
