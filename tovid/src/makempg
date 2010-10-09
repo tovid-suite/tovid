@@ -1610,19 +1610,29 @@ else
 fi
 
 
+# ffmpeg's -vf aspect is more dependable than -aspect, if ffmpeg is new enough
+FF_HELP=$(ffmpeg -h 2>&1)
+if grep -qw -- -vf <<< "$FF_HELP"; then
+    ff_aspect="-vf aspect="
+elif grep -q -w -- -vfilters <<< "$FF_HELP"; then
+    ff_aspect="-vfilters aspect="
+else
+    ff_aspect='-aspect '
+fi
+    
 # Anamorphic widescreen (16:9 output)
 # Used if the format supports it, and it will minimize the number of pixels
 # wasted on letterbox bars (or if the user requested -widetv output).
 if $ANAMORPH && { ((V_ASPECT_WIDTH >= 153)) || $WIDE_TV ; }; then
     TGT_ASPECT_WIDTH=177
-    FF_ASPECT="-aspect 16:9"
+    FF_ASPECT="${ff_aspect}16:9"
     ASPECT_FMT="--aspect 3"
 # For all others, use "non-anamorphic" (4:3 output)
 # Aspects from 133:100 to 153:100 have minimum pixel wastage
 # when letterboxed in 4:3
 else
     TGT_ASPECT_WIDTH=133
-    FF_ASPECT="-aspect 4:3"
+    FF_ASPECT="${ff_aspect}4:3"
     ASPECT_FMT="--aspect 2"
 fi
 
@@ -1857,10 +1867,9 @@ if $USE_FFMPEG; then
     PAD=0
     (( FF_VPIX )) || (( FF_HPIX )) && PAD=1
     # changed options: -pad{side} to -vfilters pad= , to -vf pad=. Check this.
-    ff_opts=$(ffmpeg --help 2>&1)
-    if grep -q -w -- -vf <<< "$ff_opts" && ((PAD)); then
+    if grep -q -w -- -vf <<< "$FF_HELP" && ((PAD)); then
         FF_PAD="-vf pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
-    elif grep -q -w -- -vfilters <<< "$ff_opts" && ((PAD)); then
+    elif grep -q -w -- -vfilters <<< "$FF_HELP" && ((PAD)); then
         FF_PAD="-vfilters pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
     else
         FF_HPAD=''
