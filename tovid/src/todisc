@@ -69,6 +69,7 @@ WORK_DIR="/tmp/todisc-work"
 LOG_FILE=$(readlink -f todisc.log)
 OUT_PREFIX=""
 TV_STANDARD=ntsc
+PIXEL_AR="10:11"
 MENU_LEN=( 20 )
 USER_MENU_LEN=false
 USER_SUBMENU_LEN=false
@@ -110,8 +111,9 @@ FEATHER=false
 THUMB_BLUR=1
 SC_BLUR=1
 SUB_MENU_FEATHER=false
-IMG_FMT="jpg"
-SM_IMG_FMT="jpg"  # submenu image format
+IMG_FMT="png"
+SM_IMG_FMT="png"  # submenu image format
+BG_IMG_FMT="jpg"  # background image format
 KEEP_FILES=false
 THUMB_SHAPE=""
 SEEK_VAL=2
@@ -345,7 +347,10 @@ vid_length()
 }
 audio_length()
 {
-    mplayer -noconsolecontrols -vo null -ao pcm:fast:file=/dev/null "$1" \
+    # optional 2nd arg is maximum length checked in file (seconds)
+    end=""
+    [[ -n $2 ]] && end="-endpos $2"
+    mplayer -noconsolecontrols -vo null -ao pcm:fast:file=/dev/null $end "$1" \
     2>&1 | tr '\r' '\n' | grep ^A: | tail -1 | sed s/^.*A:// | awk '{print $1}'
 }
 cleanup()
@@ -553,32 +558,6 @@ get_line_count()
 awk 'END{print NR}' "$LOG_FILE"
 }
 
-# hack to check if transcode is stalling and set it a HUP if so
-# usage: check_stall PID
-check_stall()
-{
-    PIDOF_TRANSCODE=$1
-    newlines=$(stat_logfile)
-    while ps -p $PIDOF_TRANSCODE >/dev/null; do
-        # Check for transcode output every 10 seconds
-        sleep 10
-        age=$newage
-        newage=$(stat_logfile)
-        # If no new output, sleep 20s and check again
-        [[ $newage = $age ]] && sleep 20 && newage=$(stat_logfile)
-        # If still no new lines, send a HUP signal to transcode
-        if [[ $newage == $age ]] \
-        && kill -0 $PIDOF_TRANSCODE > /dev/null 2>&1; then
-            echo
-            echo "*** transcode appears to be stalled ***"
-            echo "*** Sending transcode a HUP and hoping for the best ***"
-            sleep 5
-            $(kill -0 $PIDOF_TRANSCODE > /dev/null 2>&1) && \
-            kill -HUP $PIDOF_TRANSCODE
-            echo
-        fi
-    done
-}
 check_filetype()
 {
     fstats=$(file -L "$1")
@@ -2241,6 +2220,27 @@ make_mask()
         ;;
     esac
 }
+
+wait_for()
+{
+    # wait for file to appear
+    while true; do
+        if test -e $1; then
+            return
+        fi
+        sleep .1
+    done
+}
+
+# HACK: transcode produces some scary output when run from python
+print_tcode_info()
+{    
+    echo -e "\n****\n$ME You can probably ignore 'critical' 'errors' from \
+    transcode shown below if it shows transcode finishing the last image. \
+    These harmless 'broken pipe' messages from transcode appear to be a \
+    subtle bug in transcode when running it (or a script) from python. \
+    \n****\n" | sed "s/    */ /g;s/^ *//" |fold -bs >> "$LOG_FILE"
+}
 ##############################################################################
 #                          	 End of Functions                                #
 ##############################################################################
@@ -2429,6 +2429,7 @@ while test $# -gt 0; do
             ;;
         "-pal" )
             TV_STANDARD="pal"
+            PIXEL_AR="59:54"
             ;;
         "-aspect" )
             unset ASPECT ASPECT_ARG
@@ -3536,14 +3537,15 @@ if ! $SHOWCASE; then
         #exit 1
     fi
 fi
-# get argument for transcode's progress reporting based on version
+# transcode version >= 1.1.0 mandated
 _transcode_version=$(transcode -v 2>&1| awk '{gsub("v", ""); print $2}')
 _baseline_version=1.1.0
-if test_version $_transcode_version $_baseline_version; then
-    transcode_arg=--progress_rate
-else
-    transcode_arg=--print_status
+if ! test_version $_transcode_version $_baseline_version; then
+    runtime_error \
+    "transcode version 1.1.0 or newer is required to run this script (todisc).
+    If you must use version $_transcode_version use tovid 0.34 or older."
 fi
+    
 # set some vars for switched menus so we know where we are
 $SWITCHED_MODE && SWITCHED_MENUS=false
 { $SWITCHED_MODE || $SWITCHED_MENUS ; } && SWITCHED=:
@@ -5594,11 +5596,9 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
         -resize $SHOWCASE_SIZE! "$WORK_DIR/showcase_img.png"
     fi
 fi
-# transcode makes it harder to switch between PNG and JPEG for output
-if [ $IMG_FMT = "jpg" ]; then
-    EXPORT="-y jpg,null"
-elif [ $IMG_FMT = "png" ]; then
-    EXPORT="-y im -F png -w 04"
+# transcode outputs yuv4mpeg which is piped to ffmpeg to make images (faster)
+EXPORT="-y yuv4mpeg,null"
+if [ $IMG_FMT = "png" ]; then
     QUALITY="-quality 01"
 fi
 
@@ -6552,9 +6552,9 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
         fade_incr=$(bc -l <<< "scale=2; 100 / $fade_frames") >&2
     fi
 
-    TOYUV_FADE_CMD=(ppmtoy4m -v 0 -n $fade_frames -A 10:11 -F $YUV_FR -I p \
+    TOYUV_FADE_CMD=(ppmtoy4m -v 0 -n $fade_frames -A $PIXEL_AR -F $YUV_FR -I p \
     -S 420mpeg2 -r)
-    TOYUV_STILLS_CMD=(ppmtoy4m -n $MIX_VFRAMES -A 10:11 -F $YUV_FR -I p \
+    TOYUV_STILLS_CMD=(ppmtoy4m -n $MIX_VFRAMES -A $PIXEL_AR -F $YUV_FR -I p \
     -S 420mpeg2 -r )
     # transitions
     echo >&2
@@ -6605,7 +6605,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
         fi
         # encode transition frames
         if (($f == (${#MIX_IN[@]} - 1) )); then
-            fadein_cmd=(ppmtoy4m -v 0 -n 26 -A 10:11 -I p -r -S 420mpeg2)
+            fadein_cmd=(ppmtoy4m -v 0 -n 26 -A $PIXEL_AR -I p -r -S 420mpeg2)
             cat "$WORK_DIR"/animenu/*.ppm 2>/dev/null |
             "${fadein_cmd[@]}" 2>/dev/null |
             $YUVCORRECT 2> /dev/null
@@ -6995,46 +6995,62 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         else
             echo
             echo "Working on ${IN_FILES[i]}"
+            # warning to ignore transcode error messages
+            print_tcode_info
             if [ -s  "${IN_FILES[i]}.nav_log" ]; then
                 NAV_SEEK[i]="--nav_seek"
                 NAVSEEK[i]=${IN_FILES[i]}.nav_log
             fi
-
-            TRANSCODE_CMD2=(nice transcode $transcode_arg 10 \
+            yuv_fifo="$WORK_DIR/pics/$i/out.yuv"
+            log_tmp="$WORK_DIR/pics/$i/log.tmp"
+            [[ ! -p "$yuv_fifo" ]] && mkfifo "$yuv_fifo"
+            FFMPEG_CMD2=(ffmpeg -i "$yuv_fifo" -y \
+            "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
+            TRANSCODE_CMD2=(transcode --progress_rate 10 \
             --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
             -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $THUMB_FRAMES)) \
-            ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o "$WORK_DIR/pics/$i/" \
+            ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o "$yuv_fifo" \
             -f $FRAME_RATE -Z $THUMB_SIZE $EXPORT)
             yecho "Running ${TRANSCODE_CMD2[@]}" | fold -bs
-
-            run_transcode()
-            {
-                "${TRANSCODE_CMD2[@]}" >> "$LOG_FILE"  2>&1
-                sleep 1
-            }
-            run_transcode &
-            sleep 1 # short sleep to allow 1st jpg to appear
+            yecho "Running ${FFMPEG_CMD2[@]}" | fold -bs
+            "${TRANSCODE_CMD2[@]}"  2>&1 | strings >> "$LOG_FILE" &
+            "${FFMPEG_CMD2[@]}" > "$log_tmp" 2>&1 &
+            ffm_pid=$!
+            wait_for "$WORK_DIR/tcode$i.pid"
             TRANSCODE_PID=$(<$WORK_DIR/tcode$i.pid)
             tcode_pids="$tcode_pids $TRANSCODE_PID"
-            check_stall $TRANSCODE_PID &
-            if [[ -n "$TRANSCODE_PID" ]]; then
-                while ps -p $TRANSCODE_PID >/dev/null; do
+            if [[ -n "$ffm_pid" ]]; then
+                wait_for "$WORK_DIR/pics/$i/000001.$IMG_FMT"
+                while ps -p $ffm_pid >/dev/null; do
                     sleep 2 # spinner interval
                     last_image=$(find $WORK_DIR/pics/$i \
                     -maxdepth 1 -name \*.$IMG_FMT| sort |
                     awk -F / '{ field = $NF }; END{ print field }')
-                spin "Seeking in video and creating images: $last_image"
+                    spin "Seeking in video and creating images: $last_image"
                 done
-                echo
+                wait # wait for ffmpeg and transcode to finish
                 numpics=$(find $WORK_DIR/pics/$i/ -name  "*.${IMG_FMT}" | wc -l)
                 # which video has the most frames encoded? Used in final encode
                 ((numpics > ani_pics)) && ani_pics=$numpics
+                # append ffmpeg output to the log
+                echo -e \
+                "\n$ME Log from ffmpeg (processing transcode stream)\n" \
+                >> "$LOG_FILE"
+                strings "$log_tmp" >>  "$LOG_FILE"
+                rm -f "$log_tmp"
+                echo
                 echo "Created $numpics images of $THUMB_FRAMES"
             else
                 runtime_error "Problem creating images from the video."
             fi
-            unset TRANSCODE_CMD2 run_transcode numpics
+            unset TRANSCODE_CMD2 numpics
         fi
+        # copy 000001 image to 000000 as we use 0 based counting (transcode)
+        # TODO transition to using '"1" based' images as we use ffmpeg now
+        cp "$WORK_DIR/pics/$i/000001.$IMG_FMT" "$WORK_DIR/pics/$i/000000.$IMG_FMT"
+        last=$(find $WORK_DIR/pics/$i -maxdepth 1 -name \*.$IMG_FMT | \
+        sort | awk 'END{print}')
+        rm -f "$last"
     done
 fi
 # create the pics for background image
@@ -7193,7 +7209,9 @@ EOF
             "$WORK_DIR/Submenu${s}_${button}.png"
         done
 
-        # make submenu spumux.xml
+##############################################################################
+#                    Make xml files for spumux and dvdauthor                 #
+##############################################################################
 (
     cat <<EOF
 <subpictures>
@@ -7727,7 +7745,7 @@ fi)
 EOF
 ) |sed '/^ *$/d' >> "$DVDAUTHOR_XML"
 ##############################################################################
-#                            Animenu stuff                                   #
+#                            Make submenus                                   #
 ##############################################################################
 
 # make dummy VMGM mpeg
@@ -7823,23 +7841,30 @@ if $SUB_MENU; then
             fi
 
             # which is harmless as they get removed, but needs to be tweaked
+            if [ $SM_IMG_FMT = "jpg" ]; then
+                sm_img_fmt="JPEGS"
+            elif [ $SM_IMG_FMT = "png" ]; then
+                sm_img_fmt="PNGS"
+            else
+                sm_img_fmt=${SM_IMG_FMT}s
+            fi
             if $ANI_SUB_MENU; then
                 JPEG2YUV_OPTS=(-n $smframes)
-                PICS_IN=($WORK_DIR/animenu/%0d.$SM_IMG_FMT)
-                PICS_OUT=($WORK_DIR/animenu/)
+                PICS_IN="$WORK_DIR/animenu/%0d.$SM_IMG_FMT"
+                PICS_OUT="$WORK_DIR/animenu"
                 CUT_TIME=$smframes
-                JPEG_DIR="$WORK_DIR/animenu"
+                IMG_DIR="$WORK_DIR/animenu"
                 SLEEP=1
-                TOTAL_JPEGS=$(($smframes * ${CHAPTERS[i]}))
+                TOTAL_IMGS=$(($smframes * ${CHAPTERS[i]}))
 
             else  # not animated submenu
                 JPEG2YUV_OPTS=(-n 1 -l ${SM_LOOPS[i]})
-                PICS_IN=($WORK_DIR/${i}-submenu.$SM_IMG_FMT)
-                PICS_OUT=($WORK_DIR/submenu/)
+                PICS_IN="$WORK_DIR/${i}-submenu.$SM_IMG_FMT"
+                PICS_OUT="$WORK_DIR/submenu"
                 CUT_TIME=1
-                JPEG_DIR="$WORK_DIR/submenu"
+                IMG_DIR="$WORK_DIR/submenu"
                 SLEEP=.5
-                TOTAL_JPEGS=${CHAPTERS[i]}
+                TOTAL_IMGS=${CHAPTERS[i]}
                 PREFIX=${i}-
             fi
             if [[ -n ${GROUP[i]} ]]; then
@@ -7901,8 +7926,10 @@ if $SUB_MENU; then
                 unset cmd[key]
             fi
             yecho
-            yecho "Creating $TOTAL_JPEGS chapter images for ${IN_FILES[i]}"
+            yecho "Creating $TOTAL_IMGS chapter images for ${IN_FILES[i]}"
             yecho
+            # warning to ignore transcode error messages
+            print_tcode_info
             unset cf frm
             for t in "${cmd[@]}"; do
                 if [[ -n ${GROUP[i]} ]]; then
@@ -7916,53 +7943,60 @@ if $SUB_MENU; then
                 else
                     unset NAVSEEK NAVLOG
                 fi
-
-                TCODE_CMD=(nice transcode $transcode_arg 10 \
+                log_tmp="$PICS_OUT/log.tmp"
+                yuv_fifo="$PICS_OUT/out.yuv"
+                [[ ! -p "$yuv_fifo" ]] && mkfifo "$yuv_fifo"
+                FFMPEG_CMD=(ffmpeg $PIPE_FORMAT -i "$yuv_fifo" -y \
+                "$PICS_OUT/%06d.$SM_IMG_FMT")
+                TCODE_CMD=(nice transcode --progress_rate 10 \
                 --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "$CUR_FILE" \
-                $NAVSEEK "$NAVLOG" -o "${PICS_OUT[@]}" -f \
-                $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t -y $SM_IMG_FMT,null)
-                echo "Running ${TCODE_CMD[@]}" |
-                sed 's/    */ /g'|sed -e "s/^ *//"|tee -a >> "$LOG_FILE"
-                #sed 's/    */ /g'|sed -e "s/^ *//"|fold -bs >> "$LOG_FILE"
-                echo >> "$LOG_FILE"
-                run_transcode()
-                {
-                    "${TCODE_CMD[@]}" >> "$LOG_FILE"  2>&1
-                    sleep 1
-                }
-                run_transcode &
-                sleep 2 # short sleep to allow 1st jpg to appear
+                $NAVSEEK "$NAVLOG" -o "$yuv_fifo" -f \
+                $FRAME_RATE -Z ${GEO_ARRAY[C]},fast -c $t $EXPORT)
+                yecho "Running ${TCODE_CMD[@]}" | fold -bs
+                yecho "Running ${FFMPEG_CMD2[@]}" | fold -bs
+                "${TCODE_CMD[@]}"  2>&1 | strings >> "$LOG_FILE" &
+                "${FFMPEG_CMD[@]}" > "$log_tmp" 2>&1 &
+                ffm_pid=$!
+                wait_for "$WORK_DIR/tcode$i.pid"
                 TCODE_PID=$(<$WORK_DIR/tcode$i.pid)
                 tcode_pids="$tcode_pids $TCODE_PID"
-                check_stall $TCODE_PID &
                 if [[ -n "$TCODE_PID" ]]; then
-                    while ps -p $TCODE_PID >/dev/null; do
-                        sleep $SLEEP # spinner interval
-                        last_image=$(find "$JPEG_DIR" -maxdepth 1 -name \*.jpg |
+                    while ps -p $ffm_pid >/dev/null; do
+                        wait_for "$IMG_DIR/000001.$SM_IMG_FMT"
+                        sleep 1 # spinner interval
+                        end=$(find "$IMG_DIR" -maxdepth 1 -name \*.$SM_IMG_FMT |
                         sort | awk -F / '{ field = $NF }; END{ print field }')
-                        spin "Seeking in video and creating images: $last_image"
+                        spin "Seeking in video and creating images: $end"
                     done
                     echo
-                    total_images=$(find "$JPEG_DIR" -name '*.jpg' | wc -l)
-                    echo "Created $total_images JPEGS of $TOTAL_JPEGS"
+                    total_imgs=$(find "$IMG_DIR" -name "*.$SM_IMG_FMT" | wc -l)
+                    wait
+                    echo "Created $total_imgs $sm_img_fmt of $TOTAL_IMGS"
                 else
                     runtime_error "Problem creating images from the video."
                 fi
+                echo -e \
+                "\n$ME Log from ffmpeg (processing transcode stream)\n" \
+                >> "$LOG_FILE"
+                strings "$log_tmp" >> "$LOG_FILE"
+                rm -f "$log_tmp"
                 unset TCODE_CMD cmd run_transcode
                 if ! $ANI_SUB_MENU ; then
                     echo
-                    mv $WORK_DIR/submenu/000000.$SM_IMG_FMT \
+                    mv $WORK_DIR/submenu/000001.$SM_IMG_FMT \
                     $WORK_DIR/submenu/$(printf "%08d%s\n" $((frm++)) .$SM_IMG_FMT)
                     let frm+=1
                 elif $ANI_SUB_MENU; then
                     echo "renaming images by frame number"
                     echo
                     u=${t/*-}; v=${t/-*}
-                    for ((n=0; n<smframes; n++)); do
+                    # names now start with 000001.  Rename starting at 000000.
+                    for ((n=1; n<smframes+1; n++)); do
                        # if [ $v -eq ${CUT[0]} ]; then
-                        mv $WORK_DIR/animenu/$(printf "%06d%s\n" $n .jpg) \
+                        mv $WORK_DIR/animenu/$(printf \
+                        "%06d%s\n" $n .$SM_IMG_FMT) \
                         $WORK_DIR/animenu/$(printf \
-                        "%08d%s\n" $((frm++ )) .jpg)
+                        "%08d%s\n" $((frm++ )) .$SM_IMG_FMT)
                         let frm+=1
                     done
                 fi
@@ -8037,7 +8071,7 @@ if $SUB_MENU; then
 
             if $ANI_SUB_MENU; then
                 $DEBUG && stime=$(date +%s)
-                TOYUV_CMD=(ppmtoy4m -v 0 -n $smframes -A 10:11 -F $YUV_FR -I p \
+                TOYUV_CMD=(ppmtoy4m -v 0 -n $smframes -A $PIXEL_AR -F $YUV_FR -I p \
                 -S 420mpeg2 -r)
                 IMGENC_CMD=(ffmpeg -f yuv4mpegpipe -r $FRAME_RATE -i - -an \
                 -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
@@ -8093,7 +8127,7 @@ if $SUB_MENU; then
                 done > "$WORK_DIR/ppm.fifo"
                 $DEBUG && etime=$(date +%s) && get_elapsed "the submenu m2v"
 
-                # wait for ppmtoyuv and ffmpeg to finish
+                # wait for ppmtoy4m and ffmpeg to finish
                 wait
 
                 unset IM_CMD IM_CMD2 d f P
@@ -8132,14 +8166,15 @@ if $SUB_MENU; then
                 yecho
                 yecho "Converting chapter montage of ${IN_FILES[i]}
                 to m2v video format"
-                IMG_STREAM_CMD1=(jpeg2yuv -v 0 -f $FRAME_RATE -I p \
-                "${JPEG2YUV_OPTS[@]}" -L 1 -b 1  -j "${PICS_IN[@]}")
+                IMG_STREAM_CMD1=(convert "$PICS_IN" ppm:-)
+                IMG_STREAM_CMD2=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A $PIXEL_AR -F $YUV_FR -I p \
+                -S 420mpeg2 -r)
                 ENC_CMD1=(ffmpeg -f yuv4mpegpipe -r $FRAME_RATE -i - \
                 -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
                 -y "$WORK_DIR/menu$i.m2v")
-                echo "Running ${IMG_STREAM_CMD1[@]} | ${ENC_CMD1[@]}"|
-                format_output | tee -a "$LOG_FILE" 2>&1
-                if ! "${IMG_STREAM_CMD1[@]}" |
+                echo "Running ${IMG_STREAM_CMD1[@]} | ${IMG_STREAM_CMD2[@]} | \
+                ${ENC_CMD1[@]}"| format_output | tee -a "$LOG_FILE" 2>&1
+                if ! "${IMG_STREAM_CMD1[@]}" | "${IMG_STREAM_CMD2[@]}" |
                 "${ENC_CMD1[@]}" 2>&1|strings >> "$LOG_FILE"; then
                     runtime_error
                 fi
@@ -8177,8 +8212,6 @@ if $SUB_MENU; then
                     spin $SPINNER
                 done
                 echo
-                #cp "$WORK_DIR/polaroid_stack.png"
-                #ss_ind=$(awk -F[-.] '{print $2}' <<< "$sld")
                 IM_CMD=(convert $WORK_DIR/submenu$((i+1))_template.jpg \
                 "$WORK_DIR/polaroid_stack.png" \
                 -gravity north -geometry +0+45 -composite \
@@ -8191,7 +8224,7 @@ if $SUB_MENU; then
 
                 # encode to m2v
                 yecho "Encoding to compliant m2v video format"
-                PPM_CMD=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A 10:11 -I p -F $YUV_FR \
+                PPM_CMD=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A $PIXEL_AR -I p -F $YUV_FR \
                 -S 420mpeg2 -r)
                 FFM_CMD=(ffmpeg $INSIZE -r $FRAME_RATE -pix_fmt yuv420p \
                 -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
@@ -8300,7 +8333,11 @@ if $SUB_MENU; then
     rm -fr $WORK_DIR/animenu/*
 fi
 ##############################################################################
-#                      Work on main menu                                     #
+#                              End of submenus                               #
+##############################################################################
+
+##############################################################################
+#                            Work on main menu                               #
 ##############################################################################
 if $DO_MENU; then
     yecho
@@ -8309,7 +8346,7 @@ fi
 if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     yecho "Getting background video from $BG_VIDEO"
     FFMPEG_CMD=(ffmpeg -ss $BG_SEEK -i "$BG_VIDEO" -vframes $BG_VIDEO_FRAMES \
-    -s $VIDSIZE -sameq "$WORK_DIR/bg/%d.jpg")
+    -s $VIDSIZE -sameq "$WORK_DIR/bg/%d.$BG_IMG_FMT")
     yecho "Extracting/resizing background images"
     echo "Running: ${FFMPEG_CMD[@]}" | format_output >> "$LOG_FILE"
     # Run command and check for failure
@@ -8318,13 +8355,13 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     fi
     # make sure there are enough pics to make a bg video
     IMAGES=( "${IMAGES[@]}" \
-    $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.jpg|sort) )
+    $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.$BG_IMG_FMT | sort) )
     last_pic=${#IMAGES[@]}
     num_bgpics=$last_pic
     next_pic=$(($last_pic + 1))
     if [ $last_pic -lt $MAX_MENU_LEN ]; then
         for ((l=next_pic; l<=MAX_MENU_LEN; l++)); do
-            cp $WORK_DIR/bg/${last_pic}.jpg $WORK_DIR/bg/$l.jpg
+            cp $WORK_DIR/bg/${last_pic}.$BG_IMG_FMT $WORK_DIR/bg/$l.$BG_IMG_FMT
         done
     fi
     unset IMAGES PICS last_pic next_pic
@@ -8646,7 +8683,7 @@ if ! $QUICK_MENU && $DO_MENU; then
         echo ${ANIMENU_ENDFRAME} ${THUMBS_FADEOUT_STARTFRAME}) )
     (( ${fadevals[0]} > ${fadevals[1]} )) && $MENU_FADE && \
         PPM_FRAMES=$((PPM_FRAMES+18))
-    TOYUV_CMD=(ppmtoy4m -v 2 -n $PPM_FRAMES -A 10:11 -I p -F $YUV_FR \
+    TOYUV_CMD=(ppmtoy4m -v 2 -n $PPM_FRAMES -A $PIXEL_AR -I p -F $YUV_FR \
     -S 420mpeg2 -r)
     IMGENC_CMD=(ffmpeg $INSIZE -r $FRAME_RATE $PIPE_FORMAT -i - -an \
     -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
@@ -8697,8 +8734,8 @@ if $MENU_FADE && ! $QUICK_MENU; then
     for ((frame=BG_FADEOUT_STARTFRAME; frame<=BG_FADEOUT_ENDFRAME; frame++)); do
         #((num_procs++))
         D=`get_bg_opacity`
-        composite -dissolve $D $WORK_DIR/bg/$frame.jpg \
-        $WORK_DIR/black.ppm $WORK_DIR/bg/$frame.jpg
+        composite -dissolve $D $WORK_DIR/bg/$frame.$BG_IMG_FMT \
+        $WORK_DIR/black.ppm $WORK_DIR/bg/$frame.$BG_IMG_FMT
         #bgfade_pids="$bgfade_pids $!"
         #if ((num_procs >= max_procs || frame == BG_FADEOUT_ENDFRAME)); then
         #    wait $bgfade_pids
@@ -8737,7 +8774,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
         fi
         $TEXTMENU && unset sc_cmd
         ! $TEXTMENU && MOSAIC="-mosaic"
-        BG_PIC=$(find $WORK_DIR/bg -name $((frame + 1)).jpg)
+        BG_PIC=$(find $WORK_DIR/bg -name $((frame + 1)).$BG_IMG_FMT)
         # create the montage from the images in each video dir
         MONTAGE_CMD=(convert  -size $VIDSIZE -background none \
         ${sc_cmd[@]} $SC_IMG_CMD $MOSAIC)
@@ -8751,10 +8788,10 @@ if $MENU_FADE && ! $QUICK_MENU; then
         -geometry ${THUMB_SIZE}${MTG_GEO} -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity $BUTTON_GRAVITY \
-        -geometry +${XGEO}+${YGEO} - $WORK_DIR/bg/$((frame + 1)).jpg \
+        -geometry +${XGEO}+${YGEO} - $WORK_DIR/bg/$((frame + 1)).$BG_IMG_FMT \
         -background none)
         MONTAGE_CMD2c=(composite -size $VIDSIZE -background none \
-        -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$((frame + 1)).jpg \
+        -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$((frame + 1)).$BG_IMG_FMT \
         -background none)
         # if MIST is called for, this dissolves the mist onto the background
         MONTAGE_CMD3=(composite -dissolve $B -gravity $TITLE_GRAVITY \
@@ -8893,7 +8930,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
             fi
         fi
         impids="$impids $!"
-        rmpics+=( "$WORK_DIR/bg/$((frame+1)).jpg" )
+        rmpics+=( "$WORK_DIR/bg/$((frame+1)).$BG_IMG_FMT" )
         rmpics+=( "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($frame + 1)) .png) )
         # we reuse thumbs for static so don't rm ANI_PICS
         ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
@@ -8944,8 +8981,8 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             $WORK_DIR/pics/template.png)
             # dissolve piped images onto bgvideo
             IM_CMD03=(composite -size $VIDSIZE -background none \
-            -gravity NorthWest  -dissolve $OPACITY - $WORK_DIR/bg/$count.jpg \
-            -background none)
+            -gravity NorthWest  -dissolve $OPACITY - \
+            $WORK_DIR/bg/$count.$BG_IMG_FMT -background none)
             # dissolve titles onto bgvideo
             IM_CMD04=(convert -size $VIDSIZE -background none \
              - ${sc_thumb_title_cmd[@]} -mosaic)
@@ -8958,7 +8995,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             $WORK_DIR/pics/template.jpg -background none miff:-)
             IM_CMD2b=(composite -dissolve $OPACITY \
             -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
-            $WORK_DIR/bg/$count.jpg -background none miff:-)
+            $WORK_DIR/bg/$count.$BG_IMG_FMT -background none miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY \
             -geometry ${mist_xoffset}${mist_yoffset} \
             $WORK_DIR/white.png - miff:-)
@@ -9034,7 +9071,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             impids="$impids $!"
             # remove images after they are used each cat run
             rmpics+=( "$WORK_DIR"/showcase/$(printf "%06d%s"  $count .png) )
-            rmpics+=( "$WORK_DIR/bg/$count.jpg" )
+            rmpics+=( "$WORK_DIR/bg/$count.$BG_IMG_FMT" )
             # we reuse thumbs for static so don't rm ANI_PICS
             ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
             if ((num_procs==max_procs || count >= FRAMES)); then
@@ -9069,7 +9106,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             IM_CMD1=(convert $WORK_DIR/pics/template.jpg \
             -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite miff:-)
-            IM_CMD2=(convert $WORK_DIR/bg/$count.jpg \
+            IM_CMD2=(convert $WORK_DIR/bg/$count.$BG_IMG_FMT \
             -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY -geometry \
@@ -9098,7 +9135,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                 fi
             fi
             impids="$impids $!"
-            rmpics+=( "$WORK_DIR/bg/$count.jpg" )
+            rmpics+=( "$WORK_DIR/bg/$count.$BG_IMG_FMT" )
             # static reuses the thumbs so don't rm each cat run
             ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
             if ((num_procs==max_procs || count >= FRAMES)); then
