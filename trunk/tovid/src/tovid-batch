@@ -87,7 +87,7 @@ for FILE in "$@"; do
     if test -e "$FILE"; then
        EXT=$(echo "$FILE" | awk -F '.' '{ print $NF }')
        FILENAME=$(basename "$FILE" ."$EXT")
-       TOVID_CMD="tovid -noask $TOVID_ARGS -in \"$FILE\" -out \"$FILENAME.tovid_encoded\""
+       TOVID_CMD="tovid mpg -noask $TOVID_ARGS -in \"$FILE\" -out \"$FILENAME.tovid_encoded\""
        precho $TOVID_CMD
        eval $TOVID_CMD
     else
