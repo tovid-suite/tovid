@@ -432,6 +432,7 @@ test_version()
     IFS=$OIFS
     for i in ${!test_version[@]}; do
         [[ -z ${version[i]} ]] && version[i]=0
+       (( ${version[i]} > ${test_version[i]} )) && return 0
        (( ${version[i]} < ${test_version[i]} )) && return 1
     done
     return 0
