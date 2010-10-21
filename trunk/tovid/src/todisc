@@ -5502,7 +5502,7 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICKMENU_IS_BACKGROUND; then
     else
         bg_post_seek="-ss $BG_SEEK" && unset bg_pre_seek
     fi
-    FFMPEG_CMD=(ffmpeg -ss $bg_pre_seek -i "$BG_VIDEO" -s $VIDSIZE -vframes 1 \
+    FFMPEG_CMD=(ffmpeg $bg_pre_seek -i "$BG_VIDEO" -s $VIDSIZE -vframes 1 \
     -an $bg_post_seek -f image2 -y "$WORK_DIR/pics/template.png")
     echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
@@ -8371,7 +8371,7 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     yecho "Getting background video from $BG_VIDEO"
     FFMPEG_CMD=(ffmpeg $bg_pre_seek -i "$BG_VIDEO" -an $bg_post_seek \
     -vframes $BG_VIDEO_FRAMES -s $VIDSIZE  -f image2 \
-    -y"$WORK_DIR/bg/%d.$BG_IMG_FMT")
+    -y "$WORK_DIR/bg/%d.$BG_IMG_FMT")
     yecho "Extracting/resizing background images"
     echo "Running: ${FFMPEG_CMD[@]}" | format_output >> "$LOG_FILE"
     # Run command and check for failure
