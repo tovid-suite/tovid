@@ -241,7 +241,7 @@ function get_info ()
     ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
     # Find out what audio channels are available
     if test -n "$ID_AUDIO_ID"; then
-        AUDIO_INFO=$(grep "Audio:" "$SCRATCH_FILE")
+        AUDIO_INFO=$(grep -w "Audio:" "$SCRATCH_FILE")
         # ID_AUDIO_ID needs "TRACKS" var to remain in columns
         TRACKS=$(sed -r 's/.*Stream #([0-9]\.[0-9]+).*/\1/' <<< "$AUDIO_INFO")
         A_TRACKS=(${TRACKS//$'\n'/ })

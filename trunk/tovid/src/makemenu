@@ -152,6 +152,12 @@ if test_version $IM_VERSION 6.3.5.7; then
 else
     IM_LISTARG='type'
 fi
+# imagemagick's font listing structure depends on version
+if test_version $IM_VERSION 6.4.0.0; then
+    im_field=2
+else
+    im_field=1
+fi
 PPM_OPTS="-S $CHROMA_MODE -A 10:11 -F 30000:1001"
 # Direct stuff to /dev/null
 REDIR="/dev/null"
@@ -458,14 +464,14 @@ else
     # Check to see if the given font name is available in ImageMagick
     # (only return the first exact match)
     USE_TITLE_FONT=$( convert -list $IM_LISTARG | \
-    grep -m 1 "$TITLE_FONT" | awk '{print $1}' )
+    grep -m 1 "$TITLE_FONT" | awk -v f=$im_field '{print $f}' )
 
    # If not available, try to use something similar
     if test -z $USE_TITLE_FONT ; then
         echo $SEPARATOR
         echo "Font: \"$TITLE_FONT\" does not appear to be either a font file or registered with ImageMagick."
         USE_TITLE_FONT=$( convert -list $IM_LISTARG | \
-        grep -i -m 1 "${TITLE_FONT:0:20}" | awk '{print $1}' )
+        grep -i -m 1 "${TITLE_FONT:0:20}" | awk -v f=$im_field '{print $f}' )
 
         # If a similarly-named one does't exist, default to Helvetica
         if test -z "$USE_TITLE_FONT"; then
@@ -490,14 +496,14 @@ if test $RES = 'dvd'; then
         # Check to see if the given button font is available in ImageMagick
         # (only return the first exact match)
         USE_BUTTON_FONT=$( convert -list $IM_LISTARG | \
-        grep -m 1 "$BUTTON_FONT" | awk '{print $1}' )
+        grep -m 1 "$BUTTON_FONT" | awk -v f=$im_field '{print $f}' )
 
         # If not available, try to use something similar
         if test -z $USE_BUTTON_FONT ; then
             echo $SEPARATOR
             echo "Button: \"$BUTTON_FONT\" does not appear to be either a font file or registered with ImageMagick."
             USE_BUTTON_FONT=$( convert -list $IM_LISTARG | \
-            grep -i -m 1 "${BUTTON_FONT:0:20}" | awk '{print $1}' )
+            grep -i -m 1 "${BUTTON_FONT:0:20}" | awk -v f=$im_field '{print $f}' )
 
             # If a similarly-named one does't exist, default to Helvetica
             if test -z "$USE_BUTTON_FONT"; then

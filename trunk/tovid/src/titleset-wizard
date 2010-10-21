@@ -284,7 +284,6 @@ class WizardPage(Frame):
         cmdout = open(self.script_file, 'w')
         os.chmod(self.script_file, 0775)
         # add the shebang, PATH, and 'todisc \' lines
-        cmdout = open(self.script_file, 'w')
         cmdout.writelines(header)
         # flatten the list
         all_lines = [line for sublist in commands for line in sublist]
