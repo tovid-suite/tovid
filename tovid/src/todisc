@@ -113,7 +113,7 @@ SC_BLUR=1
 SUB_MENU_FEATHER=false
 IMG_FMT="png"
 SM_IMG_FMT="png"  # submenu image format
-BG_IMG_FMT="jpg"  # background image format
+BG_IMG_FMT="png"  # background image format
 KEEP_FILES=false
 THUMB_SHAPE=""
 SEEK_VAL=2
@@ -243,11 +243,14 @@ TRANSITION_TO_MENU=false
 DEBUG=false
 pngpipe="-quality 01 png:-"
 ani_pics=0
+use_vhooks=false
+use_overlay_filter=false
 JUSTIFY="center"
 CONTRAST_CLR='gray'
 NOMENU=false
 SC_AR=133
 THUMB_COLUMNS=""
+FAST_SEEK=false # ffmpeg: decode video during seek by default (more reliable)
 TOVID_PREFIX=$(tovid -prefix)
 
 ##############################################################################
@@ -424,8 +427,6 @@ killall_instances()
 # ******************************************************************************
 runtime_error()
 {
-    # Uncomment if needed later
-    #killsubprocs
     echo
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     yecho "todisc encountered an error:"
@@ -560,7 +561,7 @@ awk 'END{print NR}' "$LOG_FILE"
 
 check_filetype()
 {
-    fstats=$(file -L "$1")
+    fstats=$(file -L "$1" | awk '{ $1 = ""; print }')
     if [[ $fstats =~ "image" || $fstats =~ "bitmap" ]]; then
         TYPE="image"
         CONVRT=:
@@ -1559,52 +1560,52 @@ quick_menu()
         outdir="$WORK_DIR/bg"
         qm_seek="-ss $BG_SEEK"
     fi
-    filters=$(ffmpeg -filters 2>/dev/null)
-    if grep -q overlay <<< "$filters"; then
-        echo "libavfilter overlay filter is present"
-        libavfilter=1
-        if ! grep -q crop <<< "$filters"; then
-            echo "but no crop filter found, can not use libavfilter"
-            libavfilter=0
-        fi
-        ((libavfilter)) && echo "Using libavfilter for -quick-menu"
+    if $FAST_SEEK; then
+        qm_pre_seek=$qm_seek && unset qm_post_seek
     else
-        yecho
-        yecho "No overlay filter found, can not use libavfilter.  
-        Trying vhooks now ..."
-        
+        qm_post_seek=$qm_seek && unset qm_pre_seek
     fi
-    if ! ((libavfilter)); then
+    filters=$(ffmpeg -filters 2>/dev/null)
+    if grep -q -w '^overlay' <<< "$filters" && \
+      grep -q -w '^crop' <<< "$filters"; then
+        echo "libavfilter overlay and crop filters are present"
+        use_overlay_filter=:
+        $use_overlay_filter && echo "Using libavfilter for -quick-menu"
+    elif grep -q ^-vhook <<< "$(ffmpeg -h 2>&1)"; then
         # find out where vhook lives for ffmpeg
         ffmpeg_prefix=$(which ffmpeg)
         ffmpeg_prefix=$(sed 's/\/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
         imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
-
-        # check for badly compiled or otherwise unusable vhook
-        if $QM_PREVIEW && [[ $MENU_NUM -eq $MN ]]; then
-            if [[ -s "$imlib2_vhook" ]]; then
-                yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
-                convert  -resize $VIDSIZE! xc:"#101010" "$WORK_DIR/dummy.jpg"
-                dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
-                -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
-                -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
-                -y "$WORK_DIR/dummy.mpg")
-                if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
-                    runtime_error "There was a problem making a dummy.mpg with ffmpeg"
-                fi
-                if ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
-                -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
-                    use_vhooks=1
-                fi
+        if [[ -s "$imlib2_vhook" ]]; then
+            use_vhooks=:
+        else
+            yecho "!!!!! $imlib2_vhook not found, can not continue !!!!!"
+        fi
+        # this test should run only once, even for switched menus
+        if $QM_PREVIEW && [[ $MENU_NUM -eq $MN ]] && $use_vhooks; then
+            yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
+            convert  -resize $VIDSIZE! xc:"#101010" "$WORK_DIR/dummy.jpg"
+            dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
+            -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
+            -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
+            -y "$WORK_DIR/dummy.mpg")
+            if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
+                runtime_error "There was a problem making a dummy.mpg with ffmpeg"
+            fi
+            if ! ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
+            -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
+                yecho '!!!!! vhook test failed !!!!!'
+                use_vhooks=false
             fi
         fi
-        if ! ((use_vhooks)); then
-            runtime_error "You are not able to use -quick-menu:
-            you must use the experimental ffmpeg with libavfilter 
-            or an older (depricated) version of ffmpeg with vhooks.
-            See this post for details on installing ffmpeg with filters: 
-            http://ubuntuforums.org/showthread.php?p=9629369"
-        fi
+    fi
+
+    if ! $use_vhooks && ! $use_overlay_filter; then
+        runtime_error "You are not able to use -quick-menu:
+        you must use the experimental ffmpeg with libavfilter 
+        or an older (0.52 for example) version of ffmpeg with vhooks.
+        See this post for details on installing ffmpeg with filters: 
+        http://ubuntuforums.org/showthread.php?p=9021636"
     fi
     $QM_PREVIEW && yecho "Creating a quick-menu preview image"
     # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
@@ -1625,18 +1626,18 @@ quick_menu()
             TOPPAD="-padtop $SC_Y"
             QM_TMP_FRAMESIZE=$SHOWCASE_SIZE
         fi
-        if ((libavfilter)); then
-            PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_seek \
-            -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" -s $QM_TMP_FRAMESIZE \
-            -acodec copy -vf pad=720:480:$SC_X:$SC_Y \
+        if $use_overlay_filter; then
+            PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_pre_seek \
+            -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" $qm_post_seek \
+            -s $QM_TMP_FRAMESIZE -acodec copy -vf pad=720:480:$SC_X:$SC_Y \
             -r $FRAME_RATE -b 15000k \
             -y  "$WORK_DIR/quick_tmp.avi")
         else
-            PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_seek \
-            -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" -s $QM_TMP_FRAMESIZE \
-            -acodec copy $TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD \
-            -r $FRAME_RATE -b 15000k -padcolor $BG_CLR \
-            -y  "$WORK_DIR/quick_tmp.avi")
+            PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_pre_seek \
+            -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" $qm_post_seek \
+            -s $QM_TMP_FRAMESIZE -acodec copy \
+            $TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD -r $FRAME_RATE -b 15000k \
+            -padcolor $BG_CLR -y  "$WORK_DIR/quick_tmp.avi")
         fi
         yecho
         yecho "Running ${PAD_CMD[@]}"|fold -bs
@@ -1649,18 +1650,18 @@ quick_menu()
         yecho "Using ffmpeg to add titles and background"
     fi
     # don't seek if we already made a padded video with a seek
-    $QUICKMENU_IS_SHOWCASE || $RESIZE_BG && qm_seek=""
-    if ((libavfilter)); then
+    $QUICKMENU_IS_SHOWCASE || $RESIZE_BG && unset qm_pre_seek qm_post_seek
+    if $use_overlay_filter; then
         overlay_filter="movie=0:png:$WORK_DIR/quick_menu_bg.png "
         overlay_filter="$overlay_filter [wm];[in][wm] overlay=0:0:1 [out]"
-        QUICKMENU_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_seek -s $VIDSIZE -i \
-        "$PRE_VHOOK_FILE" -an -f mpeg2video -r $FRAME_RATE -tvstd $TV_STANDARD \
-        -b 7000k -maxrate 8000k -bufsize 224KiB -aspect 4:3 \
-        -vf "$overlay_filter" -y "$WORK_DIR/intro.m2v")
-    elif ((use_vhooks)); then
-        QUICKMENU_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_seek -s $VIDSIZE -i  \
-        "$PRE_VHOOK_FILE" -an -f mpeg2video -r $FRAME_RATE -tvstd $TV_STANDARD \
-        -b 7000k -maxrate 8000k -bufsize 224KiB -aspect 4:3 \
+        QUICKMENU_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_pre_seek -s $VIDSIZE \
+        -i "$PRE_VHOOK_FILE" -an $qm_post_seek -f mpeg2video -r $FRAME_RATE \
+        -tvstd $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB \
+        -aspect 4:3 -vf "$overlay_filter" -y "$WORK_DIR/intro.m2v")
+    elif $use_vhooks; then
+        QUICKMENU_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_pre_seek -s $VIDSIZE \
+        -i "$PRE_VHOOK_FILE" -an $qm_post_seek -f mpeg2video -r $FRAME_RATE \
+        -tvstd $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB -aspect 4:3 \
         -vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
         -y "$WORK_DIR/intro.m2v")
     fi
@@ -1671,8 +1672,8 @@ quick_menu()
     ! $QM_PREVIEW && yecho
     # create preview images if called for
     if $QM_PREVIEW; then
-        FFMPEG_CMD=(ffmpeg -ss 1 -i "$WORK_DIR/intro.m2v" -an -vframes 30 \
-        "$outdir"/%06d.png)
+        FFMPEG_CMD=(ffmpeg -i "$WORK_DIR/intro.m2v" -an -ss 1 -vframes 30 \
+        -f image2 -y "$outdir"/%06d.png)
         yecho "${FFMPEG_CMD[@]}" | strings
         "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
         largest_png=$(du -s "$outdir"/*.png|sort -r |
@@ -1748,8 +1749,6 @@ make_dummy()
     fi
     VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
     yecho
-    # temporarily use mp2enc for svcd audio as ffmpeg broken # FIXME
-    # see r2162 todisc or older for how to fix this block when ffmpeg is fixed
     BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
     $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
     yecho "${BGAUDIO_CMD[@]}"
@@ -3248,6 +3247,9 @@ while test $# -gt 0; do
             shift
             SUBMENU_BG_CLR="$1"
             ;;
+        "-fast-seek" )
+            FAST_SEEK=:
+        ;;
         "-config" | "-ntscfilm" | "-dvd-vcd" | "-half-dvd" | "-kvcd" | \
         "-kvcdx3" | "-kvcdx3a" | "-kdvd" | "-bdvd" | "-704" | "-normalize" | \
         "-amplitude" | "-overwrite" | "-panavision" | "-force" | "-fps" | \
@@ -3350,7 +3352,8 @@ if ! $VMGM_ONLY && ! $DO_TITLESETS; then
         usage_error "$ERR"
     fi
 fi
-$SWITCHED && MN=2 || MN=1
+# for switched menus the 1st menu (MN) made is the 2nd, not the 1st
+{ $SWITCHED_MODE || $SWITCHED_MENUS ; } && MN=2 || MN=1
 
 if [[ ${#TITLES[@]} -eq 0 ]]; then
     if [[ $MENU_NUM = $MN ]] && ! $NOMENU \
@@ -5494,8 +5497,13 @@ fi
 if [[ -n "$BG_VIDEO" ]] && ! $QUICKMENU_IS_BACKGROUND; then
     echo
     echo "Getting background video images from $BG_VIDEO"
-    FFMPEG_CMD=(ffmpeg -ss $BG_SEEK -i "$BG_VIDEO" -s $VIDSIZE -vframes 1 \
-    -vcodec png -an  -f rawvideo -y "$WORK_DIR/pics/template.png")
+    if $FAST_SEEK; then
+        bg_pre_seek="-ss $BG_SEEK" && unset bg_post_seek
+    else
+        bg_post_seek="-ss $BG_SEEK" && unset bg_pre_seek
+    fi
+    FFMPEG_CMD=(ffmpeg -ss $bg_pre_seek -i "$BG_VIDEO" -s $VIDSIZE -vframes 1 \
+    -an $bg_post_seek -f image2 -y "$WORK_DIR/pics/template.png")
     echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
     if ! "${FFMPEG_CMD[@]}" 2>&1 |strings  >> "$LOG_FILE";then
@@ -5556,9 +5564,14 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             else
                 FFMPEG_SEEK_VAL=$SHOWCASE_SEEK_VAL
             fi
+            if $FAST_SEEK; then
+                ffm_pre_seek="-ss $FFMPEG_SEEK_VAL" && unset ffm_post_seek
+            else
+                ffm_post_seek="-ss $FFMPEG_SEEK_VAL" && unset ffm_pre_seek
+            fi
 
-            FFMPEG_CMD=(ffmpeg -ss $FFMPEG_SEEK_VAL -i "$SHOWCASE_VIDEO" \
-            -s $SHOWCASE_SIZE  -vframes 1 -vcodec png -an -f rawvideo -y \
+            FFMPEG_CMD=(ffmpeg $ffm_pre_seek -i "$SHOWCASE_VIDEO" \
+            -s $SHOWCASE_SIZE -an $ffm_post_seek -vframes 1 -f image2 -y \
             "$WORK_DIR/showcase_img.png")
             echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs \
               |tee -a "$LOG_FILE"
@@ -5605,14 +5618,21 @@ fi
 # create the preview images
 if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
+        # fast seek disabled by default
+        if $FAST_SEEK; then
+            ffm_pre_seek="-ss ${SEEK_VAL[i]}" && unset ffm_post_seek
+        else
+            ffm_postseek="-ss ${SEEK_VAL[i]}" && unset ffm_pre_seek
+        fi
         # don't make titles if all input files are images
         # pass -f image2 to ffmpeg if its an image (not always needed but ...)
         [[ ${file_is_image[i]} = "yes" ]] && fmt="-f image2" || fmt=""
         SV=${SEEK_VAL[i]}; CURFILE="${IN_FILES[i]##*/}"
         spin "[$((i + 1)) of ${#FILES[@]}] Seeking to $SV seconds in $CURFILE"
 
-        FFMPEG_CMD=(ffmpeg $fmt -ss ${SEEK_VAL[i]} -i "${IN_FILES[i]}" -an \
-        -vframes 1 -s $THUMB_SIZE $WORK_DIR/pics/$i/%06d.$IMG_FMT)
+        FFMPEG_CMD=(ffmpeg $fmt $ffm_pre_seek -i "${IN_FILES[i]}" -an \
+        $ffm_postseek -f image2 -vframes 1 \
+        -s $THUMB_SIZE -y $WORK_DIR/pics/$i/%06d.$IMG_FMT)
         CMD=( "${FFMPEG_CMD[@]}" )
         SED_VAR="frame="
         ! [[ "$SC_FRAMESTYLE" = "glass" ]] \
@@ -6453,7 +6473,6 @@ fi
 # run this twice for switched menus for 1st menu made and last
 # to make sure files get symlinked properly (Hack)
 if [[ $MENU_NUM = [1-2] || -n ${file_is_image[@]}  ]]; then
-    # do not check compliance for SVCD's - no still images are made
     if ! $MK_CAROUSEL_MODE; then
         echo
         check_compliance
@@ -7004,7 +7023,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             yuv_fifo="$WORK_DIR/pics/$i/out.yuv"
             log_tmp="$WORK_DIR/pics/$i/log.tmp"
             [[ ! -p "$yuv_fifo" ]] && mkfifo "$yuv_fifo"
-            FFMPEG_CMD2=(ffmpeg -i "$yuv_fifo" -y \
+            FFMPEG_CMD2=(ffmpeg -i "$yuv_fifo" -f image2 -y \
             "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
             TRANSCODE_CMD2=(transcode --progress_rate 10 \
             --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
@@ -7946,8 +7965,8 @@ if $SUB_MENU; then
                 log_tmp="$PICS_OUT/log.tmp"
                 yuv_fifo="$PICS_OUT/out.yuv"
                 [[ ! -p "$yuv_fifo" ]] && mkfifo "$yuv_fifo"
-                FFMPEG_CMD=(ffmpeg $PIPE_FORMAT -i "$yuv_fifo" -y \
-                "$PICS_OUT/%06d.$SM_IMG_FMT")
+                FFMPEG_CMD=(ffmpeg $PIPE_FORMAT -i "$yuv_fifo" \
+                -f image2 -y "$PICS_OUT/%06d.$SM_IMG_FMT")
                 TCODE_CMD=(nice transcode --progress_rate 10 \
                 --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "$CUR_FILE" \
                 $NAVSEEK "$NAVLOG" -o "$yuv_fifo" -f \
@@ -8344,9 +8363,15 @@ if $DO_MENU; then
     yecho "Building main menu"
 fi
 if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
+    if $FAST_SEEK; then
+        bg_pre_seek="-ss $BG_SEEK" && unset bg_post_seek
+    else
+        bg_post_seek="-ss $BG_SEEK" && unset bg_pre_seek
+    fi
     yecho "Getting background video from $BG_VIDEO"
-    FFMPEG_CMD=(ffmpeg -ss $BG_SEEK -i "$BG_VIDEO" -vframes $BG_VIDEO_FRAMES \
-    -s $VIDSIZE -sameq "$WORK_DIR/bg/%d.$BG_IMG_FMT")
+    FFMPEG_CMD=(ffmpeg $bg_pre_seek -i "$BG_VIDEO" -an $bg_post_seek \
+    -vframes $BG_VIDEO_FRAMES -s $VIDSIZE  -f image2 \
+    -y"$WORK_DIR/bg/%d.$BG_IMG_FMT")
     yecho "Extracting/resizing background images"
     echo "Running: ${FFMPEG_CMD[@]}" | format_output >> "$LOG_FILE"
     # Run command and check for failure
@@ -8386,9 +8411,15 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
         else
             FFMPEG_SEEK_VAL=$SHOWCASE_SEEK_VAL
         fi
+        if $FAST_SEEK; then
+            ffm_pre_seek="-ss $FFMPEG_SEEK_VAL" && unset ffm_post_seek
+        else
+            ffm_post_seek="-ss $FFMPEG_SEEK_VAL" && unset ffm_pre_seek
+        fi
 
-        FFMPEG_CMD=(ffmpeg -ss $FFMPEG_SEEK_VAL -i "$SHOWCASE_VIDEO" -s \
-        $SHOWCASE_SIZE -vframes $FRAMES -an -y "$WORK_DIR/showcase/%06d.png")
+        FFMPEG_CMD=(ffmpeg $ffm_pre_seek -i "$SHOWCASE_VIDEO" -s \
+        $SHOWCASE_SIZE -vframes $FRAMES -an $ffm_post_seek -f image2 \
+        -y "$WORK_DIR/showcase/%06d.png")
         echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
         SED_VAR="frame="
         "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1 &
@@ -9219,8 +9250,6 @@ fi
 unset BGAUDIO_CMD TIME
 
 # convert to proper audio format
-# temporarily have to use mp2enc for svcd as ffmpeg broken FIXME
-# see r2162 todisc or older for how to fix this block when ffmpeg is fixed
 BGAUDIO_CMD=(ffmpeg -i $WORK_DIR/intro.wav \
 $AUDIO_OPTS -y $WORK_DIR/intro.$AUDIO_EXT)
 yecho "Running "${BGAUDIO_CMD[@]}"" | fold -bs >> "$LOG_FILE"
