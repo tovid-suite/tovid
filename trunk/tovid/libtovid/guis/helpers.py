@@ -43,7 +43,7 @@ class VideoGui(tk.Frame):
 
         self.args = args
         self.show_osd = False
-        if '-menu' in shlex.split(args):
+        if '-osdlevel 3' in args:
             self.show_osd = True
         self.master = master
         if title:
@@ -444,7 +444,7 @@ class Chapters(ListToOne):
         selected = self.parent_listbox.selected.get()
         if selected:
             # initialize mplayer GUI
-            self.mpl = SetChapters(self.mplayer_frame, '-menu', '', self.on_exit)
+            self.mpl = SetChapters(self.mplayer_frame, '-osdlevel 3', '', self.on_exit)
             self.mpl.pack()
             # unpack label
             self.sublist_frame.pack_forget()
