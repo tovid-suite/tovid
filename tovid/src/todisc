@@ -797,11 +797,11 @@ tovid_reencode()
     VIDEO_IN_SEEK="$2"
     video_type=$3
     yecho
-    yecho "$VIDEO_IN is not compliant - re-encoding
+    yecho "$VIDEO_IN is not compliant - re-encoding \
       $(bc <<< "$VIDEO_IN_SEEK + ${MENU_LEN[MENU_NUM-1]}" 2>/dev/null)
         second slice to DVD compliant file"
-    yecho "For long seeks this will take some time and produce a large file."
-    yecho "But if the file is not encoded this way there may be sync problems."
+    yecho "This is not strictly necessary and will reduce quality, but it may"
+    yecho "help with sync problems if using the same file for audio and video."
     yecho "Do you want to continue encoding this file?, type 'yes' to do so"
     if ! $NOASK; then
         read response
@@ -1526,45 +1526,15 @@ check_menufile()
 
 quick_menu()
 {
+    funct_arg=$1
     unset LEFTPAD TOPPAD RIGHTPAD BOTTOMPAD
-    # get width and height of background: we may need to resize it to $VIDSIZE
-    if $QUICKMENU_IS_BACKGROUND; then
-        BG_VIDEO_STATS=$(idvid -fast "$BG_VIDEO" 2>/dev/null)
-        BG_VIDEO_WIDTH=$(awk '/Width:/ {print $2}' <<< "$BG_VIDEO_STATS")
-        BG_VIDEO_HEIGHT=$(awk '/Height:/ {print $2}' <<< "$BG_VIDEO_STATS")
-        if [[ ${BG_VIDEO_WIDTH}x${BG_VIDEO_HEIGHT} != $VIDSIZE ]]; then
-            RESIZE_BG=:
-        fi
-    fi
-    if [[ -n $1 && $1 = "preview" ]]; then
+    # is it a preview or main run of menu creation
+    if [[ -n $funct_arg && $funct_arg = "preview" ]]; then
         QM_MENU_TIME=2 && QM_PREVIEW=:
     else
         QM_MENU_TIME=${MENU_LEN[MENU_NUM-1]} && QM_PREVIEW=false
     fi
-    # if QUICK_MENU_FILE is a showcase video then we need a temp avi file
-    if $QUICKMENU_IS_SHOWCASE; then
-        PRE_VHOOK_FILE="$WORK_DIR/quick_tmp.avi" # not needed for mix
-        outdir="$WORK_DIR/showcase"
-        if $SWITCHED; then
-            qm_seek="-ss ${SEEK_VAL[MENU_NUM-1]}"
-        else
-            qm_seek="-ss $SHOWCASE_SEEK_VAL"
-        fi
-    # else if we have background file maybe no need for the 1st resize step
-    elif $QUICKMENU_IS_BACKGROUND; then
-        if ! $RESIZE_BG; then
-            PRE_VHOOK_FILE="$BG_VIDEO"
-        else
-            PRE_VHOOK_FILE="$WORK_DIR/quick_tmp.avi"
-        fi
-        outdir="$WORK_DIR/bg"
-        qm_seek="-ss $BG_SEEK"
-    fi
-    if $FAST_SEEK; then
-        qm_pre_seek=$qm_seek && unset qm_post_seek
-    else
-        qm_post_seek=$qm_seek && unset qm_pre_seek
-    fi
+    # test for filters and vhook
     filters=$(ffmpeg -filters 2>/dev/null)
     if grep -q -w '^overlay' <<< "$filters" && \
       grep -q -w '^crop' <<< "$filters"; then
@@ -1581,25 +1551,9 @@ quick_menu()
         else
             yecho "!!!!! $imlib2_vhook not found, can not continue !!!!!"
         fi
-        # this test should run only once, even for switched menus
-        if $QM_PREVIEW && [[ $MENU_NUM -eq $MN ]] && $use_vhooks; then
-            yecho "Making a MPEG for testing ffmpeg's imlib2 vhook"
-            convert  -resize $VIDSIZE! xc:"#101010" "$WORK_DIR/dummy.jpg"
-            dummy_cmd=(ffmpeg -t 2 -loop_input -i "$WORK_DIR/dummy.jpg" \
-            -aspect 4:3  -f mpeg1video -r 29.970 -vcodec mpeg2video -b 5000k \
-            -f s16le  -i /dev/zero -acodec ac3 -ac 2 -ar 48000 -ab 224k \
-            -y "$WORK_DIR/dummy.mpg")
-            if ! "${dummy_cmd[@]}" 2>> "$LOG_FILE"; then
-                runtime_error "There was a problem making a dummy.mpg with ffmpeg"
-            fi
-            if ! ffmpeg -vhook "$imlib2_vhook -i "$WORK_DIR/dummy.jpg"" \
-            -i "$WORK_DIR/dummy.mpg" -y "$WORK_DIR/test.mpg" 2>> "$LOG_FILE"; then
-                yecho '!!!!! vhook test failed !!!!!'
-                use_vhooks=false
-            fi
-        fi
     fi
 
+    # FIXME this will not be needed when the overlay filter is in SVN proper
     if ! $use_vhooks && ! $use_overlay_filter; then
         runtime_error "You are not able to use -quick-menu:
         you must use the experimental ffmpeg with libavfilter 
@@ -1607,70 +1561,81 @@ quick_menu()
         See this post for details on installing ffmpeg with filters: 
         http://ubuntuforums.org/showthread.php?p=9021636"
     fi
-    $QM_PREVIEW && yecho "Creating a quick-menu preview image"
-    # convert and resize the bgvideo so that is is framed by ntsc-safe black bg
-    if $QUICKMENU_IS_SHOWCASE || $RESIZE_BG; then
+    if $QUICKMENU_IS_SHOWCASE; then
         yecho
-        if $RESIZE_BG; then
-            yecho "resizing background video: $BG_VIDEO"
-            QM_TMP_FRAMESIZE=$VIDSIZE
+        yecho "resizing and padding showcase file: $SHOWCASE_VIDEO"
+        LEFTPAD=$SC_X
+        TOPPAD=$SC_Y
+        RIGHTPAD="-padright \
+        $(( ${VIDSIZE%%x*} - $LEFTPAD - ${SHOWCASE_SIZE%%x*} ))"
+        BOTTOMPAD="-padbottom \
+        $(( ${VIDSIZE##*x} - $TOPPAD - ${SHOWCASE_SIZE##*x} ))"
+        LEFTPAD="-padleft $SC_X"
+        TOPPAD="-padtop $SC_Y"
+        local VF_PADX=$SC_X
+        local VF_PADY=$SC_Y
+        QM_FRAMESIZE=$SHOWCASE_SIZE
+        outdir="$WORK_DIR/showcase"
+        if $SWITCHED; then
+            qm_seek="-ss ${SEEK_VAL[MENU_NUM-1]}"
         else
-            yecho "resizing and padding showcase file: $SHOWCASE_VIDEO"
-            LEFTPAD=$SC_X
-            TOPPAD=$SC_Y
-            RIGHTPAD="-padright \
-            $(( ${VIDSIZE%%x*} - $LEFTPAD - ${SHOWCASE_SIZE%%x*} ))"
-            BOTTOMPAD="-padbottom \
-            $(( ${VIDSIZE##*x} - $TOPPAD - ${SHOWCASE_SIZE##*x} ))"
-            LEFTPAD="-padleft $SC_X"
-            TOPPAD="-padtop $SC_Y"
-            QM_TMP_FRAMESIZE=$SHOWCASE_SIZE
+            qm_seek="-ss $SHOWCASE_SEEK_VAL"
         fi
-        if $use_overlay_filter; then
-            PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_pre_seek \
-            -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" $qm_post_seek \
-            -s $QM_TMP_FRAMESIZE -acodec copy -vf pad=720:480:$SC_X:$SC_Y \
-            -r $FRAME_RATE -b 15000k \
-            -y  "$WORK_DIR/quick_tmp.avi")
-        else
-            PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_pre_seek \
-            -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" $qm_post_seek \
-            -s $QM_TMP_FRAMESIZE -acodec copy \
-            $TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD -r $FRAME_RATE -b 15000k \
-            -padcolor $BG_CLR -y  "$WORK_DIR/quick_tmp.avi")
-        fi
-        yecho
-        yecho "Running ${PAD_CMD[@]}"|fold -bs
-        "${PAD_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
+    elif $QUICKMENU_IS_BACKGROUND; then
+        QM_FRAMESIZE=$VIDSIZE
+        outdir="$WORK_DIR/bg"
+        qm_seek="-ss $BG_SEEK"
+    fi
+    if $FAST_SEEK; then
+        qm_pre_seek=$qm_seek && unset qm_post_seek
+    else
+        qm_post_seek=$qm_seek && unset qm_pre_seek
     fi
 
-    # use vhook to add the titles in
+    $QM_PREVIEW && yecho "Creating a quick-menu preview image"
+    # pad/resize if needed, use overlay filter (or vhook) to add menu graphics
+    # framing (if showcase) by ntsc-safe black bg
     ! $QM_PREVIEW && yecho
     if ! $QM_PREVIEW; then
         yecho "Using ffmpeg to add titles and background"
     fi
-    # don't seek if we already made a padded video with a seek
-    $QUICKMENU_IS_SHOWCASE || $RESIZE_BG && unset qm_pre_seek qm_post_seek
     if $use_overlay_filter; then
-        overlay_filter="movie=0:png:$WORK_DIR/quick_menu_bg.png "
-        overlay_filter="$overlay_filter [wm];[in][wm] overlay=0:0:1 [out]"
-        QUICKMENU_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_pre_seek -s $VIDSIZE \
-        -i "$PRE_VHOOK_FILE" -an $qm_post_seek -f mpeg2video -r $FRAME_RATE \
-        -tvstd $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB \
-        -aspect 4:3 -vf "$overlay_filter" -y "$WORK_DIR/intro.m2v")
+        local overlay="$WORK_DIR/quick_menu_bg.png"
+        local PADDING="-vf pad=720:480:$VF_PADX:$VF_PADY"
+        local aspect=""
+        overlay_filter="movie=0:png:$overlay [wm];[in][wm] overlay=0:0:1 [wm2]"
+        ffmpeg_filter=(-vf "$overlay_filter; [wm2] aspect=4:3 [out]")
     elif $use_vhooks; then
-        QUICKMENU_CMD=(ffmpeg -t "$QM_MENU_TIME" $qm_pre_seek -s $VIDSIZE \
-        -i "$PRE_VHOOK_FILE" -an $qm_post_seek -f mpeg2video -r $FRAME_RATE \
-        -tvstd $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB -aspect 4:3 \
-        -vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png" \
-        -y "$WORK_DIR/intro.m2v")
+        local PADDING="$TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD"
+        local aspect="-aspect 4:3"
+        local PAD_CLR="-padcolor $BG_CLR"
+        ffmpeg_filter=(-vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png")
     fi
+    # no padding needed for background video, just resizing
+    $QUICKMENU_IS_BACKGROUND and PADDING=""
+    # create fifo
+    yuvout="$WORK_DIR/out.yuv"
+    rm -f  "$yuvout"  && mkfifo "$yuvout"
+    # run the commands to make the final menu m2v video
+    PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_pre_seek \
+    -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" $qm_post_seek \
+    -s $QM_FRAMESIZE -an $PADDING -r $FRAME_RATE \
+    $PAD_CLR -f yuv4mpegpipe -vcodec rawvideo -y "$yuvout")
+    QUICKMENU_CMD=(ffmpeg -s $VIDSIZE -f yuv4mpegpipe \
+    -i "$yuvout" -an -f mpeg2video -r $FRAME_RATE \
+    -tvstd $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB \
+    $aspect "${ffmpeg_filter[@]}" -y "$WORK_DIR/intro.m2v")
     $QM_PREVIEW && yecho
-    #$QM_PREVIEW && yecho "Running ${QUICKMENU_CMD[@]}" | fold -bs
     yecho "Running ${QUICKMENU_CMD[@]}" | fold -bs
-    "${QUICKMENU_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
+    "${QUICKMENU_CMD[@]}" 2>&1 | strings >> "$LOG_FILE" &
+    yecho "Running ${PAD_CMD[@]}"|fold -bs
+    "${PAD_CMD[@]}" < /dev/null  2>&1 |strings >> "$LOG_FILE"
+    wait
+    if [[ ! -s "$WORK_DIR/intro.m2v" ]]; then
+        runtime_error "There was a problem creating the menu video $funct_arg"
+    fi
     ! $QM_PREVIEW && yecho
-    # create preview images if called for
+    # create preview images if called for, taking largest of 30 images
     if $QM_PREVIEW; then
         FFMPEG_CMD=(ffmpeg -i "$WORK_DIR/intro.m2v" -an -ss 1 -vframes 30 \
         -f image2 -y "$outdir"/%06d.png)
@@ -1681,9 +1646,7 @@ quick_menu()
         mv "$largest_png" "$PREVIEW_IMG"
         yecho "Removing temporary preview files"
         rm -f "$WORK_DIR/intro.m2v"
-        $QUICKMENU_IS_SHOWCASE && rm -f "$WORK_DIR/quick_tmp.avi" \
-        "$WORK_DIR"/showcase/*.png
-        $QUICKMENU_IS_BACKGROUND && rm -f  "$WORK_DIR"/bg/*.png
+        rm -f "$WORK_DIR"/showcase/*.png "$WORK_DIR"/bg/*.png
     fi
     $QM_PREVIEW && yecho
 }
@@ -6722,15 +6685,15 @@ if $DO_CAROUSEL && $USE_DVD_SLIDESHOW; then
     mv "$WORK_DIR/slideshow.vob" "$WORK_DIR/intro.mpg"
 fi
 # check bgvideo and showcase VIDEO for compliance ( if present ) #FIXME
-if [[ -n $BG_VIDEO ]]; then
+if [[ -n $BG_VIDEO && $BG_VIDEO = $BG_AUDIO ]]; then
     # do not reencode animated slideshow made in MK_CAROUSEL_MODE
     if ! [[ $BG_VIDEO = $WORK_DIR/carousel-00.m2v ]]; then
         if ! idvid -isformat \
          ${TV_STANDARD}-${TARGET} "$BG_VIDEO" >/dev/null; then
-            tovid_reencode "$BG_VIDEO" $BG_SEEK background
+            ! $NOASK && tovid_reencode "$BG_VIDEO" $BG_SEEK background
         fi
     fi
-elif [[ -n $SHOWCASE_VIDEO ]]; then
+elif [[ -n $SHOWCASE_VIDEO && $SHOWCASE_VIDEO = $BG_AUDIO ]]; then
     # do not reencode animated slideshow made in MK_CAROUSEL_MODE
     if ! [[ $SHOWCASE_VIDEO = $WORK_DIR/carousel-00.m2v ]]; then
         if ! $SWITCHED && ! $QUICK_MENU; then
@@ -9337,8 +9300,6 @@ if $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWITCHED_MODE; then
     strings "$LOG_FILE.tmp" >> "$LOG_FILE" && rm -f "$LOG_FILE.tmp"
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
-#find "$WORK_DIR"/ -name '*.png' ! -name Highlight.png ! -name Select.png \
-#-exec rm -f {} \; > /dev/null 2>&1
 find "$WORK_DIR"/ -name '*.jpg' ! -name preview.$IMG_FMT -exec rm -f {} \; \
 > /dev/null 2>&1
 rm -fr "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
