@@ -1612,7 +1612,7 @@ quick_menu()
         ffmpeg_filter=(-vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png")
     fi
     # no padding needed for background video, just resizing
-    $QUICKMENU_IS_BACKGROUND and PADDING=""
+    $QUICKMENU_IS_BACKGROUND && PADDING=""
     # create fifo
     yuvout="$WORK_DIR/out.yuv"
     rm -f  "$yuvout"  && mkfifo "$yuvout"
