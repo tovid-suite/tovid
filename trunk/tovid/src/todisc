@@ -1626,23 +1626,37 @@ quick_menu()
     -tvstd $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB \
     $aspect "${ffmpeg_filter[@]}" -y "$WORK_DIR/intro.m2v")
     $QM_PREVIEW && yecho
-    yecho "Running ${QUICKMENU_CMD[@]}" | fold -bs
-    "${QUICKMENU_CMD[@]}" 2>&1 | strings >> "$LOG_FILE" &
     yecho "Running ${PAD_CMD[@]}"|fold -bs
-    "${PAD_CMD[@]}" < /dev/null  2>&1 |strings >> "$LOG_FILE"
+    echo "${QUICKMENU_CMD[@]}" | fold -bs | tee -a "$LOG_FILE"
+    "${PAD_CMD[@]}" < /dev/null  > "${LOG_FILE}-1.tmp" 2>&1 &
+    "${QUICKMENU_CMD[@]}" < /dev/null  > "${LOG_FILE}-2.tmp" 2>&1 &
+    ffmpeg_pid=$!
+    yecho
+    while ps -p $ffmpeg_pid >/dev/null; do
+        sleep 1
+        [[ -s "$WORK_DIR/intro.m2v" ]] && txt="Writing" || txt="Seeking"
+        spin $txt $SPINNER
+    done
     wait
+    yecho
+    # remove control characters and seeking lines
+    strings "${LOG_FILE}-1.tmp" |   sed '/time=10000000000.00/d' >> "$LOG_FILE"
+    strings "${LOG_FILE}-2.tmp" | sed '/time=10000000000.00/d' >> "$LOG_FILE"
     if [[ ! -s "$WORK_DIR/intro.m2v" ]]; then
         runtime_error "There was a problem creating the menu video $funct_arg"
     fi
+    rm -f "${LOG_FILE}*.tmp"
     ! $QM_PREVIEW && yecho
-    # create preview images if called for, taking largest of 30 images
+    # create preview images if called for, taking largest of 10 images
     if $QM_PREVIEW; then
-        FFMPEG_CMD=(ffmpeg -i "$WORK_DIR/intro.m2v" -an -ss 1 -vframes 30 \
+        FFMPEG_CMD=(ffmpeg -i "$WORK_DIR/intro.m2v" -an -vframes 10 \
         -f image2 -y "$outdir"/%06d.png)
-        yecho "${FFMPEG_CMD[@]}" | strings
+        yecho "Running ${FFMPEG_CMD[@]}" | strings
         "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
-        largest_png=$(du -s "$outdir"/*.png|sort -r |
-        awk 'NR>1{exit};1 {print $2}')
+        # take the largest image (best quality?) of a 10 frame sampling
+        #largest_png=$(du "$outdir"/*.png | sort -n | awk '{print $2, $1}' | \
+        #  uniq -f1 | awk 'END{ print $1 }')
+        largest_png=$(get_largest 6 10 "$outdir" )
         mv "$largest_png" "$PREVIEW_IMG"
         yecho "Removing temporary preview files"
         rm -f "$WORK_DIR/intro.m2v"
@@ -2203,6 +2217,28 @@ print_tcode_info()
     subtle bug in transcode when running it (or a script) from python. \
     \n****\n" | sed "s/    */ /g;s/^ *//" |fold -bs >> "$LOG_FILE"
 }
+
+# get the largest PNG (1st match sequentially if more than one are same size)
+# images must be padded numbers as in 000001.png
+#args: width [6] (padded width), last [10] # of test images, img_dir [pwd] (dir)
+# call without args to test from ./000000.png to ./000010.png
+get_largest()
+{
+    unset c largest result
+    local width=${1:-6}
+    local last=${2:-10}
+    local img_dir=${3:-$PWD}
+
+    for num in $(seq 0 $last); do
+        local img=$(printf %0${width}d $num)
+        if [[ -e $img_dir/${img}.$IMG_FMT ]]; then
+            c=$( du "$img_dir/${img}.$IMG_FMT" | cut -f1 )
+            ((c > largest)) && largest=$c && result="$img_dir/${img}.$IMG_FMT"
+        fi
+    done
+    echo $result
+}
+
 ##############################################################################
 #                          	 End of Functions                                #
 ##############################################################################
@@ -5505,7 +5541,7 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
     if [[ -n "$SHOWCASE_VIDEO" ]]; then
         echo "Getting video images from $SHOWCASE_VIDEO"
         if [[ "$SC_FRAMESTYLE" = "glass" ]]; then
-            # some vars for get_framed_pics()
+            # some vars for get_framed_pics function
             D=2
             OUTDIR="$WORK_DIR/showcase"
             OUT="$WORK_DIR/showcase_img.png"
@@ -5515,8 +5551,9 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             $SWITCHED && MPLAYER_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
             echo "Using mplayer to get framed images from the showcase video"
             get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
-            largest_png=$(du -s "$WORK_DIR"/000000*.png|sort -r |
-                                awk 'NR>1{exit};1 {print $2}')
+            #largest_png=$(du -s "$WORK_DIR"/000000*.png|sort -r |
+            #                    awk 'NR>1{exit};1 {print $2}')
+            largest_png=$(get_largest 8 30 )
             mv -v "$largest_png" "$OUT"
             rm -f "$WORK_DIR"/00000*.png
             convert "$WORK_DIR/showcase_img.png" \
@@ -5601,7 +5638,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         SED_VAR="frame="
         ! [[ "$SC_FRAMESTYLE" = "glass" ]] \
         && echo -e "\nRunning: "${CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
-        # some vars for get_framed_pics()
+        # some vars for get_framed_pics function
         VOUT="png:z=7"; FRAMES=30
         FRAME_SIZE=$THUMB_SIZE
         D=2
@@ -5609,8 +5646,9 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         if [ "$SC_FRAMESTYLE" = "glass" ]; then
             MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
             get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
-            largest_png=$(du -s $WORK_DIR/000*[0-9].png | sort -r |
-                                        awk 'NR>1{exit};1 {print $2}')
+            #largest_png=$(du -s $WORK_DIR/000*[0-9].png | sort -r |
+            #                            awk 'NR>1{exit};1 {print $2}')
+            largest_png=$(get_largest 8 30)
             mv -f $largest_png $WORK_DIR/pics/$i/$(printf "%06d%s" 0 .$IMG_FMT)
             rm -f "$WORK_DIR"/000*[0-9].png
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
@@ -6956,7 +6994,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
     echo "Creating $THUMB_FRAMES images from each video for the main menu"
     for ((i=0; i<=NUM_FILES; i++)) ; do
         if [ "$SC_FRAMESTYLE" = "glass" ]; then
-            # some vars for get_framed_pics()
+            # some vars for get_framed_pics function
             D=2
             VOUT="png:z=7"
             FRAME_SIZE=$THUMB_SIZE
@@ -7020,7 +7058,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 echo -e \
                 "\n$ME Log from ffmpeg (processing transcode stream)\n" \
                 >> "$LOG_FILE"
-                strings "$log_tmp" >>  "$LOG_FILE"
+                strings "$log_tmp" |   sed '/time=10000000000.00/d' >> "$LOG_FILE"
                 rm -f "$log_tmp"
                 echo
                 echo "Created $numpics images of $THUMB_FRAMES"
