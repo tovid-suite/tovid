@@ -1654,8 +1654,6 @@ quick_menu()
         yecho "Running ${FFMPEG_CMD[@]}" | strings
         "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
         # take the largest image (best quality?) of a 10 frame sampling
-        #largest_png=$(du "$outdir"/*.png | sort -n | awk '{print $2, $1}' | \
-        #  uniq -f1 | awk 'END{ print $1 }')
         largest_png=$(get_largest 6 10 "$outdir" )
         mv "$largest_png" "$PREVIEW_IMG"
         yecho "Removing temporary preview files"
@@ -1774,7 +1772,7 @@ verify_infiles()
                 OUTBASE=${IN_FILE##*/} # basename of file
                 OUTFILE=${OUTBASE%.*} # basename of file less extention
                 OUTFILE_GRP=${grouping[i]##*/} # basename of link
-                OUTFILE_GRP=$OUTFILE_GRP%.*} # basename of link less extension
+                OUTFILE_GRP=${OUTFILE_GRP%.*} # basename of link less extension
                 OUTFILE_GRP=$(cut -f3-4 -d- <<< "$OUTFILE_GRP")
                 OUTFILE_GRP=$(cut -f 1 -d. <<< "$OUTFILE_GRP") # group number
                 if [[ $verify_type = "group" ]]; then
@@ -2220,7 +2218,7 @@ print_tcode_info()
 
 # get the largest PNG (1st match sequentially if more than one are same size)
 # images must be padded numbers as in 000001.png
-#args: width [6] (padded width), last [10] # of test images, img_dir [pwd] (dir)
+#args: width [6] (pad width), last [10] last image to test, img_dir [pwd] (dir)
 # call without args to test from ./000000.png to ./000010.png
 get_largest()
 {
@@ -5551,8 +5549,6 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             $SWITCHED && MPLAYER_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
             echo "Using mplayer to get framed images from the showcase video"
             get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
-            #largest_png=$(du -s "$WORK_DIR"/000000*.png|sort -r |
-            #                    awk 'NR>1{exit};1 {print $2}')
             largest_png=$(get_largest 8 30 )
             mv -v "$largest_png" "$OUT"
             rm -f "$WORK_DIR"/00000*.png
@@ -5646,8 +5642,6 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         if [ "$SC_FRAMESTYLE" = "glass" ]; then
             MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
             get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
-            #largest_png=$(du -s $WORK_DIR/000*[0-9].png | sort -r |
-            #                            awk 'NR>1{exit};1 {print $2}')
             largest_png=$(get_largest 8 30)
             mv -f $largest_png $WORK_DIR/pics/$i/$(printf "%06d%s" 0 .$IMG_FMT)
             rm -f "$WORK_DIR"/000*[0-9].png
