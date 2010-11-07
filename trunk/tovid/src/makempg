@@ -1577,6 +1577,15 @@ if $DO_DEBLOCK; then
         yecho "Unable to find a suitable deblocking filter. Skipping."
     fi
 fi
+# ffmpeg filters, if present
+FF_HELP=$(ffmpeg -h 2>&1)
+if grep -qw -- -vf <<< "$FF_HELP"; then
+    VF="-vf"
+elif grep -q -w -- -vfilters <<< "$FF_HELP"; then
+    VF="-vfilters"
+else
+    VF=""
+fi
 
 
 # Do fast encoding if requested. Sacrifice quality for encoding speed.
@@ -1611,13 +1620,11 @@ fi
 
 
 # ffmpeg's -vf aspect is more dependable than -aspect, if ffmpeg is new enough
-FF_HELP=$(ffmpeg -h 2>&1)
-if grep -qw -- -vf <<< "$FF_HELP"; then
-    ff_aspect="-vf aspect="
-elif grep -q -w -- -vfilters <<< "$FF_HELP"; then
-    ff_aspect="-vfilters aspect="
+if [[ $VF ]]; then
+    FF_ASPECT="aspect="
 else
-    ff_aspect='-aspect '
+    # not a -vf option but here for backwards compatibility
+    FF_ASPECT='-aspect '
 fi
     
 # Anamorphic widescreen (16:9 output)
@@ -1625,14 +1632,14 @@ fi
 # wasted on letterbox bars (or if the user requested -widetv output).
 if $ANAMORPH && { ((V_ASPECT_WIDTH >= 153)) || $WIDE_TV ; }; then
     TGT_ASPECT_WIDTH=177
-    FF_ASPECT="${ff_aspect}16:9"
+    FF_ASPECT="${FF_ASPECT}16:9"
     ASPECT_FMT="--aspect 3"
 # For all others, use "non-anamorphic" (4:3 output)
 # Aspects from 133:100 to 153:100 have minimum pixel wastage
 # when letterboxed in 4:3
 else
     TGT_ASPECT_WIDTH=133
-    FF_ASPECT="${ff_aspect}4:3"
+    FF_ASPECT="${FF_ASPECT}4:3"
     ASPECT_FMT="--aspect 2"
 fi
 
@@ -1864,20 +1871,26 @@ if $USE_FFMPEG; then
     FF_HPIX=0
     FF_VPIX=$(( (TGT_HEIGHT - INNER_HEIGHT) / 2 ))
     FF_HPIX=$(( (TGT_WIDTH - INNER_WIDTH) / 2 ))
-    PAD=0
     (( FF_VPIX )) || (( FF_HPIX )) && PAD=1
-    # changed options: -pad{side} to -vfilters pad= , to -vf pad=. Check this.
-    if grep -q -w -- -vf <<< "$FF_HELP" && ((PAD)); then
-        FF_PAD="-vf pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
-    elif grep -q -w -- -vfilters <<< "$FF_HELP" && ((PAD)); then
-        FF_PAD="-vfilters pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
-    else
-        FF_HPAD=''
-        FF_VPAD=''
-        ((FF_HPIX)) && FF_HPAD="-padleft $FF_HPIX -padright $FF_HPIX"
-        ((FF_VPIX)) && FF_VPAD="-padtop $FF_VPIX -padbottom $FF_VPIX"
-        ((PAD)) && FF_PAD="$FF_HPAD $FF_VPAD"
-    fi 
+    # changed options: -pad{side} to -vf(ilters) pad= .
+    if ((PAD)); then
+        if [[ $VF ]]; then
+            FF_PAD="pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
+        else
+            ((FF_HPIX)) && FF_HPAD="-padleft $FF_HPIX -padright $FF_HPIX"
+            ((FF_VPIX)) && FF_VPAD="-padtop $FF_VPIX -padbottom $FF_VPIX"
+            FF_PAD="$FF_HPAD $FF_VPAD"
+        fi 
+    fi
+
+    # use single variable for current, or legacy ffmpeg: VF_FILTERS and OLD_OPTS
+    if [[ $VF ]]; then # libavfilter is being used, FF_ASPECT always passed
+        VF_FILTERS="${FF_PAD},${FF_ASPECT}"
+        VF_FILTERS=${VF_FILTERS#*,} # remove possible leading comma
+        VF_FILTERS="$VF $VF_FILTERS"
+    else # legacy ffmpeg
+        OLD_OPTS="$FF_PAD $FF_ASPECT"
+    fi
 
     # Target TV system
     test "$TVSYS" = "PAL" && FF_TARGET="-target pal"
@@ -1905,7 +1918,7 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; the
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
     FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
         $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
-        $FF_SIZE $FF_PAD $FF_ASPECT $FF_CHANNEL_MAP"
+        $FF_SIZE $VF_FILTERS $OLD_OPTS $FF_CHANNEL_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
     yecho "Encoding video and audio with the following command:"
@@ -2080,7 +2093,7 @@ else
     fi
     VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $FF_PAD $FF_ASPECT -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $VF_FILTERS $OLD_OPTS -y \"$VIDEO_STREAM\""
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
