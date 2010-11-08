@@ -1886,8 +1886,7 @@ if $USE_FFMPEG; then
     # use single variable for current, or legacy ffmpeg: VF_FILTERS and OLD_OPTS
     if [[ $VF ]]; then # libavfilter is being used, FF_ASPECT always passed
         VF_FILTERS="${FF_PAD},${FF_ASPECT}"
-        VF_FILTERS=${VF_FILTERS#,} # remove possible leading comma
-        VF_FILTERS="$VF $VF_FILTERS"
+        VF_FILTERS="$VF ${VF_FILTERS#,}" # add -vf*, axe possible leading comma
     else # legacy ffmpeg
         OLD_OPTS="$FF_PAD $FF_ASPECT"
     fi
