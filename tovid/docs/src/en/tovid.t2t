@@ -301,7 +301,7 @@ Here is a list of possible options you can pass:
     **-interlaced**, **-interlaced_bf**, **-type**, **-fit**, **-discsize**,
     **-parallel**, **-mkvsub**, **-autosubs**, **-subtitles**, **-update**, \
     **-mplayeropts**, **-audiotrack**, **-downmix**, **-ffmpeg**, **-nofifo**,
-    **-from-gui**, **-slice**, **-async**, **-quiet**,
+    **-from-gui**, **-slice**, **-quiet**,
     **-fake**, **-keepfiles**
 
 ==Options==
@@ -1265,9 +1265,6 @@ for a widescreen monitor or TV.
     is not possible: tovid runs a quick 1 frame test to try to downmix the
     input track with the largest number of channels, and if it fails then it
     will revert to the default behavior of using the original channels.
-
-: **-async** //NUM//
-    Adjust audio synchronization by //NUM// seconds.
 
 
 
