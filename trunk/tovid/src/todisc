@@ -113,7 +113,6 @@ SC_BLUR=1
 SUB_MENU_FEATHER=false
 IMG_FMT="png"
 SM_IMG_FMT="png"  # submenu image format
-BG_IMG_FMT="png"  # background image format
 KEEP_FILES=false
 THUMB_SHAPE=""
 SEEK_VAL=2
@@ -348,6 +347,8 @@ vid_length()
     L=$(mencoder -nosound -mc 0 -oac pcm -ovc copy $check_frames \
     -o /dev/null "$1" 2> /dev/null)
     awk 'END{print $(NF-3)}' <<< "$L"
+    # awk '{for (i=0; i<NF; i++) { if ($i=="secs") {print $(i-1); break} } }' \
+    # <<< "$L"
 }
 audio_length()
 {
@@ -1650,15 +1651,15 @@ quick_menu()
     # create preview images if called for, taking largest of 10 images
     if $QM_PREVIEW; then
         FFMPEG_CMD=(ffmpeg -i "$WORK_DIR/intro.m2v" -an -vframes 10 \
-        -f image2 -y "$outdir"/%06d.png)
+        -f image2 -y "$outdir"/%06d.$IMG_FMT)
         yecho "Running ${FFMPEG_CMD[@]}" | strings
         "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
         # take the largest image (best quality?) of a 10 frame sampling
-        largest_png=$(get_largest 6 10 "$outdir" )
-        mv "$largest_png" "$PREVIEW_IMG"
+        largest_img=$(get_largest 6 10 "$outdir" )
+        mv "$largest_img" "$PREVIEW_IMG"
         yecho "Removing temporary preview files"
         rm -f "$WORK_DIR/intro.m2v"
-        rm -f "$WORK_DIR"/showcase/*.png "$WORK_DIR"/bg/*.png
+        rm -f "$WORK_DIR"/showcase/*.$IMG_FMT "$WORK_DIR"/bg/*.$IMG_FMT
     fi
     $QM_PREVIEW && yecho
 }
@@ -2208,7 +2209,7 @@ wait_for()
 
 # HACK: transcode produces some scary output when run from python
 print_tcode_info()
-{    
+{
     echo -e "\n****\n$ME You can probably ignore 'critical' 'errors' from \
     transcode shown below if it shows transcode finishing the last image. \
     These harmless 'broken pipe' messages from transcode appear to be a \
@@ -3545,7 +3546,7 @@ if ! test_version $_transcode_version $_baseline_version; then
     "transcode version 1.1.0 or newer is required to run this script (todisc).
     If you must use version $_transcode_version use tovid 0.34 or older."
 fi
-    
+ 
 # set some vars for switched menus so we know where we are
 $SWITCHED_MODE && SWITCHED_MENUS=false
 { $SWITCHED_MODE || $SWITCHED_MENUS ; } && SWITCHED=:
@@ -5021,14 +5022,14 @@ fi
 if [ -z "$BG_PIC" ]; then
     echo
     echo "Creating a black background"
-    BG_PIC="$WORK_DIR/pics/template.png"
+    BG_PIC="$WORK_DIR/pics/template.$IMG_FMT"
     $QUICK_MENU && template_colour="none" || template_colour=$BG_CLR
     convert  -resize $VIDSIZE! xc:$template_colour "$BG_PIC"
 else
-    convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.png"
+    convert -resize $VIDSIZE! "$BG_PIC" "$WORK_DIR/pics/template.$IMG_FMT"
 fi
 if $MENU_FADE; then
-    cp "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.bk.png"
+    cp "$WORK_DIR/pics/template.$IMG_FMT" "$WORK_DIR/pics/template.bk.$IMG_FMT"
 fi
 
 if $MENU_FADE || $FEATHER; then
@@ -5501,7 +5502,7 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICKMENU_IS_BACKGROUND; then
         bg_post_seek="-ss $BG_SEEK" && unset bg_pre_seek
     fi
     FFMPEG_CMD=(ffmpeg $bg_pre_seek -i "$BG_VIDEO" -s $VIDSIZE -vframes 1 \
-    -an $bg_post_seek -f image2 -y "$WORK_DIR/pics/template.png")
+    -an $bg_post_seek -f image2 -y "$WORK_DIR/pics/template.$IMG_FMT")
     echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     SED_VAR="frame="
     if ! "${FFMPEG_CMD[@]}" 2>&1 |strings  >> "$LOG_FILE";then
@@ -5549,8 +5550,8 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             $SWITCHED && MPLAYER_SEEK_VAL=${SEEK_VAL[MENU_NUM-1]}
             echo "Using mplayer to get framed images from the showcase video"
             get_framed_pics "$SHOWCASE_VIDEO" >> "$LOG_FILE" 2>&1
-            largest_png=$(get_largest 8 30 )
-            mv -v "$largest_png" "$OUT"
+            largest_img=$(get_largest 8 30 )
+            mv -v "$largest_img" "$OUT"
             rm -f "$WORK_DIR"/00000*.png
             convert "$WORK_DIR/showcase_img.png" \
             -background none $ROTATE $WAVE miff:-|
@@ -5642,8 +5643,8 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         if [ "$SC_FRAMESTYLE" = "glass" ]; then
             MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
             get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
-            largest_png=$(get_largest 8 30)
-            mv -f $largest_png $WORK_DIR/pics/$i/$(printf "%06d%s" 0 .$IMG_FMT)
+            largest_img=$(get_largest 8 30)
+            mv -f $largest_img $WORK_DIR/pics/$i/$(printf "%06d%s" 0 .$IMG_FMT)
             rm -f "$WORK_DIR"/000*[0-9].png
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
             if ! "${FFMPEG_CMD[@]}" 2>&1 |strings >> "$LOG_FILE";then
@@ -5684,7 +5685,7 @@ if $PLAYALL || { $TITLESET_MODE && $VMGM_MENU; } || $SINGLE_SLIDESHOW ; then
     convert "$WORK_DIR/pics/template.png" -background none \
     "${ADD_PLAYALL_BTN[@]}" "${ADD_RTN_BTN[@]}" \
     "$WORK_DIR/pics/template.png"
-    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.jpg"
+    #convert "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.jpg"
 fi
 
 # copy the preview for -quick-menu
@@ -7075,7 +7076,7 @@ if $DO_MENU; then
         echo
         echo "Creating a black background"
         # using JPEG here to save disk space as quality is not noticable
-        BG_PIC="$WORK_DIR/pics/template.jpg"
+        BG_PIC="$WORK_DIR/pics/template.$IMG_FMT"
         if $QUICK_MENU; then
             convert  -size $VIDSIZE xc:none \
             -depth 8 -colorspace RGB -type TrueColorMatte "$BG_PIC"
@@ -7084,7 +7085,7 @@ if $DO_MENU; then
         fi
     else
         convert -size $VIDSIZE "$BG_PIC" -resize $VIDSIZE! \
-        "$WORK_DIR/pics/template.jpg"
+        "$WORK_DIR/pics/template.$IMG_FMT"
     fi
     # create/resize submenu background, fill in array and symlink if needed
     if $SUB_MENU; then
@@ -8377,7 +8378,7 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     yecho "Getting background video from $BG_VIDEO"
     FFMPEG_CMD=(ffmpeg $bg_pre_seek -i "$BG_VIDEO" -an $bg_post_seek \
     -vframes $BG_VIDEO_FRAMES -s $VIDSIZE  -f image2 \
-    -y "$WORK_DIR/bg/%d.$BG_IMG_FMT")
+    -y "$WORK_DIR/bg/%d.$IMG_FMT")
     yecho "Extracting/resizing background images"
     echo "Running: ${FFMPEG_CMD[@]}" | format_output >> "$LOG_FILE"
     # Run command and check for failure
@@ -8386,13 +8387,13 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     fi
     # make sure there are enough pics to make a bg video
     IMAGES=( "${IMAGES[@]}" \
-    $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.$BG_IMG_FMT | sort) )
+    $(find $WORK_DIR/bg -maxdepth 1 -name \*[1-9]\*.$IMG_FMT | sort) )
     last_pic=${#IMAGES[@]}
     num_bgpics=$last_pic
     next_pic=$(($last_pic + 1))
     if [ $last_pic -lt $MAX_MENU_LEN ]; then
         for ((l=next_pic; l<=MAX_MENU_LEN; l++)); do
-            cp $WORK_DIR/bg/${last_pic}.$BG_IMG_FMT $WORK_DIR/bg/$l.$BG_IMG_FMT
+            cp $WORK_DIR/bg/${last_pic}.$IMG_FMT $WORK_DIR/bg/$l.$IMG_FMT
         done
     fi
     unset IMAGES PICS last_pic next_pic
@@ -8751,7 +8752,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
     if [ -z "$BG_VIDEO" ]; then
         for ((frame=0; frame<=ANIMENU_ENDFRAME; frame++)); do
             # copy template for fade out beginning and end frames
-            cp $WORK_DIR/pics/template.jpg $WORK_DIR/bg/$(($frame + 1)).jpg
+            cp $WORK_DIR/pics/template.png $WORK_DIR/bg/$(($frame + 1)).png
         done
     fi
     unset bgfade_pids num_procs
@@ -8759,8 +8760,8 @@ if $MENU_FADE && ! $QUICK_MENU; then
         ((num_procs++))
         D=`get_bg_opacity`
         composite -dissolve $D \
-        $WORK_DIR/bg/$(($frame + 1)).jpg $WORK_DIR/black.ppm \
-        $WORK_DIR/bg/$(($frame + 1)).jpg &
+        $WORK_DIR/bg/$(($frame + 1)).$IMG_FMT $WORK_DIR/black.ppm \
+        $WORK_DIR/bg/$(($frame + 1)).$IMG_FMT &
         bgfade_pids="$bgfade_pids $!"
         if ((num_procs >= max_procs || frame == BG_FADEIN_ENDFRAME)); then
             wait $bgfade_pids 2>/dev/null
@@ -8771,8 +8772,8 @@ if $MENU_FADE && ! $QUICK_MENU; then
     for ((frame=BG_FADEOUT_STARTFRAME; frame<=BG_FADEOUT_ENDFRAME; frame++)); do
         #((num_procs++))
         D=`get_bg_opacity`
-        composite -dissolve $D $WORK_DIR/bg/$frame.$BG_IMG_FMT \
-        $WORK_DIR/black.ppm $WORK_DIR/bg/$frame.$BG_IMG_FMT
+        composite -dissolve $D $WORK_DIR/bg/$frame.$IMG_FMT \
+        $WORK_DIR/black.ppm $WORK_DIR/bg/$frame.$IMG_FMT
         #bgfade_pids="$bgfade_pids $!"
         #if ((num_procs >= max_procs || frame == BG_FADEOUT_ENDFRAME)); then
         #    wait $bgfade_pids
@@ -8811,7 +8812,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
         fi
         $TEXTMENU && unset sc_cmd
         ! $TEXTMENU && MOSAIC="-mosaic"
-        BG_PIC=$(find $WORK_DIR/bg -name $((frame + 1)).$BG_IMG_FMT)
+        BG_PIC=$(find $WORK_DIR/bg -name $((frame + 1)).$IMG_FMT)
         # create the montage from the images in each video dir
         MONTAGE_CMD=(convert  -size $VIDSIZE -background none \
         ${sc_cmd[@]} $SC_IMG_CMD $MOSAIC)
@@ -8825,10 +8826,10 @@ if $MENU_FADE && ! $QUICK_MENU; then
         -geometry ${THUMB_SIZE}${MTG_GEO} -background none)
         #  dissolve the finished montages onto the background
         MONTAGE_CMD2=(composite -dissolve $S -gravity $BUTTON_GRAVITY \
-        -geometry +${XGEO}+${YGEO} - $WORK_DIR/bg/$((frame + 1)).$BG_IMG_FMT \
+        -geometry +${XGEO}+${YGEO} - $WORK_DIR/bg/$((frame + 1)).$IMG_FMT \
         -background none)
         MONTAGE_CMD2c=(composite -size $VIDSIZE -background none \
-        -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$((frame + 1)).$BG_IMG_FMT \
+        -gravity NorthWest  -dissolve $S - $WORK_DIR/bg/$((frame + 1)).$IMG_FMT \
         -background none)
         # if MIST is called for, this dissolves the mist onto the background
         MONTAGE_CMD3=(composite -dissolve $B -gravity $TITLE_GRAVITY \
@@ -8967,7 +8968,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
             fi
         fi
         impids="$impids $!"
-        rmpics+=( "$WORK_DIR/bg/$((frame+1)).$BG_IMG_FMT" )
+        rmpics+=( "$WORK_DIR/bg/$((frame+1)).$IMG_FMT" )
         rmpics+=( "$WORK_DIR"/showcase/$(printf "%06d%s"  $(($frame + 1)) .png) )
         # we reuse thumbs for static so don't rm ANI_PICS
         ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
@@ -9019,7 +9020,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             # dissolve piped images onto bgvideo
             IM_CMD03=(composite -size $VIDSIZE -background none \
             -gravity NorthWest  -dissolve $OPACITY - \
-            $WORK_DIR/bg/$count.$BG_IMG_FMT -background none)
+            $WORK_DIR/bg/$count.$IMG_FMT -background none)
             # dissolve titles onto bgvideo
             IM_CMD04=(convert -size $VIDSIZE -background none \
              - ${sc_thumb_title_cmd[@]} -mosaic)
@@ -9029,10 +9030,10 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             -geometry ${THUMB_SIZE}${MTG_GEO} -background none miff:-)
             IM_CMD2=(composite -dissolve $OPACITY \
             -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
-            $WORK_DIR/pics/template.jpg -background none miff:-)
+            $WORK_DIR/pics/template.$IMG_FMT -background none miff:-)
             IM_CMD2b=(composite -dissolve $OPACITY \
             -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
-            $WORK_DIR/bg/$count.$BG_IMG_FMT -background none miff:-)
+            $WORK_DIR/bg/$count.$IMG_FMT -background none miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY \
             -geometry ${mist_xoffset}${mist_yoffset} \
             $WORK_DIR/white.png - miff:-)
@@ -9108,7 +9109,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             impids="$impids $!"
             # remove images after they are used each cat run
             rmpics+=( "$WORK_DIR"/showcase/$(printf "%06d%s"  $count .png) )
-            rmpics+=( "$WORK_DIR/bg/$count.$BG_IMG_FMT" )
+            rmpics+=( "$WORK_DIR/bg/$count.$IMG_FMT" )
             # we reuse thumbs for static so don't rm ANI_PICS
             ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
             if ((num_procs==max_procs || count >= FRAMES)); then
@@ -9140,10 +9141,10 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             # make final montages and composite onto grey background with title
             IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${THUMB_SIZE}${MTG_GEO} -background none miff:-)
-            IM_CMD1=(convert $WORK_DIR/pics/template.jpg \
+            IM_CMD1=(convert $WORK_DIR/pics/template.$IMG_FMT \
             -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite miff:-)
-            IM_CMD2=(convert $WORK_DIR/bg/$count.$BG_IMG_FMT \
+            IM_CMD2=(convert $WORK_DIR/bg/$count.$IMG_FMT \
             -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite miff:-)
             IM_CMD3=(composite -dissolve 30 -gravity $TITLE_GRAVITY -geometry \
@@ -9172,7 +9173,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
                 fi
             fi
             impids="$impids $!"
-            rmpics+=( "$WORK_DIR/bg/$count.$BG_IMG_FMT" )
+            rmpics+=( "$WORK_DIR/bg/$count.$IMG_FMT" )
             # static reuses the thumbs so don't rm each cat run
             ! $STATIC && rmpics+=( "${ANI_PICS[@]}" )
             if ((num_procs==max_procs || count >= FRAMES)); then
@@ -9191,7 +9192,7 @@ wait
 if ! $QUICK_MENU && $DO_MENU; then
     echo
     echo "Cleaning up montage images"
-    rm -f $WORK_DIR/animenu/*.jpg
+    rm -f $WORK_DIR/animenu/*.$IMG_FMT
     rm -f $WORK_DIR/animenu/*.png
 fi
 # check if m2v was created ok before proceeding
@@ -9332,7 +9333,7 @@ if $AUTHOR && ! $VMGM_ONLY && ! $DO_TITLESETS && ! $SWITCHED_MODE; then
     strings "$LOG_FILE.tmp" >> "$LOG_FILE" && rm -f "$LOG_FILE.tmp"
 fi
 echo "Cleaning up unwanted files in $REAL_WORK_DIR"
-find "$WORK_DIR"/ -name '*.jpg' ! -name preview.$IMG_FMT -exec rm -f {} \; \
+find "$WORK_DIR"/ -name '*.$IMG_FMT' ! -name preview.$IMG_FMT -exec rm -f {} \; \
 > /dev/null 2>&1
 rm -fr "$WORK_DIR/animenu" "$WORK_DIR/pics" "$WORK_DIR/submenu"
 $VMGM_ONLY && $KEEP_FILES && mv -v "$REAL_WORK_DIR" "$BASEDIR"/VMGM
