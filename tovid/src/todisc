@@ -1209,7 +1209,7 @@ titleset_mode()
 <dvdauthor dest="$OUT_DIR" jumppad="0">
   <vmgm>
     <menus>
-      <video aspect="4:3"/>
+      <video format="$TV_STANDARD" aspect="4:3"/>
       <pgc entry="title">
         <pre>
 $(echo -e "$VMGM_PRE")
@@ -3457,8 +3457,11 @@ if test -n "$OUT_PREFIX"; then
 else
     usage_error "Please provide an output name with -out"
 fi
-# for dvdauthor.xml, if -intro was used
+### dvdauthor stuff
+# for xml, if -intro was used
 $DO_INTRO && INTRO="<vob file=\"$INTRO_CLIP\"/>"
+# strangely we need to export this even if we specify <video format=ntsc|pal...>
+export VIDEO_FORMAT=$TV_STANDARD
 
 # switched menus need more than one video file
 if $SWITCHED_MENUS && [[ ${#FILES[@]} -eq 1 ]]; then
@@ -4040,9 +4043,6 @@ fi
 ! $SHOWCASE && \
 [[ $BUTTON_GRAVITY = "center" ]] && ! $USER_TITLE_GEO && TITLE_GRAVITY="north"
 
-### dvdauthor stuff ###
-# strangely we need to export this even if we specify <video format=ntsc|pal...>
-export VIDEO_FORMAT=$TV_STANDARD
 # make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
     if [ -z "$post_play" ]; then
