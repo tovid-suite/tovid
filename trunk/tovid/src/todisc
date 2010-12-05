@@ -1544,9 +1544,12 @@ quick_menu()
         $use_overlay_filter && echo "Using libavfilter for -quick-menu"
     elif grep -q ^-vhook <<< "$(ffmpeg -h 2>&1)"; then
         # find out where vhook lives for ffmpeg
-        ffmpeg_prefix=$(which ffmpeg)
-        ffmpeg_prefix=$(sed 's/\/bin\/ffmpeg//g' <<< "$ffmpeg_prefix")
-        imlib2_vhook="$ffmpeg_prefix/lib/vhook/imlib2.so"
+        local config=$(ffmpeg -version 2>&1 | grep -- --prefix=)
+        config=${ffmpeg_prefix//*--prefix=}
+        ffmpeg_prefix=${config// *}
+        # empty var means no --prefix passed, use default prefix of /usr/local
+        ffmpeg_prefix=${ffmpeg_prefix:-/usr/local}
+        imlib2_vhook="${ffmpeg_prefix}/lib/vhook/imlib2.so"
         if [[ -s "$imlib2_vhook" ]]; then
             use_vhooks=:
         else
@@ -1602,10 +1605,10 @@ quick_menu()
     fi
     if $use_overlay_filter; then
         local overlay="$WORK_DIR/quick_menu_bg.png"
-        local PADDING="-vf pad=720:480:$VF_PADX:$VF_PADY"
+        local PADDING="$VF pad=720:480:$VF_PADX:$VF_PADY"
         local aspect=""
         overlay_filter="movie=0:png:$overlay [wm];[in][wm] overlay=0:0:1 [wm2]"
-        ffmpeg_filter=(-vf "$overlay_filter; [wm2] aspect=4:3 [out]")
+        ffmpeg_filter=($VF "$overlay_filter; [wm2] aspect=4:3 [out]")
     elif $use_vhooks; then
         local PADDING="$TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD"
         local aspect="-aspect 4:3"
@@ -4037,7 +4040,10 @@ fi
 ! $SHOWCASE && \
 [[ $BUTTON_GRAVITY = "center" ]] && ! $USER_TITLE_GEO && TITLE_GRAVITY="north"
 
-# dvdauthor stuff: make an array of possible vars for dvdauthor post calls
+### dvdauthor stuff ###
+# strangely we need to export this even if we specify <video format=ntsc|pal...>
+export VIDEO_FORMAT=$TV_STANDARD
+# make an array of possible vars for dvdauthor post calls
 if $CHAIN_VIDEOS; then
     if [ -z "$post_play" ]; then
         for ((i=0; i<NUM_FILES; i++)); do
@@ -4680,11 +4686,19 @@ if $SHOWCASE && ! $TEXTMENU; then
     ((NUM_FILES >= 6)) && SPLIT=4
     ((NUM_FILES >= 8)) && SPLIT=5
 fi
-# HACK ALERT
-# ffmpeg has been buggy in 2010 with setting aspect ratio, -vf aspect workaround
+
+# ffmpeg has been buggy with setting AR with -aspect, use -vf aspect if present
+# "-vf" was "-vfilters" briefly, check
+FF_HELP=$(ffmpeg -h 2>&1)
+if grep -qw -- -vf <<< "$FF_HELP"; then
+    VF="-vf"
+# somewhat older is "-vfilters"
+elif grep -qw -- -vfilters <<< "$FF_HELP"; then
+    VF="-vfilters"
+fi
 if ffmpeg -filters 2>&1 | grep -q -w aspect; then
-    ASPECT="-vf aspect=4:3"  # for menu.  Always 4:3 aspect
-    SS_ASPECT="-vf aspect=4:3" # for slideshows.  Always 4:3 aspect
+    ASPECT="$VF aspect=4:3"  # for menu.  Always 4:3 aspect
+    SS_ASPECT="$VF aspect=4:3" # for slideshows.  Always 4:3 aspect
 else
     ASPECT="-aspect 4:3"
     SS_ASPECT="-aspect 4:3"
@@ -7489,7 +7503,7 @@ $(if $AUTHOR; then
     echo     "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     echo     "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
     echo -e  "  <vmgm>\n    <menus>"
-    echo     "      <video aspect=\"4:3\"/>"
+    echo     "      <video format=\"${TV_STANDARD}\" aspect=\"4:3\"/>"
     echo     "      <pgc entry=\"title\" pause=\"0\">"
     echo     "        $INTRO"
     echo     "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
@@ -7505,7 +7519,7 @@ $(if $AUTHOR; then
 fi)
   <titleset>
     <menus>
-      <video aspect="4:3"/>
+      <video format="${TV_STANDARD}" aspect="4:3"/>
 $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
     echo -e "      <pgc>"
     for ((i=1; i<=$V_TOTAL; i++)); do
