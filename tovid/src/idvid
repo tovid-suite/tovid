@@ -210,7 +210,7 @@ function get_info ()
     # works as well and is as readable :-) ... but no less safe :(
     # DONE :)
     # get array of mplayer audio ids, used if no hextracks from ffmpeg
-    while read; do MPL_AIDS+=(${REPLY##*=}); done < <(grep ID_AUDIO_ID scratchfile)
+    while read; do MPL_AIDS+=(${REPLY##*=}); done < <(grep ID_AUDIO_ID "$SCRATCH_FILE")
 
     ID_VIDEO_FRAMES=$(grep 'length:' "$SCRATCH_FILE" | \
         awk -F ' ' '{print $2}')
