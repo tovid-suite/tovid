@@ -126,10 +126,10 @@ function get_info ()
             echo $SEPARATOR
             echo "Identifying video with mplayer..."
             echo $SEPARATOR
-            mplayer -vo null -ao null -frames 30 -channels 6 -identify \
+            mplayer -nomsgcolor -vo null -ao null -frames 30 -channels 6 -identify \
                 -noconsolecontrols "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
         else
-            mplayer -vo null -ao null -frames 30 -channels 6 -identify \
+            mplayer -nomsgcolor -vo null -ao null -frames 30 -channels 6 -identify \
                 -noconsolecontrols "$INFILE" > "$SCRATCH_FILE" 2>&1
         fi
     fi
@@ -277,9 +277,9 @@ function get_info ()
 
             # last ditch efforts to get audio bitrate if we still don't have it
             if test ${A_BITRATES[i]} -eq 0; then
-                MP_ABITRATE=$(mplayer -vo null -ao null -frames 30 -channels 6 -identify \
-                -aid $MP_TRACKNUM -noconsolecontrols "$INFILE" 2>&1 |
-                grep ID_AUDIO_BITRATE|awk -F=  'END{print $2}')
+                MP_ABITRATE=$(mplayer -nomsgcolor -vo null -ao null -frames 30 \
+                -channels 6 -identify -aid $MP_TRACKNUM -noconsolecontrols \
+                "$INFILE" 2>&1 | grep ID_AUDIO_BITRATE|awk -F=  'END{print $2}')
                 if test_is_number $MP_ABITRATE; then
                     MP_ABITRATE=${MP_ABITRATE%.*}
                     A_BITRATES[i]=${MP_ABITRATE/000*}
