@@ -249,7 +249,7 @@ CONTRAST_CLR='gray'
 NOMENU=false
 SC_AR=133
 THUMB_COLUMNS=""
-FAST_SEEK=false # ffmpeg: decode video during seek by default (more reliable)
+FAST_SEEK=: # ffmpeg: do not decode video during seek by default (faster)
 IMG_DEPTH="-depth 8" # when converting to png: ppmtoy4m needs 8 bit
 TOVID_PREFIX=$(tovid -prefix)
 
@@ -3248,9 +3248,9 @@ while test $# -gt 0; do
             shift
             SUBMENU_BG_CLR="$1"
             ;;
-        "-fast-seek" )
-            FAST_SEEK=:
-        ;;
+        "-slow-seek" )
+            FAST_SEEK=false
+            ;;
         "-config" | "-ntscfilm" | "-dvd-vcd" | "-half-dvd" | "-kvcd" | \
         "-kvcdx3" | "-kvcdx3a" | "-kdvd" | "-bdvd" | "-704" | "-normalize" | \
         "-amplitude" | "-overwrite" | "-panavision" | "-force" | "-fps" | \
