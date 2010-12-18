@@ -1537,7 +1537,7 @@ quick_menu()
     fi
     # test for filters and vhook
     filters=$(ffmpeg -filters 2>/dev/null)
-    if grep -q -w '^overlay' <<< "$filters" && \
+    if grep -q -w '^movie' <<< "$filters" && \
       grep -q -w '^crop' <<< "$filters"; then
         echo "libavfilter overlay and crop filters are present"
         use_overlay_filter=:
