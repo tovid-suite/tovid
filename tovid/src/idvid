@@ -299,7 +299,7 @@ function get_info ()
             O=$IFS IFS=$'\n' AUDIO_NCH=($(grep -w Audio: "$SCRATCH_FILE")) IFS=$O
             for chn in ${!AUDIO_NCH[@]}; do
                 # TODO flesh this out with other possibilities: 7.1 etc
-                if grep -q 5:1 <<<  ${AUDIO_NCH[chn]}; then
+                if egrep -q '5:1|5.1' <<<  ${AUDIO_NCH[chn]}; then
                     ID_AUDIO_NCH[chn]=6
                elif grep -q channels <<< ${AUDIO_NCH[chn]}; then
                     ID_AUDIO_NCH[chn]=$(sed -r 's/.* ([0-9]+) channels.*/\1/' \
