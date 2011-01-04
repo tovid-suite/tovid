@@ -250,6 +250,7 @@ NOMENU=false
 SC_AR=133
 THUMB_COLUMNS=""
 FAST_SEEK=: # ffmpeg: do not decode video during seek by default (faster)
+PIPE_FORMAT="-pix_fmt yuv420p -f yuv4mpegpipe"
 IMG_DEPTH="-depth 8" # when converting to png: ppmtoy4m needs 8 bit
 TOVID_PREFIX=$(tovid -prefix)
 
@@ -8722,7 +8723,6 @@ if $STATIC; then
     PPM_LOOPS=$LOOPS
 fi
 if ! $QUICK_MENU && $DO_MENU; then
-    PIPE_FORMAT="-pix_fmt yuv420p -f yuv4mpegpipe"
     $STATIC && INSIZE="-s $VIDSIZE"
     echo
     echo \
