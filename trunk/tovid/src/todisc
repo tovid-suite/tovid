@@ -7036,7 +7036,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             log_tmp="$WORK_DIR/pics/$i/log.tmp"
             [[ ! -p "$yuv_fifo" ]] && mkfifo "$yuv_fifo"
             # resize using ffmpeg instead of transcode
-            FFMPEG_CMD2=(ffmpeg -i "$yuv_fifo" -f image2 -s $THUMB_SIZE -y \
+            FFMPEG_CMD2=(ffmpeg $PIPE_FORMAT -i "$yuv_fifo" -f image2 -s $THUMB_SIZE -y \
             "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
             TRANSCODE_CMD2=(transcode --progress_rate 10 \
             --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
