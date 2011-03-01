@@ -1577,16 +1577,6 @@ if $DO_DEBLOCK; then
         yecho "Unable to find a suitable deblocking filter. Skipping."
     fi
 fi
-# ffmpeg filters, if present
-FF_HELP=$(ffmpeg -h 2>&1)
-if grep -qw -- -vf <<< "$FF_HELP"; then
-    VF="-vf"
-elif grep -q -w -- -vfilters <<< "$FF_HELP"; then
-    VF="-vfilters"
-else
-    VF=""
-fi
-
 
 # Do fast encoding if requested. Sacrifice quality for encoding speed.
 # NOT IMPLEMENTED IN COMMAND-LINE YET!
@@ -1618,15 +1608,28 @@ else
     ASPECT_RATIO=$AUTO_ASPECT_RATIO
 fi
 
-
 # ffmpeg's -vf aspect is more dependable than -aspect, if ffmpeg is new enough
-if [[ $VF ]]; then
+FF_FILTERS=$(ffmpeg -filters 2>&1)
+# newer ffmpeg's use setdar= and setsar=
+if grep -qw ^setdar <<< "$FF_FILTERS"; then
+    FF_ASPECT="setdar="
+# somewhat older rev's used aspect=
+elif grep -qw ^aspect <<< "$FF_FILTERS"; then
     FF_ASPECT="aspect="
 else
-    # not a -vf option but here for backwards compatibility
     FF_ASPECT='-aspect '
 fi
-    
+# newer ffmpegs using filters use "-vf"
+FF_HELP=$(ffmpeg -h 2>&1)
+if grep -qw -- -vf <<< "$FF_HELP"; then
+    VF="-vf"
+# somewhat older is "-vfilters"
+elif grep -qw -- -vfilters <<< "$FF_HELP"; then
+    VF="-vfilters"
+else
+    VF=""
+fi
+
 # Anamorphic widescreen (16:9 output)
 # Used if the format supports it, and it will minimize the number of pixels
 # wasted on letterbox bars (or if the user requested -widetv output).
