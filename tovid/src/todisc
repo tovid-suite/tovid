@@ -3545,6 +3545,7 @@ if ! $SHOWCASE; then
         #exit 1
     fi
 fi
+# backend checks
 # transcode version >= 1.1.0 mandated
 _transcode_version=$(transcode -v 2>&1| awk '{gsub("v", ""); print $2}')
 _baseline_version=1.1.0
@@ -3552,6 +3553,29 @@ if ! test_version $_transcode_version $_baseline_version; then
     runtime_error \
     "transcode version 1.1.0 or newer is required to run this script (todisc).
     If you must use version $_transcode_version use tovid 0.34 or older."
+fi
+# ffmpeg has been buggy with setting AR with -aspect, use -vf aspect if present
+# "-vf" was "-vfilters" briefly, check
+FF_HELP=$(ffmpeg -h 2>&1)
+if grep -qw -- -vf <<< "$FF_HELP"; then
+    VF="-vf"
+# somewhat older is "-vfilters"
+elif grep -qw -- -vfilters <<< "$FF_HELP"; then
+    VF="-vfilters"
+fi
+# ffmpeg's -vf aspect is more dependable than -aspect, if ffmpeg is new enough
+FF_FILTERS=$(ffmpeg -filters 2>&1)
+# newer ffmpeg's use setdar= and setsar=
+if grep -qw ^setdar <<< "$FF_FILTERS"; then
+    ASPECT="$VF setdar=4:3"  # for menu.  Always 4:3 aspect
+    SS_ASPECT="$VF setdar=4:3" # for slideshows.  Always 4:3 aspect
+# somewhat older rev's used aspect=
+elif grep -qw ^aspect <<< "$FF_FILTERS"; then
+    ASPECT="$VF aspect=4:3"
+    SS_ASPECT="$VF aspect=4:3"
+else
+    ASPECT="-aspect 4:3"
+    SS_ASPECT="-aspect 4:3"
 fi
  
 # set some vars for switched menus so we know where we are
@@ -4688,22 +4712,7 @@ if $SHOWCASE && ! $TEXTMENU; then
     ((NUM_FILES >= 8)) && SPLIT=5
 fi
 
-# ffmpeg has been buggy with setting AR with -aspect, use -vf aspect if present
-# "-vf" was "-vfilters" briefly, check
-FF_HELP=$(ffmpeg -h 2>&1)
-if grep -qw -- -vf <<< "$FF_HELP"; then
-    VF="-vf"
-# somewhat older is "-vfilters"
-elif grep -qw -- -vfilters <<< "$FF_HELP"; then
-    VF="-vfilters"
-fi
-if ffmpeg -filters 2>&1 | grep -q -w aspect; then
-    ASPECT="$VF aspect=4:3"  # for menu.  Always 4:3 aspect
-    SS_ASPECT="$VF aspect=4:3" # for slideshows.  Always 4:3 aspect
-else
-    ASPECT="-aspect 4:3"
-    SS_ASPECT="-aspect 4:3"
-fi
+
 AUDIO_EXT="ac3"
 SAMPLERATE="48000"
 MPLEX_FORMAT="8"
