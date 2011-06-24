@@ -356,7 +356,7 @@ audio_length()
     # optional 2nd arg is maximum length checked in file (seconds)
     end=""
     [[ -n $2 ]] && end="-endpos $2"
-    mplayer -noconsolecontrols -vo null -ao pcm:fast:file=/dev/null $end "$1" \
+    mplayer -nomsgcolor -noconsolecontrols -vo null -ao pcm:fast:file=/dev/null $end "$1" \
     2>&1 | tr '\r' '\n' | grep ^A: | tail -1 | sed s/^.*A:// | awk '{print $1}'
 }
 cleanup()
@@ -5709,7 +5709,7 @@ if $PLAYALL || { $TITLESET_MODE && $VMGM_MENU; } || $SINGLE_SLIDESHOW ; then
     convert "$WORK_DIR/pics/template.png" -background none \
     "${ADD_PLAYALL_BTN[@]}" "${ADD_RTN_BTN[@]}" \
     "$WORK_DIR/pics/template.png"
-    #convert "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template.jpg"
+    convert "$WORK_DIR/pics/template.png" "$WORK_DIR/pics/template1.png"
 fi
 
 # copy the preview for -quick-menu
@@ -7100,7 +7100,7 @@ if $DO_MENU; then
         echo
         echo "Creating a black background"
         # using JPEG here to save disk space as quality is not noticable
-        BG_PIC="$WORK_DIR/pics/template.$IMG_FMT"
+        BG_PIC="$WORK_DIR/pics/template1.png"
         if $QUICK_MENU; then
             convert  -size $VIDSIZE xc:none \
             -depth 8 -colorspace RGB -type TrueColorMatte "$BG_PIC"
@@ -7109,7 +7109,7 @@ if $DO_MENU; then
         fi
     else
         convert -size $VIDSIZE "$BG_PIC" -resize $VIDSIZE! \
-        "$WORK_DIR/pics/template.$IMG_FMT"
+        "$WORK_DIR/pics/template1.png"
     fi
     # create/resize submenu background, fill in array and symlink if needed
     if $SUB_MENU; then
@@ -8775,7 +8775,7 @@ if $MENU_FADE && ! $QUICK_MENU; then
     if [ -z "$BG_VIDEO" ]; then
         for ((frame=0; frame<=ANIMENU_ENDFRAME; frame++)); do
             # copy template for fade out beginning and end frames
-            cp $WORK_DIR/pics/template.png $WORK_DIR/bg/$(($frame + 1)).png
+            cp $WORK_DIR/pics/template1.png $WORK_DIR/bg/$(($frame + 1)).png
         done
     fi
     unset bgfade_pids num_procs
@@ -8783,8 +8783,8 @@ if $MENU_FADE && ! $QUICK_MENU; then
         ((num_procs++))
         D=`get_bg_opacity`
         composite -dissolve $D \
-        $WORK_DIR/bg/$(($frame + 1)).$IMG_FMT $WORK_DIR/black.ppm \
-        $WORK_DIR/bg/$(($frame + 1)).$IMG_FMT &
+        $WORK_DIR/bg/$(($frame + 1)).png $WORK_DIR/black.ppm \
+        $WORK_DIR/bg/$(($frame + 1)).png &
         bgfade_pids="$bgfade_pids $!"
         if ((num_procs >= max_procs || frame == BG_FADEIN_ENDFRAME)); then
             wait $bgfade_pids 2>/dev/null
@@ -9053,7 +9053,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             -geometry ${THUMB_SIZE}${MTG_GEO} -background none miff:-)
             IM_CMD2=(composite -dissolve $OPACITY \
             -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
-            $WORK_DIR/pics/template.$IMG_FMT -background none miff:-)
+            $WORK_DIR/pics/template1.png -background none miff:-)
             IM_CMD2b=(composite -dissolve $OPACITY \
             -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} - \
             $WORK_DIR/bg/$count.$IMG_FMT -background none miff:-)
@@ -9164,7 +9164,7 @@ elif ! $MENU_FADE && ! $QUICK_MENU && $DO_MENU; then # Do not do menu fade
             # make final montages and composite onto grey background with title
             IM_CMD0=(montage ${ANI_PICS[@]} -tile ${TILE_ARRAY[NUM_FILES]} \
             -geometry ${THUMB_SIZE}${MTG_GEO} -background none miff:-)
-            IM_CMD1=(convert $WORK_DIR/pics/template.$IMG_FMT \
+            IM_CMD1=(convert $WORK_DIR/pics/template1.png \
             -  -gravity $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} \
             -composite miff:-)
             IM_CMD2=(convert $WORK_DIR/bg/$count.$IMG_FMT \
