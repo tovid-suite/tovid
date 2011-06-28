@@ -328,6 +328,24 @@ if $DO_AUTHOR; then
        echo "Current DVD image is ${DISC_SUM}MB."
     fi
 
+    # dvdauthor program needs VIDEO_FORMAT set or it will give warnings
+    if grep -q 'format="ntsc"' "$DVDAUTHOR_XML"; then
+        export VIDEO_FORMAT=ntsc
+    elif grep -q 'format="pal"' "$DVDAUTHOR_XML"; then
+        export VIDEO_FORMAT=pal
+    elif [[ $VIDEO_FORMAT ]]; then # allow user set env value otherwise
+        :
+    else
+        export VIDEO_FORMAT=ntsc
+        echo -e '\n***'
+        echo "No default video format defined!!!"
+        echo "Was this xml created by a recent version of tovid/makexml?"
+        echo "Using default video format of 'ntsc'."
+        echo "Run 'export VIDEO_FORMAT=\"pal\"' if this is wrong for your disc."
+        echo -e '\n***'
+        sleep 10
+    fi
+
     # Create disc structure
     DVDAUTHOR_CMD="dvdauthor -x \"$DVDAUTHOR_XML\""
     echo $SEPARATOR

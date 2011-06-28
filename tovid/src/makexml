@@ -122,6 +122,7 @@ CHAPTER_INTERVAL=5
 STANDARD=133
 WIDESCREEN=177
 NOPANSCAN=''
+TV_FORMAT=ntsc
 PAUSE=0
 
 # ==========================================================
@@ -169,6 +170,13 @@ function noPanScan ()
 
 }
 
+function getFormat ()
+{
+    # Set TV format - default is ntsc
+    VID_INFO=$(tovid id -fast -terse "$1")
+    grep -q PAL_DVD <<< "$VID_INFO" && TV_FORMAT=pal
+}
+
 # ==========================================================
 # Add a top-level VMGM menu to the DVD
 # Args: $1 = video file to use for top menu
@@ -182,7 +190,6 @@ function addTopMenu ()
   if test $XML_FORMAT = "dvd"; then
     # Set NOPANSCAN
     noPanScan "$1"
-
     # Generate XML for the top menu, with a placeholder for
     # the titleset menu buttons (to be replaced later by sed)
     TOP_MENU_XML=`cat << EOF
@@ -236,12 +243,14 @@ EOF`
 
     # Set NOPANSCAN
     noPanScan "$1"
+    # Set TV_FORMAT
+    getFormat "$1"
 
     # Generate XML for the menu header, with a placeholder for
     # the video segment buttons (to be replaced later by sed)
     MENU_XML=`cat << EOF
   <menus>
-    <video $NOPANSCAN />
+    <video $NOPANSCAN format="$TV_FORMAT"/>
     <pgc entry="root">
       <vob file="$1" />
 __MENU_BUTTONS__
