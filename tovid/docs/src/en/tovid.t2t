@@ -726,6 +726,9 @@ Here is a list of possible options you can pass:
     If using switched menus, the **-seek** value(s) will be used to generate
     the showcase image that displays on switching to another video choice with
     the up/down arrow keys.
+: **-slow-seek**
+    Use slower seek method for ffmpeg.  Try this if you get grey frames
+    when using the default method.
 : **-showcase-seek** NUM
     Seek to NUM seconds before generating thumbnails for showcase video
     (default: 2.0 seconds)
