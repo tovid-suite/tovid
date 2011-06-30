@@ -538,7 +538,7 @@ BUTTON_FONT="$USE_BUTTON_FONT"
 #
 
 # Measure the font's vertical height
-TILE_HEIGHT=$(convert -size 720x200 xc:none -fill white -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "Al" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
+TILE_HEIGHT=$(convert -format %h -size 720x200 xc:none -fill white -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "Al" -trim +repage info:)
 
 let "TILE_HEIGHT=TILE_HEIGHT+TITLE_BOTTOM_SPACE"
 
@@ -553,7 +553,7 @@ for ((i=0; i<$NUM_TITLES; i++)); do
         ENTRY="${j}. ${TITLES[i]}"
 
         # Get the width of text and pad it
-        TILE_WIDTH=$(convert -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "$ENTRY" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
+        TILE_WIDTH=$(convert -format %w -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "$ENTRY" -trim +repage info:)
         let "TILE_WIDTH=TILE_WIDTH+TITLE_LEFT_SPACE"
 
         # Draw the text, and put it on a blank tile
@@ -567,7 +567,7 @@ for ((i=0; i<$NUM_TITLES; i++)); do
         ENTRY="${TITLES[i]}"
 
         # Get the width of the text and pad it
-        TILE_WIDTH=$(convert -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "$ENTRY" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
+        TILE_WIDTH=$(convert -format %w -size 720x200 xc:none -fill $TEXT_COLOR -pointsize $TITLE_SIZE -font $TITLE_FONT -antialias $FONT_DECO -annotate +20+80 "$ENTRY" -trim +repage info:)
         let "TILE_WIDTH=TILE_WIDTH+TITLE_LEFT_SPACE"
 
         # Draw the text, and put it on a blank tile
@@ -589,9 +589,8 @@ if test $RES = "dvd"; then
     echo "Making the DVD buttons...   "
 
     # Get the dimensions of the button
-    TILE_WIDTH=$(convert -size 720x200 xc:none -fill white -stroke $BTN_STROKE -strokewidth 1 -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $1}')
-    BUTTON_HEIGHT=$(convert -size 720x200 xc:none -fill white -stroke $BTN_STROKE -strokewidth 1 -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info: | awk '{print $3}' | awk -F 'x' '{print $2}')
-
+    TILE_WIDTH=$(convert -format %w -size 720x200 xc:none -fill white -stroke $BTN_STROKE -strokewidth 1 -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info:)
+    BUTTON_HEIGHT=$(convert -format %w -size 720x200 xc:none -fill white -stroke $BTN_STROKE -strokewidth 1 -pointsize $TITLE_SIZE -font $BUTTON_FONT +antialias -weight bold -annotate +20+80 "$BUTTON_CHAR" -trim +repage info:)
     # Find how much to pad the top of the button and make the pad
     let "BUTTON_PADDING=(TILE_HEIGHT-BUTTON_HEIGHT-TITLE_BOTTOM_SPACE)/2"
     convert -size ${TILE_WIDTH}x${BUTTON_PADDING} xc:none "$BUTTON_PAD"
@@ -791,7 +790,7 @@ else
 fi
 
 # Calculate video length from length of audio
-VID_LENGTH=$(mplayer -quiet -identify -frames 0 -vo null -ao null \
+VID_LENGTH=$(mplayer -quiet -nomsgcolor -identify -frames 0 -vo null -ao null \
     "$AUDIO_STREAM" 2>&1 | grep '^ID_LENGTH' | awk -F '=' '{print $2}' | \
     sed -e "s/\.[0-9]*//g")
 VID_LENGTH=$(expr "$VID_LENGTH" \* $FPS \/ 100)
