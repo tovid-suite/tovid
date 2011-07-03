@@ -61,6 +61,8 @@ See the tovid manual page ('man tovid') for additional documentation.
 EOF`
 # check that needed todisc deps are installed
 assert_dep "$todisc_deps"
+assert_dep strings "'strings' is part of binutils.  In most distros the package
+is called  by the same name. http://www.gnu.org/software/binutils/ ."
 SCRIPT_START_TIME=`date +%s`
 
 # check if symlink in /tmp exists and use time stamped link if so
@@ -522,6 +524,7 @@ confirm_preview()
         echo "try a larger font, or setting -title-stroke and -titles-stroke"
         echo "to a contrasting color.  Or set the strokes to the same color"
         echo "as your titles.  For black frames look at the -seek option."
+        echo "For corrupt or gray frames, try the -slow-seek option."
         echo "For other fine-tuning options, see 'man tovid'."
         echo
         [ ! -z "$input" -a "$input" = "exit" ] && killall_instances
