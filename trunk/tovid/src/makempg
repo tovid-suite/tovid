@@ -801,8 +801,8 @@ function goodbye()
         yecho "Your encoded video should be in the file(s) $OUT_FILENAME."
         echo
         echo "You can author a disc with this video on it by running:"
-        echo "    makexml $OUT_FILENAME -out MyDisc"
-        echo "    makedvd MyDisc.xml"
+        echo "    tovid xml $OUT_FILENAME -out MyDisc"
+        echo "    tovid dvd MyDisc.xml"
         echo "You can also use todisc or makemenu to create menus for your disc."
         echo "See the tovid manual page ('man tovid') for more information."
         echo
