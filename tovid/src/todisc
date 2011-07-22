@@ -251,7 +251,9 @@ CONTRAST_CLR='gray'
 NOMENU=false
 SC_AR=133
 THUMB_COLUMNS=""
-FAST_SEEK=: # ffmpeg: do not decode video during seek by default (faster)
+FAST_SEEK=false # ffmpeg: default:decode during seek (more accurate but slower)
+USER_THUMBS=false # is user providing images for the menu link thumbs ?
+FRAME_SAFE=false # (-static) if true take the best of 9 frames. default: 1 frame
 PIPE_FORMAT="-pix_fmt yuv420p -f yuv4mpegpipe"
 IMG_DEPTH="-depth 8" # when converting to png: ppmtoy4m needs 8 bit
 TOVID_PREFIX=$(tovid -prefix)
@@ -319,7 +321,7 @@ titlesafe_error()
     yecho "Part of the title may not be visible on your tv screen"
     yecho "Perhaps use a smaller -titles-fontsize, or shorten \"${TITLES[i]}\""
     $SHOWCASE && [[ -z $SHOWCASE_FILE ]] && \
-    yecho "You may also use '-showcase-titles-align-east' since you are not
+    yecho "You may also use '-showcase-titles-align east' since you are not
     using a -showcase FILE."
     echo "****************************"
     $WARN && sleep 5
@@ -524,7 +526,8 @@ confirm_preview()
         echo "try a larger font, or setting -title-stroke and -titles-stroke"
         echo "to a contrasting color.  Or set the strokes to the same color"
         echo "as your titles.  For black frames look at the -seek option."
-        echo "For corrupt or gray frames, try the -slow-seek option."
+        echo "For corrupt or gray frames try using the -frame-safe option, or "
+        echo "use your own images for thumbnail buttons with -user-thumbs."
         echo "For other fine-tuning options, see 'man tovid'."
         echo
         [ ! -z "$input" -a "$input" = "exit" ] && killall_instances
@@ -980,8 +983,8 @@ image2mpeg2()
     IN_IMAGE="$1"
     OUT_MPEG="$2"
     # remove symlinks, as otherwise we overwrite symlink target
-    IMAGE_ENC_CMD=(ffmpeg -f image2 -loop_input -vframes $vlength \
-    -i "$IN_IMAGE" -s $VIDSIZE -f s16le -i /dev/zero -t $alength \
+    IMAGE_ENC_CMD=(ffmpeg -f image2 $LOOP -vframes $vlength \
+    -i "$IN_IMAGE" -s $VIDSIZE -f s16le -ar 48000 -i /dev/zero -t $alength \
     -ar $SAMPLERATE -ac 2 -ab 224k -target ${TV_STANDARD}-${TARGET} \
     -aspect $ASPECT_RATIO -y "$OUT_MPEG")
     echo "Running ${IMAGE_ENC_CMD[@]}" | format_output >> "$LOG_FILE"
@@ -1611,8 +1614,8 @@ quick_menu()
         local overlay="$WORK_DIR/quick_menu_bg.png"
         local PADDING="$VF pad=720:480:$VF_PADX:$VF_PADY"
         local aspect=""
-        overlay_filter="movie=0:png:$overlay [wm];[in][wm] overlay=0:0:1 [wm2]"
-        ffmpeg_filter=($VF "$overlay_filter; [wm2] aspect=4:3 [out]")
+        overlay_filter="movie=$overlay [wm];[in][wm] overlay=0:0:1 [wm2]"
+        ffmpeg_filter=($VF "$overlay_filter; [wm2] setdar=4:3 [out]")
     elif $use_vhooks; then
         local PADDING="$TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD"
         local aspect="-aspect 4:3"
@@ -1732,7 +1735,7 @@ make_dummy()
     fi
     VMGM_TIME=$(vid_length "$WORK_DIR/dummy.m2v")
     yecho
-    BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero -t $VMGM_TIME \
+    BGAUDIO_CMD=(ffmpeg -f s16le -ar 48000 -i /dev/zero -t $VMGM_TIME \
     $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
     yecho "${BGAUDIO_CMD[@]}"
     "${BGAUDIO_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
@@ -2226,7 +2229,7 @@ print_tcode_info()
 
 # get the largest PNG (1st match sequentially if more than one are same size)
 # images must be padded numbers as in 000001.png
-#args: width [6] (pad width), last [10] last image to test, img_dir [pwd] (dir)
+#args: width [6] (pad width), last [10] (last img to test), img_dir [pwd] (dir)
 # call without args to test from ./000000.png to ./000010.png
 get_largest()
 {
@@ -2442,6 +2445,7 @@ while test $# -gt 0; do
             if [[ ${#ASPECT_ARG[@]} -gt 0 ]]; then
             ASPECT_RATIO=$ASPECT_ARG
             [[ $ASPECT_RATIO = "16:9" ]] && AR=177 || AR=133
+            # below used by dvdauthor, not ffmpeg
             V_ASPECT="aspect=\"$ASPECT_RATIO\""
             fi
             ;;
@@ -2728,7 +2732,7 @@ while test $# -gt 0; do
             for f in  ${!ARGS_ARRAY[@]}; do
                 SM_BACKGROUND[f]=$(readlink -f "${ARGS_ARRAY[f]}")
                 ! [[ -e ${SM_BACKGROUND[f]} ]] && usage_error \
-                "submenu background \"$SM_BACKGROUND\" does not exist"
+                "submenu background \"${SM_BACKGROUND[f]}\" does not exist"
             done
             ;;
         "-intro" )
@@ -3252,8 +3256,21 @@ while test $# -gt 0; do
             shift
             SUBMENU_BG_CLR="$1"
             ;;
-        "-slow-seek" )
-            FAST_SEEK=false
+        "-fast-seek" )
+            FAST_SEEK=:
+            ;;
+        "-frame-safe" )
+            FRAME_SAFE=:
+            ;;
+        "-user-thumbs" )
+            shift
+            get_listargs "$@"
+            for f in  ${!ARGS_ARRAY[@]}; do
+                USER_PICS[f]=$(readlink -f "${ARGS_ARRAY[f]}")
+                ! [[ -e ${USER_PICS[f]} ]] && usage_error \
+                "Your supplied thumb \"${USER_PICS[f]}\" does not exist"
+            done
+            USER_THUMBS=:
             ;;
         "-config" | "-ntscfilm" | "-dvd-vcd" | "-half-dvd" | "-kvcd" | \
         "-kvcdx3" | "-kvcdx3a" | "-kdvd" | "-bdvd" | "-704" | "-normalize" | \
@@ -3499,6 +3516,13 @@ fi
 if [[ -n $NR ]]; then
     [[ -z $NR_AMT ]] && NR_AMT=200
     NR="$NR $NR_AMT"
+fi
+# check for -loop or -loop_input
+ffmpeg_help=$(ffmpeg -h 2>&1)
+if grep -q -- '^-loop ' <<< "$ffmpeg_help"; then
+    LOOP="-loop 1"
+else
+    LOOP="-loop_input"
 fi
 
 # assign values for slides
@@ -3787,6 +3811,15 @@ done
     yecho
 fi
 
+# -user-thumbs is only compatible with static thumbs (-static)
+if $USER_THUMBS && ! $STATIC; then
+    if $SWITCHED_MENUS; then
+        usage_error "If doing switched menus -user-thumbs can only be used
+                    with a static menu (-static)"
+    else
+        usage_error "-user-thumbs option is for static buttons only (-static)"
+    fi
+fi
 
 ################################################
 #        recursive magic for titlesets,        #
@@ -4296,6 +4329,20 @@ if $NOMENU; then
     exit 0
 fi
 
+# make sure -user-thumbs matches the number of videos
+if  $USER_THUMBS && ((${#USER_PICS[@]} != ${#IN_FILES[@]})); then
+    usage_error "The number of images supplied with \"-user-thumbs\"
+    must match the number of videos"
+fi
+# pass -frame-safe and ffmpeg/transcode will output only 9 images for static
+$FRAME_SAFE && V_FRAMES=9 || V_FRAMES=1
+# -frame-safe is incompatible with -user-thumbs
+if $USER_THUMBS && $FRAME_SAFE; then
+    FRAME_SAFE=false
+    echo "-frame-safe and -user-thumbs incompatible, disabling -frame-safe"
+    sleep 5
+fi
+    
 yecho "Creating pics directories..."
 for ((i=0; i<=NUM_FILES; i++)); do
     mkdir -p "$REAL_WORK_DIR/pics/$i"
@@ -4303,6 +4350,7 @@ done
 yecho "${#FILES[@]} pics directories created"
 # textmenu is static unless there is an animated background or showcase video
 if $TEXTMENU && [[ -z $SHOWCASE_VIDEO && -z $BG_VIDEO ]]; then STATIC=:; fi
+
 
 { $MENU_FADE || test -n "$BG_VIDEO" ; } && mkdir -v "$REAL_WORK_DIR/bg"
 mkdir "$REAL_WORK_DIR/animenu"
@@ -5169,7 +5217,6 @@ if $DO_MENU; then
     if ! $SINGLE_SLIDESHOW; then
         for ((i=0; i<=NUM_FILES; i++)); do
             spin "Working on video title $((i+1)) "
-            # if user needs -undercolor, make sure it contrasts the text colour
             THUMB_TITLE_CMD=(convert -size 620x300 xc:none -gravity $JUSTIFY \
             -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
             -fill $CONTRAST_CLR  -stroke $TITLES_STROKE \
@@ -5565,7 +5612,11 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
         sc_3d_cmd=(convert - $SC_RAISE)
     fi
     if [[ -n "$SHOWCASE_VIDEO" ]]; then
-        echo "Getting video images from $SHOWCASE_VIDEO"
+        if $SWITCHED && $USER_THUMBS; then
+            echo "Using supplied image for showcased thumb"
+        else
+            echo "Getting video images from $SHOWCASE_VIDEO"
+        fi
         if [[ "$SC_FRAMESTYLE" = "glass" ]]; then
             # some vars for get_framed_pics function
             D=2
@@ -5594,15 +5645,20 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
             else
                 ffm_post_seek="-ss $FFMPEG_SEEK_VAL" && unset ffm_pre_seek
             fi
-
-            FFMPEG_CMD=(ffmpeg $ffm_pre_seek -i "$SHOWCASE_VIDEO" \
-            -s $SHOWCASE_SIZE -an $ffm_post_seek -vframes 1 -f image2 -y \
-            "$WORK_DIR/showcase_img.png")
-            echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs \
-              |tee -a "$LOG_FILE"
-            SED_VAR="frame="
-            if ! "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE";then
-                runtime_error "Problem creating images from the video."
+            # if -user-thumbs passed we use the supplied thumb for the menu
+            if $SWITCHED && $USER_THUMBS; then
+                convert ${USER_PICS[MENU_NUM-1]} -resize $SHOWCASE_SIZE \
+                "$WORK_DIR/showcase_img.png"
+            else
+                FFMPEG_CMD=(ffmpeg $ffm_pre_seek -i "$SHOWCASE_VIDEO" \
+                -s $SHOWCASE_SIZE -an $ffm_post_seek -vframes 1 -f image2 -y \
+                "$WORK_DIR/showcase_img.png")
+                echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs \
+                  |tee -a "$LOG_FILE"
+                SED_VAR="frame="
+                if ! "${FFMPEG_CMD[@]}" 2>&1 | strings >> "$LOG_FILE";then
+                    runtime_error "Problem creating images from the video."
+                fi
             fi
             # SHOWCASE_FRAME includes size and colour, it is empty if size is 0
             if [[ -n $SHOWCASE_SHAPE ]]; then
@@ -5641,7 +5697,7 @@ if [ $IMG_FMT = "png" ]; then
 fi
 
 # create the preview images
-if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
+if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU && ! $USER_THUMBS; then
     for ((i=0; i<=NUM_FILES; i++)) ; do
         # fast seek disabled by default
         if $FAST_SEEK; then
@@ -5656,7 +5712,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         spin "[$((i + 1)) of ${#FILES[@]}] Seeking to $SV seconds in $CURFILE"
 
         FFMPEG_CMD=(ffmpeg $fmt $ffm_pre_seek -i "${IN_FILES[i]}" -an \
-        $ffm_postseek -f image2 -vframes 1 \
+        $ffm_postseek -f image2 -vframes $V_FRAMES \
         -s $THUMB_SIZE -y $WORK_DIR/pics/$i/%06d.$IMG_FMT)
         CMD=( "${FFMPEG_CMD[@]}" )
         SED_VAR="frame="
@@ -5671,11 +5727,21 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             MPLAYER_SEEK_VAL=${SEEK_VAL[i]}
             get_framed_pics "${IN_FILES[i]}"  >> "$LOG_FILE" 2>&1
             largest_img=$(get_largest 8 30)
-            mv -f $largest_img $WORK_DIR/pics/$i/$(printf "%06d%s" 0 .$IMG_FMT)
+            mv -f $largest_img "$WORK_DIR/pics/$i/$(printf "%06d%s" 0 .$IMG_FMT)"
             rm -f "$WORK_DIR"/000*[0-9].png
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
             if ! "${FFMPEG_CMD[@]}" 2>&1 |strings >> "$LOG_FILE";then
                 runtime_error "Problem creating images from the video."
+            fi
+            
+            # get largest image of 9 if static menu and -frame-safe
+            if $FRAME_SAFE; then #FIXME $STATIC not necessary, this is a preview!
+                largest_img=$(get_largest 6 $V_FRAMES "$WORK_DIR/pics/$i")
+                echo Using $largest_img for menu >2&
+                mv -f "$largest_img" "$WORK_DIR/pics/largest.$IMG_FMT"
+                rm -f "$WORK_DIR"/pics/$i/*.$IMG_FMT
+                mv  "$WORK_DIR/pics/largest.$IMG_FMT" \
+                  "$WORK_DIR/pics/$i/000001.$IMG_FMT"
             fi
         fi
 
@@ -5683,6 +5749,13 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
         unset NAVSEEK_CMD rectangle run_transcode FFMPEG_CMD TRANSCODE_CMD
     done
     echo
+fi
+# for user supplied thumbs, resize and copy to appropriate directories
+if ! $SWITCHED; then
+    for i in ${!USER_PICS[@]}; do
+        convert "${USER_PICS[i]}" -resize $THUMB_SIZE \
+        "$WORK_DIR/pics/$i/000001.$IMG_FMT"
+    done
 fi
 # overlay menu title and thumb titles on template
 if $MIST; then
@@ -6417,7 +6490,7 @@ if $MENU_FADE; then
     rm "$WORK_DIR/pics/template.png"
     cp "$WORK_DIR/pics/template.bk.png" "$WORK_DIR/pics/template.png"
 fi
-rm -f "${PICS[@]}"
+! $USER_THUMBS && rm -f "${PICS[@]}"
 unset PICS IM_CMD1 IM_CMD2 IM_CMD3 IM_CMD4 IM_CMD5
 
 
@@ -6694,8 +6767,8 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
          -acodec pcm_s16le -y $WORK_DIR/slideshow.wav)
     else
         # generate silence
-        BGAUDIO_CMD=(ffmpeg -f s16le -t $bgaudio_time -i /dev/zero -ar 48000 \
-        -ac 2 -acodec pcm_s16le -y $WORK_DIR/slideshow.wav)
+        BGAUDIO_CMD=(ffmpeg -f s16le -ar 48000 -t $bgaudio_time -i /dev/zero
+        -ar 48000 -ac 2 -acodec pcm_s16le -y $WORK_DIR/slideshow.wav)
     fi
     echo
     echo "Encoding audio to wav with: ${BGAUDIO_CMD[@]}" | format_output |
@@ -7035,9 +7108,17 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             convert "${FILES[i]}" -depth 8 \
               -resize ${THUMB_SIZE}! \
               "$WORK_DIR/pics/$i/$(printf "%06d%s"  0 .${IMG_FMT})"
+        elif $USER_THUMBS; then
+            : # allow substituting user image for images
         else
             echo
             echo "Working on ${IN_FILES[i]}"
+            # for static menu use 9 frames so we can get the largest one below
+            if $STATIC && $FRAME_SAFE; then
+                thumb_frames=9
+            else
+                thumb_frames=$THUMB_FRAMES
+            fi
             # warning to ignore transcode error messages
             print_tcode_info
             if [ -s  "${IN_FILES[i]}.nav_log" ]; then
@@ -7052,7 +7133,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
             TRANSCODE_CMD2=(transcode --progress_rate 10 \
             --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
-            -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $THUMB_FRAMES)) \
+            -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $thumb_frames)) \
             ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o "$yuv_fifo" \
             -f $FRAME_RATE $EXPORT)
             yecho "Running ${TRANSCODE_CMD2[@]}" | fold -bs
@@ -7073,6 +7154,14 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                     spin "Seeking in video and creating images: $last_image"
                 done
                 wait # wait for ffmpeg and transcode to finish
+                # get the largest image if static menu(we made 9)
+                # get largest image of 9 if static menu and not -frame-safe
+                if $STATIC && $FRAME_SAFE; then
+                    largest=$(get_largest 6 $V_FRAMES "$WORK_DIR/pics/$i/")
+                    # remove the unused images after saving the largest as 1st
+                    mv "$largest" "$WORK_DIR/pics/$i/000001.$IMG_FMT" 2>/dev/null
+                    rm -f "$WORK_DIR"/pics/$i/00000{2..9}.png
+                fi
                 numpics=$(find $WORK_DIR/pics/$i/ -name  "*.${IMG_FMT}" | wc -l)
                 # which video has the most frames encoded? Used in final encode
                 ((numpics > ani_pics)) && ani_pics=$numpics
@@ -7090,7 +7179,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             unset TRANSCODE_CMD2 numpics
         fi
         # copy 000001 image to 000000 as we use 0 based counting (transcode)
-        # TODO transition to using '"1" based' images as we use ffmpeg now
+        # TODO transition to using "1" based' images as we use ffmpeg now
         cp "$WORK_DIR/pics/$i/000001.$IMG_FMT" "$WORK_DIR/pics/$i/000000.$IMG_FMT"
         last=$(find $WORK_DIR/pics/$i -maxdepth 1 -name \*.$IMG_FMT | \
         sort | awk 'END{print}')
@@ -8303,7 +8392,7 @@ if $SUB_MENU; then
                 -y $WORK_DIR/submenu.wav)
             elif [[ "${SM_AUDIO[s]}" = "none" ]]; then # user asked for silence
                 SUBMENU_AUDIOLEN[s]=$(vid_length "$WORK_DIR/menu$s.m2v")
-                BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero $AUDIO_OPTS \
+                BGAUDIO_CMD=(ffmpeg -f s16le -ar 48000 -i /dev/zero $AUDIO_OPTS \
                 -t ${SUBMENU_AUDIOLEN[s]} -y $WORK_DIR/menu$s.$AUDIO_EXT)
             else
                 # SM_AUDIO[s] is an audio file we will process it
@@ -8316,7 +8405,7 @@ if $SUB_MENU; then
             fi
         else # no supplied audio for submenu so create silence
             SUBMENU_AUDIOLEN[s]=$(vid_length "$WORK_DIR/menu$s.m2v")
-            BGAUDIO_CMD=(ffmpeg -f s16le -i /dev/zero $AUDIO_OPTS \
+            BGAUDIO_CMD=(ffmpeg -f s16le -ar 48000 -i /dev/zero $AUDIO_OPTS \
             -t ${SUBMENU_AUDIOLEN[s]} -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
         # run if wav doesn't exist, or its a slideshow
@@ -8426,7 +8515,11 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     unset IMAGES PICS last_pic next_pic
 fi
 if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
-    echo "Getting showcase video images from $SHOWCASE_VIDEO"
+    if $SWITCHED && $USER_THUMBS; then
+        echo "Using supplied image for showcased thumb"
+    else
+        echo "Getting showcase video images from $SHOWCASE_VIDEO"
+    fi
     if [ "$SC_FRAMESTYLE" = "glass" ]; then
         # some vars for get_framed_pics()
         D=2
@@ -8450,24 +8543,28 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
         else
             ffm_post_seek="-ss $FFMPEG_SEEK_VAL" && unset ffm_pre_seek
         fi
+        if $SWITCHED && $USER_THUMBS; then
+            #convert ${USER_PICS[MENU_NUM-1]} -resize $SHOWCASE_SIZE \
+            cp "$WORK_DIR/showcase_img.png" "$WORK_DIR/showcase/000001.png"
+        else
+            FFMPEG_CMD=(ffmpeg $ffm_pre_seek -i "$SHOWCASE_VIDEO" -s \
+            $SHOWCASE_SIZE -vframes $FRAMES -an $ffm_post_seek -f image2 \
+            -y "$WORK_DIR/showcase/%06d.png")
+            echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
+            SED_VAR="frame="
+            "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1 &
+            ffm_pid=$!
+            while ps -p $ffm_pid >/dev/null; do
+                sleep 1
+                spin $SPINNER
+            done
+            wait $ffm_pid
+            (($?)) && runtime_error "Problem creating images from the video."
 
-        FFMPEG_CMD=(ffmpeg $ffm_pre_seek -i "$SHOWCASE_VIDEO" -s \
-        $SHOWCASE_SIZE -vframes $FRAMES -an $ffm_post_seek -f image2 \
-        -y "$WORK_DIR/showcase/%06d.png")
-        echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
-        SED_VAR="frame="
-        "${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1 &
-        ffm_pid=$!
-        while ps -p $ffm_pid >/dev/null; do
-            sleep 1
-            spin $SPINNER
-        done
-        wait $ffm_pid
-        (($?)) && runtime_error "Problem creating images from the video."
-
-        strings "$LOG_FILE.tmp" >> "$LOG_FILE"
-        rm -f "$LOG_FILE.tmp"
-        echo
+            strings "$LOG_FILE.tmp" >> "$LOG_FILE"
+            rm -f "$LOG_FILE.tmp"
+            echo
+        fi
     fi
     for ((i=FIRST_PIC; i<LAST_PIC; i++)); do
         SC_PICS=( ${SC_PICS[@]} $(find $WORK_DIR/showcase -maxdepth 1 \
