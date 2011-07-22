@@ -530,7 +530,7 @@ $ALL_MENU_XML
 <titleset>
 $MENU_XML
   <titles>
-    <video $NOPANSCAN />
+    <video $NOPANSCAN format="$TV_FORMAT" />
 $TS_TITLES
   </titles>
 </titleset>
@@ -548,7 +548,7 @@ $ALL_MENU_XML
     </pgc>
   </menus>
   <titles>
-    <video $NOPANSCAN />
+    <video $NOPANSCAN format="$TV_FORMAT"/>
 $TS_TITLES
   </titles>
 </titleset>
