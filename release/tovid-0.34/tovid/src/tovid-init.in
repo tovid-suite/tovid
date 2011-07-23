@@ -1,0 +1,604 @@
+#!/usr/bin/env bash
+
+# tovid-init
+# Part of the tovid suite
+# =======================
+# Define global (suite-wide) functions and variables
+# for the tovid suite.
+#
+# Project homepage: http://tovid.wikia.com
+#
+# Copyright (C) 2005-2010
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# VARIABLES
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+# Reset input field separator to default
+#IFS=
+
+# Exit with error on undeclared variables
+#set -u
+
+# Suite version
+TOVID_VERSION="@VERSION@"
+
+# String used to separate blocks of output
+SEPARATOR="========================================================="
+
+TOVID_HOME="$HOME/.tovid"
+TOVID_HOME_PAGE="http://tovid.wikia.com"
+TOVID_FORUMS="http://groups.google.com/group/tovid-users"
+
+
+# ******************************************************************************
+# ******************************************************************************
+#
+#
+# FUNCTIONS
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+# ******************************************************************************
+# test if input is a number or not
+# returns true or false exit code ( 0 or 1 )
+# usage: test_is_number INPUT
+# ******************************************************************************
+shopt -s extglob
+function test_is_number()
+{
+    [[ $1 = *[0-9]* && $1 = ?([+-])*([0-9])?(.*([0-9])) ]]
+}
+
+# ******************************************************************************
+# Create a unique temporary directory and return its name
+# Input args: $1 = Base name (i.e., "work_dir")
+# Return value is echoed to stdout (i.e., "work_dir.3")
+# ******************************************************************************
+function tempdir()
+{
+    NUM=0
+    BASENAME="$1"
+    CREATE=:
+    TEMPDIR="$BASENAME.$NUM"
+    [[  -n $2  && $2 = "nocreate" ]] && CREATE=false
+    while test -d "$BASENAME.$NUM"; do
+        ((NUM++))
+    done
+    $CREATE && mkdir "$BASENAME.$NUM"
+    echo "$BASENAME.$NUM"
+}
+
+# ******************************************************************************
+# Verify that a variable meets certain conditions
+# Usage: verify $VAR set|range "test limits"
+# Input: $1 = the variable to check
+#        $2 = the kind of test to perform (set|range)
+#             set: test if $VAR is in the space-separated set "test limits"
+#             range: test if $VAR is in the range given by "test limits"
+#        $3 = the limits for the test
+#
+# ex: verify $CMD_LN_OPT set "y n Y N"
+#     will return ":" (true) if $CMD_LN_OPT is one of "y n Y N"
+#     or retern "false" if it isn't (so if $CMD_LN_OPT was "no", you'd get "false")
+#
+# ex: verify $CMD_LN_OPT range "0 10"
+#     will return ":" (true) if 0 <= $CMD_LN_OPT <= 10
+# ******************************************************************************
+function verify()
+{
+    VERIFY_VAR="$1"
+    VERIFY_TEST_TYPE="$2"
+    case $VERIFY_TEST_TYPE in
+    "range" )
+        VERIFY_LOW=$(echo "$3" | awk '{ print $1 }')
+        VERIFY_HIGH=$(echo "$3" | awk '{ print $2 }')
+        if test $VERIFY_LOW -le $VERIFY_VAR && \
+        test $VERIFY_HIGH -ge $VERIFY_VAR; then
+            echo ":"
+        else
+            echo "false"
+        fi
+        ;;
+
+    "set" )
+        VERIFY_SET="$3"
+
+        if echo "$VERIFY_SET" | grep -q -w "$VERIFY_VAR"; then
+            echo ":"
+        else
+            echo "false"
+        fi
+        ;;
+  esac
+}
+
+# ******************************************************************************
+# Print a pretty (wrapped) notice message.
+# Args: $@ == text string containing the message
+# ******************************************************************************
+function precho()
+{
+    echo -e "$@" | fold -s -w ${COLUMNS:-80}
+}
+
+# ******************************************************************************
+# Print error message, then exit.
+# Args: $@ == text string containing error message
+# ******************************************************************************
+function exit_with_error()
+{
+    echo $@
+    exit 1
+}
+
+# ******************************************************************************
+# Take an integer number of seconds and format it as hours:minutes:seconds
+# Echoes result to stdout, so in order to use the output as a "return value",
+# call the function like this:
+#     RETURN_VALUE=$(format_time $NUM_SECONDS)
+# ******************************************************************************
+function format_time()
+{
+    HMS_HOURS=$(expr $1 / 3600)
+    HMS_MINS=$(expr \( $1 % 3600 \) / 60)
+    HMS_SECS=$(expr $1 % 3600 % 60)
+
+    test "$HMS_HOURS" -lt 10 && HMS_HOURS="0${HMS_HOURS}"
+    test "$HMS_MINS" -lt 10 && HMS_MINS="0${HMS_MINS}"
+    test "$HMS_SECS" -lt 10 && HMS_SECS="0${HMS_SECS}"
+
+    echo "${HMS_HOURS}:${HMS_MINS}:${HMS_SECS}"
+}
+
+# ******************************************************************************
+# Take a string containing a time (like "02:15:25.3") and
+# format it as an integer number of seconds. Fractional seconds
+# are truncated. Result is echoed to stdout, so to use the output
+# as a "return value", call the function like this:
+#     RETURN_VALUE=$(unformat_time $TIME_STRING)
+# ******************************************************************************
+function unformat_time()
+{
+    HMS_HOURS=$(awk -F ':' '{print $1}' <<< $1)
+    HMS_MINS=$(awk -F ':' '{print $2}' <<< $1)
+    HMS_SECS=$(awk -F ':' '{print $3}' <<< $1)
+    # allow integer to be passed, if so it will be echoed unchanged
+    if [[ $1 = *:* ]]; then
+        TOT_SECONDS=$(bc <<< "($HMS_HOURS * 3600) + ($HMS_MINS * 60) + $HMS_SECS")
+    else
+        TOT_SECONDS=$1
+    fi
+    echo $TOT_SECONDS
+}
+
+# *****************************************************************************
+# Make video chapter points
+# of the given duration(secs) and chapter interval(min)
+# Usage: make_chapters duration interval
+# Example:  CHAPTERS=$(make_chapters 2400 5)
+#
+# Returns a comma separated string of chapter points
+# *****************************************************************************
+
+function make_chapters()
+{
+    DURATION=$1
+    CHAPTER_INTERVAL=$2
+    awk '{dur=$1;\
+            iv=$2*60;\
+            if (iv==0){\
+               printf "0";\
+               exit\
+            }\
+            cur=0;\
+            i=0;\
+            while(cur<dur){\
+               if(i>0){\
+                  printf ","\
+               }\
+               i++;\
+               hh=int(cur/3600);\
+               mm=int((cur-hh*3600)/60);\
+               ss=cur-hh*3600-mm*60;\
+               printf "%02d:%02d:%02d",hh,mm,ss;
+               cur+=iv\
+            }\
+        }'<<< "$DURATION $CHAPTER_INTERVAL"
+}
+
+# ******************************************************************************
+# Read a space-separated list of arguments, stopping before the next option
+# beginning with '-'. After running, ARGS_ARRAY contains the resulting list.
+# ******************************************************************************
+function get_listargs()
+{
+    unset x ARGS_ARRAY
+    # Hackish list-parsing
+    while test $# -gt 0 && test x"${1:0:1}" != x"-"; do
+        ARGS_ARRAY[x++]="$1"
+        shift
+    done
+    # Do not skip past the next argument
+    if test $# -gt 0 && test x"${1:0:1}" = x"-";then
+        DO_SHIFT=false
+    fi
+}
+
+
+# ******************************************************************************
+# Display a progress meter showing MB written to a file
+# Args: $1 = name of file to monitor
+#       $2 = a short message to display, such as "Encoding video"
+# ******************************************************************************
+function file_output_progress()
+{
+    if $FAKE; then
+        return
+    fi
+    FOP_OUTFILE="$1"
+    FOP_BASENAME=$(basename "$FOP_OUTFILE")
+    if test -n "$3"; then
+        FOP_BASENAME_NAME="$3"
+    else
+        FOP_BASENAME_NAME="$FOP_BASENAME"
+    fi
+    FOP_MSG="$2"
+    # A dumb little animation toggle
+    FOP_FLIP=false
+
+    printf "\n"
+
+    # Wait for input file to appear
+    # After a 30-second timeout, exit gracefully
+    CUR_TIME=30
+    while test $CUR_TIME -gt 0; do
+        # If file exists, wait a few more seconds, then break out
+        if test -e "$FOP_OUTFILE"; then
+            printf "Processing started. Please wait...                                               "
+            sleep 3s
+            break
+        fi
+        printf "Waiting $CUR_TIME seconds for output file \"$FOP_BASENAME_NAME\" to appear...\r"
+        sleep 1s
+        CUR_TIME=$(expr $CUR_TIME - 1)
+    done
+
+    printf "\n"
+
+    # If file does not exist, exit with a runtime error
+    if test ! -e "$FOP_OUTFILE"; then
+        runtime_error "Couldn't create file: \"$FOP_OUTFILE\""
+    fi
+
+    # File size in bytes
+    FOP_LAST_SIZE=0
+    FOP_CUR_SIZE=$(du -b "$FOP_OUTFILE" | awk '{print $1}')
+
+    # Keep looping until outfile stops getting bigger
+    while test "$FOP_CUR_SIZE" -gt "$FOP_LAST_SIZE"; do
+        # Display a changing line
+        if $FOP_FLIP; then
+            FOP_FLIP=false
+            ANIM_STR="||| "
+        else
+            FOP_FLIP=:
+            ANIM_STR="--- "
+        fi
+
+        # Display completion status
+        FOP_CUR_MB=$(expr 1 + $FOP_CUR_SIZE / 1048576)
+        printf "    %s %s: %s MB written to %s        \r" \
+            "$ANIM_STR" "$FOP_MSG" "$FOP_CUR_MB" "$FOP_BASENAME_NAME"
+
+        # Doze a bit to let the file size increase
+        # (SLEEP_TIME defaults to 1s if unset)
+        sleep ${SLEEP_TIME-"1s"}
+
+        FOP_LAST_SIZE=$FOP_CUR_SIZE
+        FOP_CUR_SIZE=$(du -b "$FOP_OUTFILE" | awk '{print $1}')
+    done
+    printf "\n\n"
+}
+
+# ******************************************************************************
+# Check to see if a dependency group exists, quit if missing
+# Input args:
+#    $1 = dependency group to check for; note that this can be a globally
+#         defined group (below), or a space-separated list of executables
+#    $2 = Descriptive message about why the user needs the dependencies
+#
+# Ex:   assert_dep "$dvd" "You cannot make DVDs without these!"
+#       assert_dep "rice sake fish" "You cannot make dinner!"
+#
+# ******************************************************************************
+function assert_dep()
+{
+    DEPS="$1"
+    HELP="$2"
+
+    # Determine if any group member is missing
+    NO_GROUP=false
+    for dep in $DEPS; do
+        if ! type -a $dep >> /dev/null 2>&1; then
+            echo $SEPARATOR
+            printf "%-13s %s\n" "  $dep" "MISSING!"
+            NO_GROUP=:
+        fi
+    done
+
+    # Quit if any group member is missing
+    if $NO_GROUP; then
+        echo
+        precho "$HELP $DEP_ERROR_MSG"
+        echo $SEPARATOR
+        exit 1
+    fi
+}
+
+
+# ******************************************************************************
+# See what filesystem a directory is in
+# Input args:
+#   $1 = directory to find filesystem type
+#
+# Usage:
+#   FS_TYPE=$(get_filesystem "$WORK_DIR")
+# ******************************************************************************
+function get_filesystem()
+{
+    DIRECTORY="$1"
+    PARTITION=$(df . | tail -n 1 | awk '{print $1}')
+    FILESYSTEM=$(mount | grep "$PARTITION" | awk '{print $5}')
+    echo "$FILESYSTEM"
+}
+
+# ******************************************************************************
+# Do floating point or integer math with bc
+# Input args:
+#  1st arg is the math operation to perfrom, in a quoted string
+#  Use 'int' as optional 2nd arg for integer math)
+#  default: 3 place floating point math
+#
+# Usage:
+#   ANSWER=$(bc_math "$NUM1 + $NUM2")
+#    ANSER=$(bc_math "$NUM1 + $NUM2" int)  # no decimal places
+# ******************************************************************************
+bc_math()
+# usage: bc_math "expression" [int]
+{
+    bc_out=$(bc <<< "scale=3;$1" 2>/dev/null)
+    if [[ -n $2 && $2 = "int" ]]; then
+        echo ${bc_out%.*}
+    else
+        printf  "%.03f" $bc_out
+    fi
+}
+
+# ******************************************************************************
+# Countdown N seconds, then return
+# N defaults to 5 seconds if no args to function
+# usage: countdown [SECONDS]
+# ******************************************************************************
+function countdown()
+{
+    [[ -n $1 ]] && LAST=$1 || LAST=5
+    count=$(seq 1 $LAST)
+    for _CNTR in $(sort -nr <<< "$count")
+    do
+        echo -n -e " in $_CNTR seconds...\r";
+        sleep 1s;
+    done
+}
+
+# ******************************************************************************
+# takes 2 args: (1) version (2) the version testing against
+# return true if version is >= to the test version (same or newer)
+# ******************************************************************************
+test_version()
+{
+    OIFS=$IFS
+    IFS='.'
+    local version test_version
+    version=${1//,/.} # allow comma separated version string too
+    version=($version)
+    test_version=($2)
+    IFS=$OIFS
+    for i in ${!test_version[@]}; do
+        [[ -z ${version[i]} ]] && version[i]=0
+       (( ${version[i]} > ${test_version[i]} )) && return 0
+       (( ${version[i]} < ${test_version[i]} )) && return 1
+    done
+    return 0
+}
+
+
+# ******************************************************************************
+#
+#
+# EXECUTED INITIALIZATION
+#
+#
+# ******************************************************************************
+# ******************************************************************************
+
+
+# ******************************************************************************
+# Platform-specific initialization
+# Determines host platform and configures things accordingly
+# ******************************************************************************
+KERNEL=$(uname)
+if test "$KERNEL" = "Linux"; then
+    # Linux should have /proc/cpuinfo
+    CPU_MODEL=$(awk -F ":" '/model name/ {print $2}' /proc/cpuinfo | head -n 1)
+    CPU_SPEED=$(awk 'BEGIN { IGNORECASE = 1 } /MHz/ { print $4 }' /proc/cpuinfo | head -n 1)
+    # Test for multiple CPUs. If they are available, try to use them.
+    if test $(grep "^processor" /proc/cpuinfo | wc -l) -ge "2"; then
+        MULTIPLE_CPUS=:
+    else
+        MULTIPLE_CPUS=false
+    fi
+elif test "$KERNEL" = "Darwin"; then
+    :
+fi
+
+
+# ******************************************************************************
+# Find multiple version kludge
+# ******************************************************************************
+#INSTALLED_TOVIDS=$(type -a tovid 2>>/dev/null | awk '{print $NF}' | tr '\n' ' ')
+#NUM_INSTALLED=0
+#INSTALLED_VERS=""
+#INSTALLED_PREFS=""
+
+## Only count tovids that are different versions
+#for tovid in $INSTALLED_TOVIDS; do
+    #tovid_PREFIX=$(dirname $tovid)
+    #tovid_VERSION=$(grep TOVID_VERSION $tovid_PREFIX/tovid-init | \
+        #awk -F '"' '{print $2}')
+    #INSTALLED_VERS="$INSTALLED_VERS $tovid_VERSION"
+#done
+#UNIQ_TOVIDS="$(echo $INSTALLED_VERS | tr ' ' '\n' | uniq)"
+#NUM_INSTALLED="$(echo $INSTALLED_VERS | tr ' ' '\n' | uniq | wc -l)"
+
+## Exit when there is more than one tovid installed
+#if test $NUM_INSTALLED -ne 1; then
+    #echo "Found $NUM_INSTALLED versions of tovid on your system!"
+    #echo "I won't run until there is only one of me :)"
+    #echo "Installed versions:"
+    #i=1
+    #while test $i -le $(echo "$INSTALLED_TOVIDS" | awk '{print NF}'); do
+        #tovid_ver=$(echo $INSTALLED_VERS | awk '{print $'$i'}')
+        #tovid_path=$(echo $INSTALLED_TOVIDS | awk '{print $'$i'}')
+        #printf "   %s (%s)\n" $tovid_ver $tovid_path
+        #let "i=i+1"
+    #done
+    #echo "Exiting..."
+    #exit 1
+#fi
+
+
+# ******************************************************************************
+# tovid home setup
+# ******************************************************************************
+
+# Make home!
+if ! test -d "$TOVID_HOME"; then
+    mkdir "$TOVID_HOME"
+fi
+
+# Working directory configuration
+USER_PREFS=$TOVID_HOME/preferences
+
+# Default working/output directories
+WORKING_DIR=$PWD
+OUTPUT_DIR=$PWD
+
+# If prefs file exists, source it
+if test -f $USER_PREFS; then
+    . "$USER_PREFS"
+# Otherwise, create a default prefs file
+else
+    PREFS_CONTENTS=`cat << EOF
+# tovid preferences
+# Configures working directory for all scripts and
+# output directory for the makempg script
+#WORKING_DIR=/tmp
+#OUTPUT_DIR=/video/outfiles
+EOF`
+    printf "$PREFS_CONTENTS\n" > "$USER_PREFS"
+fi
+# if preferences vars are set in the environment, use those (takes precedence).
+[[ $TOVID_WORKING_DIR ]] && WORKING_DIR="$TOVID_WORKING_DIR"
+[[ $TOVID_OUTPUT_DIR ]] && OUTPUT_DIR="$TOVID_WORKING_DIR"
+
+# ******************************************************************************
+# Check for run-time dependencies
+# ******************************************************************************
+
+    DEP_ERROR_MSG="Please install the above MISSING dependencies and try again. See tovid.wikia.com/wiki/Tovid_dependencies for help."
+
+    # debian based distros install normalize as
+    # "normalize-audio" rather than "normalize"
+    NORMALIZE="normalize"
+    if ! type -a normalize > /dev/null 2>&1; then
+        if type -a normalize-audio > /dev/null 2>&1; then
+            NORMALIZE="normalize-audio"
+        fi
+    fi
+
+    # Adding (or removing) dependencies:
+    # Does the dependency belong to an existing depdency group below?
+    #   Yes: add the dependency to the list.
+    #   No:  add another group and fill it with members.
+
+    # *************************************************************************
+    # Required Dependencies
+    # *************************************************************************
+    core="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
+
+    # *************************************************************************
+    # Optional Dependencies
+    # *************************************************************************
+    # Optional dependencies are grouped according to the functionality they
+    # bring to tovid: menu creation, DVD creation, (S)VCD creation, and
+    # post-processing.
+
+    # -------------------------------------------------------------------------
+    # ImageMagick components
+    magick="composite convert"
+
+    # -------------------------------------------------------------------------
+    # dvdauthor compononets
+    # (note: growisofs is NOT distributed with dvdauthor, but for tovid's
+    # purposes, it fits in the same catagory, as it burns DVDs!)
+    dvd="spumux dvdauthor growisofs"
+
+    # -------------------------------------------------------------------------
+    # vcdimager components
+    # (note: cdrdao is NOT distributed with vcdimager, but for tovid's
+    # purposes, it fits in the same catagory, as it burns (S)VCDs!)
+    vcd="vcdxbuild cdrdao"
+
+    # -------------------------------------------------------------------------
+    # transcode components
+    transcode="tcprobe tcrequant"
+
+    # -------------------------------------------------------------------------
+    # Plugin tools
+    plugins="sox $NORMALIZE"
+
+    # -------------------------------------------------------------------------
+    # todisc dependencies
+    todisc_deps="$magick mogrify spumux dvdauthor transcode sox"
+
+    # Quit and complain if ANY core dependency is missing.
+    assert_dep "$core" "You are missing CORE tovid dependencies!"
+
+# End tovid-init

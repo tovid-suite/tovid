@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+ME="[previd]:"
+. tovid-init
+
+# previd
+# Part of the tovid suite
+# =======================
+# Produce a short fast-forward-style preview of a video file.
+#
+# Project homepage: http://www.tovid.org
+#
+#
+# Copyright (C) 2005 tovid.org <http://www.tovid.org>
+# 
+# This program is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either 
+# version 2 of the License, or (at your option) any later 
+# version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#           http://www.gnu.org/licenses/gpl.txt
+
+# Author: Rick Measham aka Woosta: rick@measham.id.au
+
+USAGE=`cat << EOF
+Usage: previd [OPTIONS] -in {input file} -out {output file}
+
+OPTIONS may be any of the following:
+
+    -v, -version    Prints previd version number only
+    -x NUM          
+    -y NUM          Sets width and height. Use multiples of 16 
+    -sstep NUM      Skip NUM seconds between frames 
+    -fps NUM        Show each frame NUM times.
+
+EOF`
+
+SEPARATOR="========================================================="
+
+PREVID_VERSION=0.1
+
+WIDTH=144
+HEIGHT=128
+STEP=240
+FRAMES_PER_STEP=4
+
+INFILE=""
+OUTFILE=""
+
+TMP_DIR=$(tempdir previd)
+CWD=$(pwd)
+# Make temp dir absolute
+TMP_DIR="${CWD}/${TMP_DIR}"
+LOG_FILE="${TMP_DIR}/previd.log"
+
+# ******************************************************************************
+# Print usage notes and optional error message, then exit.
+# Args: $@ == text string containing error message 
+# ******************************************************************************
+usage_error()
+{
+    printf "%s\n" "$USAGE"
+    printf "%s\n" "$SEPARATOR"
+    echo $@
+    rm -rf $TMP_DIR
+    exit 1
+}
+
+# Step 0: Get the parameters
+while test $# -gt 0; do
+	case "$1" in
+		"-v" | "-version" )
+			echo $PREVID_VERSION
+                        rm -rf $TMP_DIR
+			exit 0
+			;;
+
+		"-in" )
+			shift
+			INFILE="$1"
+			;;
+
+		"-out" )
+			shift
+			OUTFILE="$1"
+			;;
+
+		"-x" )
+			shift
+			WIDTH="$1"
+			if test $(expr $WIDTH % 16) -ne 0; then
+				echo "-x must be a multiple of 16"
+                                rm -rf $TMP_DIR
+				exit 1
+			fi
+			;;
+
+		"-y" )
+			shift
+			HEIGHT="$1"
+			if test $(expr $HEIGHT % 16) -ne 0; then
+				echo "-y must be a multiple of 16"
+                                rm -rf $TMP_DIR
+				exit 1
+			fi
+			;;
+
+		"-sstep" )
+			shift
+			STEP="$1"
+			;;
+
+		"-fps" )
+			shift
+			FRAMES_PER_STEP="$1"
+			;;
+
+		"-" )
+			;;
+
+		* )
+			echo "Unrecognised command-line option $1"
+                        rm -rf $TMP_DIR
+			exit 1
+	esac
+	shift
+done
+
+# Make sure infile and outfile were provided
+if test -z "$INFILE" || test -z "$OUTFILE"; then
+    usage_error "Please provide input and output filenames using -in and -out options."
+fi
+
+if test -e "$INFILE"; then :;
+else
+	echo "Cannot open the input file $INFILE for reading."
+        rm -rf $TMP_DIR
+	exit 1
+fi
+
+printf "%s\n" "$SEPARATOR"
+echo "Generating JPEGs from mplayer with the following command:"
+GEN_JPEG_CMD="mplayer -nosound -noautosub -vo jpeg:outdir=$TMP_DIR -sstep $STEP -vf scale=$WIDTH:$HEIGHT $INFILE"
+echo "$GEN_JPEG_CMD"
+#eval "$GEN_JPEG_CMD >> $LOG_FILE 2>&1" 
+eval "$GEN_JPEG_CMD" 
+
+printf "%s\n" "$SEPARATOR"
+echo "Creating symbolic links to get the multiple frames..."
+FRAMECOUNT=$(ls -l $TMP_DIR/*.jpg|wc -l)
+FN=0
+for i in $(seq 1 $FRAMECOUNT); do
+	FI=$(printf "%08d" $i)
+	for j in $(seq 1 $FRAMES_PER_STEP); do
+		FN=$(expr $FN + 1)
+		FND=$(printf "%08d" $FN)
+		$(ln -s ${TMP_DIR}/$FI.jpg ${TMP_DIR}/out.$FND.jpg)
+	done
+done
+
+
+echo "Step 3: Turn the symbolic links into an m2v"
+TO_M2V_CMD="jpeg2yuv -v 0 -b 1 -f 24 -j $TMP_DIR/out.%08d.jpg -I p | mpeg2enc -a 1 -n p -f 8 -o $TMP_DIR/$OUTFILE.m2v"
+echo "$TO_M2V_CMD"
+eval "$TO_M2V_CMD"
+
+echo "Step 4: Turn the m2v into an mpg"
+mplex -o $OUTFILE.mpg $TMP_DIR/$OUTFILE.m2v
+
+echo "Step 5: Clean up the temporary files"
+rm -rf $TMP_DIR
+
+echo "$INFILE has been shortened by stepping $STEP and resized to $WIDTH x $HEIGHT."
+echo "Each resulting frame is now $FRAMES_PER_STEP frames of the final file"
+echo "The final file has been saved to $OUTFILE.mpg"
+

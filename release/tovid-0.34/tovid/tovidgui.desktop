@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=tovid GUI
+Type=Application
+Exec=tovid gui
+Icon=tovid
+Terminal=false
+GenericName=DVD creation with menus
+GenericName[en_US]=DVD creation with menus
+Comment=Author videos to DVD with menus
+Comment[en_US]=Author videos to DVD with menus
+Categories=AudioVideo;Video;
+StartupNotify=true
+X-KDE-SubstituteUID=false

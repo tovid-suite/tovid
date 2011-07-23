@@ -1,0 +1,908 @@
+#!/usr/bin/env bash
+#set -u
+
+ME="[idvid]:"
+. tovid-init 2>/dev/null ||
+{ echo -e "===============================================================\n"
+echo -e "'tovid-init' not found.  Was tovid improperly installed?"
+echo -e "Or are you trying to run the script directly?"
+echo -e "Please run idvid as:\ntovid id OPTIONS"
+exit 1 ; }
+
+# idvid
+# Part of the tovid suite
+# =======================
+# A bash script for identifying arbitrary video files and
+# testing for VCD, SVCD, DVD or other video disc compliance.
+#
+# Project homepage: http://tovid.wikia.com
+#
+# Copyright (C) 2005-2010
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. Or see:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+
+SCRIPT_NAME=`cat << EOF
+--------------------------------
+tovid id
+Identify video files
+Version $TOVID_VERSION
+$TOVID_HOME_PAGE
+--------------------------------
+EOF`
+
+USAGE=`cat << EOF
+Usage: tovid id [OPTIONS] {file list}
+
+Where OPTIONS may be any of the following:
+
+    -terse      Suitable for parsing
+    -verbose    Also use ffmpeg and tcprobe
+    -accurate   Do accurate duration estimation
+    -isformat [ntsc-vcd|pal-vcd|ntsc-svcd|pal-svcd|ntsc-dvd|pal-dvd]
+        Tell whether the first file is compliant with the given
+        format; prints "true" or "false" (returns shell 0 or 1)
+
+See the tovid manual page ('man tovid') for additional documentation.
+
+EOF`
+
+NON_COMPLIANT=`cat << EOF
+This video does not seem to be compliant with (S)VCD or DVD
+standards. If you burn it to a video disc, it may not work.
+EOF`
+
+# ***********************************
+# DEFAULTS AND FUNCTION DEFINITIONS
+# ***********************************
+
+# Do not use terse output by default
+TERSE=false
+VERBOSE=false
+FAST=:
+TMP_DIR=$(tempdir "$WORKING_DIR/idvid")
+SCRATCH_FILE="$TMP_DIR/idvid.scratch"
+TABLE="$TMP_DIR/table"
+STAT_DIR=$TOVID_HOME
+STAT_FILE="$STAT_DIR/stats.idvid"
+NTSC_FPS=""
+NTSC_FILM_FPS=""
+PAL_FPS=""
+A_NONCOMPLIANT=""
+V_NONCOMPLIANT=""
+A_NONE=""
+V_TV=""
+MATCH_FORMAT=""
+MATCH_TVSYS=""
+TABULAR=false
+USE_MENCODER=:
+USE_NAVLOG=false
+ID_FILES=""
+
+mkdir -p "$STAT_DIR"
+touch "$STAT_FILE"
+
+# Print usage notes and optional error message, then exit.
+# Args: $@ == text string containing error message
+function usage_error ()
+{
+  printf "%s\n" "$USAGE"
+  echo "$SEPARATOR"
+  echo $@
+  rm -rf "$TMP_DIR"
+  exit 1
+}
+
+# Get video information from available utilities
+# Args: $1 = filename to identify
+function get_info ()
+{
+    # Start with a clean scratch file
+    rm -f "$SCRATCH_FILE"
+
+    INFILE="$1"
+
+    if ! $TERSE; then
+        echo "Analyzing file: '$INFILE'..."
+    fi
+
+    # Identify video using mplayer
+    if test -n "$MPLAYER"; then
+        if $VERBOSE; then
+            echo $SEPARATOR
+            echo "Identifying video with mplayer..."
+            echo $SEPARATOR
+            mplayer -nomsgcolor -vo null -ao null -frames 30 -channels 6 -identify \
+                -noconsolecontrols "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
+        else
+            mplayer -nomsgcolor -vo null -ao null -frames 30 -channels 6 -identify \
+                -noconsolecontrols "$INFILE" > "$SCRATCH_FILE" 2>&1
+        fi
+    fi
+    # Identify video using ffmpeg
+    if test -n "$FFMPEG"; then
+        if $VERBOSE; then
+            echo $SEPARATOR
+            echo "Identifying video with ffmpeg..."
+            echo $SEPARATOR
+            # ffmpeg puts its output on standard error
+            ffmpeg -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
+        else
+            ffmpeg -i "$INFILE" >> "$SCRATCH_FILE" 2>&1
+        fi
+    fi
+    # Identify video using tcprobe
+    if test -n "$TCPROBE"; then
+        if $VERBOSE ; then
+            echo $SEPARATOR
+            echo "Identifying video with tcprobe..."
+            echo $SEPARATOR
+            tcprobe -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
+        else
+            tcprobe -i "$INFILE" >> "$SCRATCH_FILE" 2>/dev/null
+        fi
+    fi
+
+    # Print a message and exit if the file couldn't be identified
+    if grep -q "^ID_" "$SCRATCH_FILE"; then :;
+    else
+        if $TERSE; then
+            echo "CANT_IDENTIFY=:"
+            rm -rf "$TMP_DIR"
+        else
+            echo "Could not identify file: $INFILE"
+            echo "See $SCRATCH_FILE for clues why."
+        fi
+        exit 1
+    fi
+
+    # Defaults. Many of these values may be overridden by
+    # vars from mplayer's output to be sourced later.
+    ID_VIDEO_ID=""
+    ID_AUDIO_ID=""
+    ID_VIDEO_WIDTH="0"
+    ID_VIDEO_HEIGHT="0"
+    ID_VIDEO_FPS="0"
+    ID_VIDEO_FORMAT="Unknown"
+    ID_AUDIO_CODEC="Unknown"
+    ID_AUDIO_FORMAT="Unknown"
+    ID_VIDEO_BITRATE="0"
+    ID_AUDIO_BITRATE="0"
+    ID_AUDIO_RATE="0"
+    ID_AUDIO_NCH="0"
+    ID_AUDIO_TRACKS=""
+    ID_VIDEO_TRACK=""
+    V_ASPECT_RATIO="1:1"
+    V_DURATION=""
+    ID_LENGTH="0"
+
+    # bash appears to have no way of initializing empty arrays; we append to these later,
+    # so unsetting them clears out their previous contents
+    unset A_SAMPRATES
+    unset A_BITRATES
+    unset A_CODECS
+    unset A_HEX_TRACKS
+    unset A_TRACKS
+    unset wavs
+
+    # send formated mplayer's output to a vars file to be sourced to set relevant variables.
+    # (ID_V(ideo), ID_A(udio), and ID_L(ength))
+    # Grep out special characters ()[
+    # # put the VARS in a file
+    grep "^ID_[VAL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/$/"/;s/=/="/' > "$SCRATCH_FILE".vars
+    # source the file to set the variables
+    . "$SCRATCH_FILE".vars
+    # (If you've got a problem with eval, give me an alternative that
+    # works as well and is as readable :-) ... but no less safe :(
+    # DONE :)
+    # get array of mplayer audio ids, used if no hextracks from ffmpeg
+    while read; do MPL_AIDS+=(${REPLY##*=}); done < <(grep ID_AUDIO_ID "$SCRATCH_FILE")
+
+    ID_VIDEO_FRAMES=$(grep 'length:' "$SCRATCH_FILE" | \
+        awk -F ' ' '{print $2}')
+    test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
+
+    # ffmpeg has a better concept of the actual bitrate than mplayer
+    TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /bitrate:/ {print $6*1000}' "$SCRATCH_FILE")
+    ## take the lower of the two
+    if test $ID_VIDEO_BITRATE -eq 0 || test $TOTAL_AV_BITRATE -lt $ID_VIDEO_BITRATE; then
+        # make sure we have a value from ffmpeg
+        if test_is_number $TOTAL_AV_BITRATE; then
+            ID_VIDEO_BITRATE=$TOTAL_AV_BITRATE
+        fi
+    else
+        ID_VIDEO_BITRATE=$ID_VIDEO_BITRATE
+    fi
+    # if we still don't have a value for ID_VIDEO_WIDTH and ID_VIDEO_HEIGHT
+    MP_FRAMESIZE=$(awk '/=>/ {print $3}' "$SCRATCH_FILE")
+    if test $ID_VIDEO_WIDTH -eq 0; then
+        test_is_number ${MP_FRAMESIZE%x*} &&  ID_VIDEO_WIDTH=${MP_FRAMESIZE%x*}
+    fi
+    if test $ID_VIDEO_HEIGHT -eq 0; then
+        test_is_number ${MP_FRAMESIZE#*x} && ID_VIDEO_HEIGHT=${MP_FRAMESIZE#*x}
+    fi
+
+    # Find out which channel is the video channel ( 1st )
+    # TODO Do we want to worry about videos with multiple channels of video ?
+    VIDEO_INFO=$(grep "Video:" "$SCRATCH_FILE")
+    ID_VIDEO_TRACKS=( $(sed -r 's/.*Stream #([0-9]\.[0-9]+).*/\1/' <<< "$VIDEO_INFO") )
+    ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
+    # Find out what audio channels are available
+    if test -n "$ID_AUDIO_ID"; then
+        AUDIO_INFO=$(grep -w "Audio:" "$SCRATCH_FILE")
+        # ID_AUDIO_ID needs "TRACKS" var to remain in columns
+        TRACKS=$(sed -r 's/.*Stream #([0-9]\.[0-9]+).*/\1/' <<< "$AUDIO_INFO")
+        A_TRACKS=(${TRACKS//$'\n'/ })
+        # Get hexadecimal track IDs, if present
+        if grep -q "\[0x[0-9a-fA-F]*]" <<< $AUDIO_INFO; then
+            HEX_TRACKS=$(awk -F [][] '{gsub("0x", ""); print $2}' <<< "$AUDIO_INFO")
+            HEX_TRACKS=(${HEX_TRACKS//$'\n'/ })
+            USE_HEX_TRACKS=:
+        else
+            USE_HEX_TRACKS=false
+        fi
+        # Loop through available tracks and get specs on each
+        for ((i=0; i<${#A_TRACKS[@]}; i++)); do
+            CUR_CHAN=$(grep "Stream #${A_TRACKS[i]}" <<< "$AUDIO_INFO")
+            A_SAMPRATES=("${A_SAMPRATES[@]}" "$(echo $CUR_CHAN | \
+                sed -r 's/.* ([0-9]+) Hz.*/\1/')")
+            ! test_is_number ${A_SAMPRATES[i]} && A_SAMPRATES[i]=?
+            A_BITRATES=("${A_BITRATES[@]}" "$(echo $CUR_CHAN | \
+                sed -r 's/.* ([0-9]+) kb\/s.*/\1/')")
+            # make sure the above is a number, else set  A_BITRATE to 0
+            ! test_is_number ${A_BITRATES[i]} && A_BITRATES[i]=0
+            A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
+                sed -r 's/.*Audio: ([^,]+),.*/\1/')")
+            if $USE_HEX_TRACKS; then
+                MP_TRACKNUM=$((16#${HEX_TRACKS[i]}))
+            else
+                # use aids from mplayer output instead of hex tracks
+                MP_TRACKNUM=${MPL_AIDS[i]}
+            fi
+            ID_AUDIO_IDS="$ID_AUDIO_IDS ${MP_TRACKNUM//$'\n'/ }"
+
+            # last ditch efforts to get audio bitrate if we still don't have it
+            if test ${A_BITRATES[i]} -eq 0; then
+                MP_ABITRATE=$(mplayer -nomsgcolor -vo null -ao null -frames 30 \
+                -channels 6 -identify -aid $MP_TRACKNUM -noconsolecontrols \
+                "$INFILE" 2>&1 | grep ID_AUDIO_BITRATE|awk -F=  'END{print $2}')
+                if test_is_number $MP_ABITRATE; then
+                    MP_ABITRATE=${MP_ABITRATE%.*}
+                    A_BITRATES[i]=${MP_ABITRATE/000*}
+                else # final attempt
+                    MENC_ABITRATE=$(mencoder "$INFILE" -aid $MP_TRACKNUM  -oac pcm -ovc copy \
+                    -frames 30 -o /dev/null 2>&1 | awk '/AUDIO/ {print $7}')
+                    test_is_number $MENC_ABITRATE && A_BITRATES[i]=${MENC_ABITRATE%.*}
+                fi
+            fi
+            A_HEX_TRACKS=("${A_HEX_TRACKS[@]}" "$MP_TRACKNUM")
+        done
+        # use comma separator and remove possible leading comma
+        ID_AUDIO_IDS=${ID_AUDIO_IDS// /,}
+        ID_AUDIO_IDS=${ID_AUDIO_IDS#,}
+        # read output of grep into AUDIO_NCH array to get Audio: lines
+        if [[ -n $ID_AUDIO_ID ]]; then
+            O=$IFS IFS=$'\n' AUDIO_NCH=($(grep -w Audio: "$SCRATCH_FILE")) IFS=$O
+            for chn in ${!AUDIO_NCH[@]}; do
+                # TODO flesh this out with other possibilities: 7.1 etc
+                if egrep -q '5:1|5.1' <<<  ${AUDIO_NCH[chn]}; then
+                    ID_AUDIO_NCH[chn]=6
+               elif grep -q channels <<< ${AUDIO_NCH[chn]}; then
+                    ID_AUDIO_NCH[chn]=$(sed -r 's/.* ([0-9]+) channels.*/\1/' \
+                    <<< ${AUDIO_NCH[chn]})
+                else
+                    ID_AUDIO_NCH[chn]=2
+                fi
+            done
+            ID_AUDIO_NCH=${ID_AUDIO_NCH[@]}
+            ID_AUDIO_NCH=${ID_AUDIO_NCH// /,}
+        fi
+
+        tracks=( ${TRACKS[@]} )
+        if (( ${#tracks[@]} > 0 )); then
+            for i in ${!tracks[@]}; do
+                map_cmd[i]="-map ${tracks[i]}"
+                wavs=( "${wavs[@]}" "$TMP_DIR/$i.wav" )
+            done
+            for r in ${!tracks[@]}; do
+                test_tracks[r]="$(ffmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[r]} -y ${wavs[r]} 2>&1)"
+                if grep -q Unsupported <<< "${test_tracks[r]}"; then
+                    tracks[r]="Unsupported"
+                fi
+            done
+            #test_tracks=( "$(ffmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[@]} -y ${wavs[@]} 2>&1)" )
+            echo "${test_tracks[@]}" >> "$SCRATCH_FILE"
+            rm -f "${wavs[@]}"
+        fi
+#        TRACKS=${TRACKS//$'\n'/ }
+        TRACKS=${tracks[@]}
+        TRACKS=${tracks[@]/Unsupported/}
+        ID_AUDIO_TRACKS=${TRACKS// /,}
+    fi # if test -n "$ID_AUDIO_ID"
+
+    # If tcprobe reports an aspect ratio, use that
+    if grep -q "aspect ratio" "$SCRATCH_FILE"; then
+        RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
+        V_ASPECT_WIDTH=$(expr ${RATIO%:*} \* 100 \/ ${RATIO#*:})
+    # Otherwise, infer from mplayer
+    else
+        # Infer aspect ratio from width/height of mplayer playback
+        MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
+            sed -e "s/..*=> *//g" -e "s/ .*$//g")
+        #PLAY_WIDTH=$(echo $MPLAYER_RES | awk -F 'x' '{print $1}')
+        #PLAY_HEIGHT=$(echo $MPLAYER_RES | awk -F 'x' '{print $2}')
+        # patch from ML:
+        PLAY_WIDTH=$(echo "$MPLAYER_RES" | awk -F '[x ]' 'BEGIN {wid = 0}; {if ($1 > wid) wid = $1}; END {print wid}')
+        PLAY_HEIGHT=$(echo "$MPLAYER_RES" | awk -F '[x ]' 'BEGIN {hgt = 0}; {if ($2 > hgt) hgt = $2}; END {print hgt}')
+        # Fix nulls
+        if test -z "$PLAY_WIDTH" || test -z "$PLAY_HEIGHT"; then
+            PLAY_WIDTH="100"
+            PLAY_HEIGHT="100"
+        fi
+        V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
+    fi
+    # Normalized aspect ratio
+    V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
+    sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
+
+    NAV_LOG="${INFILE}.nav_log"
+    USE_NAVLOG=false
+    # if the nav_log is older than $INFILE, then remove the log
+    if [[ -e "$NAV_LOG" && "$INFILE" -nt "$NAV_LOG" ]]; then
+        ! $TERSE && echo "$NAV_LOG is older than $INFILE ... removing"
+        rm -f "$NAV_LOG"
+    fi
+    # if a nav_log file exists and we have a value for FPS, use the log
+    if  [[ -s "$NAV_LOG"  &&  ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
+        ! $TERSE && echo "Using $NAV_LOG"
+        USE_MENCODER=false
+        USE_NAVLOG=:
+    else # no nav_log or ID_VIDEO_FPS missing
+        # If doing -fast identification, skip "accurate" length determination
+        if $FAST; then # skip this long process
+            USE_MENCODER=false  # USE_NAV_LOG already set to false
+        else
+            # check if tcdemux present, and if mpg extension (vob uses mencoder)
+            if grep -qi mpg <<< "${INFILE##*.}" && hash tcdemux 2>/dev/null && \
+              [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
+                NAVSEEK_CMD=(nice tcdemux  -f $ID_VIDEO_FPS -W -i "$INFILE")
+            # or check if aviindex installed, and if extension is avi
+            elif grep -qi avi <<< "${INFILE##*.}" && hash aviindex 2>/dev/null && \
+              [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
+                NAVSEEK_CMD=(nice aviindex -x -i "$INFILE" -o "$NAV_LOG")
+            else # not $FAST and indexing not possible, so use mencoder
+                USE_MENCODER=:
+            fi
+        fi
+        if [[ "${NAVSEEK_CMD[@]}" ]]; then
+            "${NAVSEEK_CMD[@]}"  >  "$NAV_LOG" 2>/dev/null
+            if [[ -s  "$NAV_LOG" ]]; then # if non empty lets use it
+                USE_MENCODER=false
+                USE_NAVLOG=:
+            else
+                # remove empty log and we will use mencoder in next code block
+                [[ -e "$NAV_LOG" ]] && rm -f "$NAV_LOG"
+                USE_MENCODER=:
+            fi
+        fi
+    fi
+    # set variables from NAV_LOG results
+    if $USE_NAVLOG; then
+        if grep -qi mpg <<< "${INFILE##*.}"; then
+            ID_VIDEO_FRAMES=$(cat "$NAV_LOG" | awk 'END{print NR}')
+            V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
+            V_DURATION=${V_DUR%%.*} # final value is integer ( seconds )
+        else
+            V_DURATION=$(awk '($2==1) { field = $NF }; END{ print field/1000 }' "$NAV_LOG")
+            ID_VIDEO_FRAMES=$(bc <<< "$V_DURATION * $ID_VIDEO_FPS")
+            ID_VIDEO_FRAMES=${ID_VIDEO_FRAMES%%.*}
+            # final value is in seconds
+            V_DURATION=${V_DURATION%%.*} # integer
+        fi
+        # if no usable value, use mencoder
+        { ! test_is_number $V_DURATION || ((V_DURATION == 0)) ; } && USE_MENCODER=:
+    fi
+    # find duration by playing the video with mencoder into /dev/null
+    # any of: no/empty log file, ! $FAST, no tcdemux/aviindex, or not an mpg/avi
+    if $USE_MENCODER; then
+        MENCODER_STATS=$(LC_ALL=C mencoder -ovc copy -nosound -noskiplimit \
+        "$INFILE" -o /dev/null 2>/dev/null)
+        V_DURATION=$(awk 'END{print $(NF-3)}' <<< "$MENCODER_STATS")
+        V_DURATION=${V_DURATION%%.*}  # integer in seconds
+        # overwrite ID_VIDEO_FRAMES since we have a more accurate count now
+        ID_VIDEO_FRAMES=$(awk 'END{print $(NF-1)}' <<< "$MENCODER_STATS")
+        # if we failed to get a video bitrate earlier, use mencoder stats
+        if test $ID_VIDEO_BITRATE -eq 0; then
+            MENCODER_STATS_BR=$(awk -F: 'END{print $2}' <<< "$MENCODER_STATS" | awk '{print $1}')
+            # make sure it is a number
+            if test_is_number $MENCODER_STATS_BR; then
+                ID_VIDEO_BITRATE=${MENCODER_STATS_BR%.*}000
+            fi
+        fi
+        $VERBOSE && echo "$MENCODER_STATS"
+    fi
+
+    # Use mplayer-reported length as a last resort (truncate floating-point)
+    test -z $V_DURATION && V_DURATION=$(echo $ID_LENGTH | sed 's/\.[0-9]*//')
+
+    # TODO: WARN if video is less than one second!
+
+    # Mplayer reports ac3 and mp2 incorrectly, so refer to numeric codes
+    test "$ID_AUDIO_FORMAT" = "8192" && ID_AUDIO_CODEC="ac3"
+    test "$ID_AUDIO_FORMAT" = "80" && ID_AUDIO_CODEC="mp2"
+
+    # For known formats reported in hex codes, convert to plain English
+    test "$ID_VIDEO_FORMAT" = "0x10000001" && ID_VIDEO_FORMAT="MPEG1"
+    test "$ID_VIDEO_FORMAT" = "0x10000002" && ID_VIDEO_FORMAT="MPEG2"
+}
+
+# Main idvid function. Calls get_info to gather video information
+# about a file passed as the argument, and prints everything out
+# in terse or human-readable form
+function idvid_main ()
+{
+
+    # Unset any variables that might have been assigned by previous files
+    unset NTSC_FPS
+    unset NTSC_FILM_FPS
+    unset PAL_FPS
+    unset ID_VIDEO_FPS
+
+    # Accept regular filenames, or URI-style pathnames (like dvd://, http://)
+    if test -e "$1" || expr "$1" : ".*:\/\/" >/dev/null; then
+        get_info "$1"
+    # Otherwise, file not found error.
+    else
+        echo "Could not find file: $1"
+        rm -rf "$TMP_DIR"
+        exit 1
+    fi
+
+    # Set some frequently-used variables
+    # Frames per second
+    case "$ID_VIDEO_FPS" in
+        "29.970" | "29.97" )
+            ID_VIDEO_FPS="29.970"
+            NTSC_FPS="29.970"
+            ;;
+        "23.976" )
+            NTSC_FILM_FPS="23.976"
+            ;;
+        "25.000" | "25.00" | "25.0" | "25" )
+            ID_VIDEO_FPS="25.000"
+            PAL_FPS="25.000"
+            ;;
+    esac
+
+    # If just matching, do not print out anything yet
+    if test -n "$MATCH_FORMAT" || test -n "$MATCH_TVSYS"; then
+        :
+    # Print out identifying information, either in terse form
+    # or in human-readable form
+    elif $TERSE; then
+        echo "ID_VIDEO_WIDTH=$ID_VIDEO_WIDTH"
+        echo "ID_VIDEO_HEIGHT=$ID_VIDEO_HEIGHT"
+        echo "V_DURATION=$V_DURATION"
+        echo "ID_VIDEO_FPS=$ID_VIDEO_FPS"
+        echo "ID_VIDEO_FORMAT=$ID_VIDEO_FORMAT"
+        echo "ID_AUDIO_CODEC=$ID_AUDIO_CODEC"
+        echo "ID_VIDEO_BITRATE=$ID_VIDEO_BITRATE"
+        echo "ID_AUDIO_BITRATE=$ID_AUDIO_BITRATE"
+        echo "ID_AUDIO_NCH=$ID_AUDIO_NCH"
+        echo "ID_AUDIO_TRACKS=$ID_AUDIO_TRACKS"
+        echo "ID_VIDEO_TRACK=$ID_VIDEO_TRACK"
+        echo "ID_AUDIO_IDS=$ID_AUDIO_IDS"
+        echo "ID_AUDIO_RATE=$ID_AUDIO_RATE"
+        echo "V_ASPECT_WIDTH=$V_ASPECT_WIDTH"
+        echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
+    elif $TABULAR; then
+        FILE_SIZE=$(du -Dh "$INFILE" | awk '{print $1}')
+        echo "$INFILE||$FILE_SIZE||${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT}||$ID_VIDEO_FPS||$ID_VIDEO_BITRATE||$ID_AUDIO_BITRATE" >> "$TABLE"
+    else
+        echo $SEPARATOR
+        echo "               File: $INFILE"
+        echo "              Width: $ID_VIDEO_WIDTH pixels"
+        echo "             Height: $ID_VIDEO_HEIGHT pixels"
+        echo "       Aspect ratio: $V_ASPECT_RATIO"
+        echo "             Frames: $ID_VIDEO_FRAMES"
+        echo "           Duration: $(format_time $V_DURATION) hours/mins/secs"
+        echo "          Framerate: $ID_VIDEO_FPS frames per second"
+        echo "       Video format: $ID_VIDEO_FORMAT"
+        echo "      Video bitrate: $ID_VIDEO_BITRATE bits per second"
+        # Multiple audio track info
+        for t in ${!tracks[@]}; do
+            [[ ${tracks[t]} = *Unsupported* ]] && A_CODECS[t]=": *** Unsupported ***"
+        done
+
+        for ((j=0; j<${#A_TRACKS[@]}; j++)); do
+            echo "---------------------------"
+            echo "Audio track $((j+1)) (Stream ${A_TRACKS[j]}, AID ${A_HEX_TRACKS[j]}):"
+            echo "---------------------------"
+            echo "              Codec: ${A_CODECS[j]}"
+            if [[ ${tracks[j]} != Unsupported ]]; then
+                echo "            Bitrate: ${A_BITRATES[j]}000 bits per second"
+                echo "      Sampling rate: ${A_SAMPRATES[j]} Hz"
+            fi
+        done
+        #echo "       Audio format: $ID_AUDIO_CODEC"
+        #echo "      Audio bitrate: $ID_AUDIO_BITRATE bits per second"
+        #echo "     Audio channels: $ID_AUDIO_NCH channels"
+        #echo "Audio sampling rate: $ID_AUDIO_RATE Hz"
+        echo $SEPARATOR
+    fi
+
+    # Separate flags for each audio profile (there may be multiple matches)
+    A_VCD1=""
+    A_VCD2=""
+    A_SVCD=""
+    A_DVD=""
+    A_NONE=""
+
+    # Find matching audio profile(s)
+    # DVD audio must be 48khz, 32-1536 kbps
+    if test "$ID_AUDIO_RATE" = "48000" && \
+      test "$ID_AUDIO_BITRATE" -ge "32000" && \
+      test "$ID_AUDIO_BITRATE" -le "1536000"; then
+        case "$ID_AUDIO_CODEC" in
+            "ac3" )
+                A_DVD="$ID_AUDIO_BITRATE bps 48khz AC3 DVD (Dolby Digital)"
+                ;;
+            "mp2" )
+                A_DVD="$ID_AUDIO_BITRATE bps 48khz MP2 DVD (MPEG audio)"
+                ;;
+        esac
+
+    # VCD/SVCD must be 44.1khz mp2
+    elif test "$ID_AUDIO_RATE" = "44100" && test "$ID_AUDIO_CODEC" = "mp2"; then
+        # SVCD can be 32-384 bps, 1-4 channels
+        if test "$ID_AUDIO_NCH" -le "4" && \
+          test "$ID_AUDIO_BITRATE" -ge "32000" && \
+          test "$ID_AUDIO_BITRATE" -le "384000"; then
+            A_SVCD="$ID_AUDIO_NCH-channel $ID_AUDIO_BITRATE bps SVCD"
+        fi
+        # VCD must be 224 bps, 2 channels
+        if test "$ID_AUDIO_NCH" = "2" && \
+          test "$ID_AUDIO_BITRATE" = "224000"; then
+            A_VCD1="VCD 1.1"
+            A_VCD2="VCD 2.0"
+        fi
+    fi
+
+    # Check for missing audio stream (0 channels, 0 Hz)
+    if test -z "$ID_AUDIO_ID"; then
+        A_NONE="No audio stream present"
+    fi
+
+    # Separate flags for each video profile (there may be multiple matches)
+    V_VCD=""
+    V_SVCD=""
+    V_DVD=""
+    V_RES=""
+
+    # Resolution
+    case "$ID_VIDEO_WIDTH" in
+        "352" )
+            case "$ID_VIDEO_HEIGHT" in
+                "240" ) V_RES="NTSC_VCD" ;;
+                "288" ) V_RES="PAL_VCD" ;;
+                "480" ) V_RES="NTSC_HALF" ;;
+                "576" ) V_RES="PAL_HALF" ;;
+            esac
+            ;;
+        "480" )
+            case "$ID_VIDEO_HEIGHT" in
+                "480" ) V_RES="NTSC_SVCD";;
+                "576" ) V_RES="PAL_SVCD" ;;
+            esac
+            ;;
+        "528" )
+            case "$ID_VIDEO_HEIGHT" in
+                "480" ) V_RES="NTSC_KVCDX3";;
+                "576" ) V_RES="PAL_KVCDX3" ;;
+            esac
+            ;;
+        "544" )
+            case "$ID_VIDEO_HEIGHT" in
+                "480" ) V_RES="NTSC_KVCDX3A" ;;
+                "576" ) V_RES="PAL_KVCDX3A" ;;
+            esac
+            ;;
+        "704" | "720" )
+            case "$ID_VIDEO_HEIGHT" in
+                "480" ) V_RES="NTSC_DVD" ;;
+                "576" ) V_RES="PAL_DVD" ;;
+            esac
+            ;;
+    esac
+
+    # Find matching video profile(s)
+    # Test for VCD/DVD-VCD MPEG1 compliance
+    if test "$ID_VIDEO_FORMAT" = "MPEG1" && test "$ID_VIDEO_BITRATE" -le "1856000"; then
+        # VCD compliance
+        if test "$ID_VIDEO_BITRATE" -le "1152000"; then
+            # NTSC
+            if test "$V_RES" = "NTSC_VCD"; then
+                V_TV="NTSC"
+                if test -n "$NTSC_FPS"; then
+                  V_VCD="$NTSC_FPS fps NTSC VCD 1.1/2.0"
+                elif test -n "$NTSC_FILM_FPS"; then
+                  V_VCD="$NTSC_FILM_FPS fps film NTSC VCD 1.1/2.0"
+                fi
+            # PAL
+            elif test "$V_RES" = "PAL_VCD" && test -n "$PAL_FPS"; then
+                V_TV="PAL"
+                V_VCD="$PAL_FPS fps PAL VCD 2.0"
+            fi
+        fi
+
+        # DVD-VCD MPEG1 compliance
+        # NTSC
+        if test "$V_RES" = "NTSC_VCD"; then
+            V_TV="NTSC"
+            if test -n "$NTSC_FPS"; then
+                V_DVD="$NTSC_FPS fps $ID_VIDEO_FORMAT NTSC DVD-VCD"
+            elif test -n "$NTSC_FILM_FPS"; then
+                V_DVD="$NTSC_FILM_FPS fps with 3:2 pulldown $ID_VIDEO_FORMAT NTSC DVD-VCD"
+            fi
+        # PAL
+        elif test "$V_RES" = "PAL_VCD" && test -n "$PAL_FPS"; then
+            V_TV="PAL"
+            V_DVD="$PAL_FPS fps $ID_VIDEO_FORMAT PAL DVD-VCD"
+        fi
+
+    # Test for SVCD/DVD MPEG2 compliance
+    elif test "$ID_VIDEO_FORMAT" = "MPEG2" && test "$ID_VIDEO_BITRATE" -le "9800000"; then
+        # *********************
+        # NTSC
+        # *********************
+        if test -n "$NTSC_FPS" || test -n "$NTSC_FILM_FPS"; then
+            V_TV="NTSC"
+            case "$V_RES" in
+            # DVD-VCD
+            "NTSC_VCD" )
+                V_DVD="$ID_VIDEO_BITRATE bps $ID_VIDEO_FPS fps $ID_VIDEO_FORMAT NTSC DVD-VCD"
+                ;;
+            # SVCD
+            "NTSC_SVCD" )
+                # Ensure valid bitrate
+                test "$ID_VIDEO_BITRATE" -le "2600000" && \
+                    V_SVCD="$ID_VIDEO_BITRATE bps $ID_VIDEO_FPS fps $ID_VIDEO_FORMAT NTSC SVCD"
+                ;;
+            # Half-D1
+            "NTSC_HALF" )
+                V_DVD="$ID_VIDEO_BITRATE bps $ID_VIDEO_FPS fps $ID_VIDEO_FORMAT NTSC Half-D1"
+                ;;
+            # DVD
+            "NTSC_DVD" )
+                V_DVD="$ID_VIDEO_BITRATE bps $ID_VIDEO_FPS fps $ID_VIDEO_FORMAT NTSC DVD"
+                ;;
+            esac
+        # *********************
+        # PAL
+        # *********************
+        elif test -n "$PAL_FPS"; then
+            V_TV="PAL"
+            case "$V_RES" in
+            # DVD-VCD
+            "PAL_VCD" )
+                V_DVD="$ID_VIDEO_BITRATE bps $ID_VIDEO_FPS fps $ID_VIDEO_FORMAT PAL DVD-VCD"
+                ;;
+            # SVCD
+            "PAL_SVCD" )
+                    # Ensure valid bitrate
+                test "$ID_VIDEO_BITRATE" -le "2600000" && \
+                    V_SVCD="$ID_VIDEO_BITRATE bps $ID_VIDEO_FPS fps $ID_VIDEO_FORMAT PAL SVCD"
+                ;;
+            # Half-D1
+            "PAL_HALF" )
+                V_DVD="$ID_VIDEO_BITRATE bps $ID_VIDEO_FPS fps $ID_VIDEO_FORMAT PAL Half-D1"
+                ;;
+            # DVD
+            "PAL_DVD" )
+                V_DVD="$ID_VIDEO_BITRATE bps $ID_VIDEO_FPS fps $ID_VIDEO_FORMAT PAL DVD"
+                ;;
+            esac
+        fi
+    fi # Video profile (MPEG-1/2)
+
+    # See if audio is not compliant with anything
+    if test -z "$A_VCD1" && test -z "$A_VCD2" && test -z "$A_SVCD" \
+        && test -z "$A_DVD" && test -z "$A_DVD"; then
+        A_NONCOMPLIANT="Not compliant with (S)VCD or DVD"
+    fi
+    if test -z "$V_VCD" && test -z "$V_SVCD" && test -z "$V_DVD"; then
+        V_NONCOMPLIANT="Not compliant with (S)VCD or DVD"
+    fi
+
+
+    # If just checking compliance, look for a match and exit with the
+    # appropriate return code (0: compliant, 1: not compliant)
+    if test -n "$MATCH_FORMAT" || test -n "$MATCH_TVSYS"; then
+        MATCH=false
+        if test -n "$MATCH_FORMAT"; then
+            case "$MATCH_FORMAT" in
+                "ntsc-vcd" )
+                    if test -n "$A_VCD1" || test -n "$A_VCD2"; then
+                        if test -n "$V_VCD" && test  "$V_TV" = "NTSC"; then
+                            MATCH=:
+                        fi
+                    fi
+                    ;;
+                "pal-vcd" )
+                    if test -n "$A_VCD1" || test -n "$A_VCD2"; then
+                        if test -n "$V_VCD" && test "$V_TV" = "PAL"; then
+                            MATCH=:
+                        fi
+                    fi
+                    ;;
+                "ntsc-svcd" )
+                    if test -n "$V_SVCD" && test -n "$A_SVCD"; then
+                        test "$V_TV" = "NTSC" && MATCH=:
+                    fi
+                    ;;
+                "pal-svcd" )
+                    if test -n "$V_SVCD" && test -n "$A_SVCD"; then
+                        test "$V_TV" = "PAL" && MATCH=:
+                    fi
+                    ;;
+                "ntsc-dvd" )
+                    if test -n "$V_DVD" && test -n "$A_DVD"; then
+                        test "$V_TV" = "NTSC" && MATCH=:
+                    fi
+                    ;;
+                "pal-dvd" )
+                    if test -n "$V_DVD" && test -n "$A_DVD"; then
+                        test "$V_TV" = "PAL" && MATCH=:
+                    fi
+                    ;;
+                * )
+                    usage_error "'$MATCH_FORMAT' \
+                        is not a recognized argument to '-isformat'"
+                    ;;
+            esac
+        fi
+
+        rm -rf "$TMP_DIR"
+        if $MATCH; then
+            echo "true"
+            exit 0
+        else
+            echo "false"
+            exit 1
+        fi
+
+
+    # Print out compliance information
+    elif $TERSE; then
+        test -n "$A_VCD1" && echo "A_VCD1_OK=:"
+        test -n "$A_VCD2" && echo "A_VCD2_OK=:"
+        test -n "$A_SVCD" && echo "A_SVCD_OK=:"
+        test -n "$A_DVD" && echo "A_DVD_OK=:"
+        test -n "$A_NONE" && echo "A_NOAUDIO=:"
+        test -n "$V_VCD" && echo "V_VCD_OK=:"
+        test -n "$V_SVCD" && echo "V_SVCD_OK=:"
+        test -n "$V_DVD" && echo "V_DVD_OK=:"
+        test -n "$V_RES" && echo "V_RES=$V_RES"
+        test -n "$V_TV" && echo "V_TV=$V_TV"
+    elif $TABULAR; then
+        :
+    else
+        echo "Audio is compliant with the following formats:"
+        test -n "$A_VCD1" && echo "  $A_VCD1"
+        test -n "$A_VCD2" && echo "  $A_VCD2"
+        test -n "$A_SVCD" && echo "  $A_SVCD"
+        test -n "$A_DVD" && echo "  $A_DVD"
+        test -n "$A_NONCOMPLIANT" && echo "  $A_NONCOMPLIANT"
+        test -n "$A_NONE" && echo "  $A_NONE"
+        echo "Video is compliant with the following formats:"
+        test -n "$V_VCD" && echo "  $V_VCD"
+        test -n "$V_SVCD" && echo "  $V_SVCD"
+        test -n "$V_DVD" && echo "  $V_DVD"
+        test -n "$V_NONCOMPLIANT" && echo "  $V_NONCOMPLIANT"
+        # Print out what discs this video can be burned to
+        # PAL
+        if test x"$V_TV" = x"PAL"; then
+            if test -n "$A_VCD1" || test -n "$A_VCD2" && test -n "$V_VCD"; then
+                echo "You can burn this video to PAL VCD"
+            elif test -n "$A_SVCD" && test -n "$V_SVCD"; then
+                echo "You can burn this video to PAL SVCD"
+            elif test -n "$A_DVD" && test -n "$V_DVD"; then
+                echo "You can burn this video to PAL DVD"
+            else
+                printf "%s\n" "$NON_COMPLIANT"
+            fi
+        # NTSC
+        elif test x"$V_TV" = x"NTSC"; then
+            if test -n "$A_VCD1" || test -n "$A_VCD2" && test -n "$V_VCD"; then
+                echo "You can burn this video to NTSC VCD"
+            elif test -n "$A_SVCD" && test -n "$V_SVCD"; then
+                echo "You can burn this video to NTSC SVCD"
+            elif test -n "$A_DVD" && test -n "$V_DVD"; then
+                echo "You can burn this video to NTSC DVD"
+            else
+                printf "%s\n" "$NON_COMPLIANT"
+            fi
+        else
+            printf "%s\n" "$NON_COMPLIANT"
+        fi
+
+        echo $SEPARATOR
+    fi
+
+    # Write stats to stat file
+    FINAL_STATS_FORMATTED=`cat << EOF
+"$TOVID_VERSION", "$INFILE", "$ID_VIDEO_WIDTH", "$ID_VIDEO_HEIGHT", "$V_DURATION", "$ID_VIDEO_FPS", "$ID_VIDEO_FORMAT", "$ID_AUDIO_CODEC", "$ID_VIDEO_BITRATE", "$ID_AUDIO_BITRATE", "$ID_AUDIO_NCH", "$ID_AUDIO_RATE", "$V_ASPECT_WIDTH"
+EOF`
+    touch "$STAT_FILE"
+    printf "%s\n" "$FINAL_STATS_FORMATTED" >> "$STAT_FILE"
+
+}
+
+# ===========================
+# EXECUTION BEGINS HERE
+# ===========================
+
+# See what programs are available for doing identification
+MPLAYER=$(type -p mplayer)
+FFMPEG=$(type -p ffmpeg)
+TCPROBE=$(type -p tcprobe)
+
+
+if test $# -eq 0; then
+    usage_error "Please provide the name of at least one video file."
+fi
+
+x=0
+while test $# -gt 0; do
+    case "$1" in
+        "-terse" ) TERSE=: ;;
+        "-verbose" ) VERBOSE=: ;;
+        "-fast" ) FAST=: ;;
+        "-accurate" ) FAST=false ;;
+        "-tabular" ) TABULAR=: ;;
+        "-isformat" )
+            shift
+            MATCH_FORMAT="$1"
+            TERSE=:
+            FAST=:
+            ;;
+        * )
+            ID_FILES[x++]="$1"
+            ;;
+    esac
+    shift
+done
+
+$TERSE || printf "%s\n" "$SCRIPT_NAME"
+
+# Column header for tabular output
+if $TABULAR; then
+    echo "--------||----||----------||---||--------||--------" >> "$TABLE"
+    echo "Filename||Size||Resolution||FPS||VBitrate||ABitrate" >> "$TABLE"
+    echo "--------||----||----------||---||--------||--------" >> "$TABLE"
+fi
+
+for ((k=0; k<${#ID_FILES[@]}; k++)); do
+    idvid_main "${ID_FILES[k]}"
+done
+
+if $TABULAR; then
+    column -s "||" -t "$TABLE"
+fi
+
+rm -rf "$TMP_DIR"
+exit 0

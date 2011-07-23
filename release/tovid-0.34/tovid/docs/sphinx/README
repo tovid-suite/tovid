@@ -1,0 +1,12 @@
+This directory contains tovid documentation for the Sphinx_ documentation generator.
+
+To build HTML documentation, run::
+
+    $ make html
+
+from this directory.  This will create an HTML hierarchy in ``_build/html``,
+including documentation on the ``libtovid`` module.
+
+Run ``make`` without any arguments to see other actions.
+
+.. _Sphinx: http://sphinx.pocoo.org/

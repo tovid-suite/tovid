@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=tovid titleset wizard
+Type=Application
+Exec=tovid titlesets
+Icon=titleset-wizard
+Terminal=false
+GenericName=DVD creation with multiple menus
+GenericName[en_US]=DVD creation with multiple menus
+Comment=Author videos to DVD with multiple menus
+Comment[en_US]=Author videos to DVD with multiple menus
+Categories=AudioVideo;Video;
+StartupNotify=true
+X-KDE-SubstituteUID=false

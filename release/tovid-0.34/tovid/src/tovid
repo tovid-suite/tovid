@@ -1,0 +1,209 @@
+#! /usr/bin/env python
+# tovid.py
+
+"""Frontend to the tovid suite.
+"""
+
+usage = """Usage:
+
+    tovid [command] [arguments ...]
+
+Where 'command' is one of the following:
+
+    Command     Description                                 Formerly
+    -----------------------------------------------------------------
+    id          Identify one or more video files            idvid
+    dvd         Author and/or burn a DVD                    makedvd
+    menu        Create an MPEG menu                         makemenu
+    vcd         Author and/or burn a VCD                    makevcd
+    xml         Create (S)VCD or DVD .xml file              makexml
+    postproc    Post-process an MPEG video file             postproc
+    disc        Create a DVD with menus                     todisc
+    gui         Start the tovid GUI                         todiscgui
+    mpg         Encode videos to MPEG format                tovid
+    titlesets   Start the titleset wizard                   (new)
+    chapters    Set video chapter points with mplayer       (new)
+
+The following general options are also available:
+    --prefix | -prefix      Return the tovid install prefix
+    --version | -version    Return the tovid version
+    --info | -info          Return prefix, version and python module search path
+    These options are to be used on their own, as in:  tovid --prefix
+
+Run 'tovid <command>' with no further arguments to get help on a command,
+and what arguments it expects.
+"""
+
+import sys
+import os
+import subprocess
+import signal
+import time
+import shlex
+import shutil
+from ConfigParser import ConfigParser
+
+# Command names to script mappings
+_scripts = {
+    'id': 'idvid',
+    'dvd': 'makedvd',
+    'menu': 'makemenu',
+    'vcd': 'makevcd',
+    'xml': 'makexml',
+    'postproc': 'postproc',
+    'disc': 'todisc',
+    'gui': 'todiscgui',
+    'mpg': 'makempg',
+    'batch': 'tovid-batch',
+    'titlesets': 'titleset-wizard',
+    'chapters': 'set_chapters',
+}
+
+
+class Frontend:
+    def __init__(self, args):
+        # Set attributes
+        self.path = os.path.abspath(args.pop(0))
+        self.prefix = self.get_prefix(self.path)
+        self.script_dir = os.path.join(self.prefix, 'lib', 'tovid')
+        self.version = self.get_version()
+        # Handle any special options
+        self.parse_options(args)
+        # Setup and run the command
+        self.install_tovid_ini()
+        self.run_command(args)
+
+
+    def get_prefix(self, script_path):
+        """Get the path prefix where tovid is installed (/usr or /usr/local).
+        """
+        # Determine the prefix where tovid is installed
+        bin_dir = os.path.dirname(script_path)
+        return os.path.dirname(bin_dir)
+
+
+    def get_version(self):
+        """Return the tovid version string.
+        """
+        tovid_init = self.script_dir + '/tovid-init'
+        cmd = shlex.split("bash -c '. %s && printf $TOVID_VERSION'" % tovid_init)
+        return subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
+
+
+    def parse_options(self, args):
+        """Parse and handle any command-line options at the beginning of args.
+        The args list is modified in place.
+        """
+        while args and args[0].startswith('-'):
+            arg = args.pop(0)
+
+            if arg in ['-prefix', '--prefix']:
+                print self.prefix
+                sys.exit(0)
+
+            elif arg in ['-version', '--version']:
+                print self.version
+                sys.exit(0)
+
+            elif arg in ['-info', '--info']:
+                print("tovid version: %s" % self.version)
+                print("tovid prefix: %s" % self.prefix)
+                print("tovid script directory: %s" % self.script_dir)
+                print("python library path:")
+                print('  ' + '\n  '.join(sys.path))
+                sys.exit(0)
+
+
+    def run_command(self, args):
+        """Run the command in the first element of args, passing any additional
+        arguments found after that.
+        """
+        if not args:
+            return
+
+        os.environ['PATH'] = self.script_dir + os.pathsep + os.environ['PATH']
+
+        command = args.pop(0)
+        if command not in _scripts:
+            print(usage)
+            print("Unknown command: '%s'" % command)
+            sys.exit(1)
+
+        # Get the script name for the given command
+        script = _scripts[command]
+
+        # Ensure that the script exists in self.script_dir
+        # (Should never happen if installer is configured correctly)
+        script_path = os.path.join(self.script_dir, script)
+        if not os.path.exists(script_path):
+            print("ERROR: Missing script: '%s'" % script)
+            sys.exit(1)
+
+        # Get any options found in tovid.ini
+        ini_args = self.get_config_options(command)
+
+        # Summon the script and catch keyboard interruptions
+        try:
+            proc = subprocess.Popen([script] + ini_args + args)
+            proc.wait()
+        except KeyboardInterrupt:
+            print("\n!!! tovid was manually interrupted. Exiting.")
+            os.kill(proc.pid, signal.SIGTERM)
+            # Sleep a second to let the script clean up
+            time.sleep(1)
+            sys.exit(1)
+        else:
+            sys.exit(proc.returncode)
+
+
+    def install_tovid_ini(self):
+        """If tovid.ini doesn't exist in user's home directory,
+        copy the one from self.script_dir.
+        """
+        # If for some reason the default tovid.ini doesn't exist, return
+        default_tovid_ini = os.path.join(self.script_dir, 'tovid.ini')
+        if not os.path.exists(default_tovid_ini):
+            return
+
+        # Create ~/.tovid if it doesn't exist already
+        user_tovid_dir = os.path.expanduser('~/.tovid')
+        if not os.path.exists(user_tovid_dir):
+            print("Creating '%s'" % user_tovid_dir)
+            os.mkdir(user_tovid_dir)
+
+        # Copy default tovid.ini to ~/.tovid if it doesn't exist already
+        user_tovid_ini = os.path.join(user_tovid_dir, 'tovid.ini')
+        if not os.path.exists(user_tovid_ini):
+            print("Creating '%s'" % user_tovid_ini)
+            shutil.copy(default_tovid_ini, user_tovid_ini)
+
+
+    def get_config_options(self, command):
+        """Return any options found in ~/.tovid/tovid.ini for the given command.
+        """
+        # Parse the user's tovid.ini file
+        filename = os.path.expanduser('~/.tovid/tovid.ini')
+        config = ConfigParser()
+        config.read(filename)
+        # If no [command] section exists, or if there's no 'options' setting,
+        # return an empty list.
+        if command not in config.sections():
+            return []
+        if 'options' not in config.options(command):
+            return []
+        # Otherwise, get the 'options' setting from the [command] section,
+        # and split into a list of individual options using shell syntax
+        options = config.get(command, 'options')
+        options = shlex.split(options)
+        print("Read options from %s:" % filename)
+        print(' '.join(options))
+        return options
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print(usage)
+        sys.exit()
+    else:
+        tovid = Frontend(sys.argv)
+

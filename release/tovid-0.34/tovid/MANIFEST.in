@@ -1,0 +1,6 @@
+include AUTHORS COPYING INSTALL NEWS README
+include ChangeLog
+include tovidgui.desktop titleset-wizard.desktop
+recursive-include src *
+recursive-include icons *
+recursive-include docs *
