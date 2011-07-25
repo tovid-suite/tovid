@@ -249,6 +249,7 @@ use_overlay_filter=false
 JUSTIFY="center"
 CONTRAST_CLR='gray'
 NOMENU=false
+ENCODE_ONLY=false
 SC_AR=133
 THUMB_COLUMNS=""
 FAST_SEEK=false # ffmpeg: default:decode during seek (more accurate but slower)
@@ -2405,6 +2406,10 @@ while test $# -gt 0; do
         "-nomenu" | "-no-menu" )
             NOMENU=:
             ;;
+        "-encode-only" )
+            ENCODE_ONLY=:
+            NOMENU=:
+            ;;
         "-out" )
             shift
             OUT_PREFIX="$1"
@@ -4273,6 +4278,12 @@ if $SUB_MENU; then
     fi
 fi
 
+# allow using todisc for just encoding mpegs, then exiting
+if $ENCODE_ONLY; then
+    check_compliance
+    cleanup
+    exit 0
+fi
 # a quick way to allow user to make a dvd with no menus
 if $NOMENU; then
     cd "$WORK_DIR"
