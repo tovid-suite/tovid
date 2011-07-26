@@ -13,9 +13,14 @@ files to DVD-compliant MPEG format, generate simple or complex DVD menus,
 author and burn a ready-to-watch DVD, with just a few shell commands. A
 graphical interface is also provided to make the process even easier.
 
-**NOTE**: As of tovid 0.32, this is the only manual page provided by tovid.
+**NOTE**: As of tovid 0.35, the legacy scripts **makemenu***, ***makexml***,
+***makevcd*** have been deprecated and no longer appear in this manpage.  They
+are still included with tovid for now, and can be used by doing:
+tovid menu|xml|vcd|postproc as done in the previous 3 versions of tovid.
+
+Also note that as of tovid 0.32, this is the only manual page provided by tovid.
 There is now a single executable frontend to all functionality in the suite, so
-if you were expecting to find manpages for **todisc**, **idvid**, **makemenu**
+if you were expecting to find manpages for **todisc**, **idvid**, **makempg**
 and their kin, they can all be found in the **tovid** manpage you are reading now.
 
 And yes, this makes for a pretty large manual page. If you are viewing this
@@ -32,26 +37,22 @@ to navigate.
 
 Where //COMMAND// is one of the following:
 
+Main commands
 : **gui**
     Start the tovid GUI (was **todiscgui**. See **Command:gui**)
 : **titlesets**
     A tovid GUI wizard for multiple titlesets. (new: See **Command:titlesets**)
 : **disc**
     Create a DVD with menus (was **todisc**. See **Command:disc**)
+    This is the main tovid command line frontend, and also encompasses
+    ***mpg*** and ***dvd***, if selected by options.
+Helper commands
 : **mpg**
     Encode videos to MPEG format (was **tovid**. See **Command:mpg**)
-: **id**
-    Identify one or more video files (was **idvid**. See **Command:id**)
-: **menu**
-    Create an MPEG menu (was **makemenu**. See **Command:menu**)
-: **xml**
-    Create (S)VCD or DVD .xml file (was **makexml**. See **Command:xml**)
 : **dvd**
     Author and/or burn a DVD (was **makedvd**. See **Command:dvd**)
-: **vcd**
-    Author and/or burn a VCD (was **makevcd**. See **Command:vcd**)
-: **postproc**
-    Post-process an MPEG video file (was **postproc**. See **Command:postproc**)
+: **id**
+    Identify one or more video files (was **idvid**. See **Command:id**)
 : **chapters**
     A GUI using mplayer for setting chapter points.  It will return a string of
     chapter points in a format recognized by 'tovid disc' (todisc) or
@@ -172,6 +173,7 @@ sub-menus, which can display longer titles, for example:
  $ tovid disc -submenus \
       -files file1.mpg file2.mpg ... \
       -titles "Short 1" "Short 2" \
+      -submenus \
       -submenu-titles "Long Title One" "Long Title Two" \
       -out foo
 
@@ -324,6 +326,12 @@ Here is a list of possible options you can pass:
     video will be a chapter unless **-chapters** OPTION is passed.  The
     **-chapters** option is a number indicating the chapter interval in
     minutes, or a HH:MM:SS string indicating chapter points.  See **-chapters**
+: **-encode-only**
+    This option is really meant for the GUI, to allow it to be used for
+    just encoding rather than making a DVD structure.  Though it will work,
+    it is probably better to just use 'tovid mpg' from the command line.
+    If you do use this, remember any makempg ('tovid mpg') options you use
+    will be passed on the the makempg script when encoding.
 
 
 ==Menu style==
@@ -1427,332 +1435,6 @@ For example:
     Check to see if homevideo.mpg is compliant with the DVD standard.
 
 
-=Command:menu=
-
-**tovid menu** generates textual (S)VCD- or DVD-compliant MPEG videos for use
-as navigational menus, given a list of text strings to use for title names. You
-can customize the menu by providing an optional background image or audio clip,
-or by using custom font and font color.
-
-
-==Usage==
-
-**tovid menu** [//OPTIONS//] //TITLES// **-out** //OUT_PREFIX//
-
-For example:
-
-: ``tovid menu "Season One" "Season Two" "Featurettes" -out MainMenu``
-
-
-==Options==
-
-: **-ntsc** (default)
-    Generate an NTSC-format menu
-: **-ntscfilm**
-    Generate an NTSC-format menu (24000/1001fps)
-: **-pal**
-    Generate a PAL-format menu
-: **-dvd** (default)
-    Generate a DVD-format menu, with highlighted text included
-    as a multiplexed subtitle stream.
-: **-vcd**
-: **-svcd**
-    Generate a VCD/SVCD menu; each menu option will have a
-    number associated with it. You can have up to nine menu
-    options per menu.
-
-
-Menu background/audio options:
-
-: **-background** //IMAGE//
-    Use //IMAGE// (in most any graphic format) as a background. If image is not
-    the correct aspect ratio (4:3), it will be scaled and/or cropped,
-    depending on the **-crop** and **-scale** options. If no background is
-    supplied, a default background will be created.
-
-: **-crop** (default)
-    If provided background image is not 4:3 aspect ratio, crop edges
-    to make it so. Image will be scaled up if it is too small. Cropping
-    keeps the center area of image. If you want to do cropping/scaling
-    yourself in another program, provide an image of 768x576 pixels.
-
-: **-scale**
-    If provided background image is not 4:3 aspect ratio, scale/stretch
-    it to make it fit. May cause visible distortion!
-
-: **-audio** //AUDIOFILE//
-    Use //AUDIOFILE// (in most any audio format) for background music. The
-    menu will play for long enough to hear the whole audio clip. If
-    one is not provided, 4 seconds of silence will be used.
-
-: **-length** //NUM//
-    Make the menu //NUM// seconds long. Useful for menus with **-audio**:
-    if you don't want the entire //AUDIOFILE// in the menu, then you can trim
-    the length of the menu with **-length**.
-
-
-Menu text options:
-
-: **-menu-title** **"**//MENU TITLE TEXT//**"**
-    Add //MENU TITLE TEXT// as a title/header to the menu.
-
-: **-font** //FONTNAME// (default Helvetica)
-    Use //FONTNAME// for the menu text. Run 'convert -list type' to see a
-    list of the fonts that you can use; choose a font name from the
-    leftmost column that is displayed. Or you can specify a ttf font file instead.
-    E.g., '-font /path/to/myfont.ttf'.
-
-: **-fontsize** //NUM// (default 24)
-    Sets the size for the font to //NUM// pixels.
-
-: **-menu-title-fontsize** //NUM// (default **-fontsize** + 8)
-    Sets the size of the menu title.
-
-: **-fontdeco** **'**//FONTDECORATION//**'**
-    Sets the font decoration method to //FONTDECORATION//. It is used by the
-    'convert' ImageMagick command to draw the menu text. You can add colored
-    text outlines, gradient fills, and many others. See **Usage notes**.
-
-: **-align** {**left**|**center**|**middle**|**right**}
-    Align the text at the top left, top center, very middle, or top right
-    side of the screen. You may also substitute any "gravity" keyword
-    allowed by ImageMagick (north|south|east|west|northeast|southwest|...).
-
-: **-textcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
-    Use specified color for menu text. #//RRGGBB// and #//RGB// are
-    hexadecimal triplets (e.g., #FF8035). //COLORNAME// may be any of
-    several hundred named colors; run 'convert -list color' to see them.
-    White (#FFF) is the default color.
-
-
-DVD-only options:
-
-: **-button** //BUTTON// (default '>')
-    Specify the button used for menu selection. Specify either a _single_
-    character or one of the shortcuts:
-    - **play** -- Use a button shaped like 'Play' on many A/V electronics:
-        a triangle pointing to the right. (uses the font Webdings)
-    - **movie** -- Use a button shaped like an old movie projector.
-        (uses the font Webdings)
-    - **utf8** -- Use your own non-keyboard character as a button. Provide
-        only the four hex digits: eg '-button utf8 00b7'. Beware that
-        ImageMagick's utf8 characters aren't the same as those drawn in
-        character browsers like gucharmap.
-
-
-: **-highlightcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
-    Use the specified color for button highlighting. Yellow (#FF0) is the
-    default color.
-
-: **-selectcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
-    Use the specified color for button selections (when a menu item is played
-    or activated). Red (#F00) is the default color.
-
-: **-button-outline** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
-    Outline buttons with the specified color. 'none' is the default.
-
-: **-button-font** //FONTNAME//
-    Specify a differnt font to use for the buttons. By default, the button
-    font will be inherited from the title font (see **-font**). Use this
-    option to use a different font for the buttons. The button font size is
-    inherited from **-fontsize** and cannot be changed.
-
-
-Other options:
-
-: **-debug**
-    Print extra debugging information to the log file. Useful in
-    diagnosing problems if they occur. This option also leaves
-    the log file (with a .log extension) in the directory after
-    encoding finishes as well as all the temporary files created.
-
-: **-nosafearea**
-    Do not attempt to put text inside a TV-safe viewing area. Most
-    television sets cut off about 10% of the image border, so the script
-    automatically leaves a substantial margin. This option turns that
-    behavior off, leaving only a tiny margin. Use at your own risk.
-
-: **-overwrite**
-    Overwrite any existing output menu.
-
-: **-noask**
-    Don't ask interactive questions, and assume answers that will
-    continue making the menu until completion.
-
-: **-quiet**
-    Limit output to essential messages.
-
-
-If the word "**back**" is given as an episode title, a "back" button for
-returning to a higher-level menu will be added at the end of the list
-of titles. "**Back**" //must be the last title listed//.
-
-
-==Examples==
-
-Make an NTSC VCD menu with white Helvetica text containing three centered
-selections: Episode 1, Episode 2, and Episode 3. The finished menu will be
-called Season-1.mpg:
-
-```
-tovid menu -ntsc -vcd \
-    -align center -textcolor white -font "Helvetica" \
-    "Episode 1" "Episode 2" "Episode 3" \
-    -out "Season-1"
-```
-
-Make an NTSC DVD menu with white Kirsty text containing three lower-left
-aligned selections: Episode 1, Episode 2, and Episode 3. Items under the cursor
-will be highlighted a pale blue, and selected items will be a pale orange
-(before going to the selected title). The finished menu will be called
-Main-menu.mpg:
-
-```
-tovid menu -ntsc -dvd \
-    -align southwest \
-    -textcolor white \
-    -highlightcolor "#5f65ff" \
-    -selectcolor "#ffac5f" \
-    -font "Kirsty" \
-    "Episode 1" "Episode 2" "Episode 3" \
-    -out "Main_menu"
-```
-
-
-
-==Usage notes==
-
-The argument given to **-font** must be one of the fonts listed
-by the command 'convert -list type'. Please note that many of
-your installed fonts may not be available; if you want to maximize the
-number of fonts available, download and run
-[Anthony Thyssen's http://www.cit.gu.edu.au/~anthony/anthony.html]
-[imagick_type_gen.pl http://www.cit.gu.edu.au/~anthony/software/imagick_type_gen.pl]
-script and run it like this:
-imagick_type_gen.pl > ~/.magick/type.xml.
-If that doesn't work, try
-imagick_type_gen.pl > ~/.magick/type.mgk.
-
-Or you can specify a ttf font file directly to the **-font** options if you
-don't want to install fonts to ImageMagick.
-
-The **-fontdeco** option is quite flexible and takes a lot of ImageMagick's
-//convert// options. Please refer to the tovid
-[wiki http://tovid.wikia.com/wiki/Making_a_DVD_with_text_menus]
-and Anthony Thyssen's guide for further explanation and examples.
-
-
-=Command:xml=
-
-**tovid xml** generates XML output describing an (S)VCD
-or DVD file structure and navigation hierarchy in the format expected by
-[dvdauthor http://dvdauthor.sourceforge.net/] or
-[vcdxbuild http://www.vcdimager.org/].
-
-
-==Usage==
-
-**tovid xml** [//OPTIONS//] //VIDEOS// -out //OUTFILE//
-
-For example:
-
-```
-$ tovid xml -menu MainMenu.mpg \
-    Season1.mpg Season2.mpg Featurettes.mpg \
-    -out MyDisc
-```
-
-
-==Options==
-
-: **-dvd** (default)
-    Generate the XML for a DVD disc, to be used with dvdauthor or **tovid dvd**.
-: **-vcd**
-    Generate the XML for a VCD disc, to be used with vcdxbuild or **tovid vcd**.
-: **-svcd**
-    Generate the XML for an SVCD disc, to be used with vcdxbuild or **tovid vcd**.
-: **-overwrite**
-    Overwrite any existing output files.
-: **-quiet**
-    Limit output to essential messages.
-
-
-//VIDEOS// may be any of the following:
-
-: //<file list>//
-    List of one or more video files to include, separated by spaces. At
-    minimum, a DVD must have one video file. You can use shell wildcards
-    (i.e., "*.mpg") to include multiple files easily. Put filenames in
-    quotes if they have spaces in them.
-
-: **-menu** //VIDEO// //<file list>//
-    Use video file //VIDEO// as a menu from which you can jump to each of
-    the listed video files. If you have multiple menus, include a
-    top menu so they are reachable.
-
-: **-slides** //<file list>//
-    Create a slide-show of still images
-
-
-DVD-only options
-
-: **-group** //<file list>// **-endgroup**
-    (DVD only) List of video files to include as one single title. This is useful
-    if you have split a movie into several video files.
-
-: **-topmenu** //VIDEO// [**-menu** //VIDEO// //<file list>//] [**-menu** //VIDEO// //<file list>//]...
-    (DVD only) Use video file //VIDEO// for the top-level (VMGM) menu. The
-    top menu will jump to each of the subsequent [-menu...] videos listed.
-    Use this only if you have multiple sub-menus to jump to. You can only
-    have one top menu.
-
-: **-titlesets**
-    (DVD only) Forces the creation of a separate titleset per title. This
-    is useful if the titles of a DVD have different video formats,
-    e.g. PAL + NTSC or 4:3 + 16:9. If used with menus, there must be a
-    **-topmenu** option that specifies a menu file with an entry for each of the
-    titlesets.
-
-: **-chapters** //INTERVAL//
-    (DVD only) Creates a chapter every //INTERVAL// minutes (default 5 minutes:
-    without **-chapters**, each movie will be divided into 5-minute chapters).
-    This option can be put at any position in a //<file list>// and is valid
-    for all subsequent titles until a new **-chapters** option is encountered.
-    Using this option may take some time, since the duration of the video is
-    calculated.
-
-: **-nochapters**
-    (DVD only) Don't create chapters for the videos.
-
-
-//OUT_PREFIX// is the file that will receive the resulting XML.
-
-
-==Usage notes==
-
-The 'xml' command checks to make sure the video filenames you
-give it exist, but it does not check whether they are valid for the
-chosen disc format. MPEG videos of menus should have the specified
-number of buttons for reaching each of the videos, and, if you're
-using DVD, should be multiplexed with their corresponding subtitles
-using spumux of the dvdauthor 0.6.0 package prior to
-authoring using dvdauthor. If you use the 'tovid menu'
-component to generate the menu, this should all be handled for you.
-
-
-==Examples==
-
-: ``tovid xml -dvd title-1.mpg title-2.mpg title-3.mpg -out My_DVD``
-    Make a DVD without a menu. Title 1, 2, and 3 will play in sequence.
-
-: ``tovid xml -dvd -group chapter-1.mpg chapter-2.mpg chapter-3.mpg -endgroup -out My_DVD``
-    Group the file chapter-1|2|3.mpg into one title and make a DVD without a menu.
-
-: ``tovid xml -dvd -menu main_menu.mpg -chapters 3 movie-1.mpg -chapters 10 movie-2.mpg -out My_DVD``
-    Make a DVD with a main menu that points to two movies, with movie-1.mpg
-divided into 3-minute chapters, and movie-2.mpg into 10-minute chapters.
-
-
 
 =Command:dvd=
 
@@ -1827,108 +1509,6 @@ For example:
     removed before authoring. At this point, the DVD can be previewed
     by calling //**xine** dvd:/path/to/output/directory//.
 
-
-=Command:vcd=
-
-**tovid vcd** takes an XML file (which may be generated by **tovid xml**) and
-creates a cue/bin (S)VCD image. It can also burn (S)VCD discs.
-
-To ensure that this script successfully executes, please run it from a directory
-with plenty of free space. "Plenty" would be about 1 GB. Running this program
-may slow down your other applications, due to intense disk activity.
-
-
-==Usage==
-
-**tovid vcd** [//OPTIONS//] //VCDIMAGER.xml//
-
-For example:
-
-: ``tovid vcd -burn MyDisc.xml``
-
-
-==Options==
-
-: **-overwrite** (default off -- nothing is overwritten)
-    Overwrite any existing cue/bin files matching //VCDIMAGER.xml//. Useful
-    if you modified the xml file and wish to re-image or burn the new (S)VCD.
-
-: **-burn** (default off -- no images are burned)
-    Burn the (S)VCD described by //VCDIMAGER.xml//.
-
-: **-device** //DEVICE// (default /dev/cdrw)
-    Burn the disc image to //DEVICE//, the Linux device file-system
-    name of your CD-recorder. Common examples might be /dev/cdrw,
-    /dev/scd1, and /dev/hdc.
-
-: **-speed** //NUM// (default 12)
-    Burn the disc at speed //NUM//.
-
-: **-quiet**
-    Limit output to essential messages.
-
-
-==Examples==
-
-: ``tovid vcd -burn -device /dev/cdrw foo.xml``
-    Create the (S)VCD image and burn it to /dev/cdrw. This will
-    automatically call vcdxbuild to make the image. If there is an existing
-    image, it will be burned.
-
-: ``tovid vcd -overwrite foo.xml``
-    Create the (S)VCD image and exit without burning. If the image
-    already exists, then it is removed before re-imaging.
-
-
-
-=Command:postproc=
-
-**tovid postproc** is designed to do simple post-processing on MPEG video files, such
-as those generated by tovid. It can adjust audio/video sync, and re-quantize
-(shrink) without re-encoding.
-
-
-==Usage==
-
-**tovid postproc** [//OPTIONS//] //IN_FILE// //OUT_FILE//
-
-
-==Options==
-
-: **-audiodelay** //NUM//
-    Delay the audio stream by //NUM// milliseconds. Use this if
-    your final output has audio that is not synced with the
-    video. For example, if the audio comes 2 seconds sooner than
-    the video, use "-audiodelay 2000". Use a negative number for
-    audio that comes later than the video.
-
-: **-normalize**
-    Analyze the audio stream and then normalize the volume of the audio.
-    This is useful if the audio is too quiet or too loud, or you want to
-    make volume consistent for a bunch of videos. Similar to running
-    normalize without any parameters. The default is -12dB average level
-    with 0dB gain.
-
-: **-amplitude** //NUM//[dB]
-    In addition to analyzing and normalizing, apply the gain to the audio
-    such that the 'average' (RMS) sound level is //NUM//. Valid values
-    range 0.0 - 1.0, with 0.0 being silent and 1.0 being full scale. Use
-    //NUM//dB for a decibel gain below full scale (the default without
-    -amplitude is -12dB).
-
-: **-shrink** //NUM//
-    Shrink the video stream by a factor of //NUM//. May be a decimal
-    value. A value of 1.0 means the video will be the same size;
-    larger values cause more reduction in size. Beyond 2.0, the
-    returns are diminishing.
-
-: **-parallel**
-    Run all processes in parallel and pipe into multiplexer, should
-    increase speed significantly.
-
-: **-debug**
-    Save output in a temporary file, for later viewing if
-    something goes wrong.
 
 
 =Command:chapters=
