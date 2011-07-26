@@ -76,6 +76,7 @@ class Wizard(Frame):
         style = Style()
         # make sure ~/.metagui and the config file exist
         if not os.path.exists(inifile):
+            print("Creating config file: '%s'" % inifile)
             style.save(inifile)
         style.load(inifile)
         self.font = style.font
