@@ -10,25 +10,27 @@ usage = """Usage:
 
 Where 'command' is one of the following:
 
+    Main commands
+
     Command     Description                                 Formerly
     -----------------------------------------------------------------
+    disc        Encode, create menus, burn                  todisc
+    gui         Start the tovid GUI                         todiscgui
+    titlesets   Start the titleset wizard GUI               (new)
+
+
+    Helper commands   
+
+    Command     Description                                 Formerly
+    -----------------------------------------------------------------
+    mpg         Encode videos to MPEG format                tovid
     id          Identify one or more video files            idvid
     dvd         Author and/or burn a DVD                    makedvd
-    menu        Create an MPEG menu                         makemenu
-    vcd         Author and/or burn a VCD                    makevcd
-    xml         Create (S)VCD or DVD .xml file              makexml
-    postproc    Post-process an MPEG video file             postproc
-    disc        Create a DVD with menus                     todisc
-    gui         Start the tovid GUI                         todiscgui
-    mpg         Encode videos to MPEG format                tovid
-    titlesets   Start the titleset wizard                   (new)
-    chapters    Set video chapter points with mplayer       (new)
+    chapters    A GUI to set chapter points with mplayer    (new)
 
-The following general options are also available:
-    --prefix | -prefix      Return the tovid install prefix
-    --version | -version    Return the tovid version
-    --info | -info          Return prefix, version and python module search path
-    These options are to be used on their own, as in:  tovid --prefix
+
+    (Note: deprecated legacy scripts are still available with the commands:
+    menu [makemenu], xml [makexml], vcd [makevcd], and postproc)
 
 Run 'tovid <command>' with no further arguments to get help on a command,
 and what arguments it expects.
