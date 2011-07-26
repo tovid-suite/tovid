@@ -975,14 +975,18 @@ playback = Tabs("Playback",
 
 encoding = VPanel('Encoding',
     Label("\nVideo re-encoding options - you may leave these at defaults.", 'center'),
-    Tabs('tovid options',
+    Tabs('makempg options',
         tovid.BASIC_OPTS,
         tovid.VIDEO,
         tovid.AUDIO,
         tovid.BEHAVIOR,
     ),
+    Flag('Encode only', '-encode-only', False,
+    'Use this GUI for encoding only.  On the Main tab, load files and '
+    'select an out filename'),
     SpacedText('Custom makempg options', '', '',
          'Space-separated list of custom options to pass to makempg.'),
+    
 )
 
 ### --------------------------------------------------------------------
