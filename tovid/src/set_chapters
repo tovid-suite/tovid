@@ -6,7 +6,7 @@ from libtovid.guis.helpers import SetChapters
 from os import path
 
 if len(sys.argv) < 2:
-    print("Usage: set_chapters.py video")
+    print("Usage: tovid chapters VIDEO")
     exit()
 
 video = sys.argv[1]
@@ -19,7 +19,7 @@ def print_chapters():
         sys.stdout.write(app.get_chapters() + '\n')
 
 root = tk.Tk()
-app = SetChapters(root, '-menu', 'Mplayer', print_chapters, style='standalone')
+app = SetChapters(root, '-osdlevel 3', 'Mplayer', print_chapters, style='standalone')
 app.run(video)
 app.pack()
 
