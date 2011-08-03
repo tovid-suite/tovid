@@ -8,7 +8,7 @@ import fnmatch
 from libtovid.metagui import *
 from libtovid.metagui.control import _SubList
 from libtovid.util import filetypes
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE
 from tempfile import mkdtemp
 
 __all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
@@ -105,9 +105,10 @@ class VideoGui(tk.Frame):
         Called by set_container()
         """
         
-        output = commands.getoutput('mplayer -vo null -ao null -frames 5 \
-          -channels 6 -identify %s' %video)
-        return output
+        cmd = 'mplayer -vo null -ao null -frames 5 -channels 6 -identify'
+        cmd = shlex.split(cmd) + [video]
+        output = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        return output.communicate()[0]
 
     def set_container(self, video):
         """Get aspect ratio and set dimensions of video container.
@@ -122,10 +123,10 @@ class VideoGui(tk.Frame):
         # get last occurence as the first is 0.0 with mplayer
         if asr:
             asr = sorted(asr, reverse=True)[0].split('=')[1]
-        try:
-            asr = float(asr)
-        except ValueError:
-            asr = 0.0
+            try:
+                asr = float(asr)
+            except ValueError:
+                asr = 0.0
         # get largest value as mplayer prints it out before playing file
         if asr and asr > 0.0:
             v_height = int(v_width/asr)
@@ -139,9 +140,9 @@ class VideoGui(tk.Frame):
         self.set_container(video)
         command =  'mplayer -wid %s -nomouseinput -slave \
           -input nodefault-bindings:conf=/dev/null:file=%s \
-          -edlout %s %s %s' \
-          %(self.xid, self.cmd_pipe, self.editlist, self.args, video)
-        self.command = shlex.split(command)
+          -edlout %s %s' \
+          %(self.xid, self.cmd_pipe, self.editlist, self.args)
+        self.command = shlex.split(command) + [video]
 
     def poll(self):
         """
@@ -153,20 +154,24 @@ class VideoGui(tk.Frame):
         """
         if not self.is_running.get():
             return
-        tail = 'tail -n 1 %s' %self.log
-        log_output = commands.getoutput(tail)
-        # restart mplayer with same commands if it exits without being sent
-        # an explict 'quit'.
-        if '(End of file)' in log_output:
-            self.on_eof()
-            # check for is_running again as on_oef() might set it to false
-            if self.is_running.get():
-                cmd = Popen(self.command, stderr=open(os.devnull, 'w'), \
-                  stdout=open(self.log, "w"))
-                if self.show_osd:
-                    self.send('osd 3\n')
-                self.pause()
-        self.master.after(200, self.poll)
+        f = open(self.log, 'r')
+        # seek to 50 bytes from end of file
+        try:
+            f.seek(-50, 2)
+            if '(End of file)' in f.read():
+                self.on_eof()
+                # check for is_running again as on_oef() might set it to false
+                if self.is_running.get():
+                    cmd = Popen(self.command, stderr=open(os.devnull, 'w'), \
+                      stdout=open(self.log, "w"))
+                    if self.show_osd:
+                        self.send('osd 3\n')
+                    self.pause()
+        # if file does not contain 50 bytes, do nothing
+        except IOError:
+            pass
+        self.master.after(100, self.poll)
+
 
     def on_eof(self):
         """
@@ -547,6 +552,11 @@ thumb_masks =  '|'.join(nodupes(masks))
 tovid_prefix = commands.getoutput('tovid -prefix')
 tovid_icon = os.path.join(tovid_prefix, 'lib', 'tovid', 'tovid.png')
 
+# default heading text for tovid GUI (opening pane)
+heading_text = 'You can author (and burn) a DVD with a simple menu '
+heading_text += 'using ONLY this "Basic" pane\n'
+heading_text += 'Required: video files (and/or slideshows) and "Output name"'
+
 ### configuration for titleset wizard ( 'tovid titlesets' )
 wizard = os.getenv('METAGUI_WIZARD')
 if wizard == '1':
@@ -562,10 +572,6 @@ elif wizard >= '3':
     # titleset options
     heading_text = 'Options for titleset %s\n' %(int(wizard) - 2)
     heading_text += 'Required: 1 or more videos and/or slideshows'
-else:
-    heading_text = 'You can author (and burn) a DVD with a simple menu '
-    heading_text += 'using ONLY this "Basic" pane\n'
-    heading_text += 'Required: video files (and/or slideshows) and "Output name"'
 
 if wizard == '2':
     # Root menu options
