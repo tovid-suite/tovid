@@ -344,6 +344,11 @@ class SetChapters(VideoGui):
             chapters.append(time.strftime('%H:%M:%S', time.gmtime(t)) + fraction)
         if c:
             return '%s' %','.join(chapters)
+    
+    def on_eof(self):
+        f = open(self.editlist)
+        self.chapter_var.set(f.read())
+        f.close()
 
 
 # class for control that allow setting chapter points
