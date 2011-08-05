@@ -10,6 +10,7 @@ from libtovid.metagui.control import _SubList
 from libtovid.util import filetypes
 from subprocess import Popen, PIPE
 from tempfile import mkdtemp
+from sys import stdout
 
 __all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
 'find_masks', 'nodupes', 'video_filetypes', 'image_filetypes',
@@ -24,7 +25,7 @@ class VideoGui(tk.Frame):
     Without subclassing it only contains a 'play/pause button
     and an 'exit' button.
     """
-    def __init__(self, master, args='', title='', callback=None, style='popup'):
+    def __init__(self, master, args='', title='', callback=None):
         """Initialize GUI
 
            master
@@ -36,8 +37,6 @@ class VideoGui(tk.Frame):
                the wm title given to the master widget.
            callback
                a function run at program exit, before cleanup of temp files
-           style
-               may be one of 'popup' (default), 'standalone', or 'embedded'(TBA)
         """
         tk.Frame.__init__(self, master)
 
@@ -53,8 +52,7 @@ class VideoGui(tk.Frame):
                 print "Error: " + \
                   "VideoGui master must be a root window for 'title' option"
         self.callback = callback
-        self.style = style
-                
+        self.v_width = 540
         self.is_running = tk.BooleanVar()
         self.is_running.set(False)
         self.pauseplay = tk.StringVar()
@@ -75,10 +73,6 @@ class VideoGui(tk.Frame):
         self.container.pack()
         # X11 identifier for the container frame
         self.xid = self.tk.call('winfo', 'id', self.container)
-        # bindings for exit
-        if self.style == 'standalone':
-            self._root().protocol("WM_DELETE_WINDOW", self.confirm_exit)
-            self._root().bind('<Control-q>', self.confirm_exit)
         self.add_widgets()
 
     def add_widgets(self):
@@ -114,10 +108,6 @@ class VideoGui(tk.Frame):
         """Get aspect ratio and set dimensions of video container.
            Called by run().
         """
-        if self.style == 'standalone':
-            v_width = 600
-        else:
-            v_width = 540
         media_info = self.identify(video)
         asr = re.findall('ID_VIDEO_ASPECT=.*', media_info)
         # get last occurence as the first is 0.0 with mplayer
@@ -129,11 +119,11 @@ class VideoGui(tk.Frame):
                 asr = 0.0
         # get largest value as mplayer prints it out before playing file
         if asr and asr > 0.0:
-            v_height = int(v_width/asr)
+            v_height = int(self.v_width/asr)
         else:
             # default to 4:3 if identify fails
-            v_height = int(v_width/1.333)
-        self.container.configure(width=v_width, height=v_height)
+            v_height = int(self.v_width/1.333)
+        self.container.configure(width=self.v_width, height=v_height)
 
     def run(self, video):
         """Play video in this GUI using mplayer."""
@@ -206,7 +196,7 @@ class VideoGui(tk.Frame):
                 self.send('osd 3\n')
             self.pauseplay.set('pause')
 
-    def exit_mplayer(self):
+    def exit_mplayer(self): # called by [done] button
         """
         Close mplayer if it is running, then exit, running callback if it exists
         """
@@ -220,34 +210,39 @@ class VideoGui(tk.Frame):
         time.sleep(0.3)
         self.confirm_exit()
 
+    def confirm_msg(self):
+        mess = "osd_show_text 'please exit mplayer first' 4000 3\n"
+        if not self.show_osd:
+            self.send('osd 3\n%s' %mess)
+            self.after(2500, lambda:self.send('osd 0\n'))
+        else:
+            self.send(mess)
+
     def confirm_exit(self, event=None):
         """on exit, make sure that mplayer is not running before quit"""
         if self.is_running.get():
-            mess = "osd_show_text 'please exit mplayer first' 4000 3\n"
-            if not self.show_osd:
-                self.send('osd 3\n%s' %mess)
-                self.after(2500, lambda:self.send('osd 0\n'))
-            else:
-                self.send(mess)
+            self.confirm_msg()
         else:
             # run any custom commands on exit
             if callable(self.callback):
                 self.callback()
+            else:
+                print 'nothing callable from confirm_exit()'
             # remove temporary files and directory
             for f in self.cmd_pipe, self.log, self.editlist:
                 if os.path.exists(f):
                     os.remove(f)
             if os.path.exists(self.tempdir):
                 os.rmdir(self.tempdir)
-            if self.style == 'standalone':
-                self.quit()
-            else:
-                self.destroy()
+            self.quit()
+
+    def quit(self):
+        self.destroy()
 
 
 class SetChapters(VideoGui):
-    """A GUI to set video chapter points using mplayer"""
-    def __init__(self, master, args='', title='', callback=None, style='popup'):
+    """Elements for a GUI to set video chapter points using Mplayer"""
+    def __init__(self, master, args='', title='', callback=None):
         """
         master
             Pack into this widget
@@ -257,26 +252,25 @@ class SetChapters(VideoGui):
             Window manager titlebar title (master must be root window for this)
         callback
             Function to run on application exit, run before temp file cleanup
-        style
-            Can one of: 'popup' (default), 'standalone', or 'embedded'(TBA)
         """
-        VideoGui.__init__(self, master, args, title, callback, style)
-
+        VideoGui.__init__(self, master, args, title, callback)
         self.chapter_var = tk.StringVar()
 
     def add_widgets(self):
         # button frame and buttons
         button_frame = tk.Frame(self.root_frame)
         button_frame.pack(side='bottom', fill='x', expand=1)
-        control_frame = tk.Frame(button_frame, borderwidth=1, relief='groove')
-        control_frame.pack()
-        exit_button = tk.Button(control_frame, command=self.exit_mplayer, text='done !')
-        mark_button = tk.Button(control_frame, command=self.set_chapter,text='set chapter')
-        pause_button = tk.Button(control_frame, command=self.pause,
+        self.control_frame = tk.Frame(button_frame, borderwidth=1, relief='groove')
+        self.control_frame.pack()
+        exit_button = tk.Button(self.control_frame, command=self.exit_mplayer, text='done !')
+        mark_button = tk.Button(self.control_frame, command=self.set_chapter,text='set chapter')
+        pause_button = tk.Button(self.control_frame, command=self.pause,
                           width=12, textvariable=self.pauseplay)
-        framestep_button = tk.Button(control_frame, text='step >', command=self.framestep)
-        forward_button = tk.Button(control_frame, text='seek >', command=self.forward)
-        back_button = tk.Button(control_frame, text='< seek', command=self.back)
+        framestep_button = tk.Button(self.control_frame, text='step >',
+                                                command=self.framestep)
+        forward_button = tk.Button(self.control_frame, text='seek >',
+                                                command=self.forward)
+        back_button = tk.Button(self.control_frame, text='< seek', command=self.back)
         # seek frame and scale widget
         seek_frame = tk.Frame(self.root_frame)
         seek_frame.pack(side='left', fill='x', expand=1, padx=30)
@@ -291,10 +285,16 @@ class SetChapters(VideoGui):
         pause_button.pack(side='left')
         framestep_button.pack(side='left')
         forward_button.pack(side='left')
+        self.extend_widgets()
+
+    def extend_widgets(self):
+        """Override to customize SetChapters widgets""" 
+        pass
 
     def seek(self, event=None):
         """seek in video according to value set by slider"""
         self.send('seek %s 3\n' %self.seek_scale.get())
+        self.after(500, lambda:self.seek_scale.set(0))
 
     def forward(self):
         """seek forward 10 seconds and make sure button var is set to 'pause'"""
@@ -333,8 +333,8 @@ class SetChapters(VideoGui):
         f = open(self.editlist)
         c = f.readlines()
         f.close()
-        # if chapter_var has value, editlist has been reset.  Append value, if any.
-        # only 1st value on each line is taken (2nd is to make mplayer write out)
+        # if chapter_var has value, editlist has been reset.  Append value.
+        # only 1st value on each line is taken (the 2nd makes mplayer write out)
         s = [ i.split()[0]  for i  in self.chapter_var.get().splitlines() if i]
         c.extend(s)
         times = [ float(shlex.split(i)[0]) for i in c ]
@@ -349,6 +349,71 @@ class SetChapters(VideoGui):
         f = open(self.editlist)
         self.chapter_var.set(f.read())
         f.close()
+
+class SetChaptersGui(SetChapters):
+    """A standalone GUI to set video chapter points using SetChapters class"""
+    def __init__(self, master, args='', title='', callback=None):
+        """
+        master
+            Pack into this widget
+        args
+            Additional args to pass to mplayer
+        title
+            Window manager titlebar title (master must be root window for this)
+        callback
+            Function to run on application exit, run before temp file cleanup
+        """
+        SetChapters.__init__(self, master, args, title, callback)
+        self.callback = self.print_chapters
+        # bindings for exit
+        self._root().protocol("WM_DELETE_WINDOW", self.exit)
+        self._root().bind('<Control-q>', self.exit)
+        self.v_width = 600
+
+
+    def extend_widgets(self):
+        """Further customize widgets for this GUI"""
+        self.result_frame = tk.Frame(self)
+        self.text_frame = tk.Frame(self.result_frame)
+        self.result_frame.pack(side='bottom', fill='x', expand=1)
+        self.text_frame.pack(side='bottom', fill='x', expand=1)
+        self.entry = tk.Entry(self.text_frame)
+        self.entry.insert(0, "Result")
+        self.entry.pack(side='left', fill='x', expand=1)
+        self.exit_button = tk.Button(self.text_frame,
+            command=self.exit, text='exit')
+        self.exit_button.pack(side='left')
+
+    def print_chapters(self):
+        """Run get_chapters(), output result to stdout and entry box, disable
+           mplayer controls.  This functions as the callback on mplayer exit.
+        """
+        if self.get_chapters():
+            output = self.get_chapters()
+            stdout.write(output + '\n')
+            self.entry.delete(0, tk.END)
+            self.entry.insert('0', output)
+            self.disable_controls()
+
+    def disable_controls(self):
+        # disable mplayer control widgets
+        for widget in self.control_frame.winfo_children() + [self.seek_scale]:
+            try:
+                widget.configure(state=tk.DISABLED)
+            except tk.TclError:
+                pass
+
+    def quit(self):
+        """Override quit() from base class, as standalone uses exit()"""
+        # disable controls, because tempdir has been deleted
+        self.disable_controls()
+
+    def exit(self, event=None):
+        """Exit the GUI after confirming that mplayer is not running."""
+        if self.is_running.get():
+            self.confirm_msg()
+        else:
+            quit()
 
 
 # class for control that allow setting chapter points
@@ -378,7 +443,7 @@ class Chapters(ListToOne):
         self.text = text
         self.parent = parent
         self.top_width = 540
-        self.top_height = 540
+        self.top_height = 600
 
     def draw(self, master):
         """initialize Toplevel popup, video/chapters lists, and mplayer GUI.
