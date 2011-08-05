@@ -2,7 +2,7 @@
 
 import sys
 import Tkinter as tk
-from libtovid.guis.helpers import SetChapters
+from libtovid.guis.helpers import SetChaptersGui
 from os import path
 
 if len(sys.argv) < 2:
@@ -14,12 +14,8 @@ if not path.exists(video):
     print('Error: %s does not exist' %video)
     exit()
 
-def print_chapters():
-    if app.get_chapters():
-        sys.stdout.write(app.get_chapters() + '\n')
-
 root = tk.Tk()
-app = SetChapters(root, '-osdlevel 3', 'Mplayer', print_chapters, style='standalone')
+app = SetChaptersGui(root, '-osdlevel 3', 'Set chapter points with Mplayer')
 app.run(video)
 app.pack()
 
