@@ -13,8 +13,8 @@ files to DVD-compliant MPEG format, generate simple or complex DVD menus,
 author and burn a ready-to-watch DVD, with just a few shell commands. A
 graphical interface is also provided to make the process even easier.
 
-**NOTE**: As of tovid 0.35, the legacy scripts **makemenu***, ***makexml***,
-***makevcd*** have been deprecated and no longer appear in this manpage.  They
+**NOTE**: As of tovid 0.35, the legacy scripts **makemenu**, **makexml**,
+**makevcd** have been deprecated and no longer appear in this manpage.  They
 are still included with tovid for now, and can be used by doing:
 tovid menu|xml|vcd|postproc as done in the previous 3 versions of tovid.
 
@@ -37,16 +37,16 @@ to navigate.
 
 Where //COMMAND// is one of the following:
 
-Main commands
+    Main Commands
+: **disc**
+    Encode, make menus, author, burn. (was **todisc**. See **Command:disc**)
 : **gui**
     Start the tovid GUI (was **todiscgui**. See **Command:gui**)
 : **titlesets**
-    A tovid GUI wizard for multiple titlesets. (new: See **Command:titlesets**)
-: **disc**
-    Create a DVD with menus (was **todisc**. See **Command:disc**)
-    This is the main tovid command line frontend, and also encompasses
-    ***mpg*** and ***dvd***, if selected by options.
-Helper commands
+    A GUI wizard for multiple titlesets. (new: See **Command:titlesets**)
+
+
+    Helper Commands
 : **mpg**
     Encode videos to MPEG format (was **tovid**. See **Command:mpg**)
 : **dvd**
@@ -55,8 +55,8 @@ Helper commands
     Identify one or more video files (was **idvid**. See **Command:id**)
 : **chapters**
     A GUI using mplayer for setting chapter points.  It will return a string of
-    chapter points in a format recognized by 'tovid disc' (todisc) or
-    by 'tovid gui', for the  **-chapters** option.
+    chapter points to the terminal, in a format recognized by 'tovid disc'
+    (todisc) or by 'tovid gui', for the  **-chapters** option.
     
 
 The //OPTIONS// differ for each command; run **tovid <command>** with no
@@ -85,32 +85,45 @@ TOVID_OUTPUT_DIR (output directory for the makempg script).
 =Command:gui=
 
 **tovid gui** starts the graphical user interface (GUI) for tovid. This is
-the easiest way to start creating DVDs with tovid. At this time, there are no
-additional command-line options; the GUI controls take care of everything,
-and all help is integrated in the form of tooltips.  You can also see
+the easiest way to start creating DVDs with tovid. The optional arguments
+are any option used by todisc ('tovid disc') which will save entering it
+manually, OR the full path to a saved script from the GUI.  This option to
+save the contents of your project allows you to use it as a bash script later,
+or to reload the project to continue working with it at another time.  Note:
+this feature is still in development so some options may not load properly -
+make sure to check that your selections were all loaded.
+
+All help is integrated in the form of tooltips.  You can also see
 **Command:disc ** for more detail about the options.  Note: if you wish to
-make multiple titlesets on the same DVD use 'tovid titlesets', which is a wizard
-that uses the the tovid GUI.  Chapter submenus can be made with 'tovid gui'
-however.
+use a GUI to make multiple titlesets on the same DVD use 'tovid titlesets',
+which is a wizard that uses the the 'tovid gui.
 
 
 =Command:titlesets=
 
 **tovid titlesets** will assist in making a DVD with multiple titlesets.  It can
 be started without any options, or you can feed it the path to a saved titleset
-script as an option.
+script as an option.  The option to save a script is also useful as the resulting
+script can be run later from a terminal.
 
 
 =Command:disc=
 
-**tovid disc** creates a DVD file-system with menus, from a list of multimedia
-video files and their titles.  As this is a low level script it is the easiest
-command line program for creating a DVD from start to finish, including
-automatically converting non-compliant videos and prompting to burn at
-completion.  It does animated menus, static thumbnail menus and text only
-menus.  In addition, it can do slideshows, using images as input, and combine
-slideshows with videos.  It supports sub-menus for chapter breaks, configurable
-menu style, animated backgrounds and transparency effects.
+**tovid disc** creates a DVD file-system with optional menus, from a list of
+multimedia video files and their titles.  As todisc can function as a master
+script, calling other scripts as it needs them, it is the easiest command line
+program for creating a DVD from start to finish, including automatically
+converting non-compliant videos and prompting to burn at completion.  It can do
+animated menus, static thumbnail menus, text-only menus, or author with no menu.
+In addition, it can do slideshows, using images as input, and even combine
+slideshows with videos.  It supports sub-menus for chapter breaks,
+configurable menu style, animated backgrounds and transparency effects.
+From simple (no menu) to complex (switched menus and titlesets), you should
+be able to do what you want with 'tovid disc'.
+
+Please note that although the interface may seem complex with so many options,
+you can create a fully functional DVD with only a few options on the opening
+tab of the GUI (select video files and an output name).
 
 
 ==Usage==
@@ -182,6 +195,20 @@ sub-menus, which can display longer titles, for example:
 The **-align** argument will position both titles and thumbs either south,
 north east, west, southwest, northwest, southeast, northeast, subject to
 certain constraints of each arrangement.
+
+More Examples:
+
+A text-only menu:
+
+```
+ $ tovid disc -textmenu ...
+```
+No menu:
+
+```
+ $ tovid -nomenu -files file1.mpg [file2.mpg "file 3.mpg" ...]
+```
+
 
 **Titlesets**
 
@@ -322,16 +349,17 @@ Here is a list of possible options you can pass:
 : **-no-menu | -nomenu**
     With this option todisc will just create a DVD file system, ready for
     burning, with NO MENU, just the supplied video files.  These do not need
-    to be compliant, as non-compliant files will be encoded as usual.  Each
-    video will be a chapter unless **-chapters** OPTION is passed.  The
-    **-chapters** option is a number indicating the chapter interval in
-    minutes, or a HH:MM:SS string indicating chapter points.  See **-chapters**
+    to be compliant, as non-compliant files will be encoded as usual.  The
+    **-out** option is not required.  Each  video will be a chapter unless
+    **-chapters** OPTION is passed.  The  **-chapters** option is a number
+    indicating the chapter interval in minutes, or a HH:MM:SS string
+    indicating chapter points.  See **-chapters**
 : **-encode-only**
-    This option is really meant for the GUI, to allow it to be used for
-    just encoding rather than making a DVD structure.  Though it will work,
-    it is probably better to just use 'tovid mpg' from the command line.
-    If you do use this, remember any makempg ('tovid mpg') options you use
-    will be passed on the the makempg script when encoding.
+    This option was originally meant for the GUI, to allow it to be used for
+    just encoding rather than making a DVD structure.  But it works well from
+    the command line as well as it has the added advantage that you can input
+    a list of files.  Remember any makempg ('tovid mpg') options you use will
+    be passed on to the the makempg script when encoding.
 
 
 ==Menu style==
@@ -647,7 +675,7 @@ Here is a list of possible options you can pass:
     The speed to use for burning the disc.
 
 
-==ADVANCED USAGE==
+==Advanced usage==
 
 ===Options===
 
@@ -1514,12 +1542,19 @@ For example:
 =Command:chapters=
 
 **tovid chapters** will start a GUI using mplayer to set chapter points in a
-video.  Its only (mandatory) option is the path to a video file.
+video.  If the video plays through and you want to add more chapters you can
+press the play button again, but remember that new chapter points will be
+appended (in correct sequential order).  It will display the resulting chapter
+points, and also output to a terminal (useful for scripts).  As well it will
+give the option of saving the chapters string to a text file.
+
+Note that the 'tovid gui' now features a similar widget when you press the
+chapters button on the opening page.
 
 ==Examples==
 : ``tovid chapters foo.avi``
 
-: ``tovid chapters /home/grepper/videos/foo.avi``
+: ``chapters=$(tovid chapters /home/grepper/videos/foo.avi)``
 
 
 =CONTACT=
