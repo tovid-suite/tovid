@@ -75,11 +75,10 @@ _textmenu = FlagOpt("Textmenu", '-textmenu', False,
     Number('Columns', '', 13, '', 0, 13))
 
 _quick_menu = Flag('Quick menu (may need a menu video)',
-    '-quick-menu', False, 'Note: may not be available in your ffmpeg '
-    'as the needed "vhooks" have been deprecated. Ten times faster than '
-    'normal showcase animation.  A showcase or background video is required '
-    'unless doing switched menus.  Menu links are text only.  Not compatible '
-    'with wave or rotate options.')
+    '-quick-menu', False, 'Note: you need a recent ffmpeg with the "movie" '
+    'filter enabled. Ten times faster than normal showcase animation.  A '
+    'showcase or background video is required unless doing switched menus.  '
+    'Menu links are text only.  Not compatible with wave or rotate options.')
 
 _switched_menus = Flag('Switched menus (try with "Quick menu" !)',
     '-switched-menus', False,
