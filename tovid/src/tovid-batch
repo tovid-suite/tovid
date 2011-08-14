@@ -45,7 +45,7 @@ EOF`
 USAGE=`cat << EOF
 Usage: tovid batch [OPTIONS] -infiles <input files>
 
-OPTIONS may be any options that tovid accepts. See 'man tovid'.
+OPTIONS may be any that 'tovid mpg' accepts. See 'man tovid'.
 
 EOF`
 
