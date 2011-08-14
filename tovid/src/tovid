@@ -32,6 +32,12 @@ Where 'command' is one of the following:
     (Note: deprecated scripts are still available for now with the commands:
     menu [makemenu], xml [makexml], vcd [makevcd], and postproc)
 
+The following general options are also available:
+    --prefix | -prefix      Return the tovid install prefix
+    --version | -version    Return the tovid version
+    --info | -info          Return prefix, version and python module search path
+    These options are to be used on their own, as in:  tovid --prefix
+
 Run 'tovid <command>' with no further arguments to get help on a command,
 and what arguments it expects.
 """
