@@ -9,8 +9,8 @@ from libtovid.metagui import *
 from libtovid.metagui.control import _SubList
 from libtovid.util import filetypes
 from subprocess import Popen, PIPE
-from tempfile import mkdtemp
-from sys import stdout
+from tempfile import mkdtemp, mkstemp
+from sys import stdout, stderr
 
 __all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
 'find_masks', 'nodupes', 'video_filetypes', 'image_filetypes',
@@ -53,49 +53,60 @@ class VideoGui(tk.Frame):
                   "VideoGui master must be a root window for 'title' option"
         self.callback = callback
         self.v_width = 540
+        self.v_height = 405
         self.is_running = tk.BooleanVar()
         self.is_running.set(False)
         self.pauseplay = tk.StringVar()
         self.pauseplay.set('play')
         # temporary directory for fifo and other mplayer files
+        self.make_tmps()
+        self.draw()
+
+    def make_tmps(self):
+        """Make temporary directory containing fifo for mplayer commmands,
+        editlist, and log
+        """
         self.tempdir = mkdtemp(prefix='tovid-')
         self.cmd_pipe = os.path.join(self.tempdir, 'slave.fifo')
         self.editlist = os.path.join(self.tempdir, 'editlist')
         os.mkfifo(self.cmd_pipe)
         self.log = os.path.join(self.tempdir, 'mplayer.log')
-        self.draw()
-
+        
     def draw(self):
         """Draw the GUI in self.master and get X11 identifier for container"""
         self.root_frame = tk.Frame(self)
         self.root_frame.pack(side='top', fill='both', expand=1, pady=20)
         self.container = tk.Frame(self.root_frame, bg='black', container=1, colormap='new')
+        self.container.configure(width=self.v_width, height=self.v_height, bg='black')
         self.container.pack()
         # X11 identifier for the container frame
         self.xid = self.tk.call('winfo', 'id', self.container)
         self.add_widgets()
 
     def add_widgets(self):
-        """
-        Add buttons to the VideoGui.  Override this to customize buttons.
+        """Add buttons to the VideoGui.  Override this to customize buttons.
         root_frame has 'grab_set()' applied to it so make sure widgets go
         into this frame or they will not be functional!
         This function is called in draw()
         """
         button_frame = tk.Frame(self.root_frame)
         button_frame.pack(side='bottom', fill='x', expand=1)
-        control_frame = tk.Frame(button_frame, borderwidth=1, relief='groove')
-        control_frame.pack()
-        exit_button = tk.Button(control_frame, command=self.exit_mplayer, text='exit')
-        pause_button = tk.Button(control_frame, command=self.pause,
+        self.control_frame = tk.Frame(button_frame, borderwidth=1, relief='groove')
+        self.control_frame.pack()
+        self.load_button = tk.Button(self.control_frame,
+            command=self.load, text='load video')
+        self.load_button.pack(side='left')
+        exit_button = tk.Button(self.control_frame, command=self.exit_mplayer, text='exit')
+        self.pause_button = tk.Button(self.control_frame, command=self.pause,
                           width=12, textvariable=self.pauseplay)
-        exit_button.pack(side='left')
-        pause_button.pack(side='left')
+        self.pause_button.pack(side='left')
+        exit_button.pack(side='left', padx=5)
+        self.mp_ctrls = [self.pause_button]
+        self.toggle_controls('disabled', self.mp_ctrls)
 
 
     def identify(self, video):
-        """
-        Get information about video from mplayer -identify.
+        """Get information about video from mplayer -identify.
         Called by set_container()
         """
         
@@ -104,7 +115,17 @@ class VideoGui(tk.Frame):
         output = Popen(cmd, stdout=PIPE, stderr=PIPE)
         return output.communicate()[0]
 
-    def set_container(self, video):
+    def load(self, event=None):
+        """Load a file to play in the GUI"""
+        from tkFileDialog import askopenfilename
+        vid_name = askopenfilename()
+        if vid_name:
+            self.toggle_controls('normal', self.mp_ctrls)
+            if self.pauseplay.get() == 'pause':
+                self.pauseplay.set('play')
+            self.run(vid_name)
+
+    def set_container(self, video=None):
         """Get aspect ratio and set dimensions of video container.
            Called by run().
         """
@@ -127,12 +148,32 @@ class VideoGui(tk.Frame):
 
     def run(self, video):
         """Play video in this GUI using mplayer."""
+        if video == None:
+            self.toggle_controls('disabled', self.mp_ctrls)
+            return
+        else:
+            self.toggle_controls('enabled', self.mp_ctrls)
+        # a new video has been loaded if no temp files, so make them
+        if not os.path.exists(self.tempdir):
+            self.make_tmps()
+        # set the container size, then run the video
         self.set_container(video)
         command =  'mplayer -wid %s -nomouseinput -slave \
           -input nodefault-bindings:conf=/dev/null:file=%s \
           -edlout %s %s' \
           %(self.xid, self.cmd_pipe, self.editlist, self.args)
         self.command = shlex.split(command) + [video]
+
+    def toggle_controls(self, state, widgets):
+        """
+        Enable/disable mplayer control widgets
+        state is either 'normal' or 'disabled', widgets is an instance list
+        """
+        for widget in widgets:
+            try:
+                widget.configure(state=state)
+            except tk.TclError:
+                pass
 
     def poll(self):
         """
@@ -172,12 +213,12 @@ class VideoGui(tk.Frame):
         pass
 
     def send(self, text):
-        """send command to mplayer's slave fifo"""
+        """Send command to mplayer's slave fifo"""
         if self.is_running.get():
             commands.getstatusoutput('echo -e "%s"  > %s' %(text, self.cmd_pipe))
 
     def pause(self):
-        """send pause to mplayer via slave and set button var to opposite value"""
+        """Send pause to mplayer via slave and set button var to opposite value"""
         # mplayer's 'pause' pauses if playing and plays if paused
         # pauseplay ==play in pause mode, and ==pause in play mode (button text)
         if self.is_running.get():
@@ -219,15 +260,13 @@ class VideoGui(tk.Frame):
             self.send(mess)
 
     def confirm_exit(self, event=None):
-        """on exit, make sure that mplayer is not running before quit"""
+        """On exit, make sure that mplayer is not running before quit"""
         if self.is_running.get():
             self.confirm_msg()
         else:
             # run any custom commands on exit
             if callable(self.callback):
                 self.callback()
-            else:
-                print 'nothing callable from confirm_exit()'
             # remove temporary files and directory
             for f in self.cmd_pipe, self.log, self.editlist:
                 if os.path.exists(f):
@@ -237,6 +276,7 @@ class VideoGui(tk.Frame):
             self.quit()
 
     def quit(self):
+        """Quit the application.  This detroys the root window, exiting Tkinter"""
         self.destroy()
 
 
@@ -257,6 +297,11 @@ class SetChapters(VideoGui):
         self.chapter_var = tk.StringVar()
 
     def add_widgets(self):
+        """
+        Add buttons to the Gui. root_frame has 'grab_set()' applied to it so
+        make sure widgets go into this frame or they will not be functional!
+        This function is called in draw()
+        """
         # button frame and buttons
         button_frame = tk.Frame(self.root_frame)
         button_frame.pack(side='bottom', fill='x', expand=1)
@@ -285,34 +330,30 @@ class SetChapters(VideoGui):
         pause_button.pack(side='left')
         framestep_button.pack(side='left')
         forward_button.pack(side='left')
-        self.extend_widgets()
-
-    def extend_widgets(self):
-        """Override to customize SetChapters widgets""" 
-        pass
+        self.mp_ctrls = self.control_frame.winfo_children() + [self.seek_scale]
 
     def seek(self, event=None):
-        """seek in video according to value set by slider"""
+        """Seek in video according to value set by slider"""
         self.send('seek %s 3\n' %self.seek_scale.get())
         self.after(500, lambda:self.seek_scale.set(0))
 
     def forward(self):
-        """seek forward 10 seconds and make sure button var is set to 'pause'"""
+        """Seek forward 10 seconds and make sure button var is set to 'pause'"""
         self.send('seek 10\n')
         self.pauseplay.set('pause')
 
     def back(self):
-        """seek backward 10 seconds and make sure button var is set to 'pause'"""
+        """Seek backward 10 seconds and make sure button var is set to 'pause'"""
         self.send('seek -10\n')
         self.pauseplay.set('pause')
 
     def framestep(self):
-        """step frame by frame forward and set button var to 'play'"""
+        """Step frame by frame forward and set button var to 'play'"""
         self.send('pausing frame_step\n')
         self.pauseplay.set('play')
 
     def set_chapter(self):
-        """send chapter mark (via slave) twice so mplayer writes the data.
+        """Send chapter mark (via slave) twice so mplayer writes the data.
            we only take the 1st mark on each line
         """
         for i in range(2):
@@ -326,6 +367,9 @@ class SetChapters(VideoGui):
 
 
     def get_chapters(self):
+        """Read mplayer's editlist to get chapter points and return
+        HH:MM:SS.xxx format string, comma separated
+        """
         # need a sleep to make sure mplayer gives up its data
         if not os.path.exists(self.editlist):
             return
@@ -346,6 +390,9 @@ class SetChapters(VideoGui):
             return '%s' %','.join(chapters)
     
     def on_eof(self):
+        """
+        Run when 'End of file' discovered in mplayer output by poll().
+        """
         f = open(self.editlist)
         self.chapter_var.set(f.read())
         f.close()
@@ -368,59 +415,92 @@ class SetChaptersGui(SetChapters):
         # bindings for exit
         self._root().protocol("WM_DELETE_WINDOW", self.exit)
         self._root().bind('<Control-q>', self.exit)
-        self.v_width = 600
 
 
-    def extend_widgets(self):
-        """Further customize widgets for this GUI"""
+    def add_widgets(self):
+        """Override add_widgets() from SetChapters, calling it first
+        then adding widgets to it
+        """
+        SetChapters.add_widgets(self)
         self.result_frame = tk.Frame(self)
         self.text_frame = tk.Frame(self.result_frame)
         self.result_frame.pack(side='bottom', fill='x', expand=1)
         self.text_frame.pack(side='bottom', fill='x', expand=1)
+        self.load_button = tk.Button(self.text_frame,
+            command=self.load, text='Load Video')
+        self.load_button.pack(side='left', padx=5)
         self.entry = tk.Entry(self.text_frame)
-        self.entry.insert(0, "Result")
+        self.entry.insert(0, "00:00:00.0")
         self.entry.pack(side='left', fill='x', expand=1)
         self.exit_button = tk.Button(self.text_frame,
-            command=self.exit, text='exit')
+            command=self.exit, text='Exit')
         self.exit_button.pack(side='left')
+        # keep a list of mplayer controls so we can disable/enable them later
+        self.mp_ctrls = self.control_frame.winfo_children() + [self.seek_scale]
+
+    def load(self, event=None):
+        """Load a file to play in the GUI"""
+        from tkFileDialog import askopenfilename
+        vid_name = askopenfilename()
+        if vid_name:
+            self.toggle_controls('normal', self.mp_ctrls)
+            # reset entry to 0 and chapter_var if we have a new video loaded
+            self.entry.delete(0, tk.END)
+            self.entry.insert(0, "00:00:00.0")
+            if self.pauseplay.get() == 'pause':
+                self.pauseplay.set('play')
+            self.run(vid_name)
 
     def print_chapters(self):
-        """Run get_chapters(), output result to stdout and entry box, disable
-           mplayer controls.  This functions as the callback on mplayer exit.
+        """
+        Run get_chapters(), output result to stdout, entry box, and write
+        to tempory file.  Disable mplayer controls.
+        This functions as the callback on mplayer exit.
         """
         if self.get_chapters():
+            from tkMessageBox import askyesno, showinfo
             output = self.get_chapters()
             stdout.write(output + '\n')
             self.entry.delete(0, tk.END)
-            self.entry.insert('0', output)
-            self.disable_controls()
-
-    def disable_controls(self):
-        # disable mplayer control widgets
-        for widget in self.control_frame.winfo_children() + [self.seek_scale]:
-            try:
-                widget.configure(state=tk.DISABLED)
-            except tk.TclError:
-                pass
+            self.entry.insert(0, output)
+            self.toggle_controls('disabled', self.mp_ctrls)
+            string1 = "Chapter string will be saved to: "
+            string2 = '\nDo you wish to save it ?'
+            #string2 += '  Choose "Yes" to save it.'
+            # get basename of video, remove extension, add a '_'
+            vid = os.path.basename(self.command[-1]) + '_'
+            tmpfile = mkstemp(prefix=vid)
+            if askyesno(title="Save chapter string",
+              message= '%s%s%s' %(string1, tmpfile[1], string2)):
+                save_msg = "%s%s\n" %('Saved ', tmpfile[1])
+                showinfo(title='Chapters saved', message=save_msg)
+                if os.path.exists(tmpfile[1]):
+                    f = open(tmpfile[1], 'w')
+                    f.write(output)
+                    f.close()
+            else:
+                    os.remove(tmpfile[1])
 
     def quit(self):
         """Override quit() from base class, as standalone uses exit()"""
         # disable controls, because tempdir has been deleted
-        self.disable_controls()
+        self.toggle_controls('disabled', self.mp_ctrls)
+        if self.chapter_var.get():
+            self.chapter_var.set('')
 
     def exit(self, event=None):
         """Exit the GUI after confirming that mplayer is not running."""
         if self.is_running.get():
             self.confirm_msg()
         else:
-            quit()
+            self.master.destroy()
 
 
 # class for control that allow setting chapter points
 class Chapters(ListToOne):
     """A popup version of the ListToOne Control, that also
-       allows setting chapter points with a mplayer GUI
-       (SetChapters).  This Control is specific to the tovid GUI.
+    allows setting chapter points with a mplayer GUI
+    (SetChapters).  This Control is specific to the tovid GUI.
     """
     def __init__(self,
                  parent,
@@ -434,9 +514,9 @@ class Chapters(ListToOne):
                  text='',
                  **kwargs):
         """initialize Chapters
-           text
-               The text for the button that calls mplayer
-           For other options see help(control.ListToOne) 
+        text
+           The text for the button that calls mplayer
+        For other options see help(control.ListToOne) 
         """
         ListToOne.__init__(self, parent, label, option, default, help,
                           control, filter, side, **kwargs)
@@ -446,7 +526,7 @@ class Chapters(ListToOne):
         self.top_height = 600
 
     def draw(self, master):
-        """initialize Toplevel popup, video/chapters lists, and mplayer GUI.
+        """Initialize Toplevel popup, video/chapters lists, and mplayer GUI.
         Only pack the video/chapter lists (_SubList).  Withdraw until called.
         """
         chapters_button = tk.Button(master, text='edit', command=self.popup)
@@ -462,7 +542,7 @@ class Chapters(ListToOne):
         '   2. Or, use a different auto chapter value for each video.\n' + \
         'HH:MM:SS format:\n' + \
         '   1. Enter timecode for each video, eg. 00:00:00,00:05:00 ...\n' + \
-        '   2. Or use the "set with mplayer" button to use a GUI'
+        '   2. Or use the "set with mplayer" button to use a GUI.'
         self.top.label = tk.Label(self.top, text=txt, justify=tk.LEFT)
         self.top.label.pack(side=tk.TOP)
         self.top_button = tk.Button(self.top, text='Okay', command=self.top.withdraw)
@@ -488,14 +568,14 @@ class Chapters(ListToOne):
 
     def get_geo(self, widget):
         """Get geometry of a widget.
-           Returns List (integers): width, height, Xpos, Ypos
+        Returns List (integers): width, height, Xpos, Ypos
         """
         geo = widget.winfo_geometry()
         return  [ int(x) for x in geo.replace('x', '+').split('+') ]
 
     def center_popup(self, master, width, height):
         """Get centered screen location of popup, relative to master.
-           Returns geometry string in form of 'WxH+Xpos+Ypos'
+        Returns geometry string in form of 'WxH+Xpos+Ypos'
         """
         root_width, root_height, rootx, rooty = self.get_geo(master)
         xoffset = (root_width - width) / 2
@@ -504,7 +584,7 @@ class Chapters(ListToOne):
         return '%dx%d+%d+%d' %(width, height, rootx + xoffset, rooty + yoffset)
         
     def popup(self):
-            """popup the list of chapters, with button to run mplayer GUI"""
+            """Popup the list of chapters, with button to run mplayer GUI"""
             videolist = self.parent_listbox
             self.top.transient(self.parent._root())
             w = self.top_width
@@ -515,7 +595,7 @@ class Chapters(ListToOne):
                 self.parent_listbox.select_index(0)
     
     def run_mplayer(self, event=None):
-        """run the mplayer GUI to set chapters"""
+        """Run the mplayer GUI to set chapters"""
         selected = self.parent_listbox.selected.get()
         if selected:
             # initialize mplayer GUI
@@ -535,9 +615,9 @@ class Chapters(ListToOne):
             self.top.bind('<Escape>', self.mpl.confirm_exit)
 
     def on_exit(self):
-        """callback run when mplayer GUI exits. This sets the chapters list
-           to the timecodes set by the mplayer gui, repacks the label and the
-           list frame, sets/resets bindings, and releases the grab_set().
+        """Callback run when mplayer GUI exits. This sets the chapters list
+        to the timecodes set by the mplayer gui, repacks the label and the
+        list frame, sets/resets bindings, and releases the grab_set().
         """
         if self.mpl.get_chapters():
             self.control.variable.set(self.mpl.get_chapters())
@@ -552,11 +632,12 @@ class Chapters(ListToOne):
         self.top.bind('<Escape>', self.withdraw_popup)
 
     def withdraw_popup(self, event=None):
+        """Withdraw the chapters popup window"""
         self.top.withdraw()
 
     def select(self, index, value):
         """Select an item in the list and enable editing.
-           List select method overriden in order to clear entry selection.
+        List select method overriden in order to clear entry selection.
         """
         List.select(self, index, value)
         # don't make it easy to erase a chapters string with a keypress

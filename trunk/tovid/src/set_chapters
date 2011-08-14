@@ -6,18 +6,17 @@ from libtovid.guis.helpers import SetChaptersGui
 from os import path
 
 if len(sys.argv) < 2:
-    print("Usage: tovid chapters VIDEO")
-    exit()
-
-video = sys.argv[1]
-if not path.exists(video):
-    print('Error: %s does not exist' %video)
-    exit()
+    video = None
+else:
+    video = sys.argv[1]
+    if not path.exists(video):
+        print('Error: the video file "%s" does not exist' %video)
+        exit()
 
 root = tk.Tk()
 app = SetChaptersGui(root, '-osdlevel 3', 'Set chapter points with Mplayer')
 app.run(video)
 app.pack()
 
-root.mainloop()
+app.mainloop()
 
