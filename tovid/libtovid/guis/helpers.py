@@ -10,7 +10,7 @@ from libtovid.metagui.control import _SubList
 from libtovid.util import filetypes
 from subprocess import Popen, PIPE
 from tempfile import mkdtemp, mkstemp
-from sys import stdout, stderr
+from sys import stdout
 
 __all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
 'find_masks', 'nodupes', 'video_filetypes', 'image_filetypes',
