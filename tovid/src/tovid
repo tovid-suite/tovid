@@ -10,26 +10,26 @@ usage = """Usage:
 
 Where 'command' is one of the following:
 
-    Main commands
+    Main commands (one step DVD creation)
 
-    Command     Description                                 Formerly
-    -----------------------------------------------------------------
-    disc        Encode, create menus, burn                  todisc
-    gui         Start the tovid GUI                         todiscgui
-    titlesets   Start the titleset wizard GUI               (new)
-
-
-    Helper commands   
-
-    Command     Description                                 Formerly
-    -----------------------------------------------------------------
-    mpg         Encode videos to MPEG format                tovid
-    id          Identify one or more video files            idvid
-    dvd         Author and/or burn a DVD                    makedvd
-    chapters    A GUI to set chapter points with mplayer    (new)
+    Command     Description                                       Formerly
+    -----------------------------------------------------------------------
+    disc        Options to encode, make menus, author and burn    todisc
+    gui         Start the tovid GUI                               todiscgui
+    titlesets   Start the titleset wizard GUI                     (new)
 
 
-    (Note: deprecated legacy scripts are still available with the commands:
+    Helper commands (used by 'Main commands' or run standalone)
+
+    Command     Description                                       Formerly
+    -----------------------------------------------------------------------
+    mpg         Encode videos to MPEG format                      tovid
+    id          Identify one or more video files                  idvid
+    dvd         Author and/or burn a DVD                          makedvd
+    chapters    A GUI to set chapter points with mplayer          (new)
+
+
+    (Note: deprecated scripts are still available for now with the commands:
     menu [makemenu], xml [makexml], vcd [makevcd], and postproc)
 
 Run 'tovid <command>' with no further arguments to get help on a command,
