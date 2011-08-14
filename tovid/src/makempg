@@ -801,9 +801,9 @@ function goodbye()
         yecho "Your encoded video should be in the file(s) $OUT_FILENAME."
         echo
         echo "You can author a simple disc with this video on it by running:"
-        echo "    tovid disc -no-menu $OUT_FILENAME -out MyDisc"
-        echo "Add -burn for a burn prompt (-device and -speed optional)"
-        echo "Or use todisc (tovid disc) to create menus for your disc."
+        echo "    tovid disc -no-menu \"$OUT_FILENAME\" -out MyDisc"
+        echo "Add -burn for a prompt to burn (-device and -speed optional)"
+        echo "Or use todisc (tovid disc) to create text-only or animated menus."
         echo "See the manual ('man tovid') for more information and options."
         echo
         echo "Please report bugs to:"
