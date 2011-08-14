@@ -1458,10 +1458,12 @@ thanks_goodbye()
     echo "Your new DVD should be in $OUT_DIR"
     echo "You can preview them in gxine with this command:"
     echo "    gxine \"dvd:/$OUT_DIR\""
+    echo "Or in vlc with this command:"
+    echo "    vlc \"$OUT_DIR\""
     echo "If you are satisfied with the results, you can burn a disc with:"
     echo "    tovid dvd -burn \"$OUT_DIR\""
     echo
-    echo "Thanks for using todisc."
+    echo "Thanks for using tovid!"
 }
 
 # usage mk_return_button (mk_play_button) COLOUR1 COLOUR2 OUTBUTTON
@@ -3481,7 +3483,7 @@ if test -n "$OUT_PREFIX"; then
         Please change the directory you gave as an -out argument."
     fi
 else
-    usage_error "Please provide an output name with -out"
+    ! $ENCODE_ONLY && usage_error "Please provide an output name with -out"
 fi
 ### dvdauthor stuff
 # for xml, if -intro was used
