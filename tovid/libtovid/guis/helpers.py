@@ -57,7 +57,7 @@ class VideoGui(tk.Frame):
         self.is_running = tk.BooleanVar()
         self.is_running.set(False)
         self.pauseplay = tk.StringVar()
-        self.pauseplay.set('play')
+        self.pauseplay.set('Play')
         # temporary directory for fifo and other mplayer files
         self.make_tmps()
         self.draw()
@@ -121,8 +121,8 @@ class VideoGui(tk.Frame):
         vid_name = askopenfilename()
         if vid_name:
             self.toggle_controls('normal', self.mp_ctrls)
-            if self.pauseplay.get() == 'pause':
-                self.pauseplay.set('play')
+            if self.pauseplay.get() == 'Pause':
+                self.pauseplay.set('Play')
             self.run(vid_name)
 
     def set_container(self, video=None):
@@ -220,12 +220,12 @@ class VideoGui(tk.Frame):
     def pause(self):
         """Send pause to mplayer via slave and set button var to opposite value"""
         # mplayer's 'pause' pauses if playing and plays if paused
-        # pauseplay ==play in pause mode, and ==pause in play mode (button text)
+        # pauseplay ==Play in pause mode, and ==Pause in play mode (button text)
         if self.is_running.get():
-            if self.pauseplay.get() == 'pause':
-                self.pauseplay.set('play')
+            if self.pauseplay.get() == 'Pause':
+                self.pauseplay.set('Play')
             else:
-                self.pauseplay.set('pause')
+                self.pauseplay.set('Pause')
             self.send('pause\n')
         else:
             # start the video for the 1st time
@@ -235,7 +235,7 @@ class VideoGui(tk.Frame):
             # show osd time and remaining time
             if self.show_osd:
                 self.send('osd 3\n')
-            self.pauseplay.set('pause')
+            self.pauseplay.set('Pause')
 
     def exit_mplayer(self): # called by [done] button
         """
@@ -243,7 +243,7 @@ class VideoGui(tk.Frame):
         """
         # unpause so mplayer doesn't hang
         if self.is_running.get():
-            if self.pauseplay.get() == 'play':
+            if self.pauseplay.get() == 'Play':
                 self.send('mute 1\n')
                 self.send('pause\n')
             self.send('quit\n')
@@ -311,46 +311,58 @@ class SetChapters(VideoGui):
         mark_button = tk.Button(self.control_frame, command=self.set_chapter,text='set chapter')
         pause_button = tk.Button(self.control_frame, command=self.pause,
                           width=12, textvariable=self.pauseplay)
-        framestep_button = tk.Button(self.control_frame, text='step >',
+        framestep_button = tk.Button(self.control_frame, text='step>',
                                                 command=self.framestep)
-        forward_button = tk.Button(self.control_frame, text='seek >',
+        forward_button = tk.Button(self.control_frame, text='>>',
                                                 command=self.forward)
-        back_button = tk.Button(self.control_frame, text='< seek', command=self.back)
-        # seek frame and scale widget
-        seek_frame = tk.Frame(self.root_frame)
-        seek_frame.pack(side='left', fill='x', expand=1, padx=30)
-        self.seek_scale = tk.Scale(seek_frame, from_=0, to=100, tickinterval=10,
-        orient='horizontal', label='Use slider to seek to point in file (%)')
-        self.seek_scale.bind('<ButtonRelease-1>', self.seek)
+        fast_forward_button = tk.Button(self.control_frame, text='>>>',
+                                                command=self.fastforward)
+        back_button = tk.Button(self.control_frame, text='<<', command=self.back)
+        fast_back_button = tk.Button(self.control_frame, text='<<<', command=self.fast_back)
+#        self.seek_scale = tk.Scale(seek_frame, from_=0, to=100, tickinterval=10,
+#        orient='horizontal', label='Use slider to seek to point in file (%)')
+#        self.seek_scale.bind('<ButtonRelease-1>', self.seek)
         # pack the buttons and scale in their frames
         mark_button.pack(side='bottom', fill='both', expand=1)
-        self.seek_scale.pack(side='left', fill='x', expand=1)
+        #self.seek_scale.pack(side='left', fill='x', expand=1)
         exit_button.pack(side='left')
+        fast_back_button.pack(side='left')
         back_button.pack(side='left')
-        pause_button.pack(side='left')
+        pause_button.pack(side='left', expand=1)
         framestep_button.pack(side='left')
         forward_button.pack(side='left')
-        self.mp_ctrls = self.control_frame.winfo_children() + [self.seek_scale]
+        fast_forward_button.pack(side='left')
+        self.mp_ctrls = self.control_frame.winfo_children()
 
-    def seek(self, event=None):
-        """Seek in video according to value set by slider"""
-        self.send('seek %s 3\n' %self.seek_scale.get())
-        self.after(500, lambda:self.seek_scale.set(0))
+#    def seek(self, event=None):
+#        """Seek in video according to value set by slider"""
+#        self.send('seek %s 3\n' %self.seek_scale.get())
+#        self.after(500, lambda:self.seek_scale.set(0))
 
     def forward(self):
-        """Seek forward 10 seconds and make sure button var is set to 'pause'"""
+        """Seek forward 10 seconds and make sure button var is set to 'Pause'"""
         self.send('seek 10\n')
-        self.pauseplay.set('pause')
+        self.pauseplay.set('Pause')
+
+    def fastforward(self):
+        """Seek forward 5 minutes and make sure button var is set to 'Pause'"""
+        self.send('seek 300\n')
+        self.pauseplay.set('Pause')
 
     def back(self):
-        """Seek backward 10 seconds and make sure button var is set to 'pause'"""
+        """Seek backward 10 seconds and make sure button var is set to 'Pause'"""
         self.send('seek -10\n')
-        self.pauseplay.set('pause')
+        self.pauseplay.set('Pause')
+
+    def fast_back(self):
+        """Seek backward 10 seconds and make sure button var is set to 'Pause'"""
+        self.send('seek -300\n')
+        self.pauseplay.set('Pause')
 
     def framestep(self):
-        """Step frame by frame forward and set button var to 'play'"""
+        """Step frame by frame forward and set button var to 'Play'"""
         self.send('pausing frame_step\n')
-        self.pauseplay.set('play')
+        self.pauseplay.set('Play')
 
     def set_chapter(self):
         """Send chapter mark (via slave) twice so mplayer writes the data.
@@ -436,7 +448,7 @@ class SetChaptersGui(SetChapters):
             command=self.exit, text='Exit')
         self.exit_button.pack(side='left')
         # keep a list of mplayer controls so we can disable/enable them later
-        self.mp_ctrls = self.control_frame.winfo_children() + [self.seek_scale]
+        self.mp_ctrls = self.control_frame.winfo_children()
 
     def load(self, event=None):
         """Load a file to play in the GUI"""
@@ -447,8 +459,8 @@ class SetChaptersGui(SetChapters):
             # reset entry to 0 and chapter_var if we have a new video loaded
             self.entry.delete(0, tk.END)
             self.entry.insert(0, "00:00:00.0")
-            if self.pauseplay.get() == 'pause':
-                self.pauseplay.set('play')
+            if self.pauseplay.get() == 'Pause':
+                self.pauseplay.set('Play')
             self.run(vid_name)
 
     def print_chapters(self):
@@ -523,7 +535,7 @@ class Chapters(ListToOne):
         self.text = text
         self.parent = parent
         self.top_width = 540
-        self.top_height = 600
+        self.top_height = 540
 
     def draw(self, master):
         """Initialize Toplevel popup, video/chapters lists, and mplayer GUI.
