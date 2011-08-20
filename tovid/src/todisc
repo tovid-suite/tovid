@@ -361,7 +361,7 @@ audio_length()
     # optional 2nd arg is maximum length checked in file (seconds)
     end=""
     [[ -n $2 ]] && end="-endpos $2"
-    mplayer -nomsgcolor -noconsolecontrols -vo null -ao pcm:fast:file=/dev/null $end "$1" \
+    mplayer -nomsgcolor -noconsolecontrols -mc 0 -vo null -ao pcm:fast:file=/dev/null $end "$1" \
     2>&1 | tr '\r' '\n' | grep ^A: | tail -1 | sed s/^.*A:// | awk '{print $1}'
 }
 cleanup()
@@ -3075,11 +3075,11 @@ while test $# -gt 0; do
             shift
             MENU_TITLE="$1"
             ;;
-        "-menu-font" )
+        "-title-font" | "-menu-font" )
             shift
             MENU_FONT=$(get_font "$1")
             ;;
-        "-menu-fontsize" )
+        "-title-fontsize" | "-menu-fontsize" )
             shift
             MENU_FONTSIZE="$1"
             ;;
@@ -3306,6 +3306,11 @@ while test $# -gt 0; do
                 else
                     TOVID_OPTS+=( "$1" "$(readlink -f "$2")" )
                 fi
+            elif [[ $1 == '-mplayeropts' ]]; then
+                TOVID_OPTS+=("$1" "$2")
+                # need to shift twice as -mplayeropts can start with a '-'
+                shift
+                shift
             else
                 TOVID_OPTS+=( "$1" )
                 shift
