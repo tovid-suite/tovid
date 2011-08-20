@@ -78,7 +78,7 @@ _discsize = Number('Disc size', '-discsize', 0,
     0, 4400, units='MiB')
 
 # Encoder options
-_mplayeropts = SpacedText('mplayer options', '-mplayeropts', '', 'TODO: Tooltip')
+_mplayeropts = Text('mplayer options', '-mplayeropts', '', 'TODO: Tooltip')
 _filters = Choice('mplayer filters', '-filters', 'none', 'TODO: Tooltip',
     'none|denoise|deblock|contrast|all', side='top')
 _ffmpeg = Flag('Encode using ffmpeg', '-ffmpeg', False)
