@@ -333,28 +333,28 @@ function get_info ()
         TRACKS=${tracks[@]/Unsupported/}
         ID_AUDIO_TRACKS=${TRACKS// /,}
     fi # if test -n "$ID_AUDIO_ID"
-
+    # tcprobe broken for webm AR id'ing, and MP is better maintained anyway
     # If tcprobe reports an aspect ratio, use that
-    if grep -q "aspect ratio" "$SCRATCH_FILE"; then
-        RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
-        V_ASPECT_WIDTH=$(expr ${RATIO%:*} \* 100 \/ ${RATIO#*:})
+    #if grep -q "aspect ratio" "$SCRATCH_FILE"; then
+    #    RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
+    #    V_ASPECT_WIDTH=$(expr ${RATIO%:*} \* 100 \/ ${RATIO#*:})
     # Otherwise, infer from mplayer
-    else
-        # Infer aspect ratio from width/height of mplayer playback
-        MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
-            sed -e "s/..*=> *//g" -e "s/ .*$//g")
-        #PLAY_WIDTH=$(echo $MPLAYER_RES | awk -F 'x' '{print $1}')
-        #PLAY_HEIGHT=$(echo $MPLAYER_RES | awk -F 'x' '{print $2}')
-        # patch from ML:
-        PLAY_WIDTH=$(echo "$MPLAYER_RES" | awk -F '[x ]' 'BEGIN {wid = 0}; {if ($1 > wid) wid = $1}; END {print wid}')
-        PLAY_HEIGHT=$(echo "$MPLAYER_RES" | awk -F '[x ]' 'BEGIN {hgt = 0}; {if ($2 > hgt) hgt = $2}; END {print hgt}')
-        # Fix nulls
-        if test -z "$PLAY_WIDTH" || test -z "$PLAY_HEIGHT"; then
-            PLAY_WIDTH="100"
-            PLAY_HEIGHT="100"
-        fi
-        V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
+    #else
+    # Infer aspect ratio from width/height of mplayer playback
+    MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
+        sed -e "s/..*=> *//g" -e "s/ .*$//g")
+    #PLAY_WIDTH=$(echo $MPLAYER_RES | awk -F 'x' '{print $1}')
+    #PLAY_HEIGHT=$(echo $MPLAYER_RES | awk -F 'x' '{print $2}')
+    # patch from ML:
+    PLAY_WIDTH=$(awk -F '[x ]' 'BEGIN {wid = 0}; {if ($1 > wid) wid = $1}; END {print wid}'<<< "$MPLAYER_RES")
+    PLAY_HEIGHT=$(awk -F '[x ]' 'BEGIN {hgt = 0}; {if ($2 > hgt) hgt = $2}; END {print hgt}' <<< "$MPLAYER_RES")
+    # Fix nulls
+    if test -z "$PLAY_WIDTH" || test -z "$PLAY_HEIGHT"; then
+        PLAY_WIDTH="100"
+        PLAY_HEIGHT="100"
     fi
+    V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
+    #fi
     # Normalized aspect ratio
     V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
     sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
