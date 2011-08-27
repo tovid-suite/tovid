@@ -457,6 +457,9 @@ _seek = SpacedText('Thumbnail seek(s)', '-seek', '',
     'A single value or space separated list, 1 value per video.  '
     'Also used for seeking in switched menus.')
 
+_user_thumbs = List('Image(s)', '-user-thumbs', None,
+    'Images for thumbnails.  You must supply one image for each title if you use this.',
+    Filename('', filetypes=image_filetypes))
 
 ### --------------------------------------------------------------------
 ### Fonts and font colors
@@ -905,10 +908,16 @@ for num in range(2,  13):
 slideshows = Tabs('Slideshows', *tab_list)
 
 
-thumbnails = VPanel("Thumbnails",
+thumbnails = Tabs("Thumbnails",
+    VPanel('Menu link thumbnails',
+    VPanel('',
     HPanel('',
-        VPanel('Menu link thumbnails',
-            HPanel('Seeking', _seek),
+        VPanel('',
+            HPanel('',
+            VPanel('Aspect ratio', Label('Automatic: force video ratio on "Playback" tab')),
+            VPanel('Seeking', _seek),
+            ),
+            HPanel('',
             VPanel("Effects",
                 HPanel('',_opacity, Label('(Also affects showcase thumb)')),
                 HPanel('', _blur, _3dthumbs),
@@ -920,10 +929,21 @@ thumbnails = VPanel("Thumbnails",
                 _thumb_frame_color,
                 _thumb_columns,
                 _align,
+            ),
                 ),
         ),
+    ),
+    VPanel('User supplied thumbs',
+    VPanel('',
+    Label("Use this only if you want to substitute your own thumbs for default thumbnails.", 'center'),
+    _user_thumbs,
+    ),
+    ),
+    ),
+    ),
         VPanel("Showcase thumbnail",
             HPanel('Seeking', _showcase_seek),
+            HPanel('',
             VPanel('Effects',
                 _wave,
                 HPanel('', _showcase_blur, _3dshowcase),
@@ -935,9 +955,7 @@ thumbnails = VPanel("Thumbnails",
                 _showcase_frame_color,
                 _showcase_geo),
         ),
-    ),
-    HPanel('Aspect ratio', Label('Note: the aspect ratio of menu link '
-        'thumbnails is automatic: (force video ratio on "Playback" tab)')),
+        ),
 )
 
 from libtovid.guis import tovid
