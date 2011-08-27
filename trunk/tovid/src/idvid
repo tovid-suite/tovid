@@ -249,7 +249,7 @@ function get_info ()
         A_TRACKS=(${TRACKS//$'\n'/ })
         # Get hexadecimal track IDs, if present
         if grep -q "\[0x[0-9a-fA-F]*]" <<< $AUDIO_INFO; then
-            HEX_TRACKS=$(awk -F [][] '{gsub("0x", ""); print $2}' <<< "$AUDIO_INFO")
+            HEX_TRACKS=$(awk -F '[][]' '{gsub("0x", ""); print $2}' <<< "$AUDIO_INFO")
             HEX_TRACKS=(${HEX_TRACKS//$'\n'/ })
             USE_HEX_TRACKS=:
         else
