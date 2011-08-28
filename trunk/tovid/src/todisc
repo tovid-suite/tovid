@@ -255,6 +255,8 @@ THUMB_COLUMNS=""
 FAST_SEEK=false # ffmpeg: default:decode during seek (more accurate but slower)
 USER_THUMBS=false # is user providing images for the menu link thumbs ?
 FRAME_SAFE=false # (-static) if true take the best of 9 frames. default: 1 frame
+USE_V_TITLES_DECO=false
+USE_M_TITLE_DECO=false
 PIPE_FORMAT="-pix_fmt yuv420p -f yuv4mpegpipe"
 IMG_DEPTH="-depth 8" # when converting to png: ppmtoy4m needs 8 bit
 TOVID_PREFIX=$(tovid -prefix)
@@ -568,6 +570,14 @@ get_line_count()
 {
 awk 'END{print NR}' "$LOG_FILE"
 }
+ 
+# unused
+get_ffmpeg_version()
+{
+local test_version=$1
+ff_ver=$(ffmpeg -version 2>&1 | awk '{ gsub(",", ""); if(NR == 1) print $3 }')
+(( ${ff_ver:2:1} == test_version )) 2>/dev/null
+} 
 
 check_filetype()
 {
@@ -985,9 +995,9 @@ image2mpeg2()
     OUT_MPEG="$2"
     # remove symlinks, as otherwise we overwrite symlink target
     IMAGE_ENC_CMD=(ffmpeg -f image2 $LOOP -vframes $vlength \
-    -i "$IN_IMAGE" -s $VIDSIZE -f s16le -ar 48000 -i /dev/zero -t $alength \
+    -i "$IN_IMAGE" -f s16le -ar 48000 -i /dev/zero -t $alength \
     -ar $SAMPLERATE -ac 2 -ab 224k -target ${TV_STANDARD}-${TARGET} \
-    -aspect $ASPECT_RATIO -y "$OUT_MPEG")
+    -s $VIDSIZE -aspect $ASPECT_RATIO -y "$OUT_MPEG")
     echo "Running ${IMAGE_ENC_CMD[@]}" | format_output >> "$LOG_FILE"
     "${IMAGE_ENC_CMD[@]}" 2>&1 |strings >> "$LOG_FILE"
 }
@@ -1551,7 +1561,7 @@ quick_menu()
       grep -q -w '^crop' <<< "$filters"; then
         echo "libavfilter overlay and crop filters are present"
         use_overlay_filter=:
-        $use_overlay_filter && echo "Using libavfilter for -quick-menu"
+        echo "Using libavfilter for -quick-menu"
     elif grep -q ^-vhook <<< "$(ffmpeg -h 2>&1)"; then
         # find out where vhook lives for ffmpeg
         local config=$(ffmpeg -version 2>&1 | grep -- --prefix=)
@@ -1569,11 +1579,7 @@ quick_menu()
 
     # FIXME this will not be needed when the overlay filter is in SVN proper
     if ! $use_vhooks && ! $use_overlay_filter; then
-        runtime_error "You are not able to use -quick-menu:
-        you must use the experimental ffmpeg with libavfilter 
-        or an older (0.52 for example) version of ffmpeg with vhooks.
-        See this post for details on installing ffmpeg with filters: 
-        http://ubuntuforums.org/showthread.php?p=9021636"
+        runtime_error "No -quick-menu possible: ffmpeg movie filter absent"
     fi
     if $QUICKMENU_IS_SHOWCASE; then
         yecho
@@ -1631,13 +1637,13 @@ quick_menu()
     yuvout="$WORK_DIR/out.yuv"
     rm -f  "$yuvout"  && mkfifo "$yuvout"
     # run the commands to make the final menu m2v video
-    PAD_CMD=(ffmpeg -r $FRAME_RATE -async 1 $qm_pre_seek \
+    PAD_CMD=(ffmpeg -async 1 $qm_pre_seek \
     -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" $qm_post_seek \
-    -s $QM_FRAMESIZE -an $PADDING -r $FRAME_RATE \
+    -an -s $QM_FRAMESIZE $PADDING -r $FRAME_RATE \
     $PAD_CLR -f yuv4mpegpipe -vcodec rawvideo -y "$yuvout")
-    QUICKMENU_CMD=(ffmpeg -s $VIDSIZE -f yuv4mpegpipe \
-    -i "$yuvout" -an -f mpeg2video -r $FRAME_RATE \
-    -tvstd $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB \
+    QUICKMENU_CMD=(ffmpeg -f yuv4mpegpipe \
+    -i "$yuvout" -an -s $VIDSIZE -f mpeg2video -r $FRAME_RATE \
+    $STANDARD $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB \
     $aspect "${ffmpeg_filter[@]}" -y "$WORK_DIR/intro.m2v")
     $QM_PREVIEW && yecho
     yecho "Running ${PAD_CMD[@]}"|fold -bs
@@ -1729,7 +1735,7 @@ make_dummy()
     ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l 30 \
     -L 1 -b1 -j "$WORK_DIR/dummy.jpg")
     ENC_CMD2=(ffmpeg -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
-    -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
+    $STANDARD $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
     echo "Running: ${ENC_CMD1[@]} | ${ENC_CMD2[@]}" |
     format_output | tee -a "$LOG_FILE"
     if ! ${ENC_CMD1[@]} 2>> "$LOG_FILE"  |
@@ -2417,7 +2423,7 @@ while test $# -gt 0; do
             OUT_PREFIX="$1"
             OUT_PREFIX=${OUT_PREFIX%/}
             ;;
-        "-no-ask" )
+        "-no-ask" | "-noask" )
             NOASK=:
             ;;
         "-no-warn" | "-nowarn" )
@@ -2943,12 +2949,23 @@ while test $# -gt 0; do
             shift
             SELECT_CLR="$1"
             ;;
+        "-title-font-deco" | "-title-fontdeco" )
+            shift
+            USE_M_TITLE_DECO=:
+            M_TITLE_FONT_DECO=($1)
+            ;;
+        "-titles-font-deco" | "-titles-fontdeco" )
+            shift
+            USE_V_TITLES_DECO=:
+            V_TITLES_FONT_DECO=($1)
+            ;;
         -thumb-text-col* | "-thumb-font" | "-thumb-fontsize" ) # removed
             usage_error \
-            "The $1 option has been renamed.  Now use: -titles-${1##*-}"
+            "The $1 option now renamed.  Try: -titles-${1##*-} or check manual"
             ;;
         *-stroke-col* ) # removed
-            usage_error "The $1 option has been renamed.  Now use: ${1%-*}"
+            usage_error \
+            "The $1 option now renamed.  Try: ${1%-*} or check manual"
             ;;
         "-text-mist" )
             MIST=:
@@ -3616,6 +3633,12 @@ else
     ASPECT="-aspect 4:3"
     SS_ASPECT="-aspect 4:3"
 fi
+# ffmpeg now uses -standard rather than -tvstd (honour both for now)
+if ffmpeg -h 2>&1 |grep -q -- -standard; then
+    STANDARD="-standard"
+else
+    STANDARD="-tvstd"
+fi
  
 # set some vars for switched menus so we know where we are
 $SWITCHED_MODE && SWITCHED_MENUS=false
@@ -3935,7 +3958,13 @@ for ((i=1; i<=${#FILES[@]}; i++)); do
 done
 fi
 
-# if no bg supplied, use template.png so we can add a frame (-quick-menu only)
+## if no bg supplied, use template.png so we can add a frame (-quick-menu only)
+# near-black background causes ffmpeg's movie/overlay filter to act weirdly
+if [[ $BG_CLR = '#101010' || $BG_CLR = black ]] && [[ -z $BACKGROUND ]] && $QUICK_MENU; then
+    SUB_CLRS+=("$BG_CLR:'#000030' ('black' bg for quick menu is problematic)")
+    BG_CLR='#000030'
+    #BG_CLR='#101028'
+fi
 
 # check that NTSC menu uses safe colours
 if [[ $TV_STANDARD = "ntsc" ]]; then
@@ -5142,7 +5171,7 @@ if $SINGLE_SLIDESHOW && ! $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
     # FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB -aspect 4:3"
    #MENU_N=$(bc_math "$FRAME_RATE * ${MENU_LEN[MENU_NUM-1]}" int)
     #ffmpeg -f image2 -loop_input -t $MENU_LEN -i "$WORK_DIR/image_stack.png" \
-    #-an -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
+    #-an -r $FRAME_RATE -s $VIDSIZE $STANDARD $TV_STANDARD $FFMPEG_OPTS \
     #-f mpeg2video -y "$WORK_DIR/intro.m2v"
 fi
 # values to use for the blur mask
@@ -5196,18 +5225,20 @@ if $DO_MENU; then
     yecho "Creating a menu title image"
     echo
     # make a title image
-    if [[ -n $M_TITLE_STROKE ]]; then
-        # using -title-stroke does 'makemenu' style fonts (outlined)
-        # but no font shadow
+    if $USE_M_TITLE_DECO; then
+        # using -title-stroke does a plain 'makemenu' style font with no shadow
+        # but using font outline like makemenu does
         M_TITLE_CMD=(convert -size 620x100 xc:none -font "$MENU_FONT" \
-        -pointsize $MENU_FONTSIZE -fill "$TITLE_CLR" -stroke "$M_TITLE_STROKE" \
-        -gravity center -annotate +0+0 "$MENU_TITLE")
+        -pointsize $MENU_FONTSIZE -fill "$TITLE_CLR" -gravity center \
+        "${M_TITLE_FONT_DECO[@]}" -annotate +0+0 "$MENU_TITLE")
+        #-stroke none -annotate +0+0 "$MENU_TITLE")
     else
         # with no -title-stroke passed, make a font shadow for contrast
         # but no font outline (it will be a shadow on one side only
-        M_TITLE_CMD=(convert -size 620x300 xc:none -gravity $JUSTIFY \
-        -font "$MENU_FONT" -pointsize $MENU_FONTSIZE \
-        -fill none  -stroke '#101010' \
+        M_TITLE_STROKE=${M_TITLE_STROKE:-black}
+        M_TITLE_CMD=(convert -size 620x300 xc:none -gravity \
+        $JUSTIFY -font "$MENU_FONT" -pointsize $MENU_FONTSIZE \
+        -fill none  -stroke "$M_TITLE_STROKE" -strokewidth 1 \
         -annotate +0+0 "$MENU_TITLE" \
         -fill $TITLE_CLR  -stroke none \
         -annotate +1+1 "$MENU_TITLE")
@@ -5227,17 +5258,19 @@ if $DO_MENU; then
     if ! $SINGLE_SLIDESHOW; then
         for ((i=0; i<=NUM_FILES; i++)); do
             spin "Working on video title $((i+1)) "
-            if [[ -n $V_TITLES_STROKE ]]; then
+            if $USE_V_TITLES_DECO; then
                 # use a font outline makemenu style
                 V_TITLES_CMD=(convert -size 620x100 xc:none \
                 -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
-                -fill "$TITLES_CLR" -stroke "$V_TITLES_STROKE" \
+                -fill "$TITLES_CLR" "${V_TITLES_FONT_DECO[@]}" \
                 -gravity center -annotate +0+0 "${TITLES[i]}")
+            #    #-stroke none -annotate +0+0 "${TITLES[i]}")
             else
                 # default is to use a font shadow only on one side of font
+                V_TITLES_STROKE=${V_TITLES_STROKE:-black}
                 V_TITLES_CMD=(convert -size 620x300 xc:none -gravity $JUSTIFY \
                 -font "$TITLES_FONT" -pointsize $TITLES_FONTSIZE \
-                -fill none  -stroke '#101010' \
+                -fill none  -stroke "$V_TITLES_STROKE" -strokewidth 1 \
                 -annotate +0+0 "${TITLES[i]}" \
                 -fill $TITLES_CLR  -stroke none \
                 -annotate +1+1 "${TITLES[i]}")
@@ -6871,7 +6904,7 @@ fi
 $SINGLE_SLIDESHOW && echo "Getting stats on the slides now"
 for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if [[ $MENU_NUM -eq 1 ]]; then
-        ! $SINGLE_SLIDESHOW && spin "Getting stats on ${IN_FILES[i]}"
+        ! $SINGLE_SLIDESHOW && spin "Getting stats on ${IN_FILES[i]##*/}"
         idvid_stats[i]=$(idvid -terse -accurate "${IN_FILES[i]}" 2>/dev/null)
     fi
     if [ -s  "${IN_FILES[i]}.nav_log" ]; then
@@ -8236,7 +8269,7 @@ if $SUB_MENU; then
                 TOYUV_CMD=(ppmtoy4m -v 0 -n $smframes -A $PIXEL_AR -F $YUV_FR -I p \
                 -S 420mpeg2 -r)
                 IMGENC_CMD=(ffmpeg -f yuv4mpegpipe -r $FRAME_RATE -i - -an \
-                -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
+                -r $FRAME_RATE -s $VIDSIZE $STANDARD $TV_STANDARD $FFMPEG_OPTS \
                 -y "$WORK_DIR/menu$i.m2v")
                 echo
                 yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo |
@@ -8332,7 +8365,7 @@ if $SUB_MENU; then
                 IMG_STREAM_CMD2=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A $PIXEL_AR -F $YUV_FR -I p \
                 -S 420mpeg2 -r)
                 ENC_CMD1=(ffmpeg -f yuv4mpegpipe -r $FRAME_RATE -i - \
-                -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
+                -r $FRAME_RATE -s $VIDSIZE $STANDARD $TV_STANDARD $FFMPEG_OPTS \
                 -y "$WORK_DIR/menu$i.m2v")
                 echo "Running ${IMG_STREAM_CMD1[@]} | ${IMG_STREAM_CMD2[@]} | \
                 ${ENC_CMD1[@]}"| format_output | tee -a "$LOG_FILE" 2>&1
@@ -8390,7 +8423,7 @@ if $SUB_MENU; then
                 -S 420mpeg2 -r)
                 FFM_CMD=(ffmpeg $INSIZE -r $FRAME_RATE -pix_fmt yuv420p \
                 -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
-                -tvstd $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/menu${i}.m2v")
+                $STANDARD $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/menu${i}.m2v")
                 yecho "Running ${PPM_CMD[@]} | ${FFM_CMD[@]}" | format_output
                 cat "$WORK_DIR/polaroid_stack${i}.ppm" |
                 "${PPM_CMD[@]}" | "${FFM_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
@@ -8867,7 +8900,7 @@ if ! $QUICK_MENU && $DO_MENU; then
     TOYUV_CMD=(ppmtoy4m -v 2 -n $PPM_FRAMES -A $PIXEL_AR -I p -F $YUV_FR \
     -S 420mpeg2 -r)
     IMGENC_CMD=(ffmpeg $INSIZE -r $FRAME_RATE $PIPE_FORMAT -i - -an \
-    -r $FRAME_RATE -s $VIDSIZE -tvstd $TV_STANDARD $FFMPEG_OPTS \
+    -r $FRAME_RATE -s $VIDSIZE $STANDARD $TV_STANDARD $FFMPEG_OPTS \
     -y $WORK_DIR/intro.m2v)
     yecho "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo | ${IMGENC_CMD[@]}" |
     fold -bs
