@@ -2021,7 +2021,7 @@ else
 
     if $GENERATE_AUDIO; then
         # Read input from /dev/zero to generate a silent audio file
-        AUDIO_ENC=( "${AUDIO_ENC[@]}" -f s16le -i /dev/zero -t $V_DURATION )
+        AUDIO_ENC=( "${AUDIO_ENC[@]}" -f s16le -ar 48000 -i /dev/zero -t $V_DURATION )
         yecho "Generating a silent audio stream with the following command:"
     else
         # Encode audio stream directly from the input file
