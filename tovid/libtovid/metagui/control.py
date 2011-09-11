@@ -472,7 +472,10 @@ class Color (Control):
         """Event handler to update the color preview.
         """
         color = self.variable.get().strip()
-        self.set(color)
+        try:
+            self.set(color)
+        except (ValueError):
+            pass
 
 
     def pick_color(self):
