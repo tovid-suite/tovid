@@ -29,8 +29,8 @@ Where 'command' is one of the following:
     chapters    A GUI to set chapter points with mplayer          (new)
 
 
-    (Note: deprecated scripts are still available for now with the commands:
-    menu [makemenu], xml [makexml], vcd [makevcd], and postproc)
+    (Note: deprecated script still available for now with the command:
+    postproc (Formerly 'postproc')
 
 The following general options are also available:
     --prefix | -prefix      Return the tovid install prefix
@@ -55,9 +55,6 @@ from ConfigParser import ConfigParser
 _scripts = {
     'id': 'idvid',
     'dvd': 'makedvd',
-    'menu': 'makemenu',
-    'vcd': 'makevcd',
-    'xml': 'makexml',
     'postproc': 'postproc',
     'disc': 'todisc',
     'gui': 'todiscgui',
