@@ -1003,7 +1003,8 @@ class Text (Control):
     def next_item(self, event):
         """Select the next item in the parent listbox.
         """
-        self.parent_list.listbox.next_item(event)
+        if self.parent_list is not None:
+            self.parent_list.listbox.next_item(event)
 
 
 class SpacedText (Text):
