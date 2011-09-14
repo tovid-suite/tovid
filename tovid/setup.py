@@ -205,8 +205,6 @@ setup(
         'libtovid.guis',
         'libtovid.util',
         'libtovid.metagui',
-        'libtovid.render',
-        'libtovid.backend',
     ],
 
     # Executable files go into /$PREFIX/bin/
@@ -222,9 +220,6 @@ setup(
             # Bash scripts
             'src/idvid',
             'src/makedvd',
-            'src/makemenu',
-            'src/makevcd',
-            'src/makexml',
             'src/postproc',
             'src/todisc',
             'src/todisc-fade-routine',
@@ -232,7 +227,6 @@ setup(
             'src/tovid-batch',
             'src/tovid-init',
             'src/tovid-interactive',
-            'src/make_titlesets',
 
             # Python scripts
             'src/todiscgui',
