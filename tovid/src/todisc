@@ -147,8 +147,8 @@ USER_BG_AUDIO_SEEK=false
 USER_SM_AUDIO_SEEK=false
 SC_THUMB=:
 TEXTMENU=false
-SC_TITLE_ALIGN=center
-THUMB_TITLE_ALIGN=center
+SC_TITLE_ALIGN="center"
+EDGE_JUSTIFY=false
 ALIGN_OVERRIDE=false
 MULTILINE_TITLE=false
 SAFE_AREA=50 # undocumented: you can set this from CLI with -showcase-safe-area
@@ -310,26 +310,52 @@ usage_error()
     fi
     exit 1
 }
-warning_message()
+
+printred()
+{
+    tput setaf 1
+    printf "%s\n" "$@" | sed "s/    */ /g;s/^ *//" | tee -a "$LOG_FILE"   
+    tput sgr0
+    printf ""
+}
+
+printgreen()
+{
+    tput setaf 2
+    printf "%s\n" "$@" | sed "s/    */ /g;s/^ *//" | tee -a "$LOG_FILE"
+    tput sgr0
+    printf ""
+}
+
+info_message()
 {
     local MESSAGE=( "$@" )
     yecho $SEPARATOR
+    printgreen "*** Note: ***"
     for ((i=0; i<$#; i++)) ; do printf "%s" "${MESSAGE[i]}"; done |
     format_output | tee -a "$LOG_FILE"
     echo | tee -a "$LOG_FILE"
+    printgreen "*************"
     yecho "$SEPARATOR"
 }
 
 titlesafe_error()
 {
-    echo "***** WARNING *****"
-    yecho "video title is $1 pixels from screen edge"
+    (($1 > SAFE_AREA)) && preposition='off the' || preposition='from'
+    yecho
+    printred "***** WARNING *****"
+    yecho "video title is $1 pixels $preposition screen edge"
     yecho "Part of the title may not be visible on your tv screen"
     yecho "Perhaps use a smaller -titles-fontsize, or shorten \"${TITLES[i]}\""
-    $SHOWCASE && [[ -z $SHOWCASE_FILE ]] && \
-    yecho "You may also use '-showcase-titles-align east' since you are not
-    using a -showcase FILE."
-    echo "****************************"
+    # no need to test $SHOWCASE: default montage will never be offscreen
+    if [[ -z $SHOWCASE_FILE && ! $SC_TITLE_ALIGN = east ]]; then
+        yecho \
+        "You may also use '-showcase-titles-align east' since you are not
+        using a -showcase FILE."
+    elif ((NUM_FILES >= SPLIT)); then # two columns
+        : # insert message here for east offscreen stuff #fixme
+    fi
+    yecho "****************************"
     $WARN && sleep 5
 }
 
@@ -2180,14 +2206,6 @@ make_mask()
         convert - -resize $THUMB_SIZE! $MASK
         ;;
       "blob")
-        echo $SEPARATOR
-        echo "Running convert -size 100x60 xc:none -fill white \
-        -draw \"circle 41,39 44,57 circle 59,39 56,57 circle 50,21 50,3\" miff:- |
-        convert - -trim +repage -bordercolor none -border 10x10 miff:- |
-        ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} | ${BLUR_CMD[@]} |
-        convert - -resize $THUMB_SIZE! $MASK" | format_output
-        echo $SEPARATOR
-
         convert -size 100x60 xc:none -fill white \
         -draw "circle 41,39 44,57 circle 59,39 56,57 circle 50,21 50,3" miff:- |
         convert - -trim +repage -bordercolor none -border 10x10 miff:- |
@@ -2467,11 +2485,10 @@ while test $# -gt 0; do
             [[ -n $wsarg ]] &&  WIDESCREEN=$wsarg || WIDESCREEN="nopanscan"
             WIDE_SCREEN=:
             ;;
-        "-showcase-safe-area" )
+        "-safe-area" | "-showcase-safe-area" )
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
             shift
             SAFE_AREA="$1"
-            let SAFE_OFFSET="86-SAFE_AREA"
             USER_SAFE_AREA=:
             ;;
         "-align" )
@@ -2769,6 +2786,9 @@ while test $# -gt 0; do
             arg=${ARGS_ARRAY[0]}
             [[ -n $arg ]] && SPLIT=$arg && USER_SPLIT=:
             TEXTMENU=:
+            ;;
+        "-edge-justify")
+            EDGE_JUSTIFY=:
             ;;
         "-text-start" )
             ADV_OPT=( "${ADV_OPT[@]}" "$1" )
@@ -3141,6 +3161,8 @@ while test $# -gt 0; do
             shift
             USER_SC_GEO=:
             SHOWCASE_GEO=$1
+            ! grep -q "+[0-9]*+[0-9]*" <<< $SHOWCASE_GEO && usage_error \
+            "-showcase-geo argument must be the position geometry in form +X+Y"
             ;;
         "-submenu-audio-seek" ) # not implemented yet
             shift
@@ -3153,6 +3175,7 @@ while test $# -gt 0; do
             USER_TITLE_GEO=:
             shift
             TITLE_GRAVITY=$1
+            # centre => center ... no other direction has re in it :)
             TITLE_GRAVITY=${TITLE_GRAVITY/re/er}
             ;;
         "-menu-title-offset" )
@@ -3404,27 +3427,6 @@ fi
 # for switched menus the 1st menu (MN) made is the 2nd, not the 1st
 { $SWITCHED_MODE || $SWITCHED_MENUS ; } && MN=2 || MN=1
 
-if [[ ${#TITLES[@]} -eq 0 ]]; then
-    if [[ $MENU_NUM = $MN ]] && ! $NOMENU \
-     && ! $SINGLE_SLIDESHOW && ! $DO_TITLESETS && $MONTAGE_MENU; then
-        yecho
-        yecho "You did not provide any titles with -titles"
-        yecho "Using the basename of each file provided (minus the extension)."
-        yecho
-        ((sshows < 1)) && $WARN && sleep 5
-    fi
-    for i in ${!FILES[@]}; do
-        TITLE=${FILES[i]##*/}
-        TITLES[i]=" ${TITLE%%.*} "
-    done
-fi
-if ! $TITLESET_MODE && ! $DO_TITLESETS && $QUICK_NAV && ! $VMGM_ONLY; then
-    QUICK_NAV=false
-    yecho
-    yecho "No -quick-nav unless doing titlesets ... disabling this option"
-    $WARN && sleep 5
-    yecho
-fi
 if $DO_TITLESETS && ! $VMGM_MENU && ! $QUICK_NAV; then
     usage_error \
     "You can not use -no-vmgm if doing titlesets unless using -quick-nav"
@@ -3447,17 +3449,16 @@ fi
 if $TEXTMENU; then
     SHOWCASE=:
     IMG_FMT="png"
-    SC_TITLE_ALIGN="west"
+    # default -align for textmenu is northwest, not north
+    ! $USER_GRAVITY && BUTTON_GRAVITY="northwest"
 fi
 # incompatible slideshow options with -switched-menus
 if { $CAROUSEL_IS_BG || $CAROUSEL_IS_SHOWCASE ; } && $SWITCHED_MENUS; then
     $CAROUSEL_IS_BG && OPT="-background-slideshow" || OPT="-showcase-slideshow"
-    yecho
-    yecho "$OPT uses slides from ALL slideshows, so its use with
+    info_message "$OPT uses slides from ALL slideshows, so its use with \
      -switched-menus makes no sense.  Removing this option for you."
-    yecho
     CAROUSEL_IS_SHOWCASE=false; CAROUSEL_IS_BG=false
-    $WARN && sleep 10
+    $WARN && sleep 5
 fi
 # slideshows are animated by default like rest of todisc
 if ((sshows>=1)); then
@@ -3589,25 +3590,12 @@ $THUMBS_3D && unset THUMB_FRAME
 # allow -thumb-frame-size (otherwise unused for 3D thumbs) to set -raise
 ((USER_THUMB_FRAME_SIZE)) && RAISE="-raise $THUMB_FRAME_SIZE"
 
+# centre aligned titles under showcase thumbs need extra safe room
+$USER_SAFE_AREA && [[ $SC_TITLE_ALIGN = center ]] && \
+  SAFE_OFFSET=$((86-SAFE_AREA))
 
 # honour -noask for functions and called scripts that use them
 $NOASK && NO_ASK="-noask"
-# Warn if thumb labels have more than 16 characters
-if ! $SHOWCASE; then
-    for ((i=0; i<${#TITLES[@]}; i++)); do
-        val=${#TITLES[i]}
-        [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
-    done
-    if [[ ${#TITLES[@]} -gt 6 \
-    && $MAX_CHARS -gt 16 ]] && ! $SINGLE_SLIDESHOW; then
-        yecho
-        yecho "WARNING! Some titles are longer than 16 characters; \
-        they may be chopped off."
-        yecho
-        #echo "\"${TITLES[key]}\" is too long; please use a shorter title."
-        #exit 1
-    fi
-fi
 # backend checks
 # transcode version >= 1.1.0 mandated
 _transcode_version=$(transcode -v 2>&1| awk '{gsub("v", ""); print $2}')
@@ -3659,72 +3647,6 @@ rm -f "$WORK_DIR/dummy.mpg"
 # set some vars for switched menus so we know where we are
 $SWITCHED_MODE && SWITCHED_MENUS=false
 { $SWITCHED_MODE || $SWITCHED_MENUS ; } && SWITCHED=:
-# warn about change in -thumb-mist option
-if $FEATHER && ! $USE_FEATHER_MASK; then
-    yecho
-    yecho "Note: feathered thumb shapes no longer have mist background
-        by default.  Use -thumb-mist [COLOR] to get the old behavior"
-    yecho
-    $WARN && sleep 5
-fi
-#
-# sanity checks for button style ( -button-style ) for menu buttons
-#
-
-# use a suitable button style
-if ! $SINGLE_SLIDESHOW; then
-    for ((i=0; i<${#FILES[@]}; i++)); do
-        if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
-            MULTILINE_TITLE=:
-            if $FEATHER && [ $THUMB_SHAPE != "normal" ]; then
-                # multiline titles not suitable for text buttons
-                BUTTON_STYLE="text-rect"
-            elif $TEXTMENU; then
-                [[ $BUTTON_STYLE != "line" ]] && BUTTON_STYLE="text-rect"
-            else
-                [[ $BUTTON_STYLE != "text-rect" ]] \
-                && ! $USER_BSTYLE && BUTTON_STYLE="rect"
-            fi
-        fi
-    done
-
-    # disallow spaces in video titles for text button style
-    if [ "$BUTTON_STYLE" = "text" ]; then
-        for ((i=0; i<${#TITLES[@]}; i++)); do
-            T=$(sed 's/^[ \t]*//;s/[ \t]*$//' <<< "${TITLES[i]}")
-            if grep "  " <<< "$T" >/dev/null; then
-                echo "Sorry, a maximum of one consecutive space is allowed
-                in titles for text buttons.  \"${TITLES[i]}\" has more than
-                one consecutive space in it" |fold -bs
-                exit 1
-            fi
-        done
-    fi
-fi
-if { $TEXTMENU || $QUICK_MENU ; } && [[ $BUTTON_STYLE = "rect" ]]; then
-    if $MULTILINE_TITLE; then
-        BUTTON_STYLE="text-rect"
-    else
-        BUTTON_STYLE="line"
-    fi
-    if ((MENU_NUM==2)) || { ! $SWITCHED_MODE && ! $SWITCHED_MENUS ; }; then
-        if $USER_BSTYLE; then
-            yecho
-            yecho "Using button style '$BUTTON_STYLE' instead of 'rect'
-            for textmenu menu"
-            yecho
-            $WARN && sleep 10
-        fi
-    fi
-fi
-# allow multiline titles in submenu
-if [[ -n "$SM_TITLES" ]]; then
-    for i in ${!SM_TITLES[@]}; do
-        if [[ $(echo -e "${SM_TITLES[i]}" |wc -l) -gt 1 ]]; then
-            SM_TITLES[i]="$(echo -e  "${SM_TITLES[i]}")"
-        fi
-    done
-fi
 # check if user passed a usable thumb or showcase shape
 if [[ -n $THUMB_SHAPE ]]; then
     if ! check_maskshape $THUMB_SHAPE; then
@@ -3732,28 +3654,6 @@ if [[ -n $THUMB_SHAPE ]]; then
         -thumb-shape option. You gave \"$THUMB_SHAPE\""
     fi
 
-fi
-if [[ -n $SHOWCASE_SHAPE ]]; then
-    if ! check_maskshape $SHOWCASE_SHAPE; then
-        usage_error "Please supply a usable showcase shape with
-        -showcase-shape option.  You gave \"$SHOWCASE_SHAPE\""
-    fi
-fi
-if [[ -n ${ROTATE_ARRAY[@]} ]]; then
-    if ! $SHOWCASE; then
-         if [[ $BUTTON_STYLE = *rect* ]]; then
-            BUTTON_STYLE="line"
-            if $USER_BSTYLE; then
-                yecho
-                echo "'*rect' button styles with rotated thumbs don't play well"
-                echo "with spumux buttons. Setting button style to "
-                echo "'line'.  You may also use 'text' style"
-                echo "Quit now if you wish to exit and examine your options"
-                yecho
-                $WARN && sleep 10
-            fi
-        fi
-    fi
 fi
 if ! $SINGLE_SLIDESHOW; then
     for i in ${!FILES[@]}; do
@@ -3763,9 +3663,15 @@ if ! $SINGLE_SLIDESHOW; then
         fi
     done
 fi
-#
-# end of button-style checks
-#
+# -user-thumbs is only compatible with static thumbs (-static)
+if $USER_THUMBS && ! $STATIC; then
+    if $SWITCHED_MENUS; then
+        usage_error "If doing switched menus -user-thumbs can only be used
+                    with a static menu (-static)"
+    else
+        usage_error "-user-thumbs option is for static buttons only (-static)"
+    fi
+fi
 
 # transparent border around text so rect spumux outline can fit
 if [[ $BUTTON_STYLE = "text-rect" ]]; then
@@ -3788,35 +3694,147 @@ if ! $SWITCHED_MODE && ! $TITLESET_MODE && \
 ! $MK_CAROUSEL_MODE && ! $VMGM_ONLY; then
     test -f "$LOG_FILE" && rm -fv "$LOG_FILE"
 fi
-# see if imagemagick supports -vignette for the oval shape
-if [[ $THUMB_SHAPE == "vignette" || $SHOWCASE_SHAPE == "vignette" ]]; then
-    if ! convert -help 2>&1 | egrep -q -- "-vignette"; then
-        [[ $THUMB_SHAPE == "vignette" ]] && THUMB_SHAPE="oval"
-        [[ $SHOWCASE_SHAPE == "vignette" ]] && SHOWCASE_SHAPE="oval"
-        ! ((USER_BLUR)) && BLUR=3
-        ! ((SC_USER_BLUR)) && SC_BLUR=3
-        warning_message \
-          "INFO: -vignette option not available in your imagemagick version.
-          You should upgrade it.  Using 'oval' mask shape instead which is
-          similar.  Setting the blur to 3 unless you used '-blur' (thumbs) or
-          '-showcase-blur' (showcase file)"
-        $WARN && sleep 5
+# script details for the log file
+PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
+printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
+"todisc from the tovid suite ($TOVID_VERSION) - log for `date`" \
+"$PATTERN" >> "$LOG_FILE"
+# put the command line into the log file to aid debugging
+printf  "%s\n%s\n" todisc "${args[@]}" >> "$LOG_FILE"
+# do some locale debugging
+echo -e "\nYou are using the following locale settings:" >> "$LOG_FILE"
+locale >>  "$LOG_FILE" 2>&1
+echo >> "$LOG_FILE"
+
+# info messages and non critical warnings
+# information about -titles option in case user doesn't know
+if [[ ${#TITLES[@]} -eq 0 ]]; then
+    if [[ $MENU_NUM = $MN ]] && ! $NOMENU \
+     && ! $SINGLE_SLIDESHOW && ! $DO_TITLESETS && $MONTAGE_MENU; then
+        yecho
+        yecho "You did not provide any titles with -titles"
+        yecho "Using the basename of each file provided (minus the extension)."
+        yecho
+        ((sshows < 1)) && $WARN && sleep 5
+    fi
+    for i in ${!FILES[@]}; do
+        TITLE=${FILES[i]##*/}
+        TITLES[i]=" ${TITLE%%.*} "
+    done
+fi
+if ! $TITLESET_MODE && ! $DO_TITLESETS && $QUICK_NAV && ! $VMGM_ONLY; then
+    QUICK_NAV=false
+    info_message "No -quick-nav unless doing titlesets ... disabling this option"
+    $WARN && sleep 5
+fi
+# Warn if thumb labels have more than 16 characters
+if ! $SHOWCASE; then
+    for ((i=0; i<${#TITLES[@]}; i++)); do
+        val=${#TITLES[i]}
+        [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
+    done
+    if [[ ${#TITLES[@]} -gt 6 \
+    && $MAX_CHARS -gt 16 ]] && ! $SINGLE_SLIDESHOW; then
+        info_message "WARNING! Some titles are longer than 16 characters; \
+        they may be chopped off."
+        #echo "\"${TITLES[key]}\" is too long; please use a shorter title."
+        #exit 1
     fi
 fi
-# see if advanced options were used and give warning if so
-if [[ -n "${ADV_OPT[@]}" ]] && ! $SWITCHED_MODE; then
-    yecho
-    yecho "***** WARNING *****"
-    yecho "You have used the following advanced options:"
-    yecho "${ADV_OPT[@]}" | format_output
-    yecho "With these options it is possible to create a menu where things \
-    overlap or are offscreen, or that has other problems, so please check it \
-    with the preview.  These are things that todisc tries to avoid normally, \
-    so if you have problems, please leave them out."
-    yecho
-    $WARN && sleep 15
+# warn about change in -thumb-mist option
+if $FEATHER && ! $USE_FEATHER_MASK; then
+    info_message "Note: feathered thumb shapes no longer have mist background
+        by default.  Use -thumb-mist [COLOR] to get the old behavior"
+    $WARN && sleep 5
+fi
+#
+# sanity checks for button style ( -button-style ) for menu buttons
+#
+# use a suitable button style
+if ! $SINGLE_SLIDESHOW; then
+    for ((i=0; i<${#FILES[@]}; i++)); do
+        if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
+            MULTILINE_TITLE=:
+            if $FEATHER && [ $THUMB_SHAPE != "normal" ]; then
+                # multiline titles not suitable for text buttons
+                BUTTON_STYLE="text-rect"
+            elif $TEXTMENU; then
+                [[ $BUTTON_STYLE != "line" ]] && BUTTON_STYLE="text-rect"
+            else
+                [[ $BUTTON_STYLE != "text-rect" ]] \
+                && ! $USER_BSTYLE && BUTTON_STYLE="rect"
+            fi
+        fi
+    done
+
+    # remove multiple spaces in video titles for text button style
+    if [ "$BUTTON_STYLE" = "text" ]; then
+        for ((i=0; i<${#TITLES[@]}; i++)); do
+            T=$(sed 's/^[ \t]*//;s/[ \t]*$//' <<< "${TITLES[i]}")
+            if grep "  " <<< "$T" >/dev/null; then
+                info_message "Sorry, a maximum of one consecutive space is allowed
+                in titles for text buttons.  \"${TITLES[i]}\" has more than
+                one consecutive space in it.  Removing the extra spaces for you."
+                new_title=$("s/^ *//;s/ *$//;s/ \{1,\}/ /g" <<< "${TITLES[i]}")
+                TITLES[i]="$new_title"
+                $WARN && sleep 5
+            fi
+        done
+    fi
+fi
+if { $TEXTMENU || $QUICK_MENU ; } && [[ $BUTTON_STYLE = "rect" ]]; then
+    if $MULTILINE_TITLE; then
+        BUTTON_STYLE="text-rect"
+    else
+        BUTTON_STYLE="line"
+    fi
+    if ((MENU_NUM==2)) || { ! $SWITCHED_MODE && ! $SWITCHED_MENUS ; }; then
+        if $USER_BSTYLE; then
+            info_message "Using button style '$BUTTON_STYLE' instead of 'rect'
+            for textmenu menu"
+            $WARN && sleep 10
+        fi
+    fi
+fi
+if [[ -n ${ROTATE_ARRAY[@]} ]]; then
+    if ! $SHOWCASE; then
+         if [[ $BUTTON_STYLE = *rect* ]]; then
+            BUTTON_STYLE="line"
+            if $USER_BSTYLE; then
+                info_message "'*rect' button styles with rotated thumbs don't
+                play well with spumux buttons. Setting button style to
+                'line'.  You may also use 'text' style.
+                Quit now if you wish to exit and examine your options"
+                $WARN && sleep 10
+            fi
+        fi
+    fi
+fi
+#
+# end of button-style checks
+#
+if [[ -n $SHOWCASE_SHAPE ]]; then
+    # if -wave also (incompatible), disable -showcase-shape and give warning
+    if [[ -n $WAVE ]]; then
+        info_message "-showcase-shape incompatible with -wave, \
+          disabling -showcase-shape for you"
+        SHOWCASE_SHAPE=""
+        $WARN && sleep 3
+    else
+        ! check_maskshape $SHOWCASE_SHAPE && \
+        usage_error "Please supply a usable showcase shape with
+        -showcase-shape option.  You gave \"$SHOWCASE_SHAPE\""
+    fi
 fi
 
+# allow multiline titles in submenu
+if [[ -n "$SM_TITLES" ]]; then
+    for i in ${!SM_TITLES[@]}; do
+        if [[ $(echo -e "${SM_TITLES[i]}" |wc -l) -gt 1 ]]; then
+            SM_TITLES[i]="$(echo -e  "${SM_TITLES[i]}")"
+        fi
+    done
+fi
 # copy symlinks for -group hack
 if $GROUPING && $TITLESET_MODE; then
     find "$WORK_DIR"/  -name \*group\*.mpg -exec cp -P {} "$BASEDIR" \;
@@ -3827,49 +3845,104 @@ $SWITCHED_MODE && DO_CAROUSEL=false
 # save value of default chapters
 ! $USER_CHAPTERS && (( ${#CHAPTERS[@]} == 1 )) && default_chapters=${CHAPTERS[0]}
 
-# script details for the log file
-PATTERN=$(for ((i=1; i<=79; i++)); do echo -n \*; done)
-printf "%s\n%s\n%s\n\n\n" "$PATTERN" \
-"todisc from the tovid suite ($TOVID_VERSION) - log for `date`" \
-"$PATTERN" >> "$LOG_FILE"
-# put the command line into the log file to aid debugging
-printf  "%s\n%s\n" todisc "${args[@]}" | sed "s/    */ /g;s/^ *//" | fold -bs >> "$LOG_FILE"
-# do some locale debugging
-echo -e "\nYou are using the following locale settings:" >> "$LOG_FILE"
-locale >>  "$LOG_FILE" 2>&1
-echo >> "$LOG_FILE"
-
-# check aspect ratios of infiles so thumbs are in aspect without -aspect passed
-if ((inc_files)) && [[ -z "$V_ASPECT" ]]; then
+# see if imagemagick supports -vignette for the oval shape
+if [[ $THUMB_SHAPE == "vignette" || $SHOWCASE_SHAPE == "vignette" ]]; then
+    if ! convert -help 2>&1 | egrep -q -- "-vignette"; then
+        [[ $THUMB_SHAPE == "vignette" ]] && THUMB_SHAPE="oval"
+        [[ $SHOWCASE_SHAPE == "vignette" ]] && SHOWCASE_SHAPE="oval"
+        ! ((USER_BLUR)) && BLUR=3
+        ! ((SC_USER_BLUR)) && SC_BLUR=3
+        warning_message \
+          "Note: -vignette option not available in your imagemagick version.
+          You should upgrade it.  Using 'oval' mask shape instead which is
+          similar.  Setting the blur to 3 unless you used '-blur' (thumbs) or
+          '-showcase-blur' (showcase file)"
+        $WARN && sleep 5
+    fi
+fi
+# see if advanced options were used and give warning if so
+if [[ -n "${ADV_OPT[@]}" ]] && ! $SWITCHED_MODE; then
     yecho
-    yecho "Determining aspect ratio of videos"
-    for ((i=0; i<${#FILES[@]}; i++)); do
-        ! $SINGLE_SLIDESHOW && yecho "Checking aspect ratios: ${FILES[i]}"
-        stats[i]=$(idvid -terse -fast "${FILES[i]}" 2>/dev/null |
-          awk -F= '/V_ASPECT_WIDTH=/ {print $2}' 2>/dev/null)
-        cur_aspect=${stats[i]}
-        if ((cur_aspect)); then
-            [[ $cur_aspect = 133 ]] && ASPECT_RATIO=4:3
-            [[ $cur_aspect = 177 ]] && ASPECT_RATIO=16:9
-            yecho "Aspect ratio of $ASPECT_RATIO found.
-            Videos in this menu (titleset) will be done using that ratio."
-            ((cur_aspect==177||cur_aspect==133)) && break
-        else
-            yecho "No aspect ratio was determined.  Videos in ths menu
-            (titleset) will be done using a ratio of 4:3"
-        fi
-done
+    printgreen "*** Note: ***"
+    yecho "You have used the following advanced options:"
+    yecho "${ADV_OPT[@]}" | format_output
+    yecho "With these options it is possible to create a menu where things \
+    overlap or are offscreen, or that has other problems, so please check it \
+    with the preview."
+    printgreen "***************"
     yecho
+    $WARN && sleep 10
 fi
 
-# -user-thumbs is only compatible with static thumbs (-static)
-if $USER_THUMBS && ! $STATIC; then
-    if $SWITCHED_MENUS; then
-        usage_error "If doing switched menus -user-thumbs can only be used
-                    with a static menu (-static)"
-    else
-        usage_error "-user-thumbs option is for static buttons only (-static)"
+# check aspect ratios of infiles so thumbs are in aspect without -aspect passed
+# this is done before makempg converts non-compliant files so it is really only
+# useful to get a preview
+if ((inc_files)) && [[ -z "$V_ASPECT" ]]; then
+    yecho
+    yecho "Determining aspect ratio of videos for the preview."
+    echo
+    info_message "If SURE of ratios skip this step with '-aspect ASPECT' \
+    (but it is best if you always run it first to check)."
+    echo
+    cur_aspect=""
+    for ((i=0; i<${#FILES[@]}; i++)); do
+        curfile=${FILES[i]}
+        ! $SINGLE_SLIDESHOW && spin "Checking aspect ratios: ${FILES[i]##*/}"
+        stat=$(idvid -terse -fast "${FILES[i]}" 2>/dev/null |
+          awk -F= '/V_ASPECT_WIDTH=/ {print $2}' 2>/dev/null)
+        # save list of files without reported aspect ratio for a warning
+        { [[ $stat = 0 ]] || ! test_is_number $stat; } &&  warn_files[i]=${FILES[i]}
+        stats[i]=${stat:-0}
+        # round up to 177 or down to 133 in the same way as makempg does for
+        # padding, so we know what aspect it will be after conversion
+        if (( ${stats[i]} > 153 )); then
+            ar_stats[i]=177
+        else
+            ar_stats[i]=133
+        fi
+        #if [[ -n $cur_aspect ]] && [[ ${ar_stats[i]} != $cur_aspect ]]; then
+        #    # if we have a value for cur_aspect and it differs from new value 
+        #    if [[ ${ar_stats[i]} != $cur_aspect ]]; then
+                # we may have this already if the value was 0, but no harm done
+        #        warn_files[i]=${FILES[i]}
+        #    fi
+        #fi
+        cur_aspect=${ar_stats[i]}
+        # unset stat so we can test it again
+        unset stat 
+    done
+    # count the most frequent occurence in ar_stats of 133 or 177.
+    # They should all be the same!, but user can still continue if he wants
+    ws=$(grep 177 <<< "$(printf '%s\n' ${ar_stats[@]})" |wc -l)
+    lb=$(grep 133 <<< "$(printf '%s\n' ${ar_stats[@]})" |wc -l)
+    ((ws > lb)) && ar=177 || ar=133
+    # set the global var for aspect ratio
+    { [[ $ar = 177 ]] && ASPECT_RATIO=16:9; } || ASPECT_RATIO=4:3
+    # warn about files that have a differing aspect ratio
+    for i in ${!ar_stats[@]}; do
+        if ! grep -q $ar <<< ${ar_stats[i]}; then
+            warn_files[i]=${FILES[i]}
+        fi
+    done
+    if [[ -n ${warn_files[@]} ]]; then
+        yecho
+        printred "*** CRITICAL WARNING ***"
+        yecho "The following files differ from the $ASPECT_RATIO aspect ratio
+        we are using, even if they are to be re-encoded by makempg here."
+        echo
+        printf "\"%s\"\n" ${warn_files[@]}
+        echo
+        yecho "You can not mix different aspect ratios in the same menu. 
+        They need to be put in a separate titleset. You may want to quit 
+        at the preview and re-examine the situation."
+        printred "*************"
+        yecho
+        yecho "Press <ENTER> to continue"
+        read input
     fi
+    printf "\n$SEPARATOR\n%s\n$SEPARATOR\n" \
+    "Videos in this titleset will be done using aspect of $ASPECT_RATIO." |
+    tee -a "$LOG_FILE"
 fi
 
 ################################################
@@ -3999,13 +4072,13 @@ if [[ $TV_STANDARD = "ntsc" ]]; then
     get_safe_colour $THUMB_FRAME_CLR && THUMB_FRAME_CLR=$SAFE_CLR
     echo
     if [[ -n ${SUB_CLRS[@]} ]]; then
-        echo "*** Note: ***"
+        printgreen "*** Note: ***"
         echo "Some of the colors you passed in are not NTSC color safe. "
         echo "The following substitutions were made for you:"
         for i in ${!SUB_CLRS[@]}; do
             echo "${SUB_CLRS[i]/:*} ===>  ${SUB_CLRS[i]/*:}"
         done
-        echo "*************"
+        printgreen "*************"
         echo
         $WARN && sleep 5
     fi
@@ -4053,11 +4126,11 @@ if $SHOWCASE; then
 fi
 # find out the aspect ratio of the showcase file
 if [[ -n $SHOWCASE_VIDEO ]]; then
-    SC_AR=$(idvid -fast -terse "$SHOWCASE_VIDEO" 2>/dev/null |
+    SC_AR=$( idvid -fast -terse "$SHOWCASE_VIDEO" 2>> $LOG_FILE |
     awk -F= '/V_ASPECT_WIDTH/ {print $2}' 2>/dev/null)
 elif [[ -n $SHOWCASE_IMG && $SHOWCASE_IMG != "dummy" ]]; then
     SC_AR=$(identify -ping -format %wx%h "$SHOWCASE_IMG")
-    SC_AR=$(bc_math "${SC_AR/x*} / ${SC_AR/*x}" )
+    SC_AR=$( bc_math "(${SC_AR/x*} / ${SC_AR/*x}) * 100" int )
 fi
 
 # now the showcase image is id'ed, we can find out what kind of quick menu
@@ -4073,7 +4146,6 @@ fi
 if $QUICK_MENU && ! $QUICKMENU_IS_SHOWCASE && ! $QUICKMENU_IS_BACKGROUND; then
     if ! $SWITCHED; then
         yecho
-        yecho "***** WARNING *****"
         if { $DO_TITLESETS || $TITLESET_MODE ; }; then
             yech=yecho
         else
@@ -4153,11 +4225,22 @@ $VMGM_ONLY && NUM_FILES=$(( ${#TITLES[@]} - 1 )) || NUM_FILES=$((V_TOTAL - 1))
 $DO_CAROUSEL && MONTAGE_MENU=false
 
 # switch title position when appropriate so it doesn't get covered up
-! $USER_TITLE_GEO && [[ $BUTTON_GRAVITY = *south* ]] && TITLE_GRAVITY="north"
-if [[ $BUTTON_GRAVITY = *east* || $BUTTON_GRAVITY = *west* ]]; then
+! $USER_TITLE_GEO && [[ $BUTTON_GRAVITY = south* ]] && TITLE_GRAVITY="north"
+# not sure why YGEO is 45, probably from when -align didn't affect montage
+#if [[ $BUTTON_GRAVITY = *east || $BUTTON_GRAVITY = *west ]]; then
+case $BUTTON_GRAVITY in
+  northeast|southeast|northwest|southwest)
     ! $USER_GEO &&  XGEO=45 && YGEO=45
-    ! $SHOWCASE && ! $USER_TITLE_GEO && TITLE_GRAVITY=north
-fi
+    #! $SHOWCASE && ! $USER_TITLE_GEO && TITLE_GRAVITY=north # why oh why ? !
+    ;;
+  east|west)
+    # move to REAL center if -align centers the montage vertically
+    YGEO=0 && XGEO=$SAFE_AREA
+    ;;
+  center)
+    YGEO=0 && XGEO=0
+    ;;
+esac 
 ! $SHOWCASE && \
 [[ $BUTTON_GRAVITY = "center" ]] && ! $USER_TITLE_GEO && TITLE_GRAVITY="north"
 
@@ -4194,6 +4277,18 @@ fi
 #CHAPTERS=( ${CHAPTERS%%+*} ) # in case of grouped chapters
 # allow user to pass HH:MM:SS chapters
 $USER_CHAPTERS && CHAPT_ARRAY=( ${CHAPTERS[@]} )
+if $USER_CHAPTERS; then
+    C=( ${CHAPTERS[@]} )
+    if ((${#C[@]} == 1)) && ((${#C[@]} != ${#FILES[@]})); then
+        for i in ${!FILES[@]}; do
+            CHAPT_ARRAY[i]=${C[0]}
+        done
+    else
+        CHAPT_ARRAY=( ${CHAPTERS[@]} )
+    fi
+fi
+
+
 # if arbitrary grouped chapters passed, make an array of them
 if $GROUPING && $USER_CHAPTERS; then
     for i in ${!IN_FILES[@]}; do
@@ -4280,6 +4375,10 @@ fi
 # get normal CHAPTERS VAR,i.e.: 'how many chapters'
 # Check if 1st is 00:00:00 and all chapters have HH:MM:SS format
 if $USER_CHAPTERS; then
+    if [[ ${#FILES[@]} -ne ${#CHAPTERS[@]} ]]; then
+        usage_error "Please give the same number of chapters as videos
+        when using HH:MM:SS form chapters."
+    fi
     for i in ${!CHAPT_ARRAY[@]}; do
         unset newchapts
         [[ ${CHAPTERS[i]} != *:* ]] && usage_error \
@@ -4443,10 +4542,6 @@ if $ROTATE_THUMBS; then
         ${#ROTATE_ARRAY[@]} thumb rotate values."
     fi
 fi
-# if  -wave passed, usage error if -showcase-shape also passed
-#if [[ -n $WAVE && -n $SHOWCASE_SHAPE ]]; then
-#    usage_error "You can not use both -wave and a -showcase-shape"
-#fi
 
 # if Fading menu, and no BG IMAGE OR VIDEO, fade thumbs right in after title
 if $MENU_FADE; then
@@ -4721,10 +4816,14 @@ if $DO_MENU; then
             else # echo titles "as is"
                 echo "  \"${TITLES[i]}\" (${IN_FILES[i]})"
             fi
+            # FIXME move this before the aspect ratio check for IN_FILES if possible
             if [[ $(echo -e "${TITLES[i]}" |wc -l) -gt 1 ]]; then
                 # if there is a multiline title we need to align to right of thumbs
                 SC_TITLE_ALIGN=east
                 ALIGN_OVERRIDE=:
+                if [[ ! $SC_TITLES_ALIGN = east ]]; then
+                    WARN_RE_ALIGN_EAST=1
+                fi
             fi
         done
         yecho "Current font settings: "
@@ -4760,6 +4859,11 @@ if $DO_MENU; then
             fi
             yecho
         fi
+    fi
+    if ((WARN_RE_ALIGN_EAST)); then 
+        info_message "Multiline titles must be aligned east. \
+        Setting \"-align east\" for you"
+        $WARN && sleep 3
     fi
 fi
 # TODO: Merge these globals with the ones up top
@@ -4807,12 +4911,13 @@ SC_THUMB_X_ARRAY=("86" "86 86" "86 86 86" "86 86 86 86" \
 SC_THUMB_X_ARRAY=( ${SC_THUMB_X_ARRAY[NUM_FILES]} )
 SC_THUMB_Y_ARRAY=( ${SC_THUMB_Y_ARRAY[NUM_FILES]} )
 SC_TITLES_X_ARRAY=( ${SC_THUMB_X_ARRAY[@]} )
-SC_TITLES_Y_ARRAY=( ${SC_TITLES_Y_ARRAY[NUM_FILES]} )
+SC_TITLES_Y_ARRAY=( ${SC_TITLES_Y_ARRAY[NUM_FILES]} ) # not used by textmenu
 if $TEXTMENU ; then
+    # next line useless as it will always be overwritten for large # of titles
     ! $USER_SPLIT && SPLIT=13 # max text only titles in one column (-textmenu)
     if [[ $NUM_FILES -gt 12 ]] && ! $USER_SPLIT; then
         SPLIT=$((V_TOTAL / 2))
-        [[ $(( SPLIT * 2)) -ne $V_TOTAL ]] && let SPLIT=SPLIT+1
+        (( (SPLIT * 2) != V_TOTAL)) && ((SPLIT++))
     fi
 #for ((b=0; b<=NUM_FILES; b++)); do
 #((b < SPLIT)) && SC_TITLES_X_ARRAY[b]=86||SC_TITLES_X_ARRAY[b]=360
@@ -4824,6 +4929,18 @@ if $SHOWCASE && ! $TEXTMENU; then
     ((NUM_FILES == 5)) && SPLIT=3
     ((NUM_FILES >= 6)) && SPLIT=4
     ((NUM_FILES >= 8)) && SPLIT=5
+    # TODO? allow these to modify arrangement in some way?
+    # -align *east, *west *, or center disallowed for 2 column showcase thumbs
+    case $BUTTON_GRAVITY in
+      *east|*west)
+        if ((NUM_FILES >= SPLIT)); then
+            usage_error "You can not use \"-align $BUTTON_GRAVITY\" with 2 \
+            column -showcase, only \"-align north\" or \"-align south\" \
+            or \"-align center\""
+        fi
+        ;;
+    esac
+    #USER_GRAVITY=false
 fi
 
 
@@ -4911,19 +5028,20 @@ done
 
 # some choices needed for different title alignments
 if $SHOWCASE && ! $TEXTMENU; then
-    if [ $V_TOTAL -le 5 ]; then
-        if [[ $SC_TITLE_ALIGN = "east" ]]; then
-            SHOWCASE_SIZE=$SM_SHOWCASE_SIZE  # smaller to allow for titles
-        fi
+    JUSTIFY="west"
+    if ((V_TOTAL <= 5)); then
+        # FIXME move this before the aspect ratio check for IN_FILES if possible
+        # smaller to allow for titles
+        [[ $SC_TITLE_ALIGN = "east" ]] && SHOWCASE_SIZE=$SM_SHOWCASE_SIZE
         AUTOORDER="rows"       # spumux var
     else
         SHOWCASE_SIZE=$SM_SHOWCASE_SIZE  # smaller showcase thumb because we have 2 rows
         AUTOORDER="columns"
-        if $SC_THUMB && \
-        [[ "$SC_TITLE_ALIGN" = "east" ]] && [[ -n $SHOWCASE_FILE ]]; then
+        if [[ $SHOWCASE_FILE ]] && \
+        [[ "$SC_TITLE_ALIGN" = "east" ]]; then
             usage_error "Sorry, there is no room for the showcase thumb " \
             "if you use more than 5 videos with -showcase-titles-align " \
-            "east|west (also multiline titles). Either change the problem " \
+            "east (also multiline titles). Either change the problem " \
             "option, remove the showcase image/video, or use -textmenu.  Or " \
             "consider using -bgimage or -bgvideo instead of a showcase thumb."
         fi
@@ -4944,33 +5062,8 @@ else
 fi
 $SINGLE_SLIDESHOW && ! $MK_CAROUSEL_MODE && CAROUSEL_SIZE=$VIDSIZE
 
-$TEXTMENU && LEFT_MAX=$SPLIT || LEFT_MAX=5
-if [ "$SC_TITLE_ALIGN" = "west" ] || $TEXTMENU; then #FIXME
-    THUMB_TITLE_ALIGN="west" # for non TEXTMENU menu
-    for ((i=0; i<=NUM_FILES; i++)); do
-        if [ $i -lt $LEFT_MAX ]; then
-            SC_THUMB_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} - \
-            SAFE_OFFSET ))
-            SC_TITLES_X_ARRAY[i]=$(( ${SC_TITLES_X_ARRAY[i]} - \
-            SAFE_OFFSET ))
-        fi
-        if ! $TEXTMENU && ! [[ $SHOWCASE_FILE ]]; then
-            if (( ${SC_THUMB_X_ARRAY[i]} > ( ${VIDSIZE/x*} / 2 ) )); then
-                SC_THUMB_X_ARRAY[i]=$(( ${VIDSIZE/x*} / 2 ))
-                SC_TITLES_X_ARRAY[i]=$(( ${VIDSIZE/x*} / 2 ))
-            fi
-        fi
-    done
-fi
-# centre aligned titles are not for textmenu style
-if $TEXTMENU && [[ $SC_TITLE_ALIGN = "center" ]]; then
-    yecho
-    yecho "Sorry, you can not use center align for textmenu titles"
-    yecho "Using title alignment of 'west': please check the preview"
-    yecho
-    SC_TITLE_ALIGN="west"
-    $WARN && sleep 10
-fi
+# textmenu does not use -showcase-titles-align, unset this to aid block parsing
+$TEXTMENU && unset SC_TITLE_ALIGN
 #  -align east uses text-rect
 if [[ $BUTTON_STYLE = "text-rect" ]] \
  && ! [[ $SC_TITLE_ALIGN = "east" ]] && $SHOWCASE && ! $TEXTMENU; then
@@ -4983,49 +5076,6 @@ if [[ $BUTTON_STYLE = "text-rect" ]] \
     yecho
     $WARN && sleep 10
 fi
-if $SHOWCASE && [ "$SC_TITLE_ALIGN" = "east" ] && ! $TEXTMENU; then
-    THUMB_TITLE_ALIGN="west" # align titles left to allow longer titles
-    for ((i=0; i<=NUM_FILES; i++)); do
-        if [ $i -lt $LEFT_MAX ] && ! $ALIGN_OVERRIDE; then
-            SC_THUMB_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} - \
-            SAFE_OFFSET ))
-            SC_TITLES_X_ARRAY[i]=$(( ${SC_TITLES_X_ARRAY[i]} - \
-            SAFE_OFFSET ))
-        fi
-        if [ ${SC_THUMB_X_ARRAY[i]} -gt 360 ]; then
-            SC_THUMB_X_ARRAY[i]=360
-        fi
-        SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} + \
-        ${THUMB_SIZE/x*} + 5 ))
-        #SC_TITLES_Y_ARRAY[i]=$(( ${SC_TITLES_Y_ARRAY[i]} + 18 ))
-        SC_TITLES_Y_ARRAY[i]=${SC_THUMB_Y_ARRAY[i]} # DEBUG:why not originally?
-    done
-fi
-if { $USER_GRAVITY && $SHOWCASE && ! $TEXTMENU ; } \
-              && [[ $BUTTON_GRAVITY != north ]]; then
-    SW_CORNER=$(( ${SC_THUMB_Y_ARRAY[SPLIT-1]} + ${THUMB_SIZE/*x} ))
-    if [[ $BUTTON_GRAVITY = *south* ]]; then
-        Y_OFFSET=$(( ( ${VIDSIZE/*x} - SAFE_AREA) - SW_CORNER ))
-    elif [[ $BUTTON_GRAVITY = *st* ]] || [[ $BUTTON_GRAVITY = *center* ]]; then
-        COL1_HEIGHT=$(( SW_CORNER - ${SC_TITLES_Y_ARRAY[0]} ))
-        Y_OFFSET=$(( ( ${VIDSIZE/*x} / 2) - (COL1_HEIGHT / 2) ))
-        Y_OFFSET=$(( Y_OFFSET - ${SC_TITLES_Y_ARRAY[0]} ))
-    fi
-    for ((i=0; i<=NUM_FILES; i++)); do
-        SC_THUMB_Y_ARRAY[i]=$((${SC_THUMB_Y_ARRAY[i]} + Y_OFFSET ))
-        SC_TITLES_Y_ARRAY[i]=$((${SC_TITLES_Y_ARRAY[i]}+ Y_OFFSET))
-    done
-fi
-# default for showcase style is left justification, for montages: center
-$SHOWCASE && JUSTIFY="west" || JUSTIFY="center"
-# find out the showcase thumb "-page" array for this arrangement
-for ((i=0; i<=NUM_FILES; i++)); do
-    if $TEXTMENU; then
-        SCTHUMB_PAGES_ARRAY[i]=+${SC_TITLES_Y_ARRAY[i]}+${SC_TITLES_X_ARRAY[i]}
-    else
-        SCTHUMB_PAGES_ARRAY[i]=+${SC_THUMB_X_ARRAY[i]}+${SC_THUMB_Y_ARRAY[i]}
-    fi
-done
 
 # Do everything in $WORK_DIR
 echo -e "**** NOTE ****\n"
@@ -5223,21 +5273,16 @@ fi
 [[ -z $CHAPTER_STROKE ]] && CHAPTER_STROKE="$SUBMENU_STROKE"
 [[ -z $CHAPTER_CLR ]] && CHAPTER_CLR="$TITLES_CLR"
 
-# Print and execute the thumb-shape mask command
 if $DO_MENU; then
+    # make thumb-shape mask - showcase mask made later after its size is set
     if [[ -n $THUMB_SHAPE ]]; then
         make_mask $THUMB_SHAPE thumb
         THUMB_MASK="$MASK"
     fi
-    if [[ -n $SHOWCASE_SHAPE ]]; then
-        MASK="$WORK_DIR/${SHOWCASE_SHAPE}_mask.png"
-        make_mask $SHOWCASE_SHAPE showcase
-        convert "$MASK" -resize ${SHOWCASE_SIZE}! "$MASK"
-        SHOWCASE_MASK="$MASK"
-    fi
+    
+    # make a menu title image
     yecho "Creating a menu title image"
     echo
-    # make a title image
     if $USE_M_TITLE_DECO; then
         # using -title-stroke does a plain 'makemenu' style font with no shadow
         # but using font outline like makemenu does
@@ -5266,7 +5311,9 @@ if $DO_MENU; then
     else
         "${M_TITLE_CMD[@]}" miff:- | "${M_TITLE_CMD1[@]}" >> "$LOG_FILE" 2>&1
     fi
-
+fi
+# this is really part of same DO_MENU block above, splitting up for readability
+if $DO_MENU; then
     # make video titles
     if ! $SINGLE_SLIDESHOW; then
         for ((i=0; i<=NUM_FILES; i++)); do
@@ -5303,6 +5350,8 @@ if $DO_MENU; then
             else
                 "${V_TITLES_CMD[@]}" miff:- | "${TRIM_CMD[@]}"
             fi
+            # save dimensions for later use
+            TT_DIM[i]=$(get_image_dim "$WORK_DIR/thumb_title${i}.png")
             # now get offset before repaging, for the spumux button crop later
             if [[ $BUTTON_STYLE = "text" ]]; then
                 titles_offset[i]=$(identify -format %O \
@@ -5347,136 +5396,342 @@ if $DO_MENU; then
             fi
         done
     fi
+fi
+###############################################################################
+############ set showcase/textmenu titles and thumb positions array ###########
+###############################################################################
 
-    if $SHOWCASE; then
-        for ((i=0; i<=NUM_FILES; i++)); do
-            unset ts_dim j
-            # get widest png in each colum for use later for alignment use
-            if ((i < SPLIT)); then
-                val=${TT_DIM[i]/x*}
-                [ -z "$WIDEST_TITLE" ] || ((val > WIDEST_TITLE)) \
-                  && WIDEST_TITLE=$val
-            else
-                val2=${TT_DIM[i]/x*}
-                [ -z "$WIDEST_TITLE2" ] || ((val2 > WIDEST_TITLE2)) \
-                  && WIDEST_TITLE2=$val2
-            fi
-            # get just X demension to help determine final title pos below
-            tt_dim=${TT_DIM[i]/x*}
-            # thumb pos + 1/2 (X dim) of thumbsize - 1/2 (X dim) of title size
-            if [ "$SC_TITLE_ALIGN" = "center" ]; then
-                f=$(( ${THUMB_SIZE/x*} / 2 ))
-                j=$(( (f + ${SC_THUMB_X_ARRAY[i]}) - (tt_dim / 2) ))
-                k=( ${k[@]} "$j" )
-                l=$((j + tt_dim))
-                if [ $j -lt 48 ]; then
-                    off_left=$j
-                    titlesafe_error $off_left
-                elif [ $l -gt 672 ]; then
-                    off_right=$((720 - l))
-                    titlesafe_error $off_right
-                fi
-            fi
-        done
-        if $TEXTMENU; then
-            # text-rect is OK with a small space between titles for spumux
-            [[ $BUTTON_STYLE = "text-rect" ]] && \
-              SPACER=${SPACER:-"10"} || SPACER=${SPACER:-"15"}
-            # get an array of title Y positions
-            offsets1=$(for ((c=0; c<NUM_FILES; c++)); do
-            ((c < (LEFT_MAX-1))) && echo $((${TT_DIM[c]#*x} + SPACER)); done)
-            if [[ $NUM_FILES -ge $SPLIT ]]; then
-                offsets2=$(for ((d=0; d<=NUM_FILES; d++)); do
-                ((d >= LEFT_MAX)) && echo $((${TT_DIM[d]#*x} + SPACER)); done)
-                [[ $offsets2 ]] && offsets2="$TEXT_YSTART $offsets2"
-                tt_ygeos_col2=$(running_total <<< $offsets2)
-            fi
-            offsets1="$TEXT_YSTART $offsets1"
-            tt_ygeos_col1=$(running_total <<< $offsets1)
-            tt_ygeos="$tt_ygeos_col1 $tt_ygeos_col2"
-            unset SC_TITLES_Y_ARRAY
-            SC_TITLES_Y_ARRAY=( $tt_ygeos_col1 $tt_ygeos_col2 )
-            # get y position of the last title in 1st column (tt_ygeos_col1)
-            endtitle_col1=$(wc -w <<< "$tt_ygeos_col1")
-            endtitle_col1_ygeo=${SC_TITLES_Y_ARRAY[endtitle_col1-1]/*x}
-            # add y dimension of the last title size to the above y position
-            SW_YCORNER=$((${TT_DIM[endtitle_col1-1]/*x} + $endtitle_col1_ygeo))
-            avail_space1=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SW_YCORNER ))
-            # if there are 2 columns, get same data for column 2
-            if [[ -n $tt_ygeos_col2 ]]; then
-                endtitle_col2=$NUM_FILES
-                endtitle_col2_ygeo=${SC_TITLES_Y_ARRAY[endtitle_col2]/*x}
-                endtitle_col2_xgeo=${SC_TITLES_Y_ARRAY[endtitle_col2]/x*}
-                SE_YCORNER=$((${TT_DIM[endtitle_col2]/*x}+$endtitle_col2_ygeo))
-                avail_space2=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SE_YCORNER ))
-            fi
-            # available space is lowest value of 2 *space* vars ( if 2 columns)
-            if [[ -n $tt_ygeos_col2 ]] && ((SE_YCORNER > SW_YCORNER)); then
-                avail_space=$avail_space2
-            else
-                avail_space=$avail_space1
-            fi
-            # get the height of each column for -align centre
-            if [[ $BUTTON_GRAVITY = "center" \
-              || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
-                WEST_YSPACE=$(( SW_YCORNER - TEXT_YSTART))
-                EAST_YSPACE=$((SE_YCORNER - TEXT_YSTART))
-                ((WEST_YSPACE > EAST_YSPACE)) && YSPACE=$WEST_YSPACE \
-                  || YSPACE=$EAST_YSPACE
-                CANVAS=$(( ${VIDSIZE/*x} - (SAFE_AREA * 2) ))
-                NEW_TEXT_YSTART=$(( ((CANVAS - YSPACE) / 2) + SAFE_AREA ))
-                TEXT_YSTART_OFFSET=$((NEW_TEXT_YSTART - TEXT_YSTART))
-            fi
-            # add available space to each title position for south alignment
-            if [[ $BUTTON_GRAVITY = *south* ]] && ((avail_space > 0)); then
-                for ((d=0; d<=NUM_FILES; d++)); do
-                    SC_TITLES_Y_ARRAY[d]=$(( $avail_space + \
-                      ${SC_TITLES_Y_ARRAY[d]} ))
-                done
-            elif  [[ $BUTTON_GRAVITY = "center" \
-              || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
-                for ((d=0; d<=NUM_FILES; d++)); do
-                    SC_TITLES_Y_ARRAY[d]=$(($TEXT_YSTART_OFFSET + \
-                      ${SC_TITLES_Y_ARRAY[d]} ))
-                done
-            fi
-                # justify titles to the right on the east side of the menu
-                ((NUM_FILES >= SPLIT-1)) && WIDE_TITLE=$WIDEST_TITLE2 \
-                  || WIDE_TITLE=$WIDEST_TITLE
-                for ((d=0; d<=NUM_FILES; d++)); do
-                    ([[ "$BUTTON_GRAVITY" = *east* ]] \
-                      || [[ -n $tt_ygeos_col2 ]]) && \
-                        east_offset=$(( ( ${VIDSIZE/x*} - SAFE_AREA ) - \
-                        ${TT_DIM[d]/x*} ))
-                    if (($NUM_FILES < SPLIT)); then
-                        SC_TITLES_X_ARRAY[d]=$SAFE_AREA
-                        [[ "$BUTTON_GRAVITY" = *east* ]] && \
-                          SC_TITLES_X_ARRAY[d]=$east_offset
-                    else
-                        if ((d >= LEFT_MAX)); then
-                            SC_TITLES_X_ARRAY[d]=$east_offset
-                        else
-                            SC_TITLES_X_ARRAY[d]=$SAFE_AREA
-                        fi
-                    fi
-                done
-            unset MAX_VAL val max_key
+# this is really part of same DO_MENU block above, splitting up for readability
+if $DO_MENU && $SHOWCASE; then
+    # textmenu also uses this block !
+    # get widest png in each colum for use later for alignment use
+    for ((i=0; i<=NUM_FILES; i++)); do
+        unset ts_dim j
+        if ((i < SPLIT)); then
+            val=${TT_DIM[i]/x*}
+            [ -z "$WIDEST_TITLE" ] || ((val > WIDEST_TITLE)) \
+              && WIDEST_TITLE=$val
+        else
+            val2=${TT_DIM[i]/x*}
+            [ -z "$WIDEST_TITLE2" ] || ((val2 > WIDEST_TITLE2)) \
+              && WIDEST_TITLE2=$val2
         fi
-        # make SHOWCASE_PAGE arrayS for thumbs and THUMBTITLES_ARRAY for titles
-        # use preset values unless doing centre align for titles
-        for ((i=0; i<=NUM_FILES; i++)); do
-            if [ "$SC_TITLE_ALIGN" != "center" ]; then
-                SC_TITLES_ARR[i]=+${SC_TITLES_X_ARRAY[i]}+${SC_TITLES_Y_ARRAY[i]}
-            else
-                SC_TITLES_ARR[i]=+${k[i]}+${SC_TITLES_Y_ARRAY[i]}
-            fi
+        # get just X demension to help determine final title pos below
+        tt_dim=${TT_DIM[i]/x*}
+    done
+    # so we can do math on the var without error
+    ((WIDEST_TITLE2)) || WIDEST_TITLE2=0
 
-            SHOWCASE_THUMB_PAGES[i]="-page ${SCTHUMB_PAGES_ARRAY[i]}"
-            THUMBTITLES_ARRAY[i]="-page ${SC_TITLES_ARR[i]}"
+    ######################################################################
+    ############### showcase with thumbs only X dimension ################
+    ######################################################################
+
+    { $TEXTMENU && LEFT_MAX=$SPLIT ; } || LEFT_MAX=5
+    # textmenu doesn't use this block at all
+    # TODO check_space=0 # only check if enough space once if $SHOWCASE_FILE
+    # some shortened var names for the math in this block
+    tt_w=${TT_DIM[i]} # title width
+    tt_w=${tt_w/x*}
+    t_w=${THUMB_SIZE/x*} # thumb width
+    safe_w=$SAFE_AREA # safe area width
+    vsize_w=${VIDSIZE/x*} # video size width (720)
+    for ((i=0; i<=NUM_FILES; i++)); do
+        case $SC_TITLE_ALIGN in
+          west)
+            # only need extra room after 2nd column for long titles
+            ovflow=$(( WIDEST_TITLE2 - t_w ))
+            if ((i < SPLIT)); then
+                SC_THUMB_X_ARRAY[i]=$((${SC_THUMB_X_ARRAY[i]} - SAFE_OFFSET))
+            else
+                # ovflow=0 is the right edge of thumb, so stop there
+                ((ovflow < 0)) && ovflow=0
+                # titles are aligned west: try to align east side close to edge
+                SC_THUMB_X_ARRAY[i]=$(( vsize_w - t_w  - safe_w - ovflow ))
+            fi
+            SC_TITLES_X_ARRAY[i]=${SC_THUMB_X_ARRAY[i]}
+            title_xdelta[i]=0 # for using later in -align options
+            ;;
+          east)
+            if ((i < SPLIT)) && ! $ALIGN_OVERRIDE; then
+                SC_THUMB_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} - \
+                SAFE_OFFSET ))
+                SC_TITLES_X_ARRAY[i]=$(( ${SC_TITLES_X_ARRAY[i]} - \
+                SAFE_OFFSET ))
+            fi
+            if ((i >= SPLIT)); then
+                # 2 cols can't -align east/west/center so no ALIGN_OVERRIDE test
+                SC_THUMB_X_ARRAY[i]=$(( ( vsize_w - safe_w) - \
+                    $WIDEST_TITLE2 - t_w - 5 ))
+                    roffset=$(( ${SC_TITLES_X_ARRAY[i]} + 5 + safe_w ))
+                    if (( roffset + ${TT_DIM[i]/x*} > vsize_w )); then
+                        titlesafe_error $(( roffset - vsize_w ))
+                    fi
+            fi
+            SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} + t_w + 5 ))
+            SC_TITLES_Y_ARRAY[i]=${SC_THUMB_Y_ARRAY[i]} # DEBUG:why not originally?
+            title_xdelta[i]=$(( ${SC_THUMB_X_ARRAY[i]} - ${SC_TITLES_X_ARRAY[i]} ))
+            ;;
+          center)
+            # make sure the showcase file is not being covered up
+            ! [[ $WIDEST_TITLE ]] && WIDEST_TITLE=0
+            ! [[ $WIDEST_TITLE2 ]] && WIDEST_TITLE2=0
+            #if ((WIDEST_TITLE2)); then
+            #    col2_thumb_x=$WIDEST_TITLE2
+            #    thumbs_space=$((${THUMB_SIZE/x*} * 2))
+            #else
+            #    col2_thumb_x=0
+            #    thumbs_space=${THUMB_SIZE/x*}
+            #fi
+            # need to rewrite, checking only the area on sides of the sc thumb
+            #if [[ $SHOWCASE_FILE ]]; then #&& ! ((checked_space)); then
+            #    safearea=$((SAFE_AREA * 2))
+            #    titles_space=$((WIDEST_TITLE + col2_thumb_x))
+            #    if $(( (VS - safearea - \
+            #      titles_space - thumbs_space - ShowCaseSize) <= 0)); then
+            #        : # problem: do something #FIXME run this only once
+            #    fi
+            #fi
+            #checked_space=1
+            # check if "title-safe" (not too close to screen edge or offscreen)
+            # for showcase with thumbs and center aligned titles only # FIXME?
+            # thumb pos + 1/2 (X dim) of thumbsize - 1/2 (X dim) of title size
+            f=$(( ${THUMB_SIZE/x*} / 2 ))
+            j=$(( (f + ${SC_THUMB_X_ARRAY[i]}) - (${TT_DIM[i]/x*} / 2) ))
+            if ((WIDEST_TITLE > ${TT_DIM[i]/x*})); then
+                offset1=$(( (WIDEST_TITLE - ${TT_DIM[i]/x*}) / 2 ))
+                offset2=$((WIDEST_TITLE2 - ${TT_DIM[i]/x*} / 2 ))
+            else
+                offset1=${TT_DIM[i]/x*}
+            fi
+            offset_from_safe_edge1=$offset
+            tt_x=( ${tt_x[@]} "$j" )
+            l=$((j + tt_dim))
+            if (( j < SAFE_AREA )); then
+                off_left=$j
+                titlesafe_error $off_left
+            elif (( l > vsize_w - SAFE_AREA )); then
+                off_right=$(($vsize_w - l))
+                titlesafe_error $off_right
+            fi
+            title_xdelta[i]=$(( ${SC_THUMB_X_ARRAY[i]} - ${tt_x[i]} ))
+            ;;
+        esac
+        # now that we have the title delta, factor in -align option (E/W/Centre)
+        td=${title_xdelta[i]}
+        case $BUTTON_GRAVITY in
+          *east) # single column showcase with thumbs only
+            # if title is wider than thumb
+            #if ((tt_w > t_w)); then
+            #    SC_TITLES_X_ARRAY[i]=$(( vsize_w - safe_w - tt_w ))
+            # thumb wider, or they are the same
+            #else
+            #    SC_TITLES_X_ARRAY[i]=$(( vsize_w - safe_w - t_w ))
+            #fi
+            # titles also aligned east of thumb need to add the (neg) xdelta
+            if [[ $SC_TITLE_ALIGN = east ]]; then
+                SC_THUMB_X_ARRAY[i]=$(( vsize_w - safe_w - t_w - (WIDEST_TITLE / 2) + td  ))
+            else
+                SC_THUMB_X_ARRAY[i]=$(( vsize_w - safe_w - t_w - (WIDEST_TITLE / 2) ))
+            fi
+            SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} - td ))
+            ;;
+          *west)  # single column showcase with thumbs only
+            # they are the same as the west sides are flush (title_xdelta=0)
+            SC_THUMB_X_ARRAY[i]=$SAFE_AREA 
+            SC_TITLES_X_ARRAY[i]=$((${SC_THUMB_X_ARRAY[i]} - td))
+            ;;
+          north|south|center) # either single or 2 column showcase with thumbs
+            if ((NUM_FILES >= SPLIT)); then # 2 column showcase (N/S/C only)
+                #if ((WIDEST_TITLE2 > t_w)); then
+                #    SC_THUMB_X_ARRAY[i]=$((vsize_w - safe_w - t_w + td))
+                #fi
+                SC_TITLES_X_ARRAY[i]=$((${SC_THUMB_X_ARRAY[i]} - td))
+            else # single column showcase (all -align opt should work)
+                SC_THUMB_X_ARRAY[i]=$(( (vsize_w / 2) - (t_w / 2) ))
+                SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} - td ))
+            fi
+            #if ((tt_w > t_w)); then
+            #    SC_THUMB_X_ARRAY[i]=$(( (vsize_w / 2) - (t_w / 2) ))
+            #    SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} - td ))
+            #else
+            #    SC_THUMB_X_ARRAY[i]=$(( (vsize_w / 2) - (t_w / 2) ))
+            #    SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} - td ))
+            #fi
+            #echo thumb: ${SC_THUMB_X_ARRAY[i]} title: ${SC_TITLES_X_ARRAY[i]}
+            ;;
+        esac
+    done
+    ######################################################################
+    ############### showcase with thumbs only Y dimension ################
+    ######################################################################
+
+    #if { $USER_GRAVITY && ! $TEXTMENU ; } \
+    #              && [[ $BUTTON_GRAVITY != north ]]; then
+    SW_CORNER=$(( ${SC_THUMB_Y_ARRAY[SPLIT-1]} + ${THUMB_SIZE/*x} ))
+    if [[ $BUTTON_GRAVITY = south* ]]; then
+        Y_OFFSET=$(( ( ${VIDSIZE/*x} - SAFE_AREA) - SW_CORNER ))
+    elif [[ $BUTTON_GRAVITY = *st* ]] || [[ $BUTTON_GRAVITY = *center* ]]; then
+        COL1_HEIGHT=$(( SW_CORNER - ${SC_TITLES_Y_ARRAY[0]} ))
+        Y_OFFSET=$(( ( ${VIDSIZE/*x} / 2) - (COL1_HEIGHT / 2) ))
+        Y_OFFSET=$(( Y_OFFSET - ${SC_TITLES_Y_ARRAY[0]} ))
+    fi
+    for ((i=0; i<=NUM_FILES; i++)); do
+        SC_THUMB_Y_ARRAY[i]=$((${SC_THUMB_Y_ARRAY[i]} + Y_OFFSET ))
+        SC_TITLES_Y_ARRAY[i]=$((${SC_TITLES_Y_ARRAY[i]} + Y_OFFSET))
+    done
+    #fi
+    # showcase style default: left justification. montages default: center.
+    # find out the showcase thumb "-page" array for this arrangement
+    for ((i=0; i<=NUM_FILES; i++)); do
+        if $TEXTMENU; then
+            SCTHUMB_PAGES_ARRAY[i]=+${SC_TITLES_Y_ARRAY[i]}+${SC_TITLES_X_ARRAY[i]}
+        else
+            SCTHUMB_PAGES_ARRAY[i]=+${SC_THUMB_X_ARRAY[i]}+${SC_THUMB_Y_ARRAY[i]}
+        fi
+    done
+fi
+
+##############################################################################
+#################                 textmenu only              #################
+##############################################################################
+
+if $DO_MENU && $TEXTMENU; then
+    #############            textmenu  Y dimension               #############
+    # text-rect is OK with a small space between titles for spumux
+    [[ $BUTTON_STYLE = "text-rect" ]] && \
+      SPACER=${SPACER:-"10"} || SPACER=${SPACER:-"15"}
+
+    # get array of titles Y positions for textmenu
+    offsets1=$(for ((c=0; c<NUM_FILES; c++)); do
+    ((c < (LEFT_MAX-1))) && echo $((${TT_DIM[c]#*x} + SPACER)); done)
+    if ((NUM_FILES >= SPLIT)); then
+        # to line up rows across, use taller of 2 images for space calc.
+        if (( ${TT_DIM[c-SPLIT]#*x} > ${TT_DIM[c]#*x} )); then
+            tt_yspace=${TT_DIM[c-SPLIT]#*x}
+        else
+            tt_yspace=${TT_DIM[c]#*x}
+        fi
+        offsets1=$(for ((c=0; c<NUM_FILES; c++)); do
+        ((c < (LEFT_MAX-1))) && echo $((tt_yspace + SPACER)); done)
+        offsets2=$(for ((d=0; d<=NUM_FILES; d++)); do
+        ((d >= LEFT_MAX)) && echo $((tt_yspace + SPACER)); done)
+        [[ $offsets2 ]] && offsets2="$TEXT_YSTART $offsets2"
+        tt_ygeos_col2=$(running_total <<< $offsets2)
+    fi
+    offsets1="$TEXT_YSTART $offsets1"
+    tt_ygeos_col1=$(running_total <<< $offsets1)
+    tt_ygeos="$tt_ygeos_col1 $tt_ygeos_col2"
+    unset SC_TITLES_Y_ARRAY
+    SC_TITLES_Y_ARRAY=( $tt_ygeos_col1 $tt_ygeos_col2 )
+    # get y position of the last title in 1st column (tt_ygeos_col1)
+    endtitle_col1=$(wc -w <<< "$tt_ygeos_col1")
+    endtitle_col1_ygeo=${SC_TITLES_Y_ARRAY[endtitle_col1-1]/*x}
+    # add y dimension of the last title size to the above y position
+    SW_YCORNER=$((${TT_DIM[endtitle_col1-1]/*x} + $endtitle_col1_ygeo))
+    avail_space1=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - $SW_YCORNER ))
+    # if there are 2 columns, get same data for column 2
+    if [[ -n $tt_ygeos_col2 ]]; then
+        endtitle_col2=$NUM_FILES
+        endtitle_col2_ygeo=${SC_TITLES_Y_ARRAY[endtitle_col2]/*x}
+        endtitle_col2_xgeo=${SC_TITLES_Y_ARRAY[endtitle_col2]/x*}
+        SE_YCORNER=$((${TT_DIM[endtitle_col2]/*x}+$endtitle_col2_ygeo))
+        avail_space2=$(( ( ${VIDSIZE/*x} - SAFE_AREA ) - SE_YCORNER ))
+    fi
+    # available space is lowest value of 2 *space* vars ( if 2 columns)
+    if [[ -n $tt_ygeos_col2 ]] && ((SE_YCORNER > SW_YCORNER)); then
+        avail_space=$avail_space2
+        end_title_pos=$SE_YCORNER
+    else
+        avail_space=$avail_space1
+        end_title_pos=$SW_YCORNER
+    fi
+    # get the height of each column for -align centre
+    if [[ $BUTTON_GRAVITY = "center" \
+      || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
+        WEST_YSPACE=$(( SW_YCORNER - TEXT_YSTART))
+        EAST_YSPACE=$((SE_YCORNER - TEXT_YSTART))
+        ((WEST_YSPACE > EAST_YSPACE)) && YSPACE=$WEST_YSPACE \
+          || YSPACE=$EAST_YSPACE
+        CANVAS_Y=$(( ${VIDSIZE/*x} - (SAFE_AREA * 2) ))
+        NEW_TEXT_YSTART=$(( ( (CANVAS_Y - YSPACE) / 2) + SAFE_AREA ))
+        TEXT_YSTART_OFFSET=$((NEW_TEXT_YSTART - TEXT_YSTART))
+    fi
+    # add available space to each title position for south alignment
+    if [[ $BUTTON_GRAVITY = *south* ]] && ((avail_space > 0)); then
+        for ((d=0; d<=NUM_FILES; d++)); do
+            SC_TITLES_Y_ARRAY[d]=$(( $avail_space + \
+              ${SC_TITLES_Y_ARRAY[d]} ))
+        done
+    elif  [[ $BUTTON_GRAVITY = "center" \
+      || $BUTTON_GRAVITY = "east" || $BUTTON_GRAVITY = "west" ]]; then
+        for ((d=0; d<=NUM_FILES; d++)); do
+            SC_TITLES_Y_ARRAY[d]=$(($TEXT_YSTART_OFFSET + \
+              ${SC_TITLES_Y_ARRAY[d]} ))
         done
     fi
 fi
+    ########################  textmenu X dimension  ##########################
+# this is really part of block above, split up for readability
+if $DO_MENU && $TEXTMENU; then
+    XSPACE=$(( ${VIDSIZE/x*} - SAFE_AREA ))
+    # title Xdim location for ONE column on right side (left justified)
+    ljustify_eoffset=$((XSPACE-WIDEST_TITLE))
+    # same as above, but for 2nd column when using TWO title columns
+    ljustify_eoffset2=$((XSPACE-WIDEST_TITLE2))
+    for ((d=0; d<=NUM_FILES; d++)); do
+        ([[ "$BUTTON_GRAVITY" = *east* ]] \
+          || [[ -n $tt_ygeos_col2 ]]) && \
+            rjustify_eoffset=$(( XSPACE - ${TT_DIM[d]/x*} ))
+        if ((d < SPLIT)); then
+            # default is northwest alignment
+            SC_TITLES_X_ARRAY[d]=$SAFE_AREA
+            # for centred align add safe area from both sides
+            case "$BUTTON_GRAVITY" in
+              "center" | "north" | "south")
+                SC_TITLES_X_ARRAY[d]=$((( (XSPACE + SAFE_AREA) / 2) - \
+                (${TT_DIM[d]/x*} / 2) ))
+                ;;
+              "northeast"|"southeast"|"east")
+                # allow justifying east column to right instead of left
+                if $EDGE_JUSTIFY; then
+                    SC_TITLES_X_ARRAY[d]=$rjustify_eoffset
+                else
+                    SC_TITLES_X_ARRAY[d]=$ljustify_eoffset
+                fi
+                ;;
+            esac
+        else # could be single column or a 2nd column, aligned east
+            if ((d >= LEFT_MAX)); then # therefore this is an east column
+                # allow justifying east column to right instead of left
+                if $EDGE_JUSTIFY; then
+                    SC_TITLES_X_ARRAY[d]=$rjustify_eoffset
+                else
+                    SC_TITLES_X_ARRAY[d]=$ljustify_eoffset2
+                fi
+            else
+                SC_TITLES_X_ARRAY[d]=$SAFE_AREA
+            fi
+        fi
+    done
+    unset MAX_VAL val max_key
+    # END textmenu block
+fi
+if $SHOWCASE; then
+    # make -page arrays for thumbs, and for titles
+    # use values set in the above block for textmenu
+    # and for showcase with thumbs unless doing centre align for titles
+    for ((i=0; i<=NUM_FILES; i++)); do
+        #if [ "$SC_TITLE_ALIGN" != "center" ]; then
+        SC_TITLES_ARR[i]=+${SC_TITLES_X_ARRAY[i]}+${SC_TITLES_Y_ARRAY[i]}
+        #else
+        #    SC_TITLES_ARR[i]=+${tt_x[i]}+${SC_TITLES_Y_ARRAY[i]}
+        #fi
 
+        SHOWCASE_THUMB_PAGES[i]="-page ${SCTHUMB_PAGES_ARRAY[i]}"
+        THUMBTITLES_ARRAY[i]="-page ${SC_TITLES_ARR[i]}"
+    done
+    echo 
+fi
 # make a button for playall and one for jumping to the vmgm menu, if called for
 # or make a 'play' button if doing a montage slideshow menu
 pa_ind=$((NUM_FILES+1))
@@ -5616,17 +5871,23 @@ fi
 if $MIST; then
     mist_dim=$(get_image_dim "$WORK_DIR/white.png" )
     mist_xdim=${mist_dim/x*}
-    mist_xdim_offset=$(( (mist_xdim - TITLE_TEXT_XDIM) / 2 ))
-    if [[ $TITLE_GRAVITY = *st* ]]; then
+    mist_xoffset=$(( (mist_xdim - TITLE_TEXT_XDIM) / 2 ))
+    case $TITLE_GRAVITY in
+      northeast|southeast|east)
         title_xoffset=${title_xoffset:-"+50"}
-        mist_xoffset="$(bc_math "${title_xoffset#*[-+]} \
-          - $mist_xdim_offset" int)"
+        mist_xoffset="$(bc_math "${title_xoffset#*[-+]} - $mist_xoffset" int)"
         [[ ${mist_xoffset:0:1} != [+-] ]] && mist_xoffset=+${mist_xoffset}
-    else
+        ;;
+      *)
         title_xoffset=${title_xoffset:-"+0"}
         mist_xoffset=$title_xoffset
-    fi
+        ;;
+    esac
 else
+        # make sure the offset supplied is >= safe_area
+        if [[ $TITLE_GRAVITY = east || $TITLE_GRAVITY = west ]]; then
+            ((${title_xoffset#*[-+]} < SAFE_AREA)) && title_xoffset=+${SAFE_AREA}
+        fi
         title_xoffset=${title_xoffset:-"+0"}
 fi
 ###############################################################################
@@ -5649,18 +5910,24 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICKMENU_IS_BACKGROUND; then
         runtime_error "Problem creating images from the video."
     fi
 fi
-if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
-    if [[ $SC_TITLE_ALIGN = "east" ]] && ! $TEXTMENU; then
-        TS="+ ${THUMB_SIZE/x*}"
-    else
-        TS=0
-    fi
-    if (( (WIDEST_TITLE + SAFE_AREA + TS + \
-      ${SHOWCASE_SIZE/x*}) > ( ${VIDSIZE/x*} - SAFE_AREA) )); then
+if $SHOWCASE && { $SC_THUMB || $QUICK_MENU ; }; then
+    #if [[ $SC_TITLE_ALIGN = "east" ]] && ! $TEXTMENU; then
+    #    TS=${THUMB_SIZE/x*}
+    #else
+    #    TS=0
+    #fi
+    if ((V_TOTAL > SPLIT)); then
             SHOWCASE_SIZE=$SM_SHOWCASE_SIZE
     fi
     if $TEXTMENU && [[ -n $tt_ygeos_col2 ]]; then
         SHOWCASE_SIZE=$SM_SHOWCASE_SIZE
+    fi
+    # make mask for showcase shape, now that the showcase size is set
+    if [[ -n $SHOWCASE_SHAPE ]]; then
+        MASK="$WORK_DIR/${SHOWCASE_SHAPE}_mask.png"
+        make_mask $SHOWCASE_SHAPE showcase
+        convert "$MASK" -resize ${SHOWCASE_SIZE}! "$MASK"
+        SHOWCASE_MASK="$MASK"
     fi
 
     if $SHOWCASE_3D && [[ -n $SHOWCASE_SHAPE ]]; then
@@ -5748,6 +6015,7 @@ if $SHOWCASE && ($SC_THUMB || $QUICK_MENU); then
         else
             SHAPE_CMD=(convert -size  $SHOWCASE_SIZE "$SHOWCASE_IMG" \
             -resize $SHOWCASE_SIZE! $SHOWCASE_FRAME $SC_RAISE)
+            echo "Running ${SHAPE_CMD[@]}" >> "$LOG_FILE"
         fi
         "${SHAPE_CMD[@]}" miff:- |
         "${sc_3d_cmd[@]}" miff:- |
@@ -5803,7 +6071,6 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU && ! $USER_THUMBS; then
             # get largest image of 9 if static menu and -frame-safe
             if $FRAME_SAFE; then #FIXME $STATIC not necessary, this is a preview!
                 largest_img=$(get_largest 6 $V_FRAMES "$WORK_DIR/pics/$i")
-                echo Using $largest_img for menu >2&
                 mv -f "$largest_img" "$WORK_DIR/pics/largest.$IMG_FMT"
                 rm -f "$WORK_DIR"/pics/$i/*.$IMG_FMT
                 mv  "$WORK_DIR/pics/largest.$IMG_FMT" \
@@ -6343,7 +6610,6 @@ if ((GRID)); then
         echo text ${i},20 \'$i\'
     done >> "$WORK_DIR/grid2.mvg"
 fi
-
 if $SHOWCASE && $DO_MENU; then
     if $SC_THUMB; then
         # find out where to put the showcase image/video in the X axis
@@ -6353,7 +6619,7 @@ if $SHOWCASE && $DO_MENU; then
     fi
     $QUICK_MENU && \
     sc_width=${SHOWCASE_SIZE/x*} && sc_height=${SHOWCASE_SIZE/*x}
-    if $SC_THUMB || $QUICK_MENU; then #&& ! $TEXTMENU; then
+    if $SC_THUMB || $QUICK_MENU; then
         if [[ "$SC_TITLE_ALIGN" = "center" ]]; then
             if [[ $WIDEST_TITLE -ge ${THUMB_SIZE/x*} ]]; then
                 BUTTON_COLUMN1=$(((${THUMB_SIZE/x*} / 2) + (WIDEST_TITLE / 2)))
@@ -6369,12 +6635,11 @@ if $SHOWCASE && $DO_MENU; then
         elif [[ "$SC_TITLE_ALIGN" = "east" ]]; then
             BUTTON_COLUMN1=$(( ${THUMB_SIZE/x*} + WIDEST_TITLE ))
         fi
-        if ! $TEXTMENU; then
-        sc_space=$((${VIDSIZE%x*} - \
-            ${SC_THUMB_X_ARRAY[0]} - BUTTON_COLUMN1 - SAFE_AREA))
-        SC_X=$(( ${SC_THUMB_X_ARRAY[0]} + BUTTON_COLUMN1 \
-            + (sc_space / 2) - (sc_width / 2) ))
-        else
+        # work out the general position of the showcase image
+        # these will be modified later according to -align options
+        # TODO it's already consolidated, now split in 1 vs 2 column if/else
+        if $TEXTMENU; then
+            # this is the default, *west aligned, for one column textmenu
             BUTTON_COLUMN1=$((WIDEST_TITLE + 5))
             sc_space=$((${VIDSIZE%x*} - \
                 ${SC_TITLES_X_ARRAY[0]} - BUTTON_COLUMN1 - SAFE_AREA))
@@ -6385,8 +6650,34 @@ if $SHOWCASE && $DO_MENU; then
                 sc_space=$((${VIDSIZE%x*} - (SAFE_AREA * 2) - BUTTON_COLUMN1))
                 SC_X=$((SAFE_AREA + (sc_space / 2) - (sc_width / 2) ))
             fi
+            center_showcase_pos=$(( (${VIDSIZE/x*} / 2) - (sc_width / 2) ))
+            # this next block is *east or *west for 2 columns, and N|S|Center
+            case $BUTTON_GRAVITY in
+              *east|*west)
+                # for 2 columns the showcase thumb will always be centered
+                [[ -n $tt_ygeos_col2 ]] && SC_X=$center_showcase_pos
+                ;;
+              north|south|center)
+                # for centered 1 column the showcase has no room, so center it
+                # these -align args have no effect on 2 column titles position
+                SC_X=$center_showcase_pos
+                ;;
+            esac
+        else
+            sc_space=$((${VIDSIZE%x*} - \
+            ${SC_THUMB_X_ARRAY[0]} - BUTTON_COLUMN1 - SAFE_AREA))
+            SC_X=$(( ${SC_THUMB_X_ARRAY[0]} + BUTTON_COLUMN1 \
+            + (sc_space / 2) - (sc_width / 2) ))
+            if ((V_TOTAL > 5)); then
+                # for 2 columns just center the thumb between edges of columns
+                inner_edge_col1=$(( ${SC_THUMB_X_ARRAY[0]} + ${THUMB_SIZE/x*} ))
+                inner_edge_col2=${SC_THUMB_X_ARRAY[SPLIT]}
+                canvas=$(( (inner_edge_col2 - inner_edge_col1) / 2 ))
+                canvas=$(( inner_edge_col1 + canvas ))
+                SC_X=$(( canvas - (sc_width / 2) ))
+            fi
         fi
-        # find out where to put the showcase image in the Y axis
+        # work out the position of the showcase image in the Y axis
         if ! $TEXTMENU; then
             Y1=${SC_THUMB_Y_ARRAY[0]}
             Y2=${SC_THUMB_Y_ARRAY[NUM_FILES]}
@@ -6409,18 +6700,16 @@ if $SHOWCASE && $DO_MENU; then
 
         fi
 
-        ! $TEXTMENU && [[ $V_TOTAL -gt 5 ]] && \
-        SC_X=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
-        $TEXTMENU && [[ -n $tt_ygeos_col2 ]] \
-        && SC_X=$(( ( ${VIDSIZE/x*} / 2 ) - (sc_width / 2) ))
-        $USER_SC_GEO && SC_X=${SHOWCASE_GEO/x*}
-        $USER_SC_GEO && SC_Y=${SHOWCASE_GEO/*x}
-
         # make sure its divisible by 2 for ffmpeg's padding with -quick-menu
         if $QUICK_MENU; then
             SC_Y=$(( (SC_Y /2) * 2 ))
             SC_X=$(( (SC_X / 2) * 2 ))
         fi
+        # finally if user passes in a prefered location for showcase, use it
+        $USER_SC_GEO && SC_X=$(awk -F+ '{print $2}' <<< $SHOWCASE_GEO)
+        $USER_SC_GEO && SC_Y=$(awk -F+ '{print $3}' <<< $SHOWCASE_GEO)
+
+        # make the -page part of the IM command for the showcase image
         SC_IMG_PAGE="-page +$SC_X+$SC_Y"
         SC_IMG_CMD="$SC_IMG_PAGE "$WORK_DIR/showcase_img.png""
     fi
@@ -6477,7 +6766,7 @@ elif ! $SHOWCASE && ! $SINGLE_SLIDESHOW && $DO_MENU; then # not showcase
         "$WORK_DIR/title_txt.png" -gravity $TITLE_GRAVITY \
         -geometry ${title_xoffset}${title_yoffset} -composite - -gravity \
         $BUTTON_GRAVITY -geometry +${XGEO}+${YGEO} -composite "$PREVIEW_IMG")
-        echo "Running ${IM_CMD1[@]} | ${IM_CMD1[@]}" |
+        echo "Running ${IM_CMD1[@]} | ${IM_CMD2[@]}" |
         format_output >> "$LOG_FILE"
         "${IM_CMD1[@]}" | "${IM_CMD2[@]}"
     fi
@@ -7171,7 +7460,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                   $WORK_DIR/pics/$i/$(printf "%06d%s" $p .png) 2>/dev/null
             done
         elif [[ ${file_is_image[i]} = "yes" ]]; then
-            spin "Convert ${FILES[i]} to proper size/format"
+            spin "Convert ${FILES[i]##*/} to proper size/format"
             convert "${FILES[i]}" -depth 8 \
               -resize ${THUMB_SIZE}! \
               "$WORK_DIR/pics/$i/$(printf "%06d%s"  0 .${IMG_FMT})"
@@ -7593,7 +7882,7 @@ $(if ! $SWITCHED && ! $QUICK_NAV; then
         fi
     else
         for ((i=1; i<=NUM_BUTTONS; i++)); do
-            if $SHOWCASE && [[ $NUM_FILES -ge $SPLIT ]]; then
+            if $SHOWCASE && ((NUM_FILES >= SPLIT)); then
                 if ((i>SPLIT)) && ((i<NUM_BUTTONS)); then
                     left="left=\"$((i-SPLIT))\""; right=""
                 elif  (( i<=SPLIT)) && (( (i+SPLIT) <= (NUM_FILES+1) )); then
@@ -8686,7 +8975,7 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
                 else
                     { convert -size $SHOWCASE_SIZE "$pic" $SC_RAISE miff:- |
                     convert - $SHOWCASE_FRAME -background none $ROTATE $WAVE miff:- |
-                    convert - $QUALITY  resize ${SHOWCASE_SIZE}! "$pic"  ; } \
+                    convert - $QUALITY  -resize ${SHOWCASE_SIZE}! "$pic"  ; } \
                       2>> "$LOG_FILE" &
                 fi
             fi
