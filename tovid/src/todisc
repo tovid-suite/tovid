@@ -1673,13 +1673,15 @@ quick_menu()
     -i "$yuvout" -an -s $VIDSIZE -f mpeg2video -r $FRAME_RATE \
     $STANDARD $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB \
     $aspect "${ffmpeg_filter[@]}" -y "$WORK_DIR/intro.m2v")
-    $QM_PREVIEW && yecho
-    yecho "Running ${PAD_CMD[@]}"|fold -bs
-    echo "${QUICKMENU_CMD[@]}" | fold -bs | tee -a "$LOG_FILE"
+    if $VERBOSE; then
+        $QM_PREVIEW && yecho
+        yecho "Running ${PAD_CMD[@]}"|fold -bs
+        echo "${QUICKMENU_CMD[@]}" | fold -bs | tee -a "$LOG_FILE"
+    fi
     "${PAD_CMD[@]}" < /dev/null  > "${LOG_FILE}-1.tmp" 2>&1 &
     "${QUICKMENU_CMD[@]}" < /dev/null  > "${LOG_FILE}-2.tmp" 2>&1 &
     ffmpeg_pid=$!
-    yecho
+    $VERBOSE && yecho
     while ps -p $ffmpeg_pid >/dev/null; do
         sleep 1
         [[ -s "$WORK_DIR/intro.m2v" ]] && txt="Writing" || txt="Seeking"
@@ -3369,6 +3371,10 @@ done
 
 # get script pid so we can kill the parent if doing recursive todisc's
 TODISC_PIDS="$TODISC_PIDS $$"
+    ########################################################################
+    ### Setup and error checks (Critical 1st, Warnings after log created ###
+    ########################################################################
+
 # make sure dvd-slideshow is installed if user passed -use-dvd-slideshow
 $USE_DVD_SLIDESHOW && assert_dep dvd-slideshow \
 "The program dvd-slideshow was not found - you can get it from
@@ -3451,6 +3457,8 @@ if $TEXTMENU; then
     IMG_FMT="png"
     # default -align for textmenu is northwest, not north
     ! $USER_GRAVITY && BUTTON_GRAVITY="northwest"
+elif $SHOWCASE; then
+    ! $USER_GRAVITY && BUTTON_GRAVITY="" # with thumbs, use default array vals
 fi
 # incompatible slideshow options with -switched-menus
 if { $CAROUSEL_IS_BG || $CAROUSEL_IS_SHOWCASE ; } && $SWITCHED_MENUS; then
@@ -3706,7 +3714,10 @@ echo -e "\nYou are using the following locale settings:" >> "$LOG_FILE"
 locale >>  "$LOG_FILE" 2>&1
 echo >> "$LOG_FILE"
 
-# info messages and non critical warnings
+    ##########################################################################
+    ########## More setup, and non-critical info + warning messages ##########     
+    ##########################################################################
+
 # information about -titles option in case user doesn't know
 if [[ ${#TITLES[@]} -eq 0 ]]; then
     if [[ $MENU_NUM = $MN ]] && ! $NOMENU \
@@ -3877,7 +3888,7 @@ fi
 # check aspect ratios of infiles so thumbs are in aspect without -aspect passed
 # this is done before makempg converts non-compliant files so it is really only
 # useful to get a preview
-if ((inc_files)) && [[ -z "$V_ASPECT" ]]; then
+if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] && ! $VMGM_ONLY; then
     yecho
     yecho "Determining aspect ratio of videos for the preview."
     echo
@@ -5496,7 +5507,7 @@ if $DO_MENU && $SHOWCASE; then
             # for showcase with thumbs and center aligned titles only # FIXME?
             # thumb pos + 1/2 (X dim) of thumbsize - 1/2 (X dim) of title size
             f=$(( ${THUMB_SIZE/x*} / 2 ))
-            j=$(( (f + ${SC_THUMB_X_ARRAY[i]}) - (${TT_DIM[i]/x*} / 2) ))
+            j=$(( ( ${SC_THUMB_X_ARRAY[i]} + f ) - (${TT_DIM[i]/x*} / 2) ))
             if ((WIDEST_TITLE > ${TT_DIM[i]/x*})); then
                 offset1=$(( (WIDEST_TITLE - ${TT_DIM[i]/x*}) / 2 ))
                 offset2=$((WIDEST_TITLE2 - ${TT_DIM[i]/x*} / 2 ))
@@ -5558,6 +5569,10 @@ if $DO_MENU && $SHOWCASE; then
             #    SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} - td ))
             #fi
             #echo thumb: ${SC_THUMB_X_ARRAY[i]} title: ${SC_TITLES_X_ARRAY[i]}
+                ;;
+          *)
+            # default is to use original arrays.  Subtract title_xdelta
+            SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} - td ))
             ;;
         esac
     done
@@ -5565,16 +5580,27 @@ if $DO_MENU && $SHOWCASE; then
     ############### showcase with thumbs only Y dimension ################
     ######################################################################
 
-    #if { $USER_GRAVITY && ! $TEXTMENU ; } \
-    #              && [[ $BUTTON_GRAVITY != north ]]; then
+    # bottom edge of last thumb vertically
     SW_CORNER=$(( ${SC_THUMB_Y_ARRAY[SPLIT-1]} + ${THUMB_SIZE/*x} ))
-    if [[ $BUTTON_GRAVITY = south* ]]; then
+    # TODO add north) so user can align flush with top safearea edge
+    # as the default is not 'exactly' north in these terms, but a compromise
+    case $BUTTON_GRAVITY in
+      south*)
         Y_OFFSET=$(( ( ${VIDSIZE/*x} - SAFE_AREA) - SW_CORNER ))
-    elif [[ $BUTTON_GRAVITY = *st* ]] || [[ $BUTTON_GRAVITY = *center* ]]; then
+        ;;
+      *east|*west|center)
         COL1_HEIGHT=$(( SW_CORNER - ${SC_TITLES_Y_ARRAY[0]} ))
         Y_OFFSET=$(( ( ${VIDSIZE/*x} / 2) - (COL1_HEIGHT / 2) ))
         Y_OFFSET=$(( Y_OFFSET - ${SC_TITLES_Y_ARRAY[0]} ))
-    fi
+        ;;
+    esac
+    #if [[ $BUTTON_GRAVITY = south* ]]; then
+    #    Y_OFFSET=$(( ( ${VIDSIZE/*x} - SAFE_AREA) - SW_CORNER ))
+    #elif [[ $BUTTON_GRAVITY = *st* ]] || [[ $BUTTON_GRAVITY = *center* ]]; then
+    #    COL1_HEIGHT=$(( SW_CORNER - ${SC_TITLES_Y_ARRAY[0]} ))
+    #    Y_OFFSET=$(( ( ${VIDSIZE/*x} / 2) - (COL1_HEIGHT / 2) ))
+    #    Y_OFFSET=$(( Y_OFFSET - ${SC_TITLES_Y_ARRAY[0]} ))
+    #fi
     for ((i=0; i<=NUM_FILES; i++)); do
         SC_THUMB_Y_ARRAY[i]=$((${SC_THUMB_Y_ARRAY[i]} + Y_OFFSET ))
         SC_TITLES_Y_ARRAY[i]=$((${SC_TITLES_Y_ARRAY[i]} + Y_OFFSET))
@@ -7349,10 +7375,10 @@ if $SWITCHED; then
                 # the menu audio will be the same length as the switched video
             fi
             yecho "Using audio from "${FILES[vid]}" for the audio background,"
-            ! $STATIC && yecho \
-            "using the same seek value for the audio as the video"
-            yecho "If you wish to use silence for the switched menu,"
-            yecho "use '-bgaudio none'"
+            ! $STATIC && info_message \
+            "using the same seek value for the audio as the video.
+            If you wish to use silence for the switched menu,
+            use '-bgaudio none'"
         else
             if [[ $BG_AUDIO = "none" ]]; then # no audio if -bgaudio none
                 BG_AUDIO=""
