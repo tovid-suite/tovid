@@ -3,26 +3,12 @@
 
 __all__ = [
     # Subdirectories
-    'backend',
-    'gui',
     'guis',
     'metagui',
-    'render',
-    'template',
-    'test',
-    'util',
     # .py files
-    'author',
     'cli',
-    'deps',
-    'encode',
     'odict',
-    'opts',
-    'rip',
-    'standard',
-    'stats',
     'utils',
-    'xml',
 ]
 
 import os
