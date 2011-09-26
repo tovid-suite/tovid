@@ -687,7 +687,7 @@ image_filetypes.append(filetypes.all_files)
 # video file-types from filetypes needs some additions
 v_filetypes = 'm2v vob ts '
 v_filetypes += filetypes.get_extensions('video').replace('*.', '')
-v_filetypes += ' mp4 mpeg4 mp4v divx mkv ogv ogm ram rm rmvb wmv'
+v_filetypes += ' mp4 mpeg4 mp4v divx mkv ogv ogm ram rm rmvb wmv webm'
 vid_filetypes = filetypes.new_filetype('Video files', v_filetypes)
 video_filetypes = [vid_filetypes]
 video_filetypes += [filetypes.all_files]
