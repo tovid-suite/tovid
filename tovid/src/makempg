@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-ME="[tovid]:"
+ME="[makempg]:"
 . tovid-init 2>/dev/null ||
 { echo -e "===============================================================\n"
 echo -e "'tovid-init' not found.  Was tovid improperly installed?"
