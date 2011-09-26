@@ -297,7 +297,7 @@ function cmd_exec()
         yecho
         return
     else
-        eval "$@" 2>&1 | strings >> "$LOG_FILE" &
+        eval "$@" 2>&1 | $std_buf strings >> "$LOG_FILE" &
         PIDS="$PIDS $!"
     fi
 }
