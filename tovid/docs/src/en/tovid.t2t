@@ -15,6 +15,9 @@ graphical interface is also provided to make the process even easier.
 
 **NOTE**: As of tovid 0.35, the legacy scripts **makemenu**, **makexml**,
 **makevcd** have been removed and no longer appear in this manpage.
+All of their functions and more can be done with the 'tovid disc' command,
+(todisc script), except for makevcd as tovid no longer supports (S)VCD.
+See **Command:disc** and the [wiki http://tovid.wikia.com] for more info.
 Also note that as of tovid 0.32, this is the only manual page provided by tovid.
 There is now a single executable frontend to all functionality in the suite, so
 if you were expecting to find manpages for **todisc**, **idvid**, **makempg**
@@ -96,6 +99,10 @@ use a GUI to make multiple titlesets on the same DVD use 'tovid titlesets',
 which is a wizard that uses the the 'tovid gui.
 
 
+Please note that although the interface may seem complex with so many options,
+you can create a fully functional DVD with only a few options on the opening
+tab of the GUI (select video files and an output name).
+
 =Command:titlesets=
 
 **tovid titlesets** will assist in making a DVD with multiple titlesets.  It can
@@ -117,10 +124,6 @@ slideshows with videos.  It supports sub-menus for chapter breaks,
 configurable menu style, animated backgrounds and transparency effects.
 From simple (no menu) to complex (switched menus and titlesets), you should
 be able to do what you want with 'tovid disc'.
-
-Please note that although the interface may seem complex with so many options,
-you can create a fully functional DVD with only a few options on the opening
-tab of the GUI (select video files and an output name).
 
 
 ==Usage==
