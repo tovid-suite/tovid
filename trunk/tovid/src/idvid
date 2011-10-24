@@ -245,7 +245,7 @@ function get_info ()
     if test -n "$ID_AUDIO_ID"; then
         AUDIO_INFO=$(grep -w "Audio:" "$SCRATCH_FILE")
         # ID_AUDIO_ID needs "TRACKS" var to remain in columns
-        TRACKS=$(sed -r 's/.*Stream #([0-9]\.[0-9]+).*/\1/' <<< "$AUDIO_INFO")
+        TRACKS=$(sed -r 's/.*Stream #([0-9][:.][0-9]+).*/\1/' <<< "$AUDIO_INFO")
         A_TRACKS=(${TRACKS//$'\n'/ })
         # Get hexadecimal track IDs, if present
         if grep -q "\[0x[0-9a-fA-F]*]" <<< $AUDIO_INFO; then
