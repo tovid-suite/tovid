@@ -239,7 +239,7 @@ function get_info ()
     # Find out which channel is the video channel ( 1st )
     # TODO Do we want to worry about videos with multiple channels of video ?
     VIDEO_INFO=$(grep "Video:" "$SCRATCH_FILE")
-    ID_VIDEO_TRACKS=( $(sed -r 's/.*Stream #([0-9]\.[0-9]+).*/\1/' <<< "$VIDEO_INFO") )
+    ID_VIDEO_TRACKS=( $(sed -r 's/.*Stream #([0-9][:.][0-9]+).*/\1/' <<< "$VIDEO_INFO") )
     ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
     # Find out what audio channels are available
     if test -n "$ID_AUDIO_ID"; then
