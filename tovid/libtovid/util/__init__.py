@@ -250,7 +250,7 @@ def wait(seconds):
     """Print a message and pause for the given number of seconds.
     """
     print("Resuming in %s seconds..." % seconds)
-    os.system('sleep %ss' % seconds)
+    os.system('sleep %s' % seconds)
 
 
 def imagemagick_version():
