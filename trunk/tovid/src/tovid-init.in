@@ -278,11 +278,13 @@ function file_output_progress()
     # Wait for input file to appear
     # After a 30-second timeout, exit gracefully
     CUR_TIME=30
-    while test $CUR_TIME -gt 0; do
+    while test $CUR_TIME -gt 0; do 
+        sleep 3
         # If file exists, wait a few more seconds, then break out
         if test -e "$FOP_OUTFILE"; then
-            printf "Processing started. Please wait...                                               "
-            sleep 3s
+            $QUIET || printf "Processing started. Please wait...                                               "
+            sleep 1s
+            CUR_TIME=1
             break
         fi
         printf "Waiting $CUR_TIME seconds for output file \"$FOP_BASENAME_NAME\" to appear...\r"
@@ -324,7 +326,7 @@ function file_output_progress()
         FOP_LAST_SIZE=$FOP_CUR_SIZE
         FOP_CUR_SIZE=$(du -b "$FOP_OUTFILE" | awk '{print $1}')
     done
-    printf "\n\n"
+    $QUIET && printf "\n" || printf "\n\n"
 }
 
 # ******************************************************************************
@@ -442,11 +444,12 @@ test_version()
 # uses stdbuf (coreutils) if present so stdin is line buffered
 send_to_log()
 {
-[[$1]] && prog_name="[$1]: " || prog_name=$0
+    [[ $1 ]] && prog_name="[$1]: " || prog_name="[${0##*/}]: "
     $std_buf tr "\015" "\n" < /dev/stdin | \
     while read line; do
         printf "%s %s\n" "$prog_name" "$line"
     done
+    printf "\n"
 }
 
 
@@ -467,7 +470,8 @@ send_to_log()
 KERNEL=$(uname)
 if test "$KERNEL" = "Linux"; then
     # Linux should have /proc/cpuinfo
-    CPU_MODEL=$(awk -F ":" '/model name/ {print $2}' /proc/cpuinfo | head -n 1)
+    CPU_MODEL=$(awk -F ":" '/model name/ {print $2}' \
+    /proc/cpuinfo | head -n 1 | sed 's/^  *//g')
     CPU_SPEED=$(awk 'BEGIN { IGNORECASE = 1 } /MHz/ { print $4 }' /proc/cpuinfo | head -n 1)
     # Test for multiple CPUs. If they are available, try to use them.
     if test $(grep "^processor" /proc/cpuinfo | wc -l) -ge "2"; then
