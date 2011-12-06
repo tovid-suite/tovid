@@ -1519,7 +1519,7 @@ if $DEINTERLACE; then
         yecho "I can't find any deinterlacing options to use. No deinterlacing"
         yecho "will be done on this video (but encoding will continue)."
         yecho "Encoding will resume in 5 seconds..."
-        sleep 5s
+        sleep 5
     fi
     # Deinterlacing for ffmpeg
     FF_ILACE="-deinterlace"
