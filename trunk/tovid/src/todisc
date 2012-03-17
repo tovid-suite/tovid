@@ -867,17 +867,13 @@ check_compliance()
                     continue_in 3
                     TOVID_WORKING_DIR=$WORKING_DIR makempg $NO_ASK \
                     -$TV_STANDARD -$TARGET -in "$IN" -out "${IN}.enc" \
-                    "${TOVID_OPTS[@]}" 2>&1 |pipe2log makempg
-                    if ! ((${PIPESTATUS[0]})); then
-                        runtime_error "makempg could not encode $IN \
-                          see $LOG_FILE for details."
+                    "${TOVID_OPTS[@]}"
+                    wait
+                    if [[ -e "${IN}.enc.mpg" ]];then
+                         yecho "Using ${IN}.enc.mpg for this DVD"
                     else
-                        if [[ -e "${IN}.enc.mpg" ]];then
-                             yecho "Success! Using ${IN}.enc.mpg for this DVD menu"
-                        else
-                            runtime_error "There appears to be a problem creating \
-                            the DVD compatible mpeg.  See $LOG_FILE for details"
-                        fi
+                        runtime_error "There appears to be a problem creating \
+                        the DVD compatible mpeg.  See $LOG_FILE for details"
                     fi
                     # for grouped files replace symlink in $WORK_DIR
                     $group_set && [[ -L "${FILES_TO_ENCODE[i]}" ]] && \
@@ -1574,7 +1570,7 @@ thanks_goodbye()
     Or in vlc with this command:
         $(printf "%s\t" "vlc \"$OUT_DIR\"")
     If you are satisfied with the results, you can burn a disc with:
-        $(printf "%s\t" "tovid dvd \"$OUT_DIR\"")
+        $(printf "%s\t" "tovid dvd -burn \"$OUT_DIR\"")
     
     Thanks for using tovid!
 EOF`
@@ -3755,7 +3751,7 @@ else
     SS_ASPECT="-aspect 4:3"
 fi
 # ffmpeg now uses -standard rather than -tvstd (honour both for now)
-if ffmpeg -h 2>&1 |grep -q -- -standard; then
+if grep -q -- "-standard" <<< "$FF_HELP"; then
     STANDARD="-standard"
 else
     STANDARD="-tvstd"
