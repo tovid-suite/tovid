@@ -376,8 +376,9 @@ _slide_blur = SpacedText('Slide blur amount', '-slide-blur', '',
 _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
     'Apply a shaped transparency mask to thumbnail videos or images.  These '
     '"feathered" shapes look best against a plain background or used with '
-    '**-thumb-mist** [COLOR].  To use a "mist" background behind each thumb, '
+    '-thumb-mist [COLOR].  To use a "mist" background behind each thumb, '
     'see "Thumb mist" section.  No frame will be used for this option.  '
+    'See "man tovid" (-thumb-shape) for info on how to add your own masks.'
     'Leave at "none" to not use a feathered shape.',
     thumb_masks, 'dropdown')
 
@@ -448,8 +449,11 @@ _tile4x1 = Flag('1 row of 4 thumbs', '-tile4x1', False,
     '(4 videos only).  Not a showcase option.')
 
 _align = Choice('Align', '-align', 'north',
-    'Controls positioning of the thumbnails and their titles.  '
-    'With some arrangements this will have limited effects however.',
+    'Controls positioning of the thumbnails (if any) and video titles.  '
+    'With some arrangements this will have limited effects however.'
+    'For example only north|south|center can be used with the default montage '
+    'of thumbs arrangement, or with showcase with thumb arrangement. '
+    'It will be most effective with single column showcase and textmenu styles',
     'north|south|east|west|center', 'dropdown')
 
 _seek = SpacedText('Thumbnail seek(s)', '-seek', '',
@@ -458,7 +462,7 @@ _seek = SpacedText('Thumbnail seek(s)', '-seek', '',
     'Also used for seeking in switched menus.')
 
 _user_thumbs = List('Image(s)', '-user-thumbs', None,
-    'Images for thumbnails.  You must supply one image for each title if you use this.',
+    'Images for thumbnails.  This option requires one image for each title.',
     Filename('', filetypes=image_filetypes))
 
 ### --------------------------------------------------------------------
@@ -466,10 +470,10 @@ _user_thumbs = List('Image(s)', '-user-thumbs', None,
 ### --------------------------------------------------------------------
 
 # Menu title font
-_menu_font = Font('', '-menu-font', 'Helvetica',
+_menu_font = Font('', '-title-font', 'Helvetica',
     'The font to use for the menu title')
 
-_menu_fontsize = Number('Size', '-menu-fontsize', 24,
+_menu_fontsize = Number('Size', '-title-fontsize', 24,
     'The font size to use for the menu title',
     0, 80, 'pixels', toggles=True)
 
@@ -781,10 +785,11 @@ main_menu = Tabs('Main menu',
             ),
             VPanel('Backgrounds',
                 VPanel('Image or video options',
-                    _bgvideo_seek,
-                    _bg_color),
+                    HPanel('', _bgvideo_seek,
+                    _bg_color)),
                 VPanel('Audio options',
                     HPanel('',  _bgaudio_seek, _menu_audio_fade)),
+                HPanel('Menu alignment', _align),
             ),
         ),
     ),
@@ -874,7 +879,7 @@ slideshow_panel = Tabs('Slideshow',
         HPanel('',
             Number('Number of slides shown on menu', '-menu-slide-total', 0,
                 'Use this many slides for making the slideshow menu. '
-                'The default is to use all the slides given.',
+                'Leave at 0 for default: use all slides given.',
                 0, 100),
             _submenu_slide_total,
         ),
@@ -928,7 +933,6 @@ thumbnails = Tabs("Thumbnails",
                 _thumb_framesize,
                 _thumb_frame_color,
                 _thumb_columns,
-                _align,
             ),
                 ),
         ),
