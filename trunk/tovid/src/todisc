@@ -162,6 +162,7 @@ AR=1.333
 ASPECT_ARG=all
 WIDE_SCREEN=false
 WIDESCREEN="nopanscan"
+GROUP_ARR=""
 GROUPING=false
 TEXT_YSTART=$SAFE_AREA
 BUTTON_GRAVITY=north
@@ -2410,7 +2411,7 @@ while test $# -gt 0; do
                 FILES[ss_index]=$(readlink -f "${ARGS_ARRAY[0]}")
                 GROUP_IN_FILES=( "${GROUP_IN_FILES[@]}" "${grp[@]}" )
                 groupkey=${#FILES[@]}
-                GROUP[groupkey-1]=${#grp[@]}
+                GROUP_ARR[groupkey-1]=${#grp[@]}
                 ((groupkeys++))
                 # create symlinks to ease substitution later
                 for c in ${!grp[@]}; do
@@ -2457,7 +2458,7 @@ while test $# -gt 0; do
             ((${ARGS_ARRAY[0]})) 2>/dev/null || usage_error "Arguments to \
             -group must be preceeded by a positive integer.  See 'man tovid'"
             groupkey=$(( ${ARGS_ARRAY[0]} - 1))
-            GROUP[groupkey]=${#grp[@]}
+            GROUP_ARR[groupkey]=${#grp[@]}
             # temporary till I finish submenu groups TODO
             is_vidgroup[groupkey]=1
             # create symlinks to ease substitution later
@@ -4155,8 +4156,8 @@ print2log "Creating work directories"
 if $GROUPING; then
 unset grp
 for ((i=1; i<=${#FILES[@]}; i++)); do
-    if [[ -n ${GROUP[i-1]} ]]; then
-        for ((j=1; j<=${GROUP[i-1]}; j++)); do
+    if [[ -n ${GROUP_ARR[i-1]} ]]; then
+        for ((j=1; j<=${GROUP_ARR[i-1]}; j++)); do
             if [[ -e $WORK_DIR/${TSET_NUM}-group-${i}-${j}.mpg ]]; then
                 grouping[grp++]=$WORK_DIR/${TSET_NUM}-group-${i}-${j}.mpg
             fi
@@ -4425,7 +4426,7 @@ fi
 # if arbitrary grouped chapters passed, make an array of them
 if $GROUPING && $USER_CHAPTERS; then
     for i in ${!IN_FILES[@]}; do
-        if [[ -n ${GROUP[i]} ]]; then
+        if [[ -n ${GROUP_ARR[i]} ]]; then
             group_arbitrary_chapters[i]=${grouped_user_chapters[i]//+/ }
         else
             group_arbitrary_chapters[i]=""
@@ -4531,9 +4532,9 @@ fi
 for ((i=0; i<${#CHAPTERS[@]}; i++)); do
     if ((${CHAPTERS[i]} == 0)) && ! ${SLIDESHOW[i]}; then
         if ! $USER_CHAPTERS; then
-            [[ -z ${GROUP[i]} ]] && usage_error \
+            [[ -z ${GROUP_ARR[i]} ]] && usage_error \
             "-chapters 0 is only for grouped videos (each video is a chapter)"
-            CHAPTERS[i]=$(( ${GROUP[i]} + 1 )) && nochapt[i]=1
+            CHAPTERS[i]=$(( ${GROUP_ARR[i]} + 1 )) && nochapt[i]=1
         fi
     fi
 done
@@ -4768,7 +4769,7 @@ fi
 # DO_CAROUSEL is set to false when the self recursion is complete
 # this happens earlier in the script.
 if $DO_CAROUSEL; then
-    if [[ -n ${GROUP[@]} ]] && ! $MK_CAROUSEL_MODE; then
+    if [[ -n ${GROUP_ARR[@]} ]] && ! $MK_CAROUSEL_MODE; then
         #*slide_grp*.mpg are symlinks to the original images we have kept intact
         mixgroup=( "$WORK_DIR"/${TSET_NUM}-slide_grp-*.mpg )
         for g in ${!mixgroup[@]}; do
@@ -7470,7 +7471,7 @@ done
 if $GROUPING; then
     index=0
     for i in "${!IN_FILES[@]}"; do
-        if [[ ${GROUP[i]} ]]; then
+        if [[ ${GROUP_ARR[i]} ]]; then
             iter=( $BASEDIR/${TSET_NUM}-group-$((i+1))-*.mpg )
             for ((t=index; t<index+${#iter[@]}; t++)); do
                 # get lengths of group videos also in a seperate loop
@@ -8319,12 +8320,12 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if [[ -n $AUDIO_CHANNEL ]]; then
         echo "${VOB_PRE[i]}"
     fi
-    if [[ -n ${GROUP[i]} ]]; then
+    if [[ -n ${GROUP_ARR[i]} ]]; then
        ((MENU_NUM == 1 && ${CHAPTERS[i]} != 0)) && get_group_chapters $i format
         if ((${nochapt[i]})); then
             ! ${SLIDESHOW[i]} && echo -e \
              "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $vid_pause/>"
-            for ((m=1; m<=$((${GROUP[i]})); m++)); do
+            for ((m=1; m<=$((${GROUP_ARR[i]})); m++)); do
                 mpg="$BASEDIR/${TSET_NUM}-group-$((i+1))-${m}.mpg"
                 [[ -e $mpg ]] && \
                 echo -e "        <vob file=\"$mpg\" $grp_vid_pause/>"
@@ -8332,7 +8333,7 @@ $(z=1;for ((i=0; i<${#IN_FILES[@]}; i++)); do
         else
             ! ${SLIDESHOW[i]} && echo -e \
              "        <vob file=\"$BASEDIR/${TSET_NUM}-$((i+1)).mpg\" $chpts0 $vid_pause/>"
-            for ((m=1; m<=$((${GROUP[i]})); m++)); do
+            for ((m=1; m<=$((${GROUP_ARR[i]})); m++)); do
                 mpg="$BASEDIR/${TSET_NUM}-group-$((i+1))-${m}.mpg"
                 [[ -e $mpg ]] && echo -e \
                  "        <vob file=\"$mpg\" ${chpts[++j]} $grp_vid_pause/>"
@@ -8561,7 +8562,7 @@ if $SUB_MENU; then
                 TOTAL_IMGS=${CHAPTERS[i]}
                 PREFIX=${i}-
             fi
-            if [[ -n ${GROUP[i]} ]]; then
+            if [[ -n ${GROUP_ARR[i]} ]]; then
                 unset x CUT c FILE_IN
                 # this will also take care of grouped USER_CHAPTERS
                 BASE=$WORK_DIR/${TSET_NUM}-group
@@ -8614,7 +8615,7 @@ if $SUB_MENU; then
             if $USER_CHAPTERS; then
                 # 1 second seek for 1st chapt (00:00:00), to avoid black frames
                 cmd[0]=30-$(bc_math "30 + $CUT_TIME" int)
-            elif [[ -z ${GROUP[i]} ]]; then
+            elif [[ -z ${GROUP_ARR[i]} ]]; then
                 # auto chapters needs the last seek removed
                 key=$((${#cmd[@]} - 1))
                 unset cmd[key]
@@ -8628,7 +8629,7 @@ if $SUB_MENU; then
                 ((x++)) # index for spin()'s chapter number output
                 # warning to ignore transcode error messages
                 print_tcode_info
-                if [[ -n ${GROUP[i]} ]]; then
+                if [[ -n ${GROUP_ARR[i]} ]]; then
                     CUR_FILE="${FILE_IN[cf++]}"
                 else
                     CUR_FILE="${IN_FILES[i]}"
@@ -9370,7 +9371,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
 fi
 if ! $QUICK_MENU && $DO_MENU; then
     yecho ""
-    yecho "Making $FRAMES final montage frames and compositing onto \
+    yecho "Making $FRAMES final montage frame(s) and compositing onto \
     background with title"
     yecho ""
 fi
