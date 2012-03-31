@@ -532,6 +532,9 @@ runtime_error()
     echo "Please check the contents of 
     $LOG_FILE to see what went wrong." |format_output
     echo "See the tovid website ($TOVID_HOME_PAGE) for further help options."
+    echo "Latest fixes for ffmpeg api changes go in svn tovid."
+    echo "So you should try that if you get ffmpeg errors in the log."
+    echo "See the subversion section of http://tovid.wikia.com/wiki/Installing_tovid"
     echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     cleanup
@@ -2858,6 +2861,8 @@ while test $# -gt 0; do
             shift
             get_listargs "$@"
             arg=${ARGS_ARRAY[0]}
+            ((arg==0)) && usage_error "Using '0' as an arg for -textmenu not allowed -
+            use -align east (northeast, southeast) for 1 right-aligned column"
             [[ -n $arg ]] && SPLIT=$arg && USER_SPLIT=:
             TEXTMENU=:
             ;;
@@ -5293,8 +5298,8 @@ if $THREExONE || $FOURxONE; then
 fi
 if ( ($DO_TITLESETS || $TITLESET_MODE) && $VMGM_MENU ) || $PLAYALL; then
     if [[ $BUTTON_GRAVITY = "south" ]]; then
-        BUTTON_GRAVITY="center"
-        yecho "Changing thumb alignment to 'center' \
+        BUTTON_GRAVITY="west"
+        yecho "Changing thumb alignment to 'west' \
         to make room for navigation button"
     fi
 fi
