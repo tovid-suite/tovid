@@ -2861,7 +2861,7 @@ while test $# -gt 0; do
             shift
             get_listargs "$@"
             arg=${ARGS_ARRAY[0]}
-            ((arg==0)) && usage_error "Using '0' as an arg for -textmenu not allowed -
+            [[ -n $arg && $arg = 0 ]] && usage_error "Using '0' as an arg for -textmenu not allowed -
             use -align east (northeast, southeast) for 1 right-aligned column"
             [[ -n $arg ]] && SPLIT=$arg && USER_SPLIT=:
             TEXTMENU=:
@@ -5296,11 +5296,13 @@ if $THREExONE || $FOURxONE; then
         $WARN && continue_in 3
     fi
 fi
-if ( ($DO_TITLESETS || $TITLESET_MODE) && $VMGM_MENU ) || $PLAYALL; then
-    if [[ $BUTTON_GRAVITY = "south" ]]; then
-        BUTTON_GRAVITY="west"
-        yecho "Changing thumb alignment to 'west' \
-        to make room for navigation button"
+# south aligned with nav buttons may be a problem, unless aligned southwest
+if { $DO_TITLESETS || $TITLESET_MODE; } && $VMGM_MENU  || $PLAYALL; then
+    if [[ $BUTTON_GRAVITY = south* && ${BUTTON_GRAVITY/south} != west ]]; then
+        info_message "You are using -align ${BUTTON_GRAVITY}, but need room \
+        for the navigation button(s).  Please check the preview and adjust \
+        your commands if necessary."
+        $WARN && continue_in 7
     fi
 fi
 
