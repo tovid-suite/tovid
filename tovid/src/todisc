@@ -53,13 +53,22 @@ EOF`
 
 USAGE=`cat << EOF
 Usage:
-
     tovid disc [OPTIONS] \\\\
-      -files File1.mpg File2.mpg ... \\\\
+      -files File1.mpg File2.avi ... \\\\
       -titles "Title 1" "Title 2" ... \\\\
+      -menu-title "Tovid Demo" \\\\
       -out OUT_PREFIX
 
 You can also do slideshows using -slides IMAGES rather than -files VIDEOS
+General Options:
+    -no-ask, -no-warn, -keep-files, -jobs, -grid, -no-confirm-backup
+Other quick examples:
+Create 'text menu' DVD filesystem:
+    tovid disc -text-menu -files ... -titles .. -out OUT_PREFIX
+Create DVD filesystem with no menu, encoding with ffmpeg and prompt for burn:
+    tovid disc -files *.mp4 -ffmpeg -no-menu -burn -out OUT_PREFIX
+Create DVD compatible mpeg2 files using makempg (and ffmpeg) and then quit:
+    tovid disc -encode-only -ffmpeg -quality 8 -files *.avi (no -out required)
 See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
@@ -213,6 +222,7 @@ MENU_AUDIOLEN=""
 USER_AUDIOLENGTH=false
 BURN=false
 EJECT=''
+BURN_PROG="makedvd"
 BURN_DEVICE="/dev/dvdrw"
 QUICK_MENU=false
 BG_CLR='#101010'
@@ -367,7 +377,7 @@ pipe2log()
         name="[${0##*/}]: "
     fi
     if [[ $2 && $2 = format ]]; then
-        cols=$(( 79 - $(wc -l <<< $name) ))
+        cols=$(( 79 - $(wc -c <<< $name) ))
         ((cols)) || cols=60
         format="fold -w $cols -bs"
     else
@@ -750,7 +760,11 @@ check_compliance()
     # get user's config options for makempg from the tovid.ini file
     makempg_ini_opts=$(tovid mpg | awk '/Read options/{getline;print}')
     group_set=false
-    if [[ $1 = "group" ]]; then
+    if $ENCODE_ONLY; then
+        # encoding all files as -encode-only was used
+        CHECK_IN_FILES=()
+        FILES_TO_ENCODE=( "${IN_FILES[@]}" )
+    elif [[ $1 = "group" ]]; then
         group_set=:
         unset x a
         CHECK_IN_FILES=( "${grouping[@]}" )
@@ -800,21 +814,28 @@ check_compliance()
         TV_STND_CAPS=$(tr a-z A-Z <<< "$TV_STANDARD")
         print2log "Encode input files"
         if ! $SINGLE_SLIDESHOW; then
-            yecho "Some of the -files you provided are not \
-            $TV_STND_CAPS $TGT_CAPS-compliant:"
+            if $ENCODE_ONLY; then
+                yecho "Encoding the following files to \
+                $TV_STND_CAPS $TGT_CAPS format:"
+            else
+                yecho "Some of the -files you provided are not \
+                $TV_STND_CAPS $TGT_CAPS-compliant:"
+            fi
             print2log ""
         fi
         if test ${#FILES_TO_ENCODE[@]} -lt 12 && ! $SINGLE_SLIDESHOW; then
+            printgreen '-------------'
             for i in "${FILES_TO_ENCODE[@]}"; do
                 this_file=$(readlink -f "$i")
                 test -n "$this_file" && yecho " $this_file"
             done
+            printgreen '-------------'
         fi
         # this ugly list of OR's are cases we want automatic encoding
         # all switched runs except the 1st, if -no-ask, if single slideshow
         # or if all input files are images
         if { $SWITCHED && [[ $MENU_NUM -ne 2 ]] ; } \
-         || $NOASK || [[ ${TOVID_OPTS[@]} = *-noask* ]] || \
+         || $NOASK || [[ ${TOVID_OPTS[@]} = *-noask* ]] || $ENCODE_ONLY || \
          [[ ${#NO_PROMPT_FILES[@]} = ${#FILES_TO_ENCODE[@]} ]]; then
             echo "Encoding files to $TV_STND_CAPS $TGT_CAPS-compliant format."
             ENCODE="yes"
@@ -825,11 +846,12 @@ check_compliance()
             yecho "you may skip this, but your disc may not be playable."
             yecho "Please type 'yes' if you want the files to be encoded:"
             read ENCODE
-        fi
-        if test -n "$ENCODE" && test "$ENCODE" = 'yes'; then
-            if ! $SINGLE_SLIDESHOW; then
-                yecho "Converting files to $TGT_CAPS format"
+            if [[ $ENCODE = "yes" ]]; then
+                ! $SINGLE_SLIDESHOW && yecho \
+                "Converting files to $TGT_CAPS format"
             fi
+        fi
+        if [[ $ENCODE = 'yes' ]]; then
             for i in "${!FILES_TO_ENCODE[@]}"; do
                 IN=$(readlink -f "${FILES_TO_ENCODE[i]}")
                 if $group_set; then
@@ -873,8 +895,8 @@ check_compliance()
                     -$TV_STANDARD -$TARGET -in "$IN" -out "${IN}.enc" \
                     "${TOVID_OPTS[@]}"
                     wait
-                    if [[ -e "${IN}.enc.mpg" ]];then
-                         yecho "Using ${IN}.enc.mpg for this DVD"
+                    if [[ -e "${IN}.enc.mpg" ]]; then
+                        ! $ENCODE_ONLY && yecho "Using ${IN}.enc.mpg for this DVD"
                     else
                         runtime_error "There appears to be a problem creating \
                         the DVD compatible mpeg.  See $LOG_FILE for details"
@@ -901,8 +923,12 @@ check_compliance()
             # for grouped files the mpeg already replaced the group symlink
             ! $group_set && IN_FILES=("${ENC_IN_FILES[@]}")
         else
-            info_message "Not re-encoding. I will proceed with menu generation, but
-            your authored disc will not be fully $TGT_CAPS-compliant."
+            if $ENCODE_ONLY; then
+                info_message "Not re-encoding."
+            else
+                info_message "Not re-encoding. I will proceed with menu generation, but
+                your authored disc will not be fully $TGT_CAPS-compliant."
+            fi
         fi
     fi
 }
@@ -1531,6 +1557,8 @@ parse_rotateargs()
 
 burn_disc()
 {
+    BURN_TGT="$OUT_DIR"
+    BURN_TGT_STR="DVD directory"
     BURN_CMD=(tovid dvd -burn -device "$BURN_DEVICE" $EJECT  \
     $BURN_SPEED \"$BURN_TGT\")
     yecho
@@ -1542,9 +1570,12 @@ burn_disc()
     if [ ! -z "$input" -a "$input" = "yes" ]; then
         echo "Proceeding to burn, continuing."
         echo
-        $BURN_PROG -burn -device "$BURN_DEVICE" \
-        $BURN_SPEED "$BURN_TGT" | pipe2log makedvd
-        if ((${PIPESTATUS[0]}==0)); then
+        # probably could do redirection using exec and such, but this is simple
+        $BURN_PROG -device "$BURN_DEVICE" \
+        $BURN_SPEED "$BURN_TGT" | tee  "$WORK_DIR/makedvd.log"
+        pipe_status=${PIPESTATUS[0]}
+        pipe2log makedvd < "$WORK_DIR/makedvd.log"
+        if ((pipe_status==0)); then
             echo "Your ${BURN_TGT_STR/ *} should be ready"
         else
             echo "There was a problem burning the ${BURN_TGT_STR/ *}"
@@ -3430,9 +3461,8 @@ while test $# -gt 0; do
                     TOVID_OPTS+=( "$1" "$(readlink -f "$2")" )
                 fi
             elif [[ $1 == '-mplayeropts' ]]; then
+                # -mplayeropts can start with a '-' so just get entire string.
                 TOVID_OPTS+=("$1" "$2")
-                # need to shift twice as -mplayeropts can start with a '-'
-                shift
                 shift
             else
                 TOVID_OPTS+=( "$1" )
@@ -3998,13 +4028,14 @@ if [[ -n "${ADV_OPT[@]}" ]] && ! $SWITCHED_MODE; then
     yecho "so please check it with the preview."
     printgreen "***************"
     yecho ""
-    $WARN && continue_in 10
+    $WARN && continue_in 7
 fi
 
 # check aspect ratios of infiles so thumbs are in aspect without -aspect passed
 # this is done before makempg converts non-compliant files so it is really only
 # useful to get a preview
-if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] && ! $VMGM_ONLY; then
+if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] \
+      && ! $VMGM_ONLY && ! $ENCODE_ONLY; then
     yecho "Determining aspect ratio of videos for the preview."
     yecho ""
     yecho "If SURE of ratios skip this step with '-aspect ASPECT' \
@@ -4570,6 +4601,18 @@ fi
 # allow using todisc for just encoding mpegs, then exiting
 if $ENCODE_ONLY; then
     check_compliance
+    if (( ${#FILES_TO_ENCODE[@]} > 1 )); then
+        for f in "${FILES_TO_ENCODE[@]}"; do
+            [[ -s "$f" ]] && arr+=("${f}.enc.mpg")
+        done
+        #((${#arr[@]} > 0)) && printf "%s\n%s.enc.mpg" \
+        if ((${#arr[@]} > 0)); then
+            printf "\n%s\n" "Here are your encoded files:"
+            printgreen '-------------'
+            printf "%s\n" "${arr[@]}"
+            printgreen '-------------'
+        fi
+    fi
     cleanup
     exit 0
 fi
@@ -4638,7 +4681,7 @@ $FRAME_SAFE && V_FRAMES=9 || V_FRAMES=1
 if $USER_THUMBS && $FRAME_SAFE; then
     FRAME_SAFE=false
     echo "-frame-safe and -user-thumbs incompatible, disabling -frame-safe"
-    continue_in 5
+    $WARN && continue_in 5
 fi
     
 print2log "Creating pics directories..."
@@ -5116,9 +5159,6 @@ fi
 FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB $ASPECT"
 SS_FFMOPTS="-b 8000k -maxrate 9000k -bufsize 224KiB $SS_ASPECT"
 SHOWCASE_SIZE=384x256
-BURN_TGT="$OUT_DIR"
-BURN_TGT_STR="DVD directory"
-BURN_PROG="makedvd"
 if [ $TV_STANDARD = "ntsc" ]; then
     if [[ $ASPECT_RATIO = "4:3" ]]; then
         GEO_ARRAY=("${NTSC_1333_DVD[@]}")
@@ -5296,13 +5336,25 @@ if $THREExONE || $FOURxONE; then
         $WARN && continue_in 3
     fi
 fi
-# south aligned with nav buttons may be a problem, unless aligned southwest
+# south* aligned with nav buttons may be a problem, unless aligned southwest
 if { $DO_TITLESETS || $TITLESET_MODE; } && $VMGM_MENU  || $PLAYALL; then
-    if [[ $BUTTON_GRAVITY = south* && ${BUTTON_GRAVITY/south} != west ]]; then
-        info_message "You are using -align ${BUTTON_GRAVITY}, but need room \
-        for the navigation button(s).  Please check the preview and adjust \
-        your commands if necessary."
-        $WARN && continue_in 7
+    bydir=${BUTTON_GRAVITY/south}
+    if [[ $BUTTON_GRAVITY = south* && $bydir != west ]]; then
+        if $TEXTMENU; then
+            # textmenu will cover the nav button if southeast aligned
+            # (center and southwest should be okay).Move to "east" (higher up).
+            if [[ $bydir = east ]]; then
+                BUTTON_GRAVITY=east
+                info_message "Changing -align option to 'east' to make room \
+                for navigation button(s) like playall '>'."
+                $WARN && continue_in 5
+            fi
+        else
+            info_message "You are using -align ${BUTTON_GRAVITY}, but need \
+            room for navigation buttons like playall '>'.  Please \
+            check the preview and adjust your commands if necessary."
+            $WARN && continue_in 7
+        fi
     fi
 fi
 
