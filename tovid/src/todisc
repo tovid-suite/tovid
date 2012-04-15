@@ -2175,7 +2175,7 @@ mk_polaroid_stack()
         -bordercolor grey60 -border 1 \
         -rotate ${randir}${angle}  \
         -background  black  \( +clone -shadow 60x4+4+4 \) +swap \
-        -background  none   -flatten \
+        +repage -background none -flatten \
         "$WORK_DIR/tnail${i%.*}.png"
         stack_files[i]=$WORK_DIR/tnail${i%.*}.png
 
@@ -3462,6 +3462,8 @@ while test $# -gt 0; do
                 fi
             elif [[ $1 == '-mplayeropts' ]]; then
                 # -mplayeropts can start with a '-' so just get entire string.
+                # TODO allow using -mplayeropts for each video, use "" for none
+                # [[  "${2+defined}" && -z $2 ]] ... MPLAYER_OPTS+=("")
                 TOVID_OPTS+=("$1" "$2")
                 shift
             else
