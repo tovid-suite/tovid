@@ -151,6 +151,8 @@ slideshows/videos menu.  See Slideshows part of Usage section, below.
 
 If the input files are not mpeg, you will have the option to auto-encode them.
 
+General Options
+
 **At present there are 2 display arrangements or "templates":**
 
 : A. (Default)
@@ -207,7 +209,7 @@ A text-only menu:
 No menu:
 
 ```
- $ tovid -nomenu -files file1.mpg [file2.mpg "file 3.mpg" ...]
+ $ tovid -nomenu -files file1.mpg file2.mp4 "file 3.avi" -out mydvd
 ```
 
 
@@ -225,9 +227,9 @@ You do not use **-files** for the opening menu options (**-vmgm**), but you
 will need as many TITLES after **-titles** as you have menus.
 
 Any options outside the **-titleset** **-end-titleset** and **-vmgm**
-**-end-vmgm** areas will be general options applying to every titleset.
-If a general option is duplicated inside a **-titleset** or **-vmgm** area, the
-general option will be overridden.
+**-end-vmgm** areas will be global options applying to every titleset.
+If a global option is duplicated inside a **-titleset** or **-vmgm** area, the
+global option will be overridden.
 
 Note: you do not need titlesets for a single menu with chapter break menus, for
 that just use **-submenus** or **-ani-submenus**
@@ -334,10 +336,35 @@ Here is a list of possible options you can pass:
     **-from-gui**, **-slice**, **-quiet**,
     **-fake**, **-keepfiles**
 
-==Options==
+==General Options==
 
 : **-keep-files**, **-keepfiles**
     Keep all intermediate/temporary files (helps with debugging)
+: **-no-ask** | **-noask**
+    Skip all interactive questions.  No preview, automatic re-encoding with
+    tovid if needed, no interactive option to use background video for bgaudio.
+: **-no-warn**, **-nowarn**
+    Don't pause after outputting warning or info messages
+: **-jobs**
+    By default, **tovid disc** starts a parallel job for each processor
+    detected.  With this option you can manually set the number of jobs.  For
+    example if you have a computer with 2 CPUs you can set "-jobs 1" to keep
+    one processor free for other things.  At present this applies to the time
+    consuming imagemagick loops: you will notice a substantial speedup now if
+    you have a multi-cpu system.
+: **-grid**
+    Show a second preview image with a grid and numbers that will help in finding
+    coordinates for options that might use them, like **-text-start**
+: **-no-confirm-backup**
+    This option is for when your DVD contains images for a slideshow.
+    Slideshows are an experimental (but well tested) feature.  Todisc is
+    unlikely to overwrite your personal files, but you should take precautions
+    and backup your images, as you would with any beta software.  Todisc
+    will prompt you to backup your files normally.  If you have already backed
+    up your images, use this option to disable the prompt.
+
+==Options==
+
 : **-ntsc**
     720x480 output, compatible with NTSC standard (default)
 : **-pal**
@@ -655,6 +682,7 @@ Here is a list of possible options you can pass:
     and backup your images, as you would with any beta software.  Todisc
     will prompt you to backup your files normally.  If you have already backed
     up your images, use this option to disable the prompt.
+    See **General Options**
 
 : **-use-dvd-slideshow** [CONFIG FILE]
     If you pass this option without an argument, tovid will use the
@@ -811,21 +839,6 @@ Here is a list of possible options you can pass:
     title and/or thumbnail for bar.mpg will appear in the menu.  You can use
     **-group** more than once for multiple groups.  Be  sure to quote video
     filenames if they contain  spaces.
-: **-jobs**
-    By default, **tovid disc** starts a parallel job for each processor
-    detected.  With this option you can manually set the number of jobs.  For
-    example if you have a computer with 2 CPUs you can set "-jobs 1" to keep
-    one processor free for other things.  At present this applies to the time
-    consuming imagemagick loops: you will notice a substantial speedup now if
-    you have a multi-cpu system.
-: **-no-ask** | **-noask**
-    Skip all interactive questions.  No preview, automatic re-encoding with
-    tovid if needed, no interactive option to use background video for bgaudio.
-: **-no-warn**, **-nowarn**
-    Don't pause after outputting warning or info messages
-: **-grid**
-    Show a second preview image with a grid and numbers that will help in finding
-    coordinates for options that might use them, like **-text-start**
 
 
 ==Menu Style==
@@ -973,8 +986,9 @@ Here is a list of possible options you can pass:
     Only **-align** north|south|center has any effect on showcase with thumb,
     or with the default montage arrangement of central thumbs. The most
     apparent changes with be with textmenu, though with 2 column arrangements
-    only the north* and south* changes will show and effect.
-    diagram:
+    only the north* and south* changes will show an effect.
+
+    Diagram:
 :    . northwest   north   northeast .
 :    .                               .
 :    . west        center       east .
@@ -1037,7 +1051,7 @@ Here is a list of possible options you can pass:
     the **-vmgm** ... **-end-vmgm** options to allow playing ALL titlesets.
     (If you want also to have a playall button in each titleset you could use
     this option between each **-titleset** ... **-end-titleset** option or put
-    it outside of the vmgm and titlset options as a general option.
+    it outside of the vmgm and titlset options as a global option.
 : **-videos-are-chapters**
     A button will be made on the main menu for each video, which you can use as
     a chapter button.  Selecting any video will play them all in order
@@ -1124,7 +1138,7 @@ truer Imagemagick -stroke try something like:
 **-fontdeco** option is quite flexible and takes a lot of ImageMagick's
 //convert// options. Please refer to the tovid
 [wiki http://tovid.wikia.com/wiki/Making_a_DVD_with_text_menus] and Anthony
-Thyssen's guide for further explanation and examples.
+Thyssen's guide [http://www.imagemagick.org/Usage] for further explanation and examples.
 
 
 
