@@ -925,10 +925,9 @@ fi
 # check that outfile or infile don't use $$ or $[0-9] because of mpeg2 'bug'
 if ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *\$\$* || "$IN_FILE" = *\$\$* ]]; then
     exit_with_error '"$$" illegal in -out and -in NAME (mpeg2enc limitation)'
-elif
-    if ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *\$[0-9]* || "$IN_FILE" = *\$[0-9]* ]]; then
-    exit_with_error '"$\[[:digit:]] illegal in -out and -in NAME (mpeg2enc limitation)'
-
+elif ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *\$[0-9]* || "$IN_FILE" = *\$[0-9]* ]]; then
+    exit_with_error '"$" followed by a digit illegal in -out and -in NAME (mpeg2enc limitation)'
+fi
 # check that outfile is not a directory
 if test -d "$OUT_PREFIX"; then
     exit_with_error "Error: The specified output file is a directory.  A filename must be specified."
