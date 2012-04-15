@@ -145,6 +145,7 @@ AUDIO_WAV="audiodump.wav"
 # Audio bitrate (for ac3 or mp2)
 AUD_BITRATE="224"
 # Don't generate an empty audio stream
+NEWAUDIO_OPT=false
 GENERATE_AUDIO=false
 # Amplitude used when adjusting audio (-amplitude)
 AUDIO_AMPLITUDE=""
@@ -319,8 +320,10 @@ function killsubprocs()
 # ******************************************************************************
 function check_disk_space()
 {
+    # this function is very inaccurate, needs attention
     # Determine space available in current directory (in MB)
-    AVAIL_SPACE=$(df -mP . | awk 'NR != 1 {print $4;}')
+    # os compatibility patch from 'virtualestates' as per issue #152
+    AVAIL_SPACE=$(df -P . | awk 'NR==1 {sub("-blocks", "", $2); blocksize=$2} NR!=1 {print int($4/1024*blocksize/1024)}')
     # Rough estimates of KB/sec for different formats
     K_PER_SEC=200
     test "$TGT_RES" = "VCD" && K_PER_SEC=172
@@ -335,13 +338,13 @@ function check_disk_space()
     if test "$VIDEO_DURATION" = "0"; then
         CUR_SIZE=$(du -Dck "$IN_FILE" | awk 'END{print $1}')
         NEED_SPACE=$(expr $CUR_SIZE \* 2)
-        yecho  "The encoding process will require about"
     # Estimate space based as kbps * duration
     else
         NEED_SPACE=$(expr $VIDEO_DURATION \* $K_PER_SEC \/ 500)
-        yecho "The encoding process is estimated to require $NEED_SPACE MB of disk space."
     fi
-
+    # ffmpeg can do a+v 'at once' so half as much space needed
+    $USE_FFMPEG && ! $DO_NORM && ! [[ $ASYNC ]] && NEED_SPACE=$((NEED_SPACE/2))
+    yecho "The encoding process is estimated to require $NEED_SPACE MB of disk space."
     yecho "You currently have $AVAIL_SPACE MB available in this directory."
 }
 
@@ -915,6 +918,17 @@ if test -z "$OUT_PREFIX"; then
     usage_error "Please provide an output name with the -out option."
 fi
 
+# check that outfile does not contain a comma because of a mpeg2enc limitation
+if ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *,* || "$IN_FILE" = *,* ]]; then
+    exit_with_error "Comma illegal in -out and -in NAME (mpeg2enc limitation)"
+fi
+# check that outfile or infile don't use $$ or $[0-9] because of mpeg2 'bug'
+if ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *\$\$* || "$IN_FILE" = *\$\$* ]]; then
+    exit_with_error '"$$" illegal in -out and -in NAME (mpeg2enc limitation)'
+elif
+    if ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *\$[0-9]* || "$IN_FILE" = *\$[0-9]* ]]; then
+    exit_with_error '"$\[[:digit:]] illegal in -out and -in NAME (mpeg2enc limitation)'
+
 # check that outfile is not a directory
 if test -d "$OUT_PREFIX"; then
     exit_with_error "Error: The specified output file is a directory.  A filename must be specified."
@@ -1127,11 +1141,11 @@ if test "$IN_FILE_TYPE" = "file"; then
 
     # Check for available space and prompt if it's not enough
     # not needed if using ffmpeg to encode video and audio "at once"
-    if ($USE_FFMPEG && (! $DO_NORM || ! [[ $ASYNC ]])) || $PARALLEL; then
+    if $PARALLEL; then
         :
     else
         check_disk_space
-        if test "$AVAIL_SPACE" -lt "$NEED_SPACE" && ! test $FROM_GUI -o $NOASK ; then
+        if ((AVAIL_SPACE < NEED_SPACE)) && ! $FROM_GUI && ! $NOASK; then
             yecho "Available: $AVAIL_SPACE, needed: $NEED_SPACE"
             echo "It doesn't look like you have enough space to encode this video."
             echo "Of course, I could be wrong. Do you want to proceed anyway? (y/n)"
@@ -1629,6 +1643,8 @@ elif grep -qw -- -vfilters <<< "$FF_HELP"; then
 else
     VF=""
 fi
+# newaudio was removed in ffmpeg 0.9 as it was redundant because of -map opt
+grep -qw -- -newaudio <<< "$FF_HELP" && NEWAUDIO_OPT=true
 
 # Anamorphic widescreen (16:9 output)
 # Used if the format supports it, and it will minimize the number of pixels
@@ -1836,14 +1852,16 @@ else # set up mapping for ffmpeg, for each track we are going to encode
         AUDIO_WAV_MAP=( "${AUDIO_WAV_MAP[@]}" -map $i:0 )
         AUDIO_STREAM=( "${AUDIO_STREAM[@]}" "${TMP_DIR}/audio${i}.$AUD_SUF" )
         STREAM_CHANS=( "${STREAM_CHANS[@]}" ${AUDIO_CHAN[track-1]} "${AUDIO_STREAM[i]}" )
-        NEW_AUDIO[i]="-acodec ac3 -ab 224k ${AUDIO_CHAN[track-1]} -newaudio"
+        # -newaudio for ffmpeg versions prior to 0.9
+        $NEWAUDIO_OPT && \
+          NEW_AUDIO[i]="-acodec ac3 -ab 224k ${AUDIO_CHAN[track-1]} -newaudio"
         AUDIO_WAV[i]="$TMP_DIR/audio${i}.wav"
         AUDIO_WAV_CHANS=( "${AUDIO_WAV_CHANS[@]}" ${AUDIO_CHAN[track-1]} "${AUDIO_WAV[i]}" )
     done
 
     FF_CHANNEL_MAP="$VIDEO_MAP $AUDIO_MAP"
     # we don't need the 1st track for -newaudio
-    unset NEW_AUDIO[0]
+    $NEWAUDIO_OPT && unset NEW_AUDIO[0]
     ((${#AUDIO_TRACK[@]} > 1)) && OUTPUT_FILES="each file" && s=s
 fi
 
@@ -2093,7 +2111,7 @@ else
     if $USE_FIFO; then
         mkfifo "$YUV_STREAM" || runtime_error "Cannot create fifo $YUV_STREAM"
     fi
-    VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
+    VID_PLAY_CMD="$PRIORITY $MPLAYER -nomsgcolor $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
         VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $VF_FILTERS $OLD_OPTS -y \"$VIDEO_STREAM\""
     else
