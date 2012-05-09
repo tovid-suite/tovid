@@ -3886,7 +3886,7 @@ if ! $TITLESET_MODE && ! $DO_TITLESETS && $QUICK_NAV && ! $VMGM_ONLY; then
     $WARN && continue_in 5
 fi
 # Warn if thumb labels have more than 16 characters
-if ! $SHOWCASE; then
+if ! $SHOWCASE && ! $ENCODE_ONLY && ! $NOMENU; then
     for ((i=0; i<${#TITLES[@]}; i++)); do
         val=${#TITLES[i]}
         [ -z "$MAX_CHARS" ] || ((val > MAX_CHARS)) && MAX_CHARS=$val && key=$i
