@@ -1,0 +1,14 @@
+[Desktop Entry]
+ServiceTypes=video/*
+Actions=batchConvert2mpegDVD;batchConvert2mpegSVCD
+
+[Desktop Action batchConvert2mpegDVD]
+Name=Convert video files to dvd mpeg-2 with tovid
+Icon=mplayer
+Exec=tovid-batch -dvd -ntsc  -infiles  %F > /tmp/errors.txt 2>&1
+
+[Desktop Action batchConvert2mpegSVCD]
+Name=Convert video files to svcd mpeg-2 with tovid
+Icon=mplayer
+Exec=tovid-batch -svcd -ntsc  -infiles  %F > /tmp/errors.txt 2>&1
+

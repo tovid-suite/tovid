@@ -1,0 +1,41 @@
+#! /bin/bash
+# Do a "quick release" of the SVN code
+
+if test $# -lt 1; then
+    echo "quickrelease: Create and upload a tovid 'quick release' (SVN .tar.gz)"
+    echo "Usage:"
+    echo "    quickrelease USERNAME"
+    echo "Where USERNAME is your Google (GMail) username."
+    exit
+else
+    USERNAME=$1
+fi
+
+# Make sure there are no commits (otherwise revision number
+# will be wrong)
+if $(svn stat -u | grep -q '^M'); then
+    echo "You have uncommitted changes. Please run 'svn commit',"
+    echo "then run 'svn update', before running this script."
+    exit
+fi
+
+# Ensure manpage and tovid-init are built
+python setup.py build_docs
+python setup.py build_tovid_init
+
+# Build the source distribution
+python setup.py build
+python setup.py sdist
+
+# Find the newest .tar.gz in the dist/ folder
+TARBALL=$(ls -1t dist/tovid-*.tar.gz | head -n 1)
+
+# Upload the tarball to Google Code
+./googlecode_upload.py \
+    -s "quick-release" \
+    -p tovid \
+    -u $USERNAME \
+    $TARBALL
+
+echo "Done."
+

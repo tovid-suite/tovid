@@ -1,0 +1,49 @@
+README
+=====================================================
+tovid (http://tovid.wikia.com/)
+Video disc authoring software
+=====================================================
+
+tovid is a suite of tools for creating video DVDs, VCDs,
+and SVCDs. It can convert your video files to the correct
+format, generate navigational menus, and create and burn
+the disc image.
+
+Quick install:
+
+    $ su -c './setup.py install'
+    or
+    $ sudo ./setup.py install
+
+Then run:
+
+    $ tovid
+
+And/or:
+
+    $ man tovid
+
+See INSTALL for installation instructions for more details
+about the shell and python scripts in this package.
+
+Please note that tovid is in its ALPHA phase of development.
+It should not be used for mission-critical applications;
+numerous bugs, quirks, and syntax errors undoubtedly remain.
+
+This program is provided "as is" without warranty of
+any kind. Use it at your own risk.
+
+
+=====================================================
+SUPPORT
+=====================================================
+
+If you need assistance or have questions about tovid,
+please consult the following (in order of preference):
+
+tovid homepage:
+    http://tovid.wikia.com/
+tovid-users discussion group:
+    http://groups.google.com/group/tovid-users
+tovid IRC channel:
+    irc.freenode.org, channel #tovid
