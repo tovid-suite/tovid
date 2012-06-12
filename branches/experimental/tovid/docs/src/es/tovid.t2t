@@ -1,0 +1,236 @@
+tovid
+
+
+
+tovid, aparte de ser el nombre de la familia de comandos, es el nombre de su
+componente primario. Es un script en bash, cuyo propósito es codificar formatos
+de vídeo cualesquiera en vídeo MPEG que cumpla las normas VCD, SVCD, o DVD.
+Estos ficheros de vídeo se pueden tostar en un CD o DVD usando otros
+componentes, o usando otras herramientas de autoría tales como
+[k3b http://k3b.sourceforge.net/] o [dvdauthor http://dvdauthor.sourceforge.net/].
+Si tienes un vídeo que quieras tostar en un CD o DVD, este componente te
+ayudará a convertirlo a formato adecuado.
+
+
+===Prestaciones y características===
+- Pued crear una variedad de formatos de salida MPEG, incluyendo
+        VCD, SVCD, DVD, Half-DVD, y VCD-on-DVD (las opciones ``-vcd``,
+        ``-svcd``, ``-dvd``, ``-half-dvd``,
+        y -dvd-vcd`` , respectivamente)
+- Se salta la codificación de los canales de vídeo y audio ya válidos,
+        para evitar degradaciones de calidad innecesarias.
+- Admite salida PAL y NTSC (las opciones ``-pal`` y
+        ``-ntsc``)
+- Detección automática de la relación de aspecto. Puedes saltarte 
+        la autodetección con la opción ``-aspect W:H``, o usar
+        relaciones de aspecto estándar como ``-full`` (4:3), ``-wide``
+        (16:9), y ``-panavision`` (2.35:1).
+- Mejora de calidad de imagen via la opción ``-filters``
+    .
+- Codificación entrelazada para todos los formatos excepto VCD
+        (la opción ``-interlaced`` )
+- Puede normalizar el volumen de audio demasido sonoro o demasiado débil (la
+        opción ``-normalize`` )
+- Divide automáticamente los ficheros de salida en trozos para tostarlos
+        en múltiples CDs o DVDs. Usa la opción ``-discsize`` 
+        para especificar un tamaño de disco a medida.
+- Ajuste automático de la cuantización basado en la tasa de bits por segundo
+        elegida para vídeo. Las tasas altas de bits usan cuantizaciones bajas (alta calidad), mientras
+        que las tasas bajas usan cuantizaciones más altas.
+- Muestra estadísticas, incluyendo tamaño de fichero resultante,
+        tasa de bits, y tiempo de codificación, y las guarda en
+        ``~/.tovid/stats``
+- Utiliza multiproceso durante la codificación de vídeo en los sistemas
+        con más de una CPU.
+- Estima e informa del espacio requerido antes de empezar a codificar, y
+        advierte si no hay espacio suficiente para codificar.
+- Se muestra durante la codificación un indicador de progreso 
+    y un tiempo estimado de terminación.
+- Prioridad ajustable, para prevenir que la codificación interfiera
+        con tus otras actividades en el ordenador (la opción
+        ``-priority [low|medium|high]``)
+- Procesado paralelo, a través de la opción ``-parallel``
+        , para ayudar a maximizar el uso de CPU durante la codificación (especialmente para
+        codificación multi-CPU)
+
+===Utilización===
+tovid se ejecuta desde laa línea de comando. Si te sientes
+incómodo usando las opciones de la línea de comando, puedes usar el script
+``tovid-interactive``, que te irá preguntando todas las opciones 
+relevantes. Si prefieres usarun interfaz gráfico, prueba a usar ``tovidgui.py``.
+Puedes ejecutar ``tovid`` sin parámetros para ver (en inglés) qué clase de
+argumentos espera:
+Usage: tovid [OPTIONS] -in {input file} -out {output prefix}
+
+OPTIONS may be any of the following:
+
+    -v, -version    Prints tovid version number only
+
+Television standards:
+    -ntsc           NTSC format video (USA, Americas) (default)
+    -ntscfilm       NTSC-film format video
+    -pal            PAL format video (Europe and others)
+
+Formats:
+
+  Standard formats, should be playable in most DVD players:
+    -dvd            (720x480 NTSC, 720x576 PAL) DVD-compatible output (default)
+    -half-dvd       (352x480 NTSC, 352x576 PAL) Half-D1-compatible output
+    -svcd           (480x480 NTSC, 480x576 PAL) Super VideoCD-compatible output
+    -dvd-vcd        (352x240 NTSC, 352x288 PAL) VCD-on-DVD output
+    -vcd            (352x240 NTSC, 352x288 PAL) VideoCD-compatible output
+
+  Non-standard formats, playable in some DVD players:
+    -kvcdx3/-kvcd   (528x480 NTSC, 520x576 PAL) KVCDx3 long-playing VCD
+    -kvcdx3a/-ksvcd (544x480 NTSC, 544x576 PAL) KVCDx3A long-playing VCD
+    -kdvd           (720x480 NTSC, 720x576 PAL) KDVD long-playing DVD
+
+Aspect ratios:
+
+    By default, the aspect ratio will be inferred from mplayer; if mplayer
+    displays the correct aspect for your video, you do not need to supply
+    an aspect ratio. If you want to supply one anyway, use these options:
+
+    -full           Same as -aspect 4:3
+    -wide           Same as -aspect 16:9
+    -panavision     Same as -aspect 235:100
+    -aspect WIDTH:HEIGHT
+        Custom aspect ratio. You may use any _whole_number_ ratio;
+        your video will be automatically "letterboxed" as necessary.
+
+Other options:
+  -config FILE      Include command-line options contained in FILE
+  -overwrite        Overwrite any existing output files with the specified name
+  -force            Force encoding, even if the existing file is already compliant
+  -version          Print out the tovid version number and exit
+  -help             Print out all usage information, including advanced options
+
+Example: Convert HomeMovie.avi to DVD widescreen format, output in HomeMovie.mpg:
+  tovid -dvd -wide -in HomeMovie.avi -out HomeMovie
+
+You may use a full URI as the input file (i.e., "http://foo.com/video.avi"),
+although this feature is still experimental.
+
+
+Use 'tovid -help' to see advanced options.
+
+```
+Las opciones avanzadas son como sigue:
+Video adjustment:
+
+  -vbitrate NUM
+    Maximum bitrate to use for video (in kbits/sec). Must be
+    within allowable limits for the given format. Overrides
+    default values.
+  -interlaced
+    Do interlaced encoding of the input video. Use this option if
+    your video is interlaced, and you want to preserve as much
+    picture quality as possible. Ignored for VCD.
+  -deinterlace (DEPRECATED)
+    Use this option if your source video is interlaced. You can
+    usually tell if you can see a bunch of horizontal lines when
+    you pause the video during playback. If you have recorded
+    a video from TV or your VCR, it may be interlaced. Use this
+    option to convert to progressive (non-interlaced) video. This
+    option is DEPRECATED, and will probably be ditched in favor of
+    interlaced encoding, which is better in almost every way.
+  -subtitles FILE
+    Get subtitles from FILE and encode them into the video.
+    WARNING: This hard-codes the subtitles into the video, and you
+    cannot turn them off while viewing the video. By default, no
+    subtitles are loaded. If your video is already compliant with the
+    chosen output format, it will be re-encoded to include the subtitles.
+  -type {live|animation|bw}
+    Optimize video encoding for different kinds of video. Use
+    'live' (default) for live-action video, use 'animation' for
+    cartoons or anime, and 'bw' for black-and-white video.
+    This option currently only has an effect with KVCD/KSVCD
+    output formats; other formats may support this in the future.
+  -safe PERCENT
+    Fit the video within a safe area defined by PERCENT. For example,
+    "-safe 90%" will scale the video to 90% of the width/height of
+    the output resolution, and pad the edges with a black border. Use
+    this if some of the picture is cut off when played on your TV.
+    The percent sign is optional.
+  -filters {none,denoise,contrast,all}
+    Apply post-processing filters to enhance the video. If your input
+    video is very high quality, use 'none' (default). If your input
+    video is grainy, use 'denoise'; if it looks washed out or faded,
+    use 'contrast'. You can use multiple filters separated by commas.
+    To apply all filters, use 'all'.
+
+Audio adjustment:
+
+  -normalize
+    Normalize the volume of the audio. Useful if the audio is too
+    quiet or too loud, or you want to make volume consistent for
+    a bunch of videos.
+  -abitrate NUM
+    Maximum bitrate to use for audio (in kbits/sec). Must be within
+    allowable limits for the given format. Ignored for VCD.
+    Default is 224. 
+
+Other options:
+
+  -debug             
+    Print extra debugging information to the log file. Useful in
+    diagnosing problems if they occur. This option also leaves
+    the log file (with a .log extension) in the directory after
+    encoding finishes.
+  -priority {low|medium|high}
+    Sets the main encoding process to the given priority. With
+    high priority, it may take other programs longer to load
+    and respond. With lower priority, other programs will be
+    more responsive, but encoding will usually take 30-40% longer.
+    The default is high priority.
+  -discsize NUM
+    This sets the desired target DVD/CD-R size in MB (2^10). Default
+    is 700 for CD, 4500 for DVD. Use higher values at your own risk.
+    Use 650 or lower if you plan to burn to smaller-capacity CDs.
+  -parallel
+    Will perform encode/rip processes in parallel using named
+    pipes. Should maximize CPU utilization and minimize disk
+    usage.
+  -update TIME
+    Print status updates at intervals of TIME. Argument may be any
+    valid argument to the *NIX 'sleep' utility. 10s prints updates
+    every 10 seconds; 1m prints them every minute. The default is
+    one per second.
+  -mplayeropts "OPTIONS"
+    Append OPTIONS to the mplayer command run during video encoding.
+    Use this if you want to add specific video filters (documented in
+    the mplayer manual page). Overriding some options will cause
+    encoding to fail, so use this with caution!
+
+```
+
+Los dos últimos argumentos deben ser el nombre del vídeo que quieras codificar (input)
+y el nombre que quieras usar como prefijo para la salida (output). Algunos ejemplos:
+
+: ``tovid -vcd -wide Batman.avi Batman_movie``
+Codifica el vídeo ``Batman.avi`` a resolución VCD, con relación de aspecto de
+pantalla ancha (16:9) conseguida por la inclusión de bandas negras arriba y
+abajo. La salida será Batman_movie.mpg``.
+
+: ``tovid -dvd -full -normalize The_Tick_01.avi Tick01``
+Codifica ``The_Tick_01.avi`` en Tick01.mpg`` usando la resolución de pantalla
+completa y formato DVD.  El audio se normaliza a un volumen constante (útil si
+tienes un lote de videos cada uno con un nivel sonoro distinto).
+
+: ``tovid Firefly1.avi Firefly_episode_1``
+Si no se especifica nada, la codificación por omisión es DVD 16:9 pantalla
+ancha. Aquí, ``Firefly1.avi`` será codificado en ``Firefly_episode_1.mpg``.
+
+
+Si necesitas codificar múltiples ficheros de entrada, usa ``tovid-batch``.
+La sintaxis es exactamente la misma que ``tovid`` excepto que no se da nombre 
+al fichero de salida; la salida tiene el mimo nombre que la entrada. Por ejemplo:
+
+: ``tovid-batch -dvd-vcd *.avi``
+Codifica todos los ficheros .avi en el directorio presente en
+resolución VCD-on-DVD.
+
+
+===Planes futuros===
+Esta sección no ha sido escrita todavía.
+

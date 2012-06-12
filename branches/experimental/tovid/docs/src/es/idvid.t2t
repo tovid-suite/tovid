@@ -1,0 +1,65 @@
+idvid
+
+
+idvid es un pequeño script en bash para identificar vídeos.
+
+===Prestaciones y capacidades===
+- Muestra la duración, resolución, cuadros por segundo, y otra información de un vídeo o 
+vídeos.
+- Identifica con qué formatos (VCD, SVCD, o DVD) cumplen el audio y el vídeo, y dice
+qué tipo de disco de vídeo podrías tostar.
+- Puede mostrar estadísticas en formato terso, fácil de analizar con otros scripts 
+o utilidades (la opción ``-terse`` de la línea de comando).
+
+===Utilización===
+idvid puede ejecutarse sobre un único fichero de vídeo o de una vez 
+sobre multiple ficheros. Acepta comodines al estilo de ``bash``, o puedes
+listar explícitamente cada uno de los ficheros. Usa la opción ``-terse`` para obtener
+una salida más concisa, apropiada para ser analizada por otros programas:
+
+: ``idvid Wonderfalls1.mpg``
+Muestra la información de identificación del fichero "Wonderfalls1.mpg".
+
+: ``idvid -terse Wonder*.mpg``
+Muestra concisamente la información de identificación de todos los ficheros
+.mpg files que comiencen por "Wonder".
+
+
+===Planes futuros===
+Ninguno de momento.
+
+
+
+===Prestaciones y capacidades===
+- Puede convertir lotes de imágenes,
+en casi cualquier formato, a fotos fijas que cumplen la norma MPEG-(S)VCD.
+
+
+===Utilización===
+
+Usage: makeslides [FORMAT] [IMAGES]
+
+Where:
+  FORMAT is one or more of the following:
+
+```
+  -ntsc (default)
+    Generate NTSC (704x480) output
+  -pal
+    Generate PAL (704x576) output
+
+  IMAGES is a single image or list of images to be
+    converted to still MPEGs. The output names will
+    be the same as the input name, with a .mpg extension.
+```
+
+Tras crear las fotos fijas, puedes pasar a su autoría a (S)VCD
+usando [makexml makexml.html] y la opción -slides``.
+
+
+===Planes futuros===
+No he confirmado si esto funciona para fotos fijas en DVD; puede que sí, pero
+el componente [makexml makexml.html] todavía no lo soporta.
+
+
+
