@@ -181,7 +181,7 @@ class BuildTovidInit (Command):
 
 # Build tovid-init with regular 'build' command
 build.sub_commands.append(('build_tovid_init', None))
-#build.sub_commands.append(('build_docs', None))
+build.sub_commands.append(('build_docs', None))
 
 # The actual setup
 setup(
