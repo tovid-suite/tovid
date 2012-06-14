@@ -39,7 +39,7 @@ def svn_version():
 # Current SVN version number
 _tovid_version = svn_version()
 # Official release number
-#_tovid_version = '0.34'
+#_tovid_version = '0.35'
 
 
 import os
@@ -181,7 +181,7 @@ class BuildTovidInit (Command):
 
 # Build tovid-init with regular 'build' command
 build.sub_commands.append(('build_tovid_init', None))
-#build.sub_commands.append(('build_docs', None))
+build.sub_commands.append(('build_docs', None))
 
 # The actual setup
 setup(
