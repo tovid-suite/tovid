@@ -91,7 +91,8 @@ USER_SUBMENU_LEN=false
 SUBMENU_LEN=(10)
 MAX_MENU_LEN=""
 TARGET=dvd
-FRAME_RATE="30000/1001"
+FRAME_RATE=29.970 # for bc calc.  mjpegtools also converts this to 30000/1001
+ff_frame_rate="30000/1001"
 VIDSIZE=720x480
 MENU_TITLE="My Video Collection"
 STATIC=false
@@ -275,6 +276,7 @@ PIPE_FORMAT=""
 IMG_DEPTH="-depth 8" # when converting to png: ppmtoy4m needs 8 bit
 AUDIO_EXT="ac3"
 SAMPLERATE="48000"
+AUDIO_OPTS="-ab 224k -ar $SAMPLERATE -acodec $AUDIO_EXT"
 MPLEX_FORMAT="8"
 FROM_GUI=false # needed to disable tput (colour output) in GUI
 TOVID_PREFIX=$(tovid -prefix)
@@ -1784,10 +1786,10 @@ quick_menu()
     # run the commands to make the final menu m2v video
     PAD_CMD=(ffmpeg -async 1 $qm_pre_seek \
     -t "$QM_MENU_TIME" -i "$QUICK_MENU_FILE" $qm_post_seek \
-    -an -s $QM_FRAMESIZE $PADDING -r $FRAME_RATE \
+    -an -s $QM_FRAMESIZE $PADDING -r $ff_frame_rate \
     $PAD_CLR -f yuv4mpegpipe -vcodec rawvideo -y "$yuvout")
     QUICKMENU_CMD=(ffmpeg -f yuv4mpegpipe \
-    -i "$yuvout" -an -s $VIDSIZE -f mpeg2video -r $FRAME_RATE \
+    -i "$yuvout" -an -s $VIDSIZE -f mpeg2video -r $ff_frame_rate \
     -b 7000k -maxrate 8000k -bufsize 224KiB \
     $aspect "${ffmpeg_filter[@]}" -y "$WORK_DIR/intro.m2v")
     "${PAD_CMD[@]}" < /dev/null  > "${LOG_FILE}-1.tmp" 2>&1 &
@@ -1876,7 +1878,7 @@ make_dummy()
     convert  -resize $VIDSIZE! xc:"#101010" "$WORK_DIR/dummy.jpg"
     ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l 30 \
     -L 1 -b1 -j "$WORK_DIR/dummy.jpg")
-    ENC_CMD2=(ffmpeg -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
+    ENC_CMD2=(ffmpeg -f yuv4mpegpipe -i - -an -r $ff_frame_rate -s $VIDSIZE \
     $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
     print2log "Running: ${ENC_CMD1[@]} | ${ENC_CMD2[@]}"
     if ! ${ENC_CMD1[@]} 2>> "${LOG_FILE}.tmp"  |
@@ -5170,7 +5172,8 @@ if [ $TV_STANDARD = "ntsc" ]; then
         TILE_ARRAY=("${TILE_1777[@]}")
     fi
     VIDSIZE="720x480"
-    FRAME_RATE="30000/1001"
+    FRAME_RATE=29.970
+    ff_frame_rate="30000/1001"
     if [[ $SC_AR = 133 ]]; then
         SHOWCASE_SIZE=384x256
         SM_SHOWCASE_SIZE=288x192
@@ -5372,7 +5375,6 @@ if $SHOWCASE; then
 fi
 # easier to have non transparent showcase use the transparent block
 if $SHOWCASE && ! $TRANSPARENT; then TRANSPARENT=:; fi
-AUDIO_OPTS="-ab 224k -ar $SAMPLERATE -acodec $AUDIO_EXT"
 # spumux and dvdauthor vars
 TITLES_VID_TAG="<video format=\"$TV_STANDARD\""
 $WIDE_SCREEN && TITLES_VID_TAG=" $TITLES_VID_TAG widescreen=\"$WIDESCREEN\""
@@ -5463,7 +5465,7 @@ if $SINGLE_SLIDESHOW && ! $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
     # FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB -aspect 4:3"
    #MENU_N=$(bc_math "$FRAME_RATE * ${MENU_LEN[MENU_NUM-1]}" int)
     #ffmpeg -f image2 -loop_input -t $MENU_LEN -i "$WORK_DIR/image_stack.png" \
-    #-an -r $FRAME_RATE -s $VIDSIZE $FFMPEG_OPTS \
+    #-an -r $ff_frame_rate -s $VIDSIZE $FFMPEG_OPTS \
     #-f mpeg2video -y "$WORK_DIR/intro.m2v"
 fi
 # values to use for the blur mask
@@ -7231,7 +7233,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
         done
     done
     IMGENC_CMD=(ffmpeg -f yuv4mpegpipe -i - -s $VIDSIZE \
-    $SS_FFMOPTS -r $FRAME_RATE -bf 2 -y "$WORK_DIR/slideshow.m2v")
+    $SS_FFMOPTS -r $ff_frame_rate -bf 2 -y "$WORK_DIR/slideshow.m2v")
     for p in ${!MIX_IN[@]}; do
         if [[ "${F2BIN[p]}" = "yes" ]]; then
             BINNING_CMD=(convert "${MIX_IN[p]}" -depth 8 \
@@ -7388,8 +7390,8 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
          -acodec pcm_s16le -y $WORK_DIR/slideshow.wav)
     else
         # generate silence
-        BGAUDIO_CMD=(ffmpeg -f s16le -ar 48000 -t $bgaudio_time -i /dev/zero
-        -ar 48000 -ac 2 -acodec pcm_s16le -y $WORK_DIR/slideshow.wav)
+        BGAUDIO_CMD=(ffmpeg -f s16le -ar 48000 -i /dev/zero -ar 48000 \
+        -ac 2 -t $bgaudio_time -acodec pcm_s16le -y $WORK_DIR/slideshow.wav)
     fi
     echo
     echo "Encoding audio to wav with: ${BGAUDIO_CMD[@]}" | format_output | \
@@ -8839,7 +8841,7 @@ if $SUB_MENU; then
                 TOYUV_CMD=(ppmtoy4m -v 0 -n $smframes -A $PIXEL_AR -F $YUV_FR \
                 -I p -S 420mpeg2 -r)
                 IMGENC_CMD=(ffmpeg -f yuv4mpegpipe -i - -an \
-                -r $FRAME_RATE -s $VIDSIZE $FFMPEG_OPTS \
+                -r $ff_frame_rate -s $VIDSIZE $FFMPEG_OPTS \
                 -y "$WORK_DIR/menu$i.m2v")
                 yecho ""
                 print2log "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo |
@@ -8937,7 +8939,7 @@ if $SUB_MENU; then
                 IMG_STREAM_CMD2=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A $PIXEL_AR -F $YUV_FR -I p \
                 -S 420mpeg2 -r)
                 ENC_CMD1=(ffmpeg -f yuv4mpegpipe -i - \
-                -r $FRAME_RATE -s $VIDSIZE $FFMPEG_OPTS \
+                -r $ff_frame_rate -s $VIDSIZE $FFMPEG_OPTS \
                 -y "$WORK_DIR/menu$i.m2v")
                 print2log "Running ${IMG_STREAM_CMD1[@]} | ${IMG_STREAM_CMD2[@]} | \
                 ${ENC_CMD1[@]}"| format_output | tee -a "$LOG_FILE" 2>&1
@@ -8994,7 +8996,7 @@ if $SUB_MENU; then
                 PPM_CMD=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A $PIXEL_AR -I p \
                 -F $YUV_FR -S 420mpeg2 -r)
                 FFM_CMD=(ffmpeg $PIPE_FORMAT -i - \
-                -an -r $FRAME_RATE -s $VIDSIZE \
+                -an -r $ff_frame_rate -s $VIDSIZE \
                 $FFMPEG_OPTS -y "$WORK_DIR/menu${i}.m2v")
                 yecho "Running ${PPM_CMD[@]} | ${FFM_CMD[@]}" | format_output
                 cat "$WORK_DIR/polaroid_stack${i}.ppm" |
@@ -9469,7 +9471,7 @@ if ! $QUICK_MENU && $DO_MENU; then
     TOYUV_CMD=(ppmtoy4m -v 2 -n $PPM_FRAMES -A $PIXEL_AR -I p -F $YUV_FR \
     -S 420mpeg2 -r)
     IMGENC_CMD=(ffmpeg $PIPE_FORMAT -i - -an \
-    -r $FRAME_RATE -s $VIDSIZE $FFMPEG_OPTS \
+    -r $ff_frame_rate -s $VIDSIZE $FFMPEG_OPTS \
     -y $WORK_DIR/intro.m2v)
     #print2log "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo | ${IMGENC_CMD[@]}" |
     print2log "Running:"
@@ -9976,8 +9978,8 @@ BG_AUDIO_LENGTH="-t $MENU_ATIME"
 if $DO_MENU; then
     if [[ -z "$BG_AUDIO" || "$BG_AUDIO" = "none" ]]; then # use silence
         ! $SWITCHED && AUDIO_FADE=false # do not fade silence
-        BGAUDIO_CMD=(ffmpeg -f s16le -ar 48000 -t $MENU_ATIME -i /dev/zero
-        -ar 48000 -ac 2 -acodec pcm_s16le -y $WORK_DIR/intro.wav)
+        BGAUDIO_CMD=(ffmpeg -f s16le -ar 48000 -i /dev/zero -ar 48000 \
+        -t $MENU_ATIME -ac 2 -acodec pcm_s16le -y $WORK_DIR/intro.wav)
         print2log "Running ${BGAUDIO_CMD[@]}"
         "${BGAUDIO_CMD[@]}" 2>&1 | pipe2log ffmpeg
         if [[ ! -s "$WORK_DIR/intro.wav" ]]; then
@@ -9997,7 +9999,7 @@ if $DO_MENU; then
         else
             pipe_prog=ffmpeg
             BGAUDIO_CMD=(ffmpeg -y -async 1 -ss $BG_AUDIO_SEEK \
-            $BG_AUDIO_LENGTH -i "$BG_AUDIO" -r $FRAME_RATE -ar 48000 \
+            $BG_AUDIO_LENGTH -i "$BG_AUDIO" -r $ff_frame_rate -ar 48000 \
             -acodec pcm_s16le $WORK_DIR/intro.wav)
         fi
         print2log "Running ${BGAUDIO_CMD[@]}"
