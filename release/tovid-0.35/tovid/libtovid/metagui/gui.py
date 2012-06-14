@@ -264,13 +264,16 @@ class Application (Widget):
             self.toolbar, text="Run %s now" % self.program, command=self.execute)
         save_button = tk.Button(
             self.toolbar, text="Save script", command=self.prompt_save_script)
-        load_button = tk.Button(
-            self.toolbar, text="Load script", command=self.prompt_load_script)
+        #FIXME disabled until load_args is refactored
+        # see http://code.google.com/p/tovid/issues/detail?id=121
+        #load_button = tk.Button(
+        #    self.toolbar, text="Load script", command=self.prompt_load_script)
         exit_button = tk.Button(
             self.toolbar, text="Exit", command=exit_function)
         # Pack the buttons
         config_button.pack(anchor='w', side='left', fill='x')
-        load_button.pack(anchor='w', side='left', fill='x')
+        #FIXME disabled until load_args is refactored
+        #load_button.pack(anchor='w', side='left', fill='x')
         run_button.pack(anchor='w', side='left', fill='x', expand=True)
         save_button.pack(anchor='w', side='left', fill='x')
         exit_button.pack(anchor='e', side='right', fill='x')
@@ -279,8 +282,9 @@ class Application (Widget):
         # hack to allow wizard to use less clicks and remove uneeded commmands
         if os.getenv('METAGUI_WIZARD'):
             save_button.pack_forget()
-            load_button.pack_forget()
-            load_button.pack(anchor='w', side='left', fill='x', expand=True)
+            #FIXME disabled until load_args is refactored
+            #load_button.pack_forget()
+            #load_button.pack(anchor='w', side='left', fill='x', expand=True)
             save_button.pack(anchor='w', side='left', fill='x', expand=True)
             save_button.config(command=self.save_exit, text='Save to wizard')
             run_button.pack_forget()
