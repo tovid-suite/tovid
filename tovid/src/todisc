@@ -91,7 +91,7 @@ USER_SUBMENU_LEN=false
 SUBMENU_LEN=(10)
 MAX_MENU_LEN=""
 TARGET=dvd
-FRAME_RATE=29.970
+FRAME_RATE="30000/1001"
 VIDSIZE=720x480
 MENU_TITLE="My Video Collection"
 STATIC=false
@@ -1788,7 +1788,7 @@ quick_menu()
     $PAD_CLR -f yuv4mpegpipe -vcodec rawvideo -y "$yuvout")
     QUICKMENU_CMD=(ffmpeg -f yuv4mpegpipe \
     -i "$yuvout" -an -s $VIDSIZE -f mpeg2video -r $FRAME_RATE \
-    $STANDARD $TV_STANDARD -b 7000k -maxrate 8000k -bufsize 224KiB \
+    -b 7000k -maxrate 8000k -bufsize 224KiB \
     $aspect "${ffmpeg_filter[@]}" -y "$WORK_DIR/intro.m2v")
     "${PAD_CMD[@]}" < /dev/null  > "${LOG_FILE}-1.tmp" 2>&1 &
     "${QUICKMENU_CMD[@]}" < /dev/null  > "${LOG_FILE}-2.tmp" 2>&1 &
@@ -1877,7 +1877,7 @@ make_dummy()
     ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l 30 \
     -L 1 -b1 -j "$WORK_DIR/dummy.jpg")
     ENC_CMD2=(ffmpeg -f yuv4mpegpipe -i - -an -r $FRAME_RATE -s $VIDSIZE \
-    $STANDARD $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
+    $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
     print2log "Running: ${ENC_CMD1[@]} | ${ENC_CMD2[@]}"
     if ! ${ENC_CMD1[@]} 2>> "${LOG_FILE}.tmp"  |
     ${ENC_CMD2[@]} 2>&1 |pipe2log ffmpeg; then
@@ -3772,11 +3772,11 @@ else
     SS_ASPECT="-aspect 4:3"
 fi
 # ffmpeg now uses -standard rather than -tvstd (honour both for now)
-if grep -q -- "-standard" <<< "$FF_HELP"; then
-    STANDARD="-standard"
-else
-    STANDARD="-tvstd"
-fi
+#if grep -q -- "-standard" <<< "$FF_HELP"; then
+#    STANDARD="-standard"
+#else
+#    STANDARD="-tvstd"
+#fi
 
 # ffmpeg will not allow setting -pix_fmt before the -i if  > 0.8.x
 make_dummy
@@ -5170,7 +5170,7 @@ if [ $TV_STANDARD = "ntsc" ]; then
         TILE_ARRAY=("${TILE_1777[@]}")
     fi
     VIDSIZE="720x480"
-    FRAME_RATE=29.970
+    FRAME_RATE="30000/1001"
     if [[ $SC_AR = 133 ]]; then
         SHOWCASE_SIZE=384x256
         SM_SHOWCASE_SIZE=288x192
@@ -5463,7 +5463,7 @@ if $SINGLE_SLIDESHOW && ! $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
     # FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB -aspect 4:3"
    #MENU_N=$(bc_math "$FRAME_RATE * ${MENU_LEN[MENU_NUM-1]}" int)
     #ffmpeg -f image2 -loop_input -t $MENU_LEN -i "$WORK_DIR/image_stack.png" \
-    #-an -r $FRAME_RATE -s $VIDSIZE $STANDARD $TV_STANDARD $FFMPEG_OPTS \
+    #-an -r $FRAME_RATE -s $VIDSIZE $FFMPEG_OPTS \
     #-f mpeg2video -y "$WORK_DIR/intro.m2v"
 fi
 # values to use for the blur mask
@@ -8839,7 +8839,7 @@ if $SUB_MENU; then
                 TOYUV_CMD=(ppmtoy4m -v 0 -n $smframes -A $PIXEL_AR -F $YUV_FR \
                 -I p -S 420mpeg2 -r)
                 IMGENC_CMD=(ffmpeg -f yuv4mpegpipe -i - -an \
-                -r $FRAME_RATE -s $VIDSIZE $STANDARD $TV_STANDARD $FFMPEG_OPTS \
+                -r $FRAME_RATE -s $VIDSIZE $FFMPEG_OPTS \
                 -y "$WORK_DIR/menu$i.m2v")
                 yecho ""
                 print2log "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo |
@@ -8937,7 +8937,7 @@ if $SUB_MENU; then
                 IMG_STREAM_CMD2=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A $PIXEL_AR -F $YUV_FR -I p \
                 -S 420mpeg2 -r)
                 ENC_CMD1=(ffmpeg -f yuv4mpegpipe -i - \
-                -r $FRAME_RATE -s $VIDSIZE $STANDARD $TV_STANDARD $FFMPEG_OPTS \
+                -r $FRAME_RATE -s $VIDSIZE $FFMPEG_OPTS \
                 -y "$WORK_DIR/menu$i.m2v")
                 print2log "Running ${IMG_STREAM_CMD1[@]} | ${IMG_STREAM_CMD2[@]} | \
                 ${ENC_CMD1[@]}"| format_output | tee -a "$LOG_FILE" 2>&1
@@ -8995,7 +8995,7 @@ if $SUB_MENU; then
                 -F $YUV_FR -S 420mpeg2 -r)
                 FFM_CMD=(ffmpeg $PIPE_FORMAT -i - \
                 -an -r $FRAME_RATE -s $VIDSIZE \
-                $STANDARD $TV_STANDARD $FFMPEG_OPTS -y "$WORK_DIR/menu${i}.m2v")
+                $FFMPEG_OPTS -y "$WORK_DIR/menu${i}.m2v")
                 yecho "Running ${PPM_CMD[@]} | ${FFM_CMD[@]}" | format_output
                 cat "$WORK_DIR/polaroid_stack${i}.ppm" |
                 "${PPM_CMD[@]}" | "${FFM_CMD[@]}" 2>&1 | strings >> "$LOG_FILE"
@@ -9469,7 +9469,7 @@ if ! $QUICK_MENU && $DO_MENU; then
     TOYUV_CMD=(ppmtoy4m -v 2 -n $PPM_FRAMES -A $PIXEL_AR -I p -F $YUV_FR \
     -S 420mpeg2 -r)
     IMGENC_CMD=(ffmpeg $PIPE_FORMAT -i - -an \
-    -r $FRAME_RATE -s $VIDSIZE $STANDARD $TV_STANDARD $FFMPEG_OPTS \
+    -r $FRAME_RATE -s $VIDSIZE $FFMPEG_OPTS \
     -y $WORK_DIR/intro.m2v)
     #print2log "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo | ${IMGENC_CMD[@]}" |
     print2log "Running:"
