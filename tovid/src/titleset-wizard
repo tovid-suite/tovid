@@ -649,58 +649,59 @@ class Page5(WizardPage):
         wizard = self.master
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         text = '''
-        Edit or reorder your selections using the listbox below.  (Note
-        that menu link titles as shown in listbox are saved as titles
-        in the "Root menu" options.)  If you are happy with your saved
-        options, run the script now , or exit and run it later.
-        You can run it later with:
+        Now you can run your command in this gui using the [Run script] button.
+
+        **********
+        Note:  The ability to go back and edit your titlesets has been disabled.
+        If you want to change anything you can edit the saved script directly
+        with a text editor.
+        The easiest thing to do after making changes is to exit the gui and
+        run the saved script from the bash command line with:
 
         bash %s
+        **********
 
-        You may edit the file with a text editor but do not 
-        change the headers (first 3 lines of text) or change the 
-        order of the sections:
-
-        1. General opts  2. Root menu (-vmgm)  3. Titleset menus (-titleset)
-
-        You may reload the file using the command:
-
-        tovid titlesets %s
-
-        Edit your selections, or press [Run script now] or [Exit].
-        ''' % (self.script_file, self.script_file)
+        If you are happy with  your selections, press [Run script], or
+        otherwise press [Exit].
+        ''' % self.script_file
         text = trim(text)
         self.heading_label = Label(self.frame, text='Finished!',
                                       font=wizard.lrg_font)
-        self.label = PrettyLabel(self.frame, text,
-                      wizard.font, height=18)
+        self.label = Label(self.frame, text=text,
+                      font=wizard.font, justify='left')
         self.heading_label.pack(fill='both', expand=1, anchor='nw', pady=5)
         self.label.pack(fill='both', expand=1, anchor='nw')
+
+        # FIXME disabled listbox and ability to edit until 'load_args' fixed
+        # See http://code.google.com/p/tovid/issues/detail?id=121
+        # Code has been left intact, the widget just doesn't get packed.
+        # Yeah, I know this is wasteful and not the right way to do it :)
         # create the listbox (note that size is in characters)
         frame_text = "Edit items, or add, remove or drag/drop titlesets"
         frame2 = LabelFrame(self.frame, text=frame_text)
         button_frame = Frame(frame2)
-        button_frame.pack(side='bottom', fill=X, expand=1, anchor='sw')
+        #button_frame.pack(side='bottom', fill=X, expand=1, anchor='sw')
         button2 = Button(button_frame, text='Add titleset',
                                  command=self.add_titleset)
-        button2.pack(side='left', anchor='w')
+        #button2.pack(side='left', anchor='w')
         button1 = Button(button_frame, text='Edit', command=self.rerun_options)
-        button1.pack(side='left', fill='x', expand=1)
+        #button1.pack(side='left', fill='x', expand=1)
         button3 = Button(button_frame, text='Remove titleset',
                                  command=self.remove_titleset)
-        button3.pack(side='right', anchor='e')
+        #button3.pack(side='right', anchor='e')
         self.listbox = Listbox(frame2, width=50, exportselection=0)
-        self.listbox.pack(side='left', fill='both', expand=1)
+        #self.listbox.pack(side='left', fill='both', expand=1)
         self.listbox.bind('<Double-Button-1>', self.rerun_options)
         # create a vertical scrollbar to the right of the listbox
         yscroll = Scrollbar(frame2, command=self.listbox.yview,
                                              orient='vertical')
         yscroll.pack(side='right', fill='y', anchor='ne')
         self.listbox.configure(yscrollcommand=yscroll.set)
-        frame2.pack(side='left', fill='y', expand=False)
+        # FIXME disable listbox
+        #frame2.pack(side='left', fill='y', expand=False)
         # the 2nd index contains the titleset titles (VMGM menu)
-        self.refill_listbox(self.listbox, wizard.commands[1])
-        self.listbox.selection_set('end')
+        #self.refill_listbox(self.listbox, wizard.commands[1])
+        #self.listbox.selection_set('end')
         # set next button to run gui etc before moving forward
         wizard.next_button.configure\
           (command=self.page_controller, text='Run script')
@@ -958,7 +959,7 @@ class Page5(WizardPage):
     def load_project(self):
         """Load a saved project script for editing with the wizard and GUI
         """
-        self.heading_label.configure(text='Editing a saved project')
+        #self.heading_label.configure(text='Editing a saved project')
         error_msg = 'This is not a saved tovid project script.  ' + \
           'Do you want to try to load it anyway?'
         if not '# tovid project script\n' in open(argv[1], 'r'):
