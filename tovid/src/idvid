@@ -630,6 +630,8 @@ function idvid_main ()
     esac
 
     # Find matching video profile(s)
+    # aconv uses MPG2 not MPEG2
+    test "$ID_VIDEO_FORMAT" = "MPG2" && ID_VIDEO_FORMAT=MPEG2
     # Test for VCD/DVD-VCD MPEG1 compliance
     if test "$ID_VIDEO_FORMAT" = "MPEG1" && test "$ID_VIDEO_BITRATE" -le "1856000"; then
         # VCD compliance
