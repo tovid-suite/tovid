@@ -29,9 +29,6 @@ Where 'command' is one of the following:
     chapters    A GUI to set chapter points with mplayer          (new)
 
 
-    (Note: deprecated script still available for now with the command:
-    postproc (Formerly 'postproc')
-
 The following general options are also available:
     --prefix | -prefix      Return the tovid install prefix
     --version | -version    Return the tovid version
@@ -55,7 +52,6 @@ from ConfigParser import ConfigParser
 _scripts = {
     'id': 'idvid',
     'dvd': 'makedvd',
-    'postproc': 'postproc',
     'disc': 'todisc',
     'gui': 'todiscgui',
     'mpg': 'makempg',
@@ -200,7 +196,7 @@ class Frontend:
         # and split into a list of individual options using shell syntax
         options = config.get(command, 'options')
         options = shlex.split(options)
-        print("Read options from %s:" % filename)
+        sys.stderr.write("Read options from %s:\n" % filename)
         print(' '.join(options))
         return options
 
