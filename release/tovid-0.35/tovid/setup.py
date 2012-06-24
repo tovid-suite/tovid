@@ -220,7 +220,6 @@ setup(
             # Bash scripts
             'src/idvid',
             'src/makedvd',
-            'src/postproc',
             'src/todisc',
             'src/todisc-fade-routine',
             'src/makempg',
