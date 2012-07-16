@@ -414,8 +414,8 @@ function countdown()
     count=$(seq 1 $LAST)
     for _CNTR in $(sort -nr <<< "$count")
     do
-        echo -n -e " in $_CNTR seconds...\r";
-        sleep 1s;
+        echo -n -e " in $_CNTR seconds...or press <ENTER>\r";
+        read  -t 1 && break;
     done
 }
 
@@ -451,7 +451,6 @@ send_to_log()
     done
     printf "\n"
 }
-
 
 # ******************************************************************************
 #
@@ -544,14 +543,24 @@ else
 # tovid preferences
 # Configures working directory for all scripts and
 # output directory for the makempg script
+# also used for setting ffmpeg/avconv program
 #WORKING_DIR=/tmp
 #OUTPUT_DIR=/video/outfiles
+#TOVID_FFMPEG=ffmpeg
 EOF`
     printf "$PREFS_CONTENTS\n" > "$USER_PREFS"
 fi
 # if preferences vars are set in the environment, use those (takes precedence).
 [[ $TOVID_WORKING_DIR ]] && WORKING_DIR="$TOVID_WORKING_DIR"
 [[ $TOVID_OUTPUT_DIR ]] && OUTPUT_DIR="$TOVID_WORKING_DIR"
+[[ $TOVID_FFMPEG_CMD ]] && TOVID_FFMPEG="$TOVID_FFMPEG_CMD"
+# FFmpeg is the var used for ffmpeg by all scripts needing ffmpeg/avconv
+# set default ffmpeg if none set in preferences file
+# if avconv but not ffmpeg is installed, use that unless env var set
+! hash ffmpeg 2>/dev/null && hash avconv 2>/dev/null && \
+  TOVID_FFMPEG=${TOVID_FFMPEG:=avconv}
+# finally, default to ffmpeg if non of the above override it
+FFmpeg=${TOVID_FFMPEG:=ffmpeg}
 
 # stdbuf (coreutils>=7.5) is useful to todisc and makempg, use it if present
 hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
@@ -579,7 +588,7 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
     # *************************************************************************
     # Required Dependencies
     # *************************************************************************
-    core="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
+    core="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv"
 
     # *************************************************************************
     # Optional Dependencies
@@ -618,5 +627,9 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
 
     # Quit and complain if ANY core dependency is missing.
     assert_dep "$core" "You are missing CORE tovid dependencies!"
+    # ffmpeg is also a part of core deps, but is taken care of here
+    ffmpeg_alts="Use either ffmpeg (ffmpeg.org) or avconv (libav.org)."
+    ffmpeg_pref="To use avconv, in $USER_PREFS use: TOVID_FFMPEG=avconv "
+    assert_dep $FFmpeg "You are missing $FFmpeg ! $ffmpeg_alts ${ffmpeg_pref}."
 
 # End tovid-init
