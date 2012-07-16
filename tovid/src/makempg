@@ -563,7 +563,7 @@ function get_args()
             "-downmix" )
                 DOWNMIX=:
                 ;;
-            "-ffmpeg" )
+            "-ffmpeg" | "-avconv" )
                 USE_FFMPEG=:
                 ;;
             "-nofifo" )
@@ -759,7 +759,7 @@ EOF`
     KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION \+ 1)
     ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / $V_DURATION" | bc)
     if $USE_FFMPEG; then
-        BACKEND="ffmpeg"
+        BACKEND="$FFmpeg"
     else
         BACKEND="mpeg2enc"
     fi
@@ -883,7 +883,7 @@ if $USE_FFMPEG && $DO_SUBS; then
 fi
 
 if ((USE_FILTERS)) && $USE_FFMPEG; then
-    usage_error "Sorry, you are using ffmpeg to encode
+    usage_error "Sorry, you are using $FFmpeg to encode
     video, either by choice or another option requires it.
     You can not use -filters with -ffmpeg"
 fi
@@ -1079,7 +1079,7 @@ yecho "Run 'tail -f \"$LOG_FILE\"' in another terminal to monitor the log"
 
 # If multiple CPUs are available, do multithreading in mpeg2enc
 if $MULTIPLE_CPUS; then
-    yecho "Multiple CPUs detected; mpeg2enc and ffmpeg will use multithreading."
+    yecho "Multiple CPUs detected; mpeg2enc and $FFmpeg will use multithreading."
     MTHREAD="--multi-thread 2"
     FF_THREAD="-threads 4"
 else
@@ -1622,7 +1622,7 @@ else
 fi
 
 # ffmpeg's -vf aspect is more dependable than -aspect, if ffmpeg is new enough
-FF_FILTERS=$(ffmpeg -filters 2>&1)
+FF_FILTERS=$($FFmpeg -filters 2>&1)
 # newer ffmpeg's use setdar= and setsar=
 if grep -qw ^setdar <<< "$FF_FILTERS"; then
     FF_ASPECT="setdar="
@@ -1633,7 +1633,7 @@ else
     FF_ASPECT='-aspect '
 fi
 # newer ffmpegs using filters use "-vf"
-FF_HELP=$(ffmpeg -h 2>&1)
+FF_HELP=$($FFmpeg -h 2>&1)
 if grep -qw -- -vf <<< "$FF_HELP"; then
     VF="-vf"
 # somewhat older is "-vfilters"
@@ -1815,7 +1815,7 @@ if $DOWNMIX; then
     done
     testfile="/tmp/$(date +%s).mpg"
     track_key=${AUDIO_TRACK[max_key]}
-    ffm_cmd=( ffmpeg -i "$IN_FILE" $FF_THREAD -ss 2 -ab 224k -ac 2 \
+    ffm_cmd=( $FFmpeg -i "$IN_FILE" $FF_THREAD -ss 2 -ab 224k -ac 2 \
      -target ntsc-dvd -b 6000k -vframes 1 $VIDEO_MAP \
      -map ${AIDS[track_key-1]//./:} "$testfile")
     yecho "Running ${ffm_cmd[@]}"
@@ -1880,8 +1880,8 @@ if $USE_FFMPEG; then
     # try to get -quality 9 between quality 8 and 10
     if ((VID_QUALITY == 9)); then
         FF_ADD_ARGS="-trellis 1"
-        ! ffmpeg -h 2>&1 | grep -q trellis && usage_error \
-        "Your ffmpeg is too old to have the '-trellis' switch.  Use a -quality setting other than '9'."
+        ! $FFmpeg -h 2>&1 | grep -q trellis && usage_error \
+        "Your $FFmpeg is too old to have the '-trellis' switch.  Use a -quality setting other than '9'."
     fi
     [[ $TARGET = "DVD-VCD" ]] && FF_ADD_ARGS="$FF_ADD_ARGS -g 12" # experiment FIXME
 
@@ -1932,10 +1932,10 @@ fi
 if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
     chan1=${AUDIO_TRACK[0]}
     yecho
-    yecho "Using ffmpeg to encode audio and video."
+    yecho "Using $FFmpeg to encode audio and video."
 
     FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
-    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
+    FF_ENC_CMD="$PRIORITY $FFmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
         $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
         $FF_SIZE $VF_FILTERS $OLD_OPTS $FF_CHANNEL_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
@@ -1948,7 +1948,7 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; the
     if $FAKE; then
         :
     else
-        file_output_progress "$OUT_FILENAME" "Encoding with ffmpeg"
+        file_output_progress "$OUT_FILENAME" "Encoding with $FFmpeg"
         wait
     fi
     yecho
@@ -1979,7 +1979,7 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
-    AUDIO_CMD=($PRIORITY ffmpeg $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${STREAM_CHANS[@]}")
+    AUDIO_CMD=($PRIORITY $FFmpeg $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${STREAM_CHANS[@]}")
     yecho "${AUDIO_CMD[@]}"
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     run_audio_cmd()
@@ -2011,7 +2011,7 @@ else
         AUDIO_IN_FILE[1]="${AUDIO_WAV[0]}"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
-        AUDIO_CMD=( $PRIORITY ffmpeg -y $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE -acodec pcm_s16le "${AUDIO_WAV_CHANS[@]}" )
+        AUDIO_CMD=( $PRIORITY $FFmpeg -y $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE -acodec pcm_s16le "${AUDIO_WAV_CHANS[@]}" )
 
         # Generate or dump audio
         yecho "Normalizing the audio stream${s}."
@@ -2034,7 +2034,7 @@ else
         yecho
     fi
 
-    AUDIO_ENC=( $PRIORITY ffmpeg )
+    AUDIO_ENC=( $PRIORITY $FFmpeg )
 
     if $GENERATE_AUDIO; then
         # Read input from /dev/zero to generate a silent audio file
@@ -2112,7 +2112,7 @@ else
     fi
     VID_PLAY_CMD="$PRIORITY $MPLAYER -nomsgcolor $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $VF_FILTERS $OLD_OPTS -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="$FFmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $VF_FILTERS $OLD_OPTS -y \"$VIDEO_STREAM\""
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
