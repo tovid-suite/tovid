@@ -6,13 +6,6 @@ Video disc authoring software
 
 This file contains configuration and installation instructions for tovid.
 
-!!!!
-NOTE: Prior releases of tovid used autoconf and automake, but these will
-be discontinued in a future release. As of tovid-0.33, setup.py is the
-recommended installation method.
-!!!!
-
-
 =====================================================
 INSTALLING FROM DISTRIBUTED SOURCE (*.tar.gz)
 =====================================================
@@ -24,6 +17,16 @@ then do:
     $ su -c './setup.py install'
     or
     $ sudo ./setup.py install
+
+If you want to install to somewhere other than /usr/local, you can use:
+    $ su -c './setup.py install --prefix=/opt' for example.
+Note: with some versions of python's distutils this will by default install
+modules to .../site-packages rather than .../dist-packages even if that is
+where your system's python looks for them.  See:
+https://bugs.launchpad.net/ubuntu/+source/python2.6/+bug/362570
+As a workaround, if you are using --prefix you can add:
+ --install-layout=deb .
+
 
 If you want to uninstall tovid, do this:
 
