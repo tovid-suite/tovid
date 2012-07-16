@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#set -u
 
 ME="[idvid]:"
 . tovid-init 2>/dev/null ||
@@ -8,7 +7,6 @@ echo -e "'tovid-init' not found.  Was tovid improperly installed?"
 echo -e "Or are you trying to run the script directly?"
 echo -e "Please run idvid as:\ntovid id OPTIONS"
 exit 1 ; }
-
 # idvid
 # Part of the tovid suite
 # =======================
@@ -140,9 +138,9 @@ function get_info ()
             echo "Identifying video with ffmpeg..."
             echo $SEPARATOR
             # ffmpeg puts its output on standard error
-            ffmpeg -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
+            $FFmpeg -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
         else
-            ffmpeg -i "$INFILE" >> "$SCRATCH_FILE" 2>&1
+            $FFmpeg -i "$INFILE" >> "$SCRATCH_FILE" 2>&1
         fi
     fi
     # Identify video using tcprobe
@@ -319,7 +317,7 @@ function get_info ()
                 wavs=( "${wavs[@]}" "$TMP_DIR/$i.wav" )
             done
             for r in ${!tracks[@]}; do
-                test_tracks[r]="$(ffmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[r]} -y ${wavs[r]} 2>&1)"
+                test_tracks[r]="$($FFmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[r]} -y ${wavs[r]} 2>&1)"
                 if grep -q Unsupported <<< "${test_tracks[r]}"; then
                     tracks[r]="Unsupported"
                 fi
@@ -860,7 +858,7 @@ EOF`
 
 # See what programs are available for doing identification
 MPLAYER=$(type -p mplayer)
-FFMPEG=$(type -p ffmpeg)
+FFMPEG=$(type -p $FFmpeg)
 TCPROBE=$(type -p tcprobe)
 
 

@@ -70,7 +70,8 @@ Two configuration files are created the first time you run tovid:
 
 : **~/.tovid/preferences**
     Defines working directory for all scripts.
-    In addition you can define the output directory for makempg here.
+    You can define the output directory for makempg here.
+    The 'ffmpeg' executable can be set here: ffmpeg or avconv (TOVID_FFMPEG)
 : **~/.tovid/tovid.ini**
     Includes command-line options that should be passed to the various
     **tovid** sub-commands.
@@ -80,6 +81,7 @@ Edit these files if you wish to change your configuration.
 The following environment variables are also honoured:
 TOVID_WORKING_DIR (working directory for all scripts).
 TOVID_OUTPUT_DIR (output directory for the makempg script).
+TOVID_FFMPEG_CMD (the 'ffmpeg' executable to use: ffmpeg or avconv)
 
 
 =Command:gui=
