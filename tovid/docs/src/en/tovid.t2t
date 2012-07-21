@@ -962,11 +962,12 @@ Here is a list of possible options you can pass:
 
 
 ==Thumbnail Style==
-: **-user-thumbs** IMAGE
+: **-user-thumbs** IMAGE(S)
     Supply your own images for menu buttons, rather than relying on todisc to
     generate them from the video.  They must be the same aspect ratio as the
     videos in the titleset (4:3 or 16:9), as todisc will resize them without
-    checking and cropping.
+    checking and cropping.  There must be on image for each thumb that will be
+    displayed on the menu (ie. one thumb for each video in a titleset).
 : **-opacity** [0-100] (default 100)
     Opacity of thumbnail videos as a percentage (no percent sign).
     Anything less than 100(%) is semi-transparent. Not recommended with dark
