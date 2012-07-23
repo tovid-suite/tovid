@@ -9444,7 +9444,7 @@ if ! $QUICK_MENU && $DO_MENU; then
 fi
 if $STATIC; then
     # we have a value for MENU_AUDIOLEN AND BG_AUDIO
-    if [[ -n "$BG_AUDIO" && "$BG_AUDIO" != "none" ]]; then
+    if [[ -n "$BG_AUDIO" && "$BG_AUDIO" != "none" ]] && ! $MENU_FADE; then
         LOOPS=$( bc <<< "$MENU_AUDIOLEN * $FRAME_RATE" 2>/dev/null)
         LOOPS=${LOOPS%.*}
     # switched menu: no bg audio or video and not menu fade
@@ -9994,7 +9994,7 @@ if $DO_MENU; then
     # Make sure file exists
     elif test ! -s "$BG_AUDIO"; then
         runtime_error "Cannot find background audio file: $BG_AUDIO"
-    else # audio supplied: convert to wav then later to dvd/svcd format
+    else # audio supplied: convert to wav then later to dvd format
         # TODO if ! $BG_AUDIOVIDEO_FILE; then  # check if same file and if so
         # decode the audio and jpegs in one step above, and skip this block
         if $USE_MPLAYER_4AUDIO; then
