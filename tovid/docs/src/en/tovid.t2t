@@ -76,12 +76,18 @@ Two configuration files are created the first time you run tovid:
     Includes command-line options that should be passed to the various
     **tovid** sub-commands.
 
+
 Edit these files if you wish to change your configuration.
 
+
 The following environment variables are also honoured:
-TOVID_WORKING_DIR (working directory for all scripts).
-TOVID_OUTPUT_DIR (output directory for the makempg script).
-TOVID_FFMPEG_CMD (the 'ffmpeg' executable to use: ffmpeg or avconv)
+```
+    TOVID_WORKING_DIR (working directory for all scripts).
+    TOVID_OUTPUT_DIR (output directory for the makempg script).
+    TOVID_FFMPEG_CMD (the 'ffmpeg' executable to use: ffmpeg or avconv)
+```
+These will override 'WORKING_DIR', 'OUTPUT_DIR', and 'TOVID_FFMPEG'
+if set in ~/.tovid/preferences.
 
 
 =Command:gui=
@@ -133,7 +139,7 @@ be able to do what you want with 'tovid disc'.
 ```
  tovid disc [OPTIONS] \
     -files <file list> -titles <title list>
-    -out OUT_PREFIX
+    -out mydvd
 ```
 
 For example:
