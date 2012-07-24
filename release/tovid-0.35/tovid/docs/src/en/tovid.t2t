@@ -70,16 +70,24 @@ Two configuration files are created the first time you run tovid:
 
 : **~/.tovid/preferences**
     Defines working directory for all scripts.
-    In addition you can define the output directory for makempg here.
+    You can define the output directory for makempg here.
+    The 'ffmpeg' executable can be set here: ffmpeg or avconv (TOVID_FFMPEG)
 : **~/.tovid/tovid.ini**
     Includes command-line options that should be passed to the various
     **tovid** sub-commands.
 
+
 Edit these files if you wish to change your configuration.
 
+
 The following environment variables are also honoured:
-TOVID_WORKING_DIR (working directory for all scripts).
-TOVID_OUTPUT_DIR (output directory for the makempg script).
+```
+    TOVID_WORKING_DIR (working directory for all scripts).
+    TOVID_OUTPUT_DIR (output directory for the makempg script).
+    TOVID_FFMPEG_CMD (the 'ffmpeg' executable to use: ffmpeg or avconv)
+```
+These will override 'WORKING_DIR', 'OUTPUT_DIR', and 'TOVID_FFMPEG'
+if set in ~/.tovid/preferences.
 
 
 =Command:gui=
@@ -131,7 +139,7 @@ be able to do what you want with 'tovid disc'.
 ```
  tovid disc [OPTIONS] \
     -files <file list> -titles <title list>
-    -out OUT_PREFIX
+    -out mydvd
 ```
 
 For example:
@@ -960,11 +968,12 @@ Here is a list of possible options you can pass:
 
 
 ==Thumbnail Style==
-: **-user-thumbs** IMAGE
+: **-user-thumbs** IMAGE(S)
     Supply your own images for menu buttons, rather than relying on todisc to
     generate them from the video.  They must be the same aspect ratio as the
     videos in the titleset (4:3 or 16:9), as todisc will resize them without
-    checking and cropping.
+    checking and cropping.  There must be on image for each thumb that will be
+    displayed on the menu (ie. one thumb for each video in a titleset).
 : **-opacity** [0-100] (default 100)
     Opacity of thumbnail videos as a percentage (no percent sign).
     Anything less than 100(%) is semi-transparent. Not recommended with dark
