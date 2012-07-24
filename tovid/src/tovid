@@ -196,7 +196,7 @@ class Frontend:
         # and split into a list of individual options using shell syntax
         options = config.get(command, 'options')
         options = shlex.split(options)
-        sys.stderr.write("Read options from %s:\n" % filename)
+        print("Read options from %s:" % filename)
         print(' '.join(options))
         return options
 
