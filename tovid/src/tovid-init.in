@@ -555,10 +555,8 @@ fi
 [[ $TOVID_OUTPUT_DIR ]] && OUTPUT_DIR="$TOVID_WORKING_DIR"
 [[ $TOVID_FFMPEG_CMD ]] && TOVID_FFMPEG="$TOVID_FFMPEG_CMD"
 # FFmpeg is the var used for ffmpeg by all scripts needing ffmpeg/avconv
-# set default ffmpeg if none set in preferences file
-# if avconv but not ffmpeg is installed, use that unless env var set
-! hash ffmpeg 2>/dev/null && hash avconv 2>/dev/null && \
-  TOVID_FFMPEG=${TOVID_FFMPEG:=avconv}
+# if avconv is installed, use that unless env var set
+hash avconv 2>/dev/null && TOVID_FFMPEG=${TOVID_FFMPEG:=avconv}
 # finally, default to ffmpeg if non of the above override it
 FFmpeg=${TOVID_FFMPEG:=ffmpeg}
 
@@ -629,7 +627,7 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
     assert_dep "$core" "You are missing CORE tovid dependencies!"
     # ffmpeg is also a part of core deps, but is taken care of here
     ffmpeg_alts="Use either ffmpeg (ffmpeg.org) or avconv (libav.org)."
-    ffmpeg_pref="To use avconv, in $USER_PREFS use: TOVID_FFMPEG=avconv "
+    ffmpeg_pref="Set choice in ${USER_PREFS}. As in: TOVID_FFMPEG=ffmpeg"
     assert_dep $FFmpeg "You are missing $FFmpeg ! $ffmpeg_alts ${ffmpeg_pref}."
 
 # End tovid-init
