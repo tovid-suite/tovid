@@ -1016,6 +1016,24 @@ def run(args=None):
     app = Application('todisc',
         main, main_menu, submenus, thumbnails, slideshows, playback, behavior, encoding)
     gui = GUI("tovid gui", 800, 660, app, icon=tovid_icon)
+    # this is a HACK to let user know that the GUI doesn't support loading anymore
+    for arg in args:
+        if not arg.startswith('-'):
+            mess = 'Sorry, the tovid gui only supports loading boolean '
+            mess+= 'options (options without args), others may cause problems. '
+            mess+= 'You may be using such options in your tovid.ini file, '
+            mess+= 'the command line, or by trying to load a saved script.\n\n'
+            mess+= 'To continue anyway: Press "Yes"\n'
+            mess+= 'To exit now: Press "No"'
+            
+            gui.withdraw()
+            answer = support.askyesno('Important !', mess)
+            if answer == True:
+                gui.deiconify()
+                break
+            else:
+                quit()
+            
     gui.run(args)
 
 if __name__ == '__main__':
