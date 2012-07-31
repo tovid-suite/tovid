@@ -685,9 +685,11 @@ def check_cmdline_opts(gui, opts):
     for opt in opts:
         if not opt.startswith('-'):
             mess = 'Sorry, the tovid gui only supports loading boolean '
-            mess+= 'options (options without args), others may cause problems. '
+            mess+= 'options (options without args), others may cause problems.\n'
             mess+= 'You may be using such options in your tovid.ini file, '
-            mess+= 'the command line, or by trying to load a saved script.\n\n'
+            mess+= 'the command line, or by trying to load a saved script.\n'
+            mess+= 'It is better to exit by pressing "No", and fix this.\n\n'
+            mess+= 'Do you want to continue ?\n\n'
             mess+= 'To continue anyway: Press "Yes"\n'
             mess+= 'To exit now: Press "No"'
 
