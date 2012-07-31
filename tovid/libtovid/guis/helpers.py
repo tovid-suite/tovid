@@ -16,7 +16,7 @@ __all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
 'find_masks', 'nodupes', 'video_filetypes', 'image_filetypes',
 'visual_filetypes', 'dvd_video_files', 'av_filetypes', 'sys_dir',
 'thumb_masks', 'home_dir', 'tovid_prefix', 'tovid_icon', 'os_path',
-'heading_text', '_files_and_titles', '_out' ]
+'heading_text', '_files_and_titles', '_out', 'check_cmdline_opts' ]
 
 class VideoGui(tk.Frame):
     """A basic GUI to play video files.  It runs mplayer in slave mode
@@ -679,6 +679,26 @@ def nodupes(seq):
     noDupes = []
     [noDupes.append(i) for i in seq if not noDupes.count(i)]
     return noDupes
+
+def check_cmdline_opts(gui, opts):
+    # this is a HACK to let user know that the GUI doesn't support loading anymore
+    for opt in opts:
+        if not opt.startswith('-'):
+            mess = 'Sorry, the tovid gui only supports loading boolean '
+            mess+= 'options (options without args), others may cause problems. '
+            mess+= 'You may be using such options in your tovid.ini file, '
+            mess+= 'the command line, or by trying to load a saved script.\n\n'
+            mess+= 'To continue anyway: Press "Yes"\n'
+            mess+= 'To exit now: Press "No"'
+
+            gui.withdraw()
+            answer = support.askyesno('Important !', mess)
+            if answer == True:
+                gui.deiconify()
+                break
+            else:
+                quit()
+
 
 # List of file-type selections for Filename controls
 image_filetypes = [filetypes.image_files]
