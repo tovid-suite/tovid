@@ -188,12 +188,12 @@ echo "Dumping audio and video streams with the following commands:"
 
 # Dump audio and video
 if $DO_NORM; then
-    AUDIO_DUMP="ffmpeg -i  \"$IN_FILE\" -vn -f wav -y audio_dump"
+    AUDIO_DUMP="$FFmpeg -i  \"$IN_FILE\" -vn -f wav -y audio_dump"
 else
     #AUDIO_DUMP="mplayer \"$IN_FILE\" -quiet -dumpaudio -dumpfile audio_dump"
-    AUDIO_DUMP="ffmpeg -i \"$IN_FILE\" -vn -f $ID_AUDIO_CODEC -acodec copy -y audio_dump"
+    AUDIO_DUMP="$FFmpeg -i \"$IN_FILE\" -vn -f $ID_AUDIO_CODEC -acodec copy -y audio_dump"
 fi
-VIDEO_DUMP="ffmpeg -i \"$IN_FILE\" -an -f $video_format -vcodec copy -y video_dump"
+VIDEO_DUMP="$FFmpeg -i \"$IN_FILE\" -an -f $video_format -vcodec copy -y video_dump"
 VID_STREAM="video_dump"
 
 echo "$AUDIO_DUMP"
@@ -217,7 +217,7 @@ if $DO_NORM; then
    # Re-encode audio
    mv -v audio_dump normed_audio
    AUDIO_BITRATE=$(expr $ID_AUDIO_BITRATE / 1000)
-   AUDIO_ENC="ffmpeg -i normed_audio -vn -ab ${AUDIO_BITRATE}k -ar $ID_AUDIO_RATE"
+   AUDIO_ENC="$FFmpeg -i normed_audio -vn -ab ${AUDIO_BITRATE}k -ar $ID_AUDIO_RATE"
    AUDIO_ENC="$AUDIO_ENC -ac $ID_AUDIO_NCH -acodec $ID_AUDIO_CODEC"
    AUDIO_ENC="$AUDIO_ENC -y audio_dump.$ID_AUDIO_CODEC"
 
