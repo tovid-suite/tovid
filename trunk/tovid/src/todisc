@@ -601,7 +601,7 @@ confirm_preview()
         confirm_msg="Type yes to continue, press <ENTER> to abort but see "
         confirm_msg="$confirm_msg other previews, or type 'exit' to quit."
     fi
-    echo "If you are happy with the preview, $confirm_msg"
+    echo -e "If you are happy with the preview, \n$confirm_msg"
     read input
     echo
     if [ ! -z "$input" -a "$input" = "yes" ]; then
@@ -1704,7 +1704,7 @@ quick_menu()
         elif grep -q ^-vhook <<< "$($FFmpeg -h 2>&1)"; then
             # find out where vhook lives for ffmpeg
             local config=$($FFmpeg -version 2>&1 | grep -- --prefix=)
-            config=${ffmpeg_prefix//*--prefix=}
+            config=${config//*--prefix=}
             ffmpeg_prefix=${config// *}
             # empty var means no --prefix passed, use default prefix of /usr/local
             ffmpeg_prefix=${ffmpeg_prefix:-/usr/local}
@@ -1767,8 +1767,12 @@ quick_menu()
         yecho "Using $FFmpeg to add titles and background"
     fi
     if $use_overlay_filter; then
+        local qw=${QM_FRAMESIZE%x*}
+        local qh=${QM_FRAMESIZE#*x}
+        # vhook uses the next var for scaling, but overlay does not
+        unset QM_FRAMESIZE
         local overlay="$WORK_DIR/quick_menu_bg.png"
-        local PADDING="$VF pad=720:480:$VF_PADX:$VF_PADY"
+        local PADDING="$VF scale=${qw}:${qh},pad=720:480:${VF_PADX}:${VF_PADY}"
         local aspect=""
         overlay_filter="movie=$overlay [wm];[in][wm] overlay=0:0 [wm2]"
         ffmpeg_filter=($VF "$overlay_filter; [wm2] setdar=4:3 [out]")
@@ -1776,6 +1780,7 @@ quick_menu()
         local PADDING="$TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD"
         local aspect="-aspect 4:3"
         local PAD_CLR="-padcolor $BG_CLR"
+        local QM_FRAMESIZE="-s $QM_FRAMESIZE"
         ffmpeg_filter=(-vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png")
     fi
     # no padding needed for background video, just resizing
@@ -1786,14 +1791,16 @@ quick_menu()
     # run the commands to make the final menu m2v video
     PAD_CMD=($FFmpeg -async 1 $qm_pre_seek \
     -i "$QUICK_MENU_FILE" $qm_post_seek -t "$QM_MENU_TIME" \
-    -an -s $QM_FRAMESIZE $PADDING -r $ff_frame_rate \
+    -an $QM_FRAMESIZE $PADDING -r $ff_frame_rate \
     $PAD_CLR -f yuv4mpegpipe -vcodec rawvideo -y "$yuvout")
     QUICKMENU_CMD=($FFmpeg -f yuv4mpegpipe \
     -i "$yuvout" -an -s $VIDSIZE -f mpeg2video -r $ff_frame_rate \
     -b 7000k -maxrate 8000k -bufsize 224KiB \
     $aspect "${ffmpeg_filter[@]}" -y "$WORK_DIR/intro.m2v")
-    "${PAD_CMD[@]}" < /dev/null  > "${LOG_FILE}-1.tmp" 2>&1 &
-    "${QUICKMENU_CMD[@]}" < /dev/null  > "${LOG_FILE}-2.tmp" 2>&1 &
+    echo "Running ${PAD_CMD[@]}" > "${LOG_FILE}-1.tmp"
+    "${PAD_CMD[@]}" < /dev/null  >> "${LOG_FILE}-1.tmp" 2>&1 &
+    echo "Running ${QUICKMENU_CMD[@]}" > "${LOG_FILE}-2.tmp"
+    "${QUICKMENU_CMD[@]}" < /dev/null  >> "${LOG_FILE}-2.tmp" 2>&1 &
     ffmpeg_pid=$!
     if ! $QM_PREVIEW; then
         while ps -p $ffmpeg_pid >/dev/null; do
@@ -3752,8 +3759,9 @@ if ! test_version $_transcode_version $_baseline_version; then
 fi
 # stock debian transcode and probably other dists missing export_yuv4mpeg module
 if !  ls -1 $( tcmodinfo -p )/export*.so |grep -q yuv4mpeg; then
+    _url="http://tovid.wikia.com/wiki/Known_bugs#tovid_is_broken_on_Debian"
     runtime_error \
-    "your transcode is missing the yuv4mpeg export module"
+    "your transcode is missing the yuv4mpeg export module. See $_url"
 fi
 # ffmpeg has been buggy with setting AR with -aspect, use -vf aspect if present
 # "-vf" was "-vfilters" briefly, check
@@ -4554,8 +4562,9 @@ fi
 # Check if 1st is 00:00:00 and all chapters have HH:MM:SS format
 if $USER_CHAPTERS; then
     if [[ ${#FILES[@]} -ne ${#CHAPTERS[@]} ]]; then
-        usage_error "Please give the same number of chapters as videos
-        when using HH:MM:SS form chapters."
+        usage_error "Please give the same number of chapter point strings as
+        videos when using HH:MM:SS form chapters.  You gave ${#FILES[@]}
+        videos but only ${#CHAPTERS[@]} chapter point strings."
     fi
     for i in ${!CHAPT_ARRAY[@]}; do
         unset newchapts
