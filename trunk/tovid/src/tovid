@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/python
 # tovid.py
 
 """Frontend to the tovid suite.
@@ -87,8 +87,10 @@ class Frontend:
         """Return the tovid version string.
         """
         tovid_init = self.script_dir + '/tovid-init'
-        cmd = shlex.split("bash -c '. %s && printf $TOVID_VERSION'" % tovid_init)
-        return subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
+        # can't just source tovid-init to get TOVID_VERSION - sourcing may fail
+        cmd = shlex.split("awk -F= '/^TOVID_VERSION/ {print $2}' %s" % tovid_init)
+        result = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
+        return result.replace('"', '').strip()
 
 
     def parse_options(self, args):
