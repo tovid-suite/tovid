@@ -1,7 +1,5 @@
-import Tkinter as tk
 import time
 import shlex
-import commands
 import re
 import os
 import fnmatch
@@ -12,11 +10,19 @@ from subprocess import Popen, PIPE
 from tempfile import mkdtemp, mkstemp
 from sys import stdout
 
+try:
+    from commands import getstatusoutput, getoutput
+    import Tkinter as tk
+except ImportError:
+    # python 3
+    from subprocess import getstatusoutput, getoutput
+    import tkinter as tk
+
 __all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
 'find_masks', 'nodupes', 'video_filetypes', 'image_filetypes',
 'visual_filetypes', 'dvd_video_files', 'av_filetypes', 'sys_dir',
 'thumb_masks', 'home_dir', 'tovid_prefix', 'tovid_icon', 'os_path',
-'heading_text', '_files_and_titles', '_out', 'check_cmdline_opts' ]
+'heading_text', '_files_and_titles', '_out', 'copyable_info' ]
 
 class VideoGui(tk.Frame):
     """A basic GUI to play video files.  It runs mplayer in slave mode
@@ -49,8 +55,8 @@ class VideoGui(tk.Frame):
             try:
                 self.master.title(title)
             except AttributeError:
-                print "Error: " + \
-                  "VideoGui master must be a root window for 'title' option"
+                print("Error: " + \
+                  "VideoGui master must be a root window for 'title' option")
         self.callback = callback
         self.v_width = 540
         self.v_height = 405
@@ -117,7 +123,11 @@ class VideoGui(tk.Frame):
 
     def load(self, event=None):
         """Load a file to play in the GUI"""
-        from tkFileDialog import askopenfilename
+        try:
+            from tkFileDialog import askopenfilename
+        except ImportError:
+            # python 3
+            from tkinter.filedialog import askopenfilename
         vid_name = askopenfilename()
         if vid_name:
             self.toggle_controls('normal', self.mp_ctrls)
@@ -151,6 +161,14 @@ class VideoGui(tk.Frame):
         if video == None:
             self.toggle_controls('disabled', self.mp_ctrls)
             return
+        elif not os.path.exists(video):
+            try:
+                from tkMessageBox import showerror
+            except ImportError:
+                from tkinter.messagebox import showerror
+            showerror('Oops', video + ' does not exist')
+            self.toggle_controls('disabled', self.mp_ctrls)
+            self.master.master.withdraw()
         else:
             self.toggle_controls('enabled', self.mp_ctrls)
         # a new video has been loaded if no temp files, so make them
@@ -196,7 +214,7 @@ class VideoGui(tk.Frame):
                     cmd = Popen(self.command, stderr=open(os.devnull, 'w'), \
                       stdout=open(self.log, "w"))
                     if self.show_osd:
-                        self.send('osd 3\n')
+                        self.send('osd 3')
                     self.pause()
         # if file does not contain 50 bytes, do nothing
         except IOError:
@@ -215,7 +233,7 @@ class VideoGui(tk.Frame):
     def send(self, text):
         """Send command to mplayer's slave fifo"""
         if self.is_running.get():
-            commands.getstatusoutput('echo -e "%s"  > %s' %(text, self.cmd_pipe))
+            getstatusoutput('echo "%s"  > %s' %(text, self.cmd_pipe))
 
     def pause(self):
         """Send pause to mplayer via slave and set button var to opposite value"""
@@ -226,7 +244,7 @@ class VideoGui(tk.Frame):
                 self.pauseplay.set('Play')
             else:
                 self.pauseplay.set('Pause')
-            self.send('pause\n')
+            self.send('pause')
         else:
             # start the video for the 1st time
             cmd = Popen(self.command, stderr=open(os.devnull, 'w'), stdout=open(self.log, "w"))
@@ -234,7 +252,7 @@ class VideoGui(tk.Frame):
             self.poll()
             # show osd time and remaining time
             if self.show_osd:
-                self.send('osd 3\n')
+                self.send('osd 3')
             self.pauseplay.set('Pause')
 
     def exit_mplayer(self): # called by [done] button
@@ -244,18 +262,18 @@ class VideoGui(tk.Frame):
         # unpause so mplayer doesn't hang
         if self.is_running.get():
             if self.pauseplay.get() == 'Play':
-                self.send('mute 1\n')
-                self.send('pause\n')
-            self.send('quit\n')
+                self.send('mute 1')
+                self.send('pause')
+            self.send('quit')
             self.is_running.set(False)
         time.sleep(0.3)
         self.confirm_exit()
 
     def confirm_msg(self):
-        mess = "osd_show_text 'please exit mplayer first' 4000 3\n"
+        mess = "osd_show_text 'please exit mplayer first' 4000 3"
         if not self.show_osd:
             self.send('osd 3\n%s' %mess)
-            self.after(2500, lambda:self.send('osd 0\n'))
+            self.after(2500, lambda:self.send('osd 0'))
         else:
             self.send(mess)
 
@@ -341,27 +359,27 @@ class SetChapters(VideoGui):
 
     def forward(self):
         """Seek forward 10 seconds and make sure button var is set to 'Pause'"""
-        self.send('seek 10\n')
+        self.send('seek 10')
         self.pauseplay.set('Pause')
 
     def fastforward(self):
         """Seek forward 5 minutes and make sure button var is set to 'Pause'"""
-        self.send('seek 300\n')
+        self.send('seek 300')
         self.pauseplay.set('Pause')
 
     def back(self):
         """Seek backward 10 seconds and make sure button var is set to 'Pause'"""
-        self.send('seek -10\n')
+        self.send('seek -10')
         self.pauseplay.set('Pause')
 
     def fast_back(self):
         """Seek backward 10 seconds and make sure button var is set to 'Pause'"""
-        self.send('seek -300\n')
+        self.send('seek -300')
         self.pauseplay.set('Pause')
 
     def framestep(self):
         """Step frame by frame forward and set button var to 'Play'"""
-        self.send('pausing frame_step\n')
+        self.send('pausing frame_step')
         self.pauseplay.set('Play')
 
     def set_chapter(self):
@@ -369,11 +387,11 @@ class SetChapters(VideoGui):
            we only take the 1st mark on each line
         """
         for i in range(2):
-            self.send('edl_mark\n')
-        mess = "osd_show_text 'chapter point saved' 2000 3\n"
+            self.send('edl_mark')
+        mess = "osd_show_text 'chapter point saved' 2000 3"
         if not self.show_osd:
-            self.send('osd 3\n%s' %mess)
-            self.after(2500, lambda:self.send('osd 0\n'))
+            self.send('osd 3%s' %mess)
+            self.after(2500, lambda:self.send('osd 0'))
         else:
             self.send(mess)
 
@@ -452,7 +470,11 @@ class SetChaptersGui(SetChapters):
 
     def load(self, event=None):
         """Load a file to play in the GUI"""
-        from tkFileDialog import askopenfilename
+        try:
+            from tkFileDialog import askopenfilename
+        except ImportError:
+            # python 3
+            from tkinter.filedialog import askopenfilename
         vid_name = askopenfilename()
         if vid_name:
             self.toggle_controls('normal', self.mp_ctrls)
@@ -470,7 +492,11 @@ class SetChaptersGui(SetChapters):
         This functions as the callback on mplayer exit.
         """
         if self.get_chapters():
-            from tkMessageBox import askyesno, showinfo
+            try:
+                from tkMessageBox import askyesno, showinfo
+            except ImportError:
+                # python 3
+                from tkinter.messagebox import askyesno, showinfo
             output = self.get_chapters()
             stdout.write(output + '\n')
             self.entry.delete(0, tk.END)
@@ -680,26 +706,184 @@ def nodupes(seq):
     [noDupes.append(i) for i in seq if not noDupes.count(i)]
     return noDupes
 
-def check_cmdline_opts(gui, opts):
-    # this is a HACK to let user know that the GUI doesn't support loading anymore
-    for opt in opts:
-        if not opt.startswith('-'):
-            mess = 'Sorry, the tovid gui only supports loading boolean '
-            mess+= 'options (options without args), others may cause problems.\n'
-            mess+= 'You may be using such options in your tovid.ini file, '
-            mess+= 'the command line, or by trying to load a saved script.\n'
-            mess+= 'It is better to exit by pressing "No", and fix this.\n\n'
-            mess+= 'Do you want to continue ?\n\n'
-            mess+= 'To continue anyway: Press "Yes"\n'
-            mess+= 'To exit now: Press "No"'
-
-            gui.withdraw()
-            answer = support.askyesno('Important !', mess)
-            if answer == True:
-                gui.deiconify()
-                break
+def get_loadable_opts(opts):
+    good_opts = []
+    bad_opts = []
+    add_opt = False
+    for index, opt in enumerate(opts):
+        if opt.startswith('-'):
+            if opt in no_load_opts:
+                add_opt = False
             else:
-                quit()
+                add_opt = True
+                # -colour is not loadable, but is a valid todisc option
+                if '-colour' in opt:
+                    opt = opt.replace('-colour','-color')
+        if add_opt:
+            good_opts.append(opt)
+        else:
+            bad_opts.append(opt)
+
+    return [good_opts, bad_opts]
+
+# this is part of the HACK in working around broken load_args
+# load_script was lifted from gui.py in metagui, with mods
+def load_script(filename):
+    #"""Load current script options and arguments from a text file.
+    #"""
+    # Read lines from the file and reassemble the command
+    command = ''
+    for line in open(filename, 'r'):
+        line = line.strip()
+        # Discard comment lines and PATH assignment
+        if line and not (line.startswith('#') or line.startswith('PATH=')):
+            command += line.rstrip('\\')
+    # Split the full command into arguments, according to shell syntax
+    args = shlex.split(command)
+
+    # Ensure the expected program is being run
+    program = args.pop(0)
+    if program != 'todisc':
+        raise ValueError("This script runs '%s', expected '%s'" %
+              (program, 'todisc'))
+    return args
+
+
+def filter_args(master=None, args=None):
+    # HACK
+    # we need to sanitize the GUI args as load_args in metagui is broken
+    # this function and imports of it can be removed when it is fixed
+    a = get_loadable_opts(args)
+    args = a[0]
+    #unloadable_opts = a[1]
+    #if unloadable_opts:
+    if a[1]:
+        import Tkinter as tk
+        from textwrap import dedent
+        heading = '''
+        The tovid GUI did not load some of your options.
+        This is normal as loading options externally
+        is experimental. Sorry for the inconvenience.
+
+        You can copy this for reference as you will need
+        to set the following options yourself in the GUI:
+
+        '''
+
+        #u = unloadable_opts[:]
+        #data = ['\n' + x + '\n' if x.startswith('-') else x for x in u]
+        nonloadable = []
+        for i in a[1]:
+            if i.startswith('-'):
+                nonloadable.append('\n' + i)
+            elif ' ' in i:
+                nonloadable.append("'" + i + "'")
+            else:
+                nonloadable.append(i)
+        #data = ' '.join(nonloadable)
+        master.title('Important!')
+        info_msg = copyable_info(master, 'Important', dedent(heading),
+                                     ' '.join(nonloadable), tovid_icon)
+        info_msg.mainloop()
+    return args
+
+
+from libtovid.metagui.support import show_icons
+from libtovid.metagui import Style
+class copyable_info(tk.Frame):
+    def __init__(self, master, title='', heading='', data='', icon=None):
+        tk.Frame.__init__(self, master)
+        self.pack()
+        #self.minsize(300, 300)
+        text_frame = tk.Frame(self)
+        text_frame.pack(side='top')
+        style = Style()
+        inifile = os.path.expanduser('~/.metagui/config')
+        if os.path.exists(inifile):
+            style.load(inifile)
+            font = style.font or None
+        else:
+            font = None
+        text_widget = tk.Text(text_frame, width=50, height=20, wrap='word')
+        text_widget["bg"] = self.cget('background')
+        text_widget["relief"] = 'flat'
+        self.master["relief"] = 'flat'
+        if font:
+            text_widget["font"] = font
+        text_widget.pack(side='top', fill='both', expand=1)
+        text_widget.insert('1.0',heading)
+        #text_widget.bind("<1>", self.set_focus(self, text_widget))
+        text_widget.insert('end',data)
+        text_widget['state'] = 'disabled'
+        lines = int(text_widget.index('end-1c').split('.')[0]) 
+        text_widget['height'] = lines + 3
+        rclick = RightClickMenu(text_widget)
+        text_widget.bind("<3>", rclick)
+        exit_button = tk.Button(self, text='Close',
+                       command=lambda:self._quit())
+        #exit_button.focus_set()
+        exit_button.pack(side='bottom')
+        self.master.bind('<Control-q>', lambda event=None: self._quit())
+        self.master.bind('<Escape>', lambda event=None: self._quit())
+        if icon:
+            show_icons(self.master, icon)
+
+
+    #def set_focus(self, widg, Event=None):
+        #w = widget
+     #   w = widg
+     #   widg.focus_set()
+
+
+    def _quit(self, event=None):
+        self.master.destroy()
+        #self.master.destroy()
+
+
+class RightClickMenu(object):
+    # thanks to 'paperrobot' at:
+    #  http://paperrobot.wordpress.com for this gem
+    """
+    Simple widget to add basic right click menus to entry widgets.
+
+    usage:
+
+    rclickmenu = RightClickMenu(some_entry_widget)
+    some_entry_widget.bind("<3>", rclickmenu)
+
+    Replace all Tix references with Tkinter and this will still work fine.
+    """
+    def __init__(self, parent):
+        self.parent = parent
+        # bind Control-A to select_all() to the widget.  Others work ok without
+        self.parent.bind("<Control-a>", lambda e: self.select_all(), add='+')
+        self.parent.bind("<Control-A>", lambda e: self.select_all(), add='+')
+    def __call__(self, event):
+        # grab focus of the entry widget.  this way you can see
+        # the cursor and any marking selections
+        self.parent.focus_force()
+        self.build_menu(event)
+    def build_menu(self, event):
+        self.menu = tk.Menu(self.parent, tearoff=0)
+        #self.parent.bind("<Button-1>", self.close_menu)
+        #self.parent.bind("<Escape>", self.close_menu)
+        if self.parent.tag_ranges("sel"):
+            self.menu.add_command(
+                label="Copy",
+                command=lambda: self.parent.event_generate("<<Copy>>"))
+        else:
+            self.menu.add_command(label="Copy", state=tk.DISABLED)
+        self.menu.add_command(label="Cut", state=tk.DISABLED)
+        self.menu.add_command(label="Paste", state=tk.DISABLED)
+        # make things pretty with a horizontal separator
+        self.menu.add_separator()
+        self.menu.add_command(label="Select All", command=self.select_all)
+        self.menu.tk_popup(event.x_root, event.y_root)
+    def select_all(self):
+        self.parent.tag_add(tk.SEL, 1.0, tk.END)
+        # return 'break' because doesn't work otherwise.
+        return 'break'
+
 
 
 # List of file-type selections for Filename controls
@@ -727,6 +911,12 @@ dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
 # Users can use their own thumb masks.  Add to thumb mask control drop-down
 masks = [ 'none', 'normal', 'oval', 'vignette', 'plectrum', 'arch', 'spiral', \
 'blob', 'star', 'flare' ]
+
+# some options can not be loaded by the gui:
+# options with multiple choices for args, for example: none, single, multiple
+# this is a list of 'unloadable' options for the GUI
+no_load_opts = ['-chapter-titles', '-menu-fade', '-loop', '-video-pause', '-group-video-pause', '-slide-blur', '-slide-border', '-slide-frame', '-chain-videos', '-showcase', '-titles-font-deco', '-chapters', '-subtitle-lang', '-audio-channel', '-audio-lang', '-seek', '-showcase-seek', '-bg-video-seek', '-bg-audio-seek', '-submenu-audio-seek', '-rotate-thumbs']
+
 # $PREFIX/lib/tovid is already added to end of PATH
 os_path = os.environ['PATH'].rsplit(':')
 sys_dir = os_path[-1] + '/masks'
@@ -734,7 +924,7 @@ home_dir = os.path.expanduser("~") + '/.tovid/masks'
 for dir in sys_dir, home_dir:
     masks.extend(find_masks(dir, '*.png'))
 thumb_masks =  '|'.join(nodupes(masks))
-tovid_prefix = commands.getoutput('tovid -prefix')
+tovid_prefix = getoutput('tovid -prefix')
 tovid_icon = os.path.join(tovid_prefix, 'lib', 'tovid', 'tovid.png')
 
 # default heading text for tovid GUI (opening pane)
