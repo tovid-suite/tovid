@@ -3,7 +3,11 @@
 """A GUI for the todisc command-line program.
 """
 
-import Tkinter as tk
+try:
+    import Tkinter as tk
+except ImportError:
+    # python 3
+    import tkinter as tk
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
@@ -498,6 +502,9 @@ menu_title_font = HPanel('Menu title font',
 # Video title font
 _titles_font = Font('', '-titles-font', 'Helvetica',
     'The font to use for the video titles')
+# unused FIXME
+_titles_font_deco = SpacedText('Custom font decoration', '', '',
+         'Space-separated list of custom options to imagemagick.'),
 
 _titles_fontsize = Number('Size', '-titles-fontsize', 12,
     'The font size to use for the video titles.  '
@@ -1013,11 +1020,35 @@ encoding = VPanel('Encoding',
 ### --------------------------------------------------------------------
 
 def run(args=None):
+    from libtovid.guis.helpers import get_loadable_opts, load_script
+    # if the first arg is a text file, treat it as a script and try to load
+    # the options from it as a list into args
+    if args:
+        script = args[0]
+        if not script.startswith('-'):
+            import os.path
+            try:
+                from commands import getoutput 
+            except ImportError:
+            # python 3
+                from subprocess import getoutput 
+            if os.path.exists(script) \
+              and 'text' in getoutput('file %s' %script):
+                script = args.pop(0)
+                args.extend(load_script(script))
+    # now check if we have unloadable options, this first call does only that
+    # this will return 2 lists, [0] is loadable and [1] is unloadable
+    # probably don't want to do this anyway, as filter_args will just return
+    # the args it is sent if none are unloadable
+    a = get_loadable_opts(args)
+    if a[1]:
+        from libtovid.guis.helpers import filter_args
+        r = tk.Tk()
+        args = filter_args(r, args)
+    # finally, run it
     app = Application('todisc',
         main, main_menu, submenus, thumbnails, slideshows, playback, behavior, encoding)
     gui = GUI("tovid gui", 800, 660, app, icon=tovid_icon)
-    # check that only boolean options are used in command line
-    check_cmdline_opts(gui, args)        
     gui.run(args)
 
 if __name__ == '__main__':
