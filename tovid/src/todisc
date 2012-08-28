@@ -1345,7 +1345,8 @@ titleset_mode()
     DVDAUTHOR_XML="$BASEDIR/dvdauthor.xml"
     VMGM_PRE="        if ( g5 eq 0 ) g5=1;"
     VMGM_PRE="$VMGM_PRE\n        if ( g6 eq 0 ) g6=1; button = g6 * 1024;"
-    egrep -qw -- "-switched-menu[s]" <<< "${args[@]}" && \
+    # switch is now singular (-switched-menu) OR plural (-switched-menus)
+    egrep -q -- "-switched-menu" <<< "${args[@]}" && \
     VMGM_PRE="$VMGM_PRE\n        if (g1 eq 0) g1=1;"
     $DO_INTRO && INTRO_PRE="        if (g2==1) jump cell 2; "
     $SKIP_VMGM_MENU && VMGM_PRE="$VMGM_PRE\n        if ( g3 eq 0 )  g3=1 ;"

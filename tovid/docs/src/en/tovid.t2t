@@ -74,7 +74,13 @@ Two configuration files are created the first time you run tovid:
     The 'ffmpeg' executable can be set here: ffmpeg or avconv (TOVID_FFMPEG)
 : **~/.tovid/tovid.ini**
     Includes command-line options that should be passed to the various
-    **tovid** sub-commands.
+    **tovid** sub-commands.  Note: each sub-command has its own section,
+    starting with the line [sub-command], for example:
+```
+    [disc]
+    ; -no-warn
+    -static
+    -no-ask
 
 
 Edit these files if you wish to change your configuration.
@@ -459,7 +465,7 @@ Here is a list of possible options you can pass:
     a 'moving' menu, in spite of the static buttons.  This option also does
     double duty for the **-switched-menus** option, and will create static
     "switched" images.
-    See also **-switched-menu**
+    See also **-switched-menus**
 : **-background** IMAGE|VIDEO
     Menu background.  This can be a image file or an video file.  If it is a
     video file the background will be animated.  Pick a file of correct aspect
@@ -535,7 +541,7 @@ Here is a list of possible options you can pass:
   using **-quick-nav** as you would not have a way to get to other titlesets.
 : **-skip-vmgm**
   Start DVD from the first titleset instead of the VMGM ( root ) menu.
-: **-switched-menus**
+: **-switched-menus**, **-switched-menu**
     This will make a "switched menu": there will be a central image where the
     showcase image would go, and text menu titles along the menu edge where
     textmenu titles go.  As you select a video title with the down or up arrow
