@@ -210,6 +210,7 @@ class Executor (Widget):
             self.notify("Output saved to '%s'" % filename)
 
 
+from textwrap import dedent
 class Application (Widget):
     """Graphical frontend for a command-line program
     """
@@ -351,7 +352,24 @@ class Application (Widget):
             showerror(title="Error", message="Failed to save '%s'" % filename)
             raise
         else:
-            showinfo(title="Script saved", message="Saved '%s'" % filename)
+            # HACK  this message was alteredd because load_args is broken and
+            # 'tovid gui' is the only metagui program that uses saving
+            # scripts. It should be modified if load_args is refactored
+            saved_script = os.path.split(filename)[1]
+            mess = dedent('''
+
+            To load this script again into the GUI
+            you must do it from the command line
+            when you start the program.
+            For example:
+
+            tovid disc %s
+
+            
+            See "man tovid" under "Command:gui" for
+            details on command line options.
+            ''' %saved_script)
+            showinfo(title="Script saved", message="Saved '%s'" % filename + mess)
 
 
     def save_exit(self):
@@ -362,25 +380,26 @@ class Application (Widget):
 
 
     def prompt_load_script(self):
-        """Prompt for a script filename, then load current Control settings
-        from that file.
-        """
-        filename = askopenfilename(parent=self,
-            title="Select a shell script or text file to load",
-            filetypes=[('Shell scripts', '*.sh *.bash'),
-            ('All files', '*.*')])
+        #"""Prompt for a script filename, then load current Control settings
+        #from that file.
+        #"""
+        pass
+        #filename = askopenfilename(parent=self,
+        #    title="Select a shell script or text file to load",
+        #    filetypes=[('Shell scripts', '*.sh *.bash'),
+        #    ('All files', '*.*')])
 
-        if not filename:
-            return
+        #if not filename:
+        #    return
 
-        try:
-            self.reset()
-            self.load_script(filename)
-        except:
-            showerror(title="Error", message="Failed to load '%s'" % filename)
-            raise
-        else:
-            showinfo(title="Script loaded", message="Loaded '%s'" % filename)
+        #try:
+        #    self.reset()
+        #    self.load_script(filename)
+        #except:
+        #    showerror(title="Error", message="Failed to load '%s')
+        #    raise
+        #else:
+        #    showinfo(title="Script loaded", message="Loaded '%s'" % filename)
 
 
     def save_script(self, filename):
@@ -402,26 +421,27 @@ class Application (Widget):
 
 
     def load_script(self, filename):
-        """Load current Control settings from a text file.
-        """
+        pass
+        #"""Load current Control settings from a text file.
+        #"""
         # Read lines from the file and reassemble the command
-        command = ''
-        for line in open(filename, 'r'):
-            line = line.strip()
+        #command = ''
+        #for line in open(filename, 'r'):
+        #    line = line.strip()
             # Discard comment lines and PATH assignment
-            if line and not (line.startswith('#') or line.startswith('PATH=')):
-                command += line.rstrip('\\')
+        #    if line and not (line.startswith('#') or line.startswith('PATH=')):
+        #        command += line.rstrip('\\')
         # Split the full command into arguments, according to shell syntax
-        args = shlex.split(command)
+        #args = shlex.split(command)
 
         # Ensure the expected program is being run
-        program = args.pop(0)
-        if program != self.program:
-            raise ValueError("This script runs '%s', expected '%s'" %
-                  (program, self.program))
+        #program = args.pop(0)
+        #if program != self.program:
+        #    raise ValueError("This script runs '%s', expected '%s'" %
+        #          (program, self.program))
         # Load the rest of the arguments
-        self.load_args(args)
-        print("Done reading '%s'" % filename)
+        #self.load_args(args)
+        #print("Done reading '%s'" % filename)
 
 
     # TODO: Relocate all this stuff into Control and its subclasses
