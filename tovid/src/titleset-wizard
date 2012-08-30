@@ -2,15 +2,10 @@
 
 import os.path
 import shlex
-import commands
-import tkFont
 import re
-from Tkinter import *
-from tkMessageBox import *
-from tkSimpleDialog import askstring
-from tkFileDialog import asksaveasfilename
 from subprocess import Popen, PIPE
 from libtovid.metagui import Style
+from libtovid.metagui.gui import Executor
 from libtovid.metagui.support import PrettyLabel, show_icons, get_photo_image
 from libtovid.cli import _enc_arg, Command
 from libtovid.util import trim
@@ -19,6 +14,26 @@ from tempfile import mktemp
 from sys import argv, exit
 from base64 import b64encode
 from copy import deepcopy
+
+# Python 3 compatibility
+try:
+    from Tkinter import *
+    from tkSimpleDialog import askstring
+    from tkFileDialog import asksaveasfilename
+    from tkMessageBox import askyesno, showwarning, showinfo, showerror, askokcancel
+    import tkFont
+    from commands import getoutput
+    from commands import getstatusoutput
+except ImportError:
+    from tkinter import *
+    from tkinter.simpledialog import askstring
+    from tkinter.filedialog import asksaveasfilename
+    from tkinter.messagebox import askyesno, showwarning, showinfo, showerror
+    import tkinter.font as tkFont
+    from subprocess import getoutput
+    from subprocess import getstatusoutput
+
+
 
 class Wizard(Frame):
     """A frame to hold the wizard pages.  It will also hold the commands
@@ -181,7 +196,7 @@ class Wizard(Frame):
         """Test and kill xterm pid in case of premature exit"""
         if not pid:
             return
-        test_pid = commands.getstatusoutput('kill -0 %s' %pid)
+        test_pid = getstatusoutput('kill -0 %s' %pid)
         if test_pid[0] == 0:
             cmd = ['kill', '%s' %pid]
             Popen(cmd, stderr=PIPE)
@@ -206,7 +221,7 @@ class WizardPage(Frame):
         self.newname = mktemp(suffix='.bash', prefix='todisc_commands.',
                                                              dir=curdir)
         # get tovid prefix
-        tovid_prefix = commands.getoutput('tovid -prefix')
+        tovid_prefix = getoutput('tovid -prefix')
         self.tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
         os.environ['PATH'] = self.tovid_prefix + os.pathsep + os.environ['PATH']
         # the script we will be using for options
@@ -1025,7 +1040,7 @@ class Page6(WizardPage):
         cmd = ''
         for line in all_lines:
             cmd += ' ' + line
-        prompt = commands.getoutput('printf "[${USER}@$(hostname -s) ] $ "')
+        prompt = getoutput('printf "[${USER}@$(hostname -s) ] $ "')
         # probably not necessary, but ...
         if 'not found' in prompt:
             prompt = '[me@mymachine ] $ '
@@ -1059,57 +1074,25 @@ class Page6(WizardPage):
         wizard.next_button.pack_forget()
 
     def run_in_xterm(self):
-        ''' run the final script in an xterm, completing the project '''
-        self.frame.pack_forget()
-        self.master.prev_button.configure(state='disabled')
-        self.termtitle.pack(side='top')
-        self.container = Frame(self.master, container=1, height=600, width=600)
-        self.container.pack(side='right', fill='both',
-              padx=20, expand=1, anchor='nw')
-        lines = '80x44+0+0'
-        cmd = 'xterm -sb -si -fn %s -rv -sb -rightbar -g %s -e sh -c' \
-          %(self.master.fixed_font, lines)
-        cmd = shlex.split(cmd)
-        try:
-            id = self.root.tk.call('winfo', 'id', self.container)
-            frame_id = '%s' %int(id, 16)
-            self.master.xterm_is_running.set(True)
-        except TclError, ValueError:
-            self.master.xterm_is_running.set(False)
-            frame_id = ''
-        help = commands.getoutput('xterm -help')
-        self.logfile = mktemp(suffix='.log', prefix='todisc_commands.',
-                                                             dir='/tmp')
-        if re.search('-into ', help) and frame_id:
-            cmd.insert(1, frame_id)
-            cmd.insert(1, '-into')
-        tovid_cmd = """
-        bash %s | tee -a %s
-        echo
-        echo "Press Enter to exit terminal"
-        read input
-        """ %(self.script_file, self.logfile)
-        cmd.append(tovid_cmd)
-        command = Popen(cmd, stderr=PIPE)
-        self.after(200, self.poll)
-
-    def poll(self):
-        # return if container is not created yet, or xterm is not running
-        if not self.container or not self.master.xterm_is_running.get():
+        """Run the final script in an xterm, completing the project
+        """
+        if not askyesno(message="Run in xterm now?"):
+            self.master.show_status(1)
             return
-        try:
-            # bogus call to container to see if it has been destroyed
-            self.container.winfo_class()
-        except TclError:
-            self.termtitle.pack_forget()
-            self.master.xterm_is_running.set(False)
-            self.frame.pack(fill='both', expand=1, anchor='nw')
-            self.master.prev_button.configure(state='normal')
-            self.log_contents = commands.getoutput('tr "\r" "\n" < %s' \
-              %self.logfile)
-            os.remove(self.logfile)
-            self.save_button.configure(state='normal')
-        self.root.check = self.root.after(200, self.poll)
+        script = self.script_file
+        r = self.master.root
+        xterm_geo = '80x40' + '+' + str(r.winfo_rootx()) + '+' + str(r.winfo_rooty())
+        cmd = \
+          ['xterm', '-fn', '7x14', '-sb', '-title', 'todisc',
+            '-g', xterm_geo, '-e', 'sh', '-c']
+        wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
+        tovid_cmd = 'bash %s' % script
+        cmd.append(tovid_cmd + wait_cmd)
+        self.root.withdraw()
+        command = Popen(cmd, stderr=PIPE)
+        command.wait()
+        self.root.deiconify()
+
 
     def save_log(self, event=None):
         logfile = asksaveasfilename(initialfile='todisc_output.log')
@@ -1218,7 +1201,7 @@ class TitleBox(Frame):
 # Execution
 if __name__ == '__main__':
     # get tovid prefix so we can find the app image file
-    tovid_prefix = commands.getoutput('tovid -prefix')
+    tovid_prefix = getoutput('tovid -prefix')
     tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
     os.environ['PATH'] = tovid_prefix + os.pathsep + os.environ['PATH']
     img_file = os.path.join(tovid_prefix, 'titleset-wizard.png')
