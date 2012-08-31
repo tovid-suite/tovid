@@ -63,11 +63,6 @@ class Wizard(Frame):
         # for waiting on [Next>>>] being pushed to continue titleset loop
         self.waitVar = BooleanVar()
         self.waitVar.set(False)
-        # pid for xterm, to allow clean exit
-        # need this to make sure we don't have zombie processes
-        self.xterm_is_running = BooleanVar()
-        self.check = ''
-        self.xterm_is_running.set(False)
         # bindings for exit
         self.root.protocol("WM_DELETE_WINDOW", self.confirm_exit)
         self.root.bind('<Control-q>', self.confirm_exit)
@@ -177,13 +172,6 @@ class Wizard(Frame):
     def confirm_exit(self, event=None):
         """Exit the GUI, with confirmation prompt.
         """
-        mess = 'Xterm is still open: is todisc still running?  ' + \
-          'If so, please ctrl-c in the terminal if you wish to quit.  ' + \
-          'In any case, you will need to close the terminal ' + \
-          'by pressing <ENTER> in it.'
-        if self.xterm_is_running.get() == True:
-            showwarning(message=mess)
-            return
         if askyesno(message="Exit?"):
             # set is_running to false so the gui doesn't get run
             self.is_running.set(False)
@@ -1032,7 +1020,7 @@ class Page6(WizardPage):
                                             command=self.save_log)
         self.save_button.pack(side='left', fill='both', expand=1)
         # disable the save log button till xterm is run
-        self.save_button.configure(state='disabled')
+        #self.save_button.configure(state='disabled')
 
     def set_cmd_label(self):
         cmds = self.master.commands
