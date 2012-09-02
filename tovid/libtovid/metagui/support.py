@@ -43,6 +43,16 @@ except ImportError:
     import tkinter.tix as Tix
     import tkinter.font as tkFont
 
+# Python 2.4
+try:
+    all
+except NameError:
+    def all(iterable):
+        for element in iterable:
+            if not element:
+                return False
+        return True
+
 from libtovid import cli
 from libtovid.util import imagemagick_fonts
 from libtovid.metagui.variable import ListVar
