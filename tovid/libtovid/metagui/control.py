@@ -28,9 +28,21 @@ except NameError:
     def any(iterable):
         """Return True if bool(x) is True for any x in iterable."""
         for item in iterable:
-            if not item:
+            if item:
+                return True
+        return False
+
+try:
+    all
+except NameError:
+    def all(iterable):
+        for element in iterable:
+            if not element:
                 return False
         return True
+
+
+             
 
 # Python < 3.x
 try:
