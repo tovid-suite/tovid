@@ -19,14 +19,15 @@ try:
 except ImportError:
     import tkinter as tk
 
+from base64 import b64encode
 from libtovid import cli
 from libtovid.odict import Odict
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.control import Control, Flag
-from libtovid.metagui.support import \
-    (ComboBox, ensure_type, divide_list, get_photo_image)
 from libtovid.metagui.variable import ListVar
-from base64 import b64encode
+from libtovid.metagui.support import (
+  ComboBox, ensure_type, divide_list, get_photo_image
+  )
 
 
 class Label (Widget):
