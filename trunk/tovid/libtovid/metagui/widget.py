@@ -12,6 +12,9 @@ try:
 except ImportError:
     import tkinter as tk
 
+# Python 3 compatibility
+from libtovid import basestring
+
 class Widget (tk.Frame):
     """Generic metagui widget, suitable for Controls, Panels, etc.
     """

@@ -20,6 +20,16 @@ try:
 except ImportError:
     from configparser import ConfigParser
 
+# Python 3.x compatibility assignments
+if version_info[0] < 3: # python 3.x
+    unicode = unicode
+    basestring = basestring
+    xrange = xrange
+else: # Python 3.x
+    unicode = str
+    basestring = str
+    xrange = range
+
 # Configuration file reader/writer
 class Config (ConfigParser):
     """Interface for reading/writing tovid configuration files. Just a wrapper
