@@ -47,6 +47,9 @@ except ImportError:
         (asksaveasfilename, askopenfilename, askopenfilenames)
     from tkinter.colorchooser import askcolor
 
+# Python 3.x
+from libtovid import basestring
+
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.variable import VAR_TYPES, ListVar
 from libtovid.metagui.support import \
