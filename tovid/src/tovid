@@ -46,7 +46,11 @@ import signal
 import time
 import shlex
 import shutil
-from ConfigParser import ConfigParser
+# python 3 compatibility
+try:
+    from ConfigParser import ConfigParser
+except ImportError:
+    from configparser import ConfigParser
 
 # Command names to script mappings
 _scripts = {
@@ -90,7 +94,8 @@ class Frontend:
         # can't just source tovid-init to get TOVID_VERSION - sourcing may fail
         cmd = shlex.split("awk -F= '/^TOVID_VERSION/ {print $2}' %s" % tovid_init)
         result = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
-        return result.replace('"', '').strip()
+        # Python 3 needs decode("utf-8") as it returns a byte string not str
+        return result.decode("utf-8").replace('"', '').strip()
 
 
     def parse_options(self, args):
@@ -101,11 +106,11 @@ class Frontend:
             arg = args.pop(0)
 
             if arg in ['-prefix', '--prefix']:
-                print self.prefix
+                print(self.prefix)
                 sys.exit(0)
 
             elif arg in ['-version', '--version']:
-                print self.version
+                print(self.version)
                 sys.exit(0)
 
             elif arg in ['-info', '--info']:
