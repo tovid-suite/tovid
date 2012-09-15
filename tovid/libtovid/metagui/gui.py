@@ -15,28 +15,31 @@ from sys import exit
 
 # Python < 3.x
 try:
+    import Tix
     import Tkinter as tk
     from ScrolledText import ScrolledText
-    from tkFileDialog import \
-        (asksaveasfilename, askopenfilename)
     from tkMessageBox import showinfo, showerror
-    import Tix
+    from tkFileDialog import (
+      asksaveasfilename, askopenfilename
+      )
 
 # Python 3.x
 except ImportError:
     import tkinter as tk
-    from tkinter.scrolledtext import ScrolledText
-    from tkinter.filedialog import \
-        (asksaveasfilename, askopenfilename)
-    from tkinter.messagebox import showinfo, showerror
     import tkinter.tix as Tix
+    from tkinter.scrolledtext import ScrolledText
+    from tkinter.messagebox import showinfo, showerror
+    from tkinter.filedialog import (
+      asksaveasfilename, askopenfilename
+      )
 
 from libtovid import cli
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.panel import Panel, Tabs
-from libtovid.metagui.support import \
-    (ConfigWindow, Style, ensure_type, askyesno, get_photo_image, show_icons)
 from libtovid.metagui.control import Control, NoSuchControl
+from libtovid.metagui.support import (
+  ConfigWindow, Style, ensure_type, askyesno, get_photo_image, show_icons
+  )
 
 
 DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
@@ -375,8 +378,7 @@ class Application (Widget):
     def save_exit(self):
         filename = os.getcwd() + os.path.sep + '%s_commands.bash' % self.program
         self.save_script(filename)
-        # exit code borrowed from apache so wizard knows it has a file to read
-        exit(200)
+        exit()
 
 
     def prompt_load_script(self):
