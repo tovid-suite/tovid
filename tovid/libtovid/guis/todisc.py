@@ -1019,14 +1019,14 @@ encoding = VPanel('Encoding',
 
 ### --------------------------------------------------------------------
 
-def run(args=None):
+def run(args=None, geometry=None):
     from libtovid.guis.helpers import get_loadable_opts, load_script
+    import os
     # if the first arg is a text file, treat it as a script and try to load
     # the options from it as a list into args
     if args:
         script = args[0]
         if not script.startswith('-'):
-            import os.path
             try:
                 from commands import getoutput 
             except ImportError:
@@ -1045,10 +1045,28 @@ def run(args=None):
         from libtovid.guis.helpers import filter_args
         r = tk.Tk()
         args = filter_args(r, args)
+    # workaround for netbooks (could use xrandr perhaps, but this works fine)
+    gui_width, gui_height = 800, 660
+    root = tk.Tk()
+    root.withdraw()
+    root.update_idletasks()
+    screen_height = root.winfo_screenheight()
+    # insure screen is not 800x600 or somesuch which doesn't work for gui anyway
+    # need float like 1.3333333 that we multiply * 100 and convert back to int
+    screen_width = float(root.winfo_screenwidth())
+    if int(screen_height) < 660 and not int(screen_width / screen_height * 100) == 133:
+        gui_height = 600
+    root.destroy()
+
     # finally, run it
     app = Application('todisc',
         main, main_menu, submenus, thumbnails, slideshows, playback, behavior, encoding)
-    gui = GUI("tovid gui", 800, 660, app, icon=tovid_icon)
+    gui = GUI("tovid gui", gui_width, gui_height, app, icon=tovid_icon)
+
+    # these lines are needed for titleset wizard
+    if geometry:
+        gui.geometry(geometry)
+        #gui.update_idletasks()
     gui.run(args)
 
 if __name__ == '__main__':
