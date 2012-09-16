@@ -3,39 +3,93 @@
 import os.path
 import shlex
 import re
-from subprocess import Popen, PIPE
-from libtovid.metagui import Style
-from libtovid.metagui.gui import Executor
-from libtovid.metagui.support import PrettyLabel, show_icons, get_photo_image
-from libtovid.cli import _enc_arg, Command
-from libtovid.util import trim
 from time import sleep
 from tempfile import mktemp
-from sys import argv, exit
+from sys import argv, exit, stderr, version_info
 from base64 import b64encode
 from copy import deepcopy
+from subprocess import Popen, PIPE
+from libtovid import xrange
+from libtovid.cli import _enc_arg, Command
+from libtovid.util import trim
+from libtovid.metagui import Style
+from libtovid.metagui.support import (
+  PrettyLabel, show_icons, get_photo_image
+)
 
 # Python 3 compatibility
 try:
-    from Tkinter import *
+    import Tkinter as tk
+    import tkFont
     from tkSimpleDialog import askstring
     from tkFileDialog import asksaveasfilename
-    from tkMessageBox import askyesno, showwarning, showinfo, showerror, askokcancel
-    import tkFont
-    from commands import getoutput
-    from commands import getstatusoutput
+    from commands import getoutput, getstatusoutput
+    from tkMessageBox import (
+      askyesno, showwarning, showinfo, showerror, askokcancel
+      )
 except ImportError:
-    from tkinter import *
+    import tkinter as tk
+    import tkinter.font as tkFont
     from tkinter.simpledialog import askstring
     from tkinter.filedialog import asksaveasfilename
-    from tkinter.messagebox import askyesno, showwarning, showinfo, showerror
-    import tkinter.font as tkFont
-    from subprocess import getoutput
-    from subprocess import getstatusoutput
+    from subprocess import getoutput, getstatusoutput
+    from tkinter.messagebox import (
+      askyesno, showwarning, showinfo, showerror, askokcancel
+      )
+
+# a function to get the height of the window manager title bar and screen height
+# masquerades as a progress bar :) Returns tuple: screen h, deco w, deco h
+# winfo_? will include the top panel if it exists, xwininfo just the titlebar
+def get_screen_info(icon):
+    try:
+        import Tix
+    # Python 3
+    except ImportError:
+        import tkinter.tix as Tix
+    r = Tix.Tk()
+    r.withdraw()
+    top = Tix.Toplevel(r)
+    top.title('Loading ...')
+    top.geometry('+0+0')
+    show_icons(top, icon)
+    top.update_idletasks()
+    import time
+    p = Tix.Meter(top, value=0.0)
+    p.pack()
+    for i in range(100):
+         time.sleep(0.01)
+         p.configure(value=(i/100.0))
+         p.update_idletasks()
+    xid = top.wm_frame()
+    # xwininfo returns a geometry string like '+2+23':  split it on '+'
+    # it tends to give just window decoration h, w rather than including a panel
+    Xwininfo = \
+      getoutput("xwininfo -frame -id %s |awk '/Corners:/ {print $2}'" %xid)
+    X_x = Xwininfo.split('+')[1]
+    X_y = Xwininfo.split('+')[2]
+    # winfo_x() winfo_y() tend to give panel AND window decoration
+    TK_x = top.winfo_x()
+    TK_y = top.winfo_y()
+    # so subtract the xwininfo x dimension from winfo_x; same for the y dimensions
+    #stderr.write(str(TK_y) + '-' + str(X_y))
+    # if xwininfo gives a lesser value, assume it just window deco, and subtract it
+    # else default to the greater (or equal) value of winfo_x (same for y dimension)
+    if TK_x > int(X_x):
+        frame_width = TK_x - int(X_x)
+    else:
+        frame_width = TK_x
+    if TK_y > int(X_y):
+        frame_height = TK_y - int(X_y)
+    else:
+        frame_height = TK_y
+    #stderr.write(' '.join([str(TK_x), str(TK_y), str(X_x), str(X_y)]))
+    screeninfo = top.winfo_screenheight(), frame_width, frame_height
+    r.destroy()
+    return screeninfo
 
 
 
-class Wizard(Frame):
+class Wizard(tk.Frame):
     """A frame to hold the wizard pages.  It will also hold the commands
        that will  be processed and written out as a script.  Its base frame
        holds a frame common to all pages that displays an icon, title, and
@@ -49,19 +103,20 @@ class Wizard(Frame):
        
     """
     def __init__(self, master, text, icon):
-        Frame.__init__(self, master)
+        tk.Frame.__init__(self, master)
         self.pages = []
-        self.index = IntVar()
+        self.index = tk.IntVar()
         self.text = text
         self.icon = icon
         self.master = master
         self.root = self._root()
         self.commands = []
+        self.screen_info = []
         # for cancelling run_gui if exit is called
-        self.is_running = BooleanVar()
+        self.is_running = tk.BooleanVar()
         self.is_running.set(True)
         # for waiting on [Next>>>] being pushed to continue titleset loop
-        self.waitVar = BooleanVar()
+        self.waitVar = tk.BooleanVar()
         self.waitVar.set(False)
         # bindings for exit
         self.root.protocol("WM_DELETE_WINDOW", self.confirm_exit)
@@ -69,18 +124,18 @@ class Wizard(Frame):
         self.root.title('Tovid titleset wizard')
 
         # button frame
-        self.button_frame = Frame(master)
+        self.button_frame = tk.Frame(master)
         self.button_frame.pack(side='bottom', fill='x', expand=1,  anchor='se')
-        self.exit_button = Button(self.button_frame, text='Exit',
+        self.exit_button = tk.Button(self.button_frame, text='Exit',
                                        command=self.confirm_exit)
         self.exit_button.pack(side='left', anchor='sw')
-        self.next_button = Button(self.button_frame, text='Next >>',
+        self.next_button = tk.Button(self.button_frame, text='Next >>',
                                                   command=self.next)
         self.next_button.pack(side='right', anchor='se')
-        self.prev_button = Button(self.button_frame, text='<< Back',
+        self.prev_button = tk.Button(self.button_frame, text='<< Back',
                                                     command=self.previous)
         # frame for icon and status display
-        self.frame1 = Frame(master)
+        self.frame1 = tk.Frame(master)
         self.frame1.pack(side='left', anchor='nw', padx=10, pady=80)
         inifile = os.path.expanduser('~/.metagui/config')
         style = Style()
@@ -100,19 +155,18 @@ class Wizard(Frame):
         self.lrg_font = self.get_font(font, size=font[1]+4, _style='bold')
         self.medium_font = self.get_font(font, size=font[1]+2)
         self.heading_font = self.get_font(font, size=font[1]+8, _style='bold')
-        fixed =  '-misc-fixed-medium-r-normal--13-100-100-100-c-70-iso8859-1'
-        self.fixed_font = tkFont.Font(font=fixed)
+        #fixed =  '-misc-fixed-medium-r-normal--13-100-100-100-c-70-iso8859-1'
         self.background = self.root.cget('background')
         if self.text:
             txt = self.text.split('\n')
-            app_label1 = Label(self.frame1, text=txt[0], font=self.heading_font)
+            app_label1 = tk.Label(self.frame1, text=txt[0], font=self.heading_font)
             app_label1.pack(side='top', fill='both', expand=1, anchor='nw')
         # icons and image
         if os.path.isfile(self.icon):
             img = get_photo_image(self.icon, 0, 0, self.background)
             self.img = img
             # Display the image in a label on all pages
-            img_label = Label(self.frame1, image=self.img)
+            img_label = tk.Label(self.frame1, image=self.img)
             img_label.pack(side='top', fill='both', expand=1,
                                         anchor='nw', pady=20)
             # If Tcl supports it, generate an icon for the window manager
@@ -122,7 +176,7 @@ class Wizard(Frame):
             print('%s does not exist' % img_file)
         # if 2 lines of text for image, split top and bottom
         if self.text and len(txt) > 1:
-            app_label2 = Label(self.frame1, text=txt[1], font=self.lrg_font)
+            app_label2 = tk.Label(self.frame1, text=txt[1], font=self.lrg_font)
             app_label2.pack(side='top', fill='both', expand=1, anchor='nw')
 
     def next(self):
@@ -143,6 +197,9 @@ class Wizard(Frame):
         """Accept incoming list of wizard page instances"""
         self.pages.append(page)
 
+    def set_screen_info(self, iterable):
+        self.screen_info = iterable
+
     def get_font(self, font_descriptor, name='', size='', _style=''):
         """Get metagui font configuration
         """
@@ -160,13 +217,13 @@ class Wizard(Frame):
         else:
             text='\nCancelled!\n'
         font = self.medium_font
-        status_frame = Frame(self.frame1, borderwidth=1, relief=RAISED)
+        status_frame = tk.Frame(self.frame1, borderwidth=1, relief=tk.RAISED)
         status_frame.pack(pady=40)
-        label1 = Label(status_frame, text=text, font=font, fg='blue')
+        label1 = tk.Label(status_frame, text=text, font=font, fg='blue')
         label1.pack(side='top')
-        label2 = Label(status_frame, text='ok', borderwidth=2, relief=GROOVE)
+        label2 = tk.Label(status_frame, text='ok', borderwidth=2, relief=tk.GROOVE)
         label2.pack(side='top')
-        self.root.after(1000, lambda: label2.configure(relief=SUNKEN))
+        self.root.after(1000, lambda: label2.configure(relief=tk.SUNKEN))
         self.root.after(2000, lambda: status_frame.pack_forget())
 
     def confirm_exit(self, event=None):
@@ -195,13 +252,13 @@ class Wizard(Frame):
         self.waitVar.set(True)
 
 
-class WizardPage(Frame):
+class WizardPage(tk.Frame):
     """Base class for the wizard pages.  As such it contains everythig
        common to all wizard pages.
     """
     def __init__(self, master):
-        Frame.__init__(self, master)
-        Frame.pack(master)
+        tk.Frame.__init__(self, master)
+        tk.Frame.pack(master)
         self.master = master
         self.root = self._root()
         # a temp file name for the final script name if it exists already
@@ -223,9 +280,10 @@ class WizardPage(Frame):
         identifier = '# tovid project script\n# tovid version %s' % _version
         self.header = '%s\n\n%s\n\n%s\n\n' % (shebang, identifier, _path )
         # ititialize a frame, but don't pack yet
-        self.frame = Frame(self.master)
+        self.frame = tk.Frame(self.master)
         # initialize widgets, but don't show yet
         self.master.set_pages(self)
+        self.titlebar_width, self.titlebar_height = self.master.screen_info[1:]
 
     def show_page(self):
         wizard = self.master
@@ -237,22 +295,34 @@ class WizardPage(Frame):
     def hide_page(self):
         self.frame.pack_forget()
 
+    def get_screen_position(self):
+        r = self.root
+        r.update_idletasks() # make sure geometry is updated before we 'get' it
+        geo_x = r.winfo_rootx() - self.titlebar_width
+        geo_y = r.winfo_rooty() - self.titlebar_height
+        return '+%s+%s' %(geo_x, geo_y)
+
     def run_gui(self, args=[], index='', script=''):
         """Run the tovid GUI, collecting options, and saving to wizard
         """
         title = 'load saved script'
         script = 'todisc_commands.bash'
+        # get modification time of the script, so we can see if it changes
+        mtime = os.path.getmtime(script)
         set_env = []
         if index:
             os.environ['METAGUI_WIZARD'] = '%s' %index
-        cmd = ['todiscgui'] + args
+        self.root.update_idletasks() # update geometry before it is 'deiconified'
+        screen_pos = self.get_screen_position()
+        cmd = ['todiscgui'] + ['--geometry', screen_pos] + args
         todiscgui_cmd = Popen(cmd, stdout=PIPE)
         # sleep to avoid the 'void' of time before the GUI loads
         sleep(0.5)
         if self.root.state() is not 'withdrawn':
             self.root.withdraw()
-        status = todiscgui_cmd.wait()
-        if status == 200:
+        todiscgui_cmd.wait()
+        # if modification time changed, then the script was saved from the gui
+        if os.path.getmtime(script) > mtime:
         # if script doesn't exist prompt for load.
             if os.path.exists(self.script_file):
                 script = self.script_file
@@ -267,6 +337,9 @@ class WizardPage(Frame):
             os.remove(script)
         else:
             todisc_opts  = []
+        # set wizard screen position again, then update
+        self.root.geometry(screen_pos)
+        self.root.update_idletasks()
         return todisc_opts
 
     def page_controller(self):
@@ -291,7 +364,8 @@ class WizardPage(Frame):
         commands = self.master.commands
         header = self.header
         cmdout = open(self.script_file, 'w')
-        os.chmod(self.script_file, 0775)
+        # octal notation for chmod for python 3 compatibility
+        os.chmod(self.script_file, 0o755)
         # add the shebang, PATH, and 'todisc \' lines
         cmdout.writelines(header)
         # flatten the list
@@ -578,8 +652,8 @@ class Page4(WizardPage):
         text1 = trim(text1)
         self.label1 = PrettyLabel(self.frame, text1, self.master.font)
         self.label1.pack(fill='both', expand=True, side='top', anchor='nw')
-        self.frame2 = Frame(self.frame, borderwidth=2, relief=GROOVE)
-        self.label2 = Label(self.frame2, text='', font=self.master.font,
+        self.frame2 = tk.Frame(self.frame, borderwidth=2, relief=tk.GROOVE)
+        self.label2 = tk.Label(self.frame2, text='', font=self.master.font,
                                        justify='left', padx=10, pady=10)
         self.label2.pack(fill='both', expand=True, side='top', anchor='nw')
 
@@ -652,59 +726,59 @@ class Page5(WizardPage):
         wizard = self.master
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         text = '''
-        Now you can run your command in this gui using the [Run script] button.
-
-        **********
-        Note:  The ability to go back and edit your titlesets has been disabled.
-        If you want to change anything you can edit the saved script directly
-        with a text editor.
-        The easiest thing to do after making changes is to exit the gui and
-        run the saved script from the bash command line with:
+        Edit or reorder your selections using the listbox below.  (Note
+        that menu link titles as shown in listbox are saved as titles
+        in the "Root menu" options.)  If you are happy with your saved
+        options, run the script now in an xterm, or exit and run it later.
+        You can run it with:
 
         bash %s
-        **********
 
-        If you are happy with  your selections, press [Run script], or
-        otherwise press [Exit].
-        ''' % self.script_file
+        You may edit the file with a text editor but do not 
+        change the headers (first 3 lines of text) or change the 
+        order of the sections:
+
+        1. General opts  2. Root menu (-vmgm)  3. Titleset menus (-titleset)
+
+        You may reload the file using the command:
+
+        tovid titlesets %s
+
+        Edit your selections, or press [Run script now] or [Exit].
+        ''' % (self.script_file, self.script_file)
+
         text = trim(text)
-        self.heading_label = Label(self.frame, text='Finished!',
-                                      font=wizard.lrg_font)
-        self.label = Label(self.frame, text=text,
+        self.heading_label = tk.Label(self.frame,
+                    text='Your script is ready to run!', font=wizard.lrg_font)
+        self.label = tk.Label(self.frame, text=text,
                       font=wizard.font, justify='left')
         self.heading_label.pack(fill='both', expand=1, anchor='nw', pady=5)
         self.label.pack(fill='both', expand=1, anchor='nw')
 
-        # FIXME disabled listbox and ability to edit until 'load_args' fixed
-        # See http://code.google.com/p/tovid/issues/detail?id=121
-        # Code has been left intact, the widget just doesn't get packed.
-        # Yeah, I know this is wasteful and not the right way to do it :)
-        # create the listbox (note that size is in characters)
         frame_text = "Edit items, or add, remove or drag/drop titlesets"
-        frame2 = LabelFrame(self.frame, text=frame_text)
-        button_frame = Frame(frame2)
-        #button_frame.pack(side='bottom', fill=X, expand=1, anchor='sw')
-        button2 = Button(button_frame, text='Add titleset',
+        frame2 = tk.LabelFrame(self.frame, text=frame_text)
+        button_frame = tk.Frame(frame2)
+        button_frame.pack(side='bottom', fill=tk.X, expand=1, anchor='sw')
+        button2 = tk.Button(button_frame, text='Add titleset',
                                  command=self.add_titleset)
-        #button2.pack(side='left', anchor='w')
-        button1 = Button(button_frame, text='Edit', command=self.rerun_options)
-        #button1.pack(side='left', fill='x', expand=1)
-        button3 = Button(button_frame, text='Remove titleset',
+        button2.pack(side='left', anchor='w')
+        button1 = tk.Button(button_frame, text='Edit', command=self.rerun_options)
+        button1.pack(side='left', fill='x', expand=1)
+        button3 = tk.Button(button_frame, text='Remove titleset',
                                  command=self.remove_titleset)
-        #button3.pack(side='right', anchor='e')
-        self.listbox = Listbox(frame2, width=50, exportselection=0)
-        #self.listbox.pack(side='left', fill='both', expand=1)
+        button3.pack(side='right', anchor='e')
+        self.listbox = tk.Listbox(frame2, width=50, exportselection=0)
+        self.listbox.pack(side='left', fill='both', expand=1)
         self.listbox.bind('<Double-Button-1>', self.rerun_options)
         # create a vertical scrollbar to the right of the listbox
-        yscroll = Scrollbar(frame2, command=self.listbox.yview,
+        yscroll = tk.Scrollbar(frame2, command=self.listbox.yview,
                                              orient='vertical')
         yscroll.pack(side='right', fill='y', anchor='ne')
         self.listbox.configure(yscrollcommand=yscroll.set)
-        # FIXME disable listbox
-        #frame2.pack(side='left', fill='y', expand=False)
+        frame2.pack(side='left', fill='y', expand=False)
         # the 2nd index contains the titleset titles (VMGM menu)
-        #self.refill_listbox(self.listbox, wizard.commands[1])
-        #self.listbox.selection_set('end')
+        self.refill_listbox(self.listbox, wizard.commands[1])
+        self.listbox.selection_set('end')
         # set next button to run gui etc before moving forward
         wizard.next_button.configure\
           (command=self.page_controller, text='Run script')
@@ -753,7 +827,7 @@ class Page5(WizardPage):
             temp_list[index_b] = item_a
         except IndexError:
             # should not happen
-            print 'index out of range!'
+            print('index out of range!')
         # Set the updated list
         self.listbox.delete(0, 'end')
         self.listbox.insert(0, *temp_list)
@@ -999,24 +1073,35 @@ class Page6(WizardPage):
         wizard.prev_button.pack(side='right', anchor='se')
 
         text1='Running saved project'
-        self.label = Label(self.frame, text=text1, font=wizard.lrg_font)
+        self.label = tk.Label(self.frame, text=text1, font=wizard.lrg_font)
         self.label.pack(side='top', fill='both', expand=1, anchor='nw', pady=5)
         cmd_labelfont = wizard.get_font(wizard.font, _style='bold')
-        self.cmd_title = Label(self.frame,
+        self.cmd_title = tk.Label(self.frame,
           font=cmd_labelfont, text='\n\n\nThe command that will run:')
         self.cmd_title.pack(fill='both', expand=1)
         self.cmd_str = ''
         index = wizard.index.get()
-        self.cmd_label = Label(self.frame, text=self.cmd_str, justify='left',
-        font=wizard.fixed_font, wraplength=560, fg='white', bg='black')
+        try:
+            self.fixed_font = tkFont.Font(font=('TkFixedFont'))
+            self.fixed_font.configure(size=9)
+            xterm_font = [ '-fa', self.fixed_font.actual()['family']]
+            fsize = ['-fs', str(self.fixed_font.actual()['size'])]
+            self.xterm_cmd = ['xterm'] + fsize + xterm_font
+        # tcl/tk < 8.5: no freetype support or 'Standard fonts' like tkFixedFont
+        except tk._tkinter.TclError:
+            self.fixed_font = tkFont.Font(font='7x14')
+            xterm_font = ['-fn', '7x14']
+            self.xterm_cmd = ['xterm'] + xterm_font
+        self.cmd_label = tk.Label(self.frame, text=self.cmd_str, justify='left',
+        font=self.fixed_font, wraplength=560, fg='white', bg='black')
         self.cmd_label.pack(fill='both', expand=1)
-        self.termtitle = Label(self.master, text='\nFocus mouse in terminal')
-        self.button_frame = Frame(self.frame, borderwidth=2, relief='groove')
+        self.termtitle = tk.Label(self.master, text='\nFocus mouse in terminal')
+        self.button_frame = tk.Frame(self.frame, borderwidth=2, relief='groove')
         self.button_frame.pack(side='bottom', fill='both', expand=1)
-        self.run_button = Button(self.button_frame, text='Run project now',
+        self.run_button = tk.Button(self.button_frame, text='Run project now',
                                             command=self.run_in_xterm)
         self.run_button.pack(side='left', fill='both', expand=1)
-        self.save_button = Button(self.button_frame, text='Save log',
+        self.save_button = tk.Button(self.button_frame, text='Save log',
                                             command=self.save_log)
         self.save_button.pack(side='left', fill='both', expand=1)
         # disable the save log button till xterm is run
@@ -1068,17 +1153,21 @@ class Page6(WizardPage):
             self.master.show_status(1)
             return
         script = self.script_file
-        r = self.master.root
-        xterm_geo = '80x40' + '+' + str(r.winfo_rootx()) + '+' + str(r.winfo_rooty())
+        screen_pos = self.get_screen_position()
+        xterm_geo = '80x40' + screen_pos
         cmd = \
-          ['xterm', '-fn', '7x14', '-sb', '-title', 'todisc',
+          ['-sb', '-title', 'todisc',
             '-g', xterm_geo, '-e', 'sh', '-c']
+        self.xterm_cmd.extend(cmd)
         wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
         tovid_cmd = 'bash %s' % script
-        cmd.append(tovid_cmd + wait_cmd)
+        self.xterm_cmd.append(tovid_cmd + wait_cmd)
         self.root.withdraw()
-        command = Popen(cmd, stderr=PIPE)
+        command = Popen(self.xterm_cmd, stderr=PIPE)
         command.wait()
+        # without the following the position of restored window can jump around
+        self.root.geometry(screen_pos)
+        self.root.update_idletasks() # update geometry before it is 'deiconified'
         self.root.deiconify()
 
 
@@ -1089,25 +1178,24 @@ class Page6(WizardPage):
             log.writelines(self.log_contents)
 
 # unfinished and unused
-class Messagebox(Frame):
+class Messagebox(tk.Frame):
     def __init__(self, master, use=None, text='', boolean_var=None):
-        Frame.__init__(self, master)
+        tk.Frame.__init__(self, master)
         self.master = master
         self.use = use
-        self.var = boolean_var
+        self.var = tk.boolean_var
         #self.overrideredirect(1)
-        self.top = Toplevel(self.master, use=use)
+        self.top = tk.Toplevel(self.master, use=use)
         text = text
-        label = Label(self.top, text=text, wraplength=400)
+        label = tk.Label(self.top, text=text, wraplength=400)
         label.pack()
-        button1 = Button(self.top, text='Yes', command=self.yes)
-        button2 = Button(self.top, text='No', command=self.no)
+        button1 = tk.Button(self.top, text='Yes', command=self.yes)
+        button2 = tk.Button(self.top, text='No', command=self.no)
         button1.pack(side='left')
         button2.pack(side='left')
 
     def yes(self, event=None):
         #self.var.set(True)
-        print 'from yes() return_code is: ', self.master.return_code.get()
         self.quit()
         return True
 
@@ -1116,29 +1204,29 @@ class Messagebox(Frame):
         self.quit()
         return False
 
-class TitleBox(Frame):
+class TitleBox(tk.Frame):
     """A Listbox in a LabelFrame with Entry associated with it
        text: the label for the frame
     """
     def __init__(self, master=None, text=''):
-        Frame.__init__(self, master)
+        tk.Frame.__init__(self, master)
         self.master = master
         self.text = text
         self.draw()
 
     def draw(self):
         # create the listbox (note that size is in characters)
-        frame1 = LabelFrame(self.master, text=self.text)
+        frame1 = tk.LabelFrame(self.master, text=self.text)
         frame1.pack(side='left', fill='y', expand=False)
         # use entry widget to display/edit selection
-        self.enter1 = Entry(frame1, width=50)
+        self.enter1 = tk.Entry(frame1, width=50)
         self.enter1.pack(side='bottom', fill='both', expand=False)
-        self.listbox = Listbox(frame1, width=50, height=12)
+        self.listbox = tk.Listbox(frame1, width=50, height=12)
         self.listbox.pack(side='left', fill='y', expand=False, anchor='nw')
         self.get = self.listbox.get
 
         # create a vertical scrollbar to the right of the listbox
-        yscroll = Scrollbar(frame1, command=self.listbox.yview,
+        yscroll = tk.Scrollbar(frame1, command=self.listbox.yview,
                                              orient='vertical')
         yscroll.pack(side='right', fill='y', anchor='ne')
         self.listbox.configure(yscrollcommand=yscroll.set)
@@ -1193,10 +1281,21 @@ if __name__ == '__main__':
     tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
     os.environ['PATH'] = tovid_prefix + os.pathsep + os.environ['PATH']
     img_file = os.path.join(tovid_prefix, 'titleset-wizard.png')
+    root_height = 660
+    # run a 'progress bar' to get info (tuple):
+    # screen height, title bar height, title bar width
+    screen_info = get_screen_info(img_file)
     # instantiate Tk and Wizard
-    root = Tk()
-    root.minsize(width=800, height=660)
+    root = tk.Tk()
+    root.withdraw()
+    # shave height if we are dealing with a netbook resolution
+    if screen_info[0] < 660:
+        root_height = 600
+    root.minsize(width=800, height=root_height)
     app = Wizard(root, 'Tovid\nTitleset Wizard', img_file)
+    app.set_screen_info(screen_info)
+    root.update_idletasks()
+    root.deiconify()
     # instantiate pages
     page1 = Page1(app)
     page2 = Page2(app)
@@ -1206,6 +1305,6 @@ if __name__ == '__main__':
     page6 = Page6(app)
     # run it
     try:
-        mainloop()
+        root.mainloop()
     except KeyboardInterrupt:
         exit(1)
