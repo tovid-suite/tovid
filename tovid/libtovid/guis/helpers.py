@@ -24,6 +24,7 @@ __all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
 'thumb_masks', 'home_dir', 'tovid_prefix', 'tovid_icon', 'os_path',
 'heading_text', '_files_and_titles', '_out', 'copyable_info' ]
 
+
 class VideoGui(tk.Frame):
     """A basic GUI to play video files.  It runs mplayer in slave mode
     so that commands can be sent to it via fifo.
@@ -140,7 +141,7 @@ class VideoGui(tk.Frame):
            Called by run().
         """
         media_info = self.identify(video)
-        asr = re.findall('ID_VIDEO_ASPECT=.*', media_info)
+        asr = re.findall('ID_VIDEO_ASPECT=.*', str(media_info))
         # get last occurence as the first is 0.0 with mplayer
         if asr:
             asr = sorted(asr, reverse=True)[0].split('=')[1]
@@ -915,7 +916,7 @@ masks = [ 'none', 'normal', 'oval', 'vignette', 'plectrum', 'arch', 'spiral', \
 # some options can not be loaded by the gui:
 # options with multiple choices for args, for example: none, single, multiple
 # this is a list of 'unloadable' options for the GUI
-no_load_opts = ['-chapter-titles', '-menu-fade', '-loop', '-video-pause', '-group-video-pause', '-slide-blur', '-slide-border', '-slide-frame', '-chain-videos', '-showcase', '-titles-font-deco', '-chapters', '-subtitle-lang', '-audio-channel', '-audio-lang', '-seek', '-showcase-seek', '-bg-video-seek', '-bg-audio-seek', '-submenu-audio-seek', '-rotate-thumbs']
+no_load_opts = ['-chapter-titles', '-menu-fade', '-loop', '-video-pause', '-group-video-pause', '-slide-blur', '-slide-border', '-slide-frame', '-chain-videos', '-showcase', '-titles-font-deco', '-chapters', '-subtitle-lang', '-audio-channel', '-audio-lang', '-seek', '-showcase-seek', '-bg-video-seek', '-bgvideo-seek', '-bg-audio-seek', '-bgaudio-seek', '-submenu-audio-seek', '-rotate-thumbs', '-tile3x1', '-tile-3x1', '-tile4x1', '-tile-4x1']
 
 # $PREFIX/lib/tovid is already added to end of PATH
 os_path = os.environ['PATH'].rsplit(':')
@@ -933,7 +934,7 @@ heading_text += 'using ONLY this "Basic" pane\n'
 heading_text += 'Required: video files (and/or slideshows) and "Output name"'
 
 ### configuration for titleset wizard ( 'tovid titlesets' )
-wizard = os.getenv('METAGUI_WIZARD')
+wizard = os.getenv('METAGUI_WIZARD') or '0'
 if wizard == '1':
     # General options
     heading_text = 'General options applying to all titlesets.\n'
@@ -967,7 +968,7 @@ else:
         Text(),
         filter=to_title)
 
-if wizard and wizard != '1':
+if int(wizard) and wizard != '1':
     # 'Output name' only for General Options ( '1' )
     _out = Label(' ')
 else:
