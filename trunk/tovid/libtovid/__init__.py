@@ -12,6 +12,7 @@ __all__ = [
 ]
 
 import os
+from sys import version_info
 
 # Python < 3.x
 try:
