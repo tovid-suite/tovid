@@ -4,6 +4,17 @@
 import sys
 from libtovid.guis import todisc
 
+command = []
+geometry = None
 if __name__ == '__main__':
-    todisc.run(sys.argv[1:])
+    args = sys.argv[1:]
+    while args:
+        arg = args.pop(0)
+        # if passing --geometry (titleset-wizard), pop next arg as well
+        if arg in ['--geometry']:
+            geometry = args.pop(0)
+        else:
+            # if --geometry not passed, all args append to command
+            command.append(arg)
+    todisc.run(command, geometry=geometry)
 
