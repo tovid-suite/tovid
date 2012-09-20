@@ -756,10 +756,8 @@ def filter_args(master=None, args=None):
     # this function and imports of it can be removed when it is fixed
     a = get_loadable_opts(args)
     args = a[0]
-    #unloadable_opts = a[1]
-    #if unloadable_opts:
     if a[1]:
-        import Tkinter as tk
+        #import Tkinter as tk
         from textwrap import dedent
         heading = '''
         The tovid GUI did not load some of your options.
@@ -795,7 +793,7 @@ class copyable_info(tk.Frame):
     def __init__(self, master, title='', heading='', data='', icon=None):
         tk.Frame.__init__(self, master)
         self.pack()
-        #self.minsize(300, 300)
+        master.minsize(300, 300)
         text_frame = tk.Frame(self)
         text_frame.pack(side='top')
         style = Style()
@@ -808,7 +806,7 @@ class copyable_info(tk.Frame):
         text_widget = tk.Text(text_frame, width=50, height=20, wrap='word')
         text_widget["bg"] = self.cget('background')
         text_widget["relief"] = 'flat'
-        self.master["relief"] = 'flat'
+        master["relief"] = 'flat'
         if font:
             text_widget["font"] = font
         text_widget.pack(side='top', fill='both', expand=1)
@@ -824,16 +822,17 @@ class copyable_info(tk.Frame):
                        command=lambda:self._quit())
         #exit_button.focus_set()
         exit_button.pack(side='bottom')
-        self.master.bind('<Control-q>', lambda event=None: self._quit())
-        self.master.bind('<Escape>', lambda event=None: self._quit())
+        master.bind('<Control-q>', lambda event=None: self._quit())
+        master.bind('<Escape>', lambda event=None: self._quit())
         if icon:
             show_icons(self.master, icon)
+        master.update_idletasks() # update geometry
+        # center the popup
+        m = master
+        x = int((m.winfo_screenwidth() / 2) - (m.winfo_width() /2))
+        y = int((m.winfo_screenheight() / 2) - int((m.winfo_height() /2)))
+        master.geometry('+%s+%s' %(x, y))
 
-
-    #def set_focus(self, widg, Event=None):
-        #w = widget
-     #   w = widg
-     #   widg.focus_set()
 
 
     def _quit(self, event=None):
