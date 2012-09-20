@@ -11,7 +11,7 @@ import os
 import tempfile
 import shlex
 import subprocess
-from sys import exit
+from sys import exit, argv
 
 # Python < 3.x
 try:
@@ -270,14 +270,14 @@ class Application (Widget):
             self.toolbar, text="Save script", command=self.prompt_save_script)
         #FIXME disabled until load_args is refactored
         # see http://code.google.com/p/tovid/issues/detail?id=121
-        #load_button = tk.Button(
-        #    self.toolbar, text="Load script", command=self.prompt_load_script)
+        load_button = tk.Button(
+            self.toolbar, text="Load script", command=self.prompt_load_script)
         exit_button = tk.Button(
             self.toolbar, text="Exit", command=exit_function)
         # Pack the buttons
         config_button.pack(anchor='w', side='left', fill='x')
         #FIXME disabled until load_args is refactored
-        #load_button.pack(anchor='w', side='left', fill='x')
+        load_button.pack(anchor='w', side='left', fill='x')
         run_button.pack(anchor='w', side='left', fill='x', expand=True)
         save_button.pack(anchor='w', side='left', fill='x')
         exit_button.pack(anchor='e', side='right', fill='x')
@@ -385,15 +385,25 @@ class Application (Widget):
         #"""Prompt for a script filename, then load current Control settings
         #from that file.
         #"""
-        pass
-        #filename = askopenfilename(parent=self,
-        #    title="Select a shell script or text file to load",
-        #    filetypes=[('Shell scripts', '*.sh *.bash'),
-        #    ('All files', '*.*')])
+        # Hack: This is broken (commented section), presumably because of
+        # load_args limitations. This hack fixes it for libtovid, but does not
+        # belong in metagui.  So refactor this when load_args is fixed.
+        filename = askopenfilename(parent=self,
+            title="Select a shell script or text file to load",
+            filetypes=[('Shell scripts', '*.sh *.bash'),
+            ('All files', '*.*')])
 
-        #if not filename:
-        #    return
-
+        if not filename:
+            return
+        # begin Hack
+        geometry = self._root().winfo_x(), self._root().winfo_y()
+        command = argv[0]
+        try:
+            cmd = command, '--geometry', '+%s+%s' %geometry, filename
+            os.execlp(cmd[0], *cmd)
+        except:
+            showerror(title="Error", message="Failed load '%s'" %filename)
+            raise
         #try:
         #    self.reset()
         #    self.load_script(filename)
@@ -510,6 +520,8 @@ class GUI (Tix.Tk):
                 Name of an .ini-formatted file with GUI configuration
             icon
                 Full path to an image to use as the titlebar icon
+            position
+                position on screen: '+X+Y'
         """
         Tix.Tk.__init__(self)
 
@@ -517,15 +529,16 @@ class GUI (Tix.Tk):
         ensure_type("GUI needs Application", Application, application)
         self.application = application
 
-        # Set main window attributes
-        self.geometry("%dx%d" % (width, height))
-        self.title(title)
-        self.width = width
-        self.height = height
-
         # Get keyword arguments
         self.inifile = kwargs.get('inifile', DEFAULT_CONFIG)
         self.icon_file = kwargs.get('icon', None)
+        self.position = kwargs.get('position', '')
+
+        # Set main window attributes
+        self.geometry("%dx%d%s" % (width, height, self.position))
+        self.title(title)
+        self.width = width
+        self.height = height
 
         self.style = Style()
         if os.path.exists(self.inifile):
