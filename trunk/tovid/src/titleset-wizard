@@ -37,15 +37,17 @@ except ImportError:
       askyesno, showwarning, showinfo, showerror, askokcancel
       )
 
-# a function to get the height of the window manager title bar and screen height
-# masquerades as a progress bar :) Returns tuple: screen h, deco w, deco h
-# winfo_? will include the top panel if it exists, xwininfo just the titlebar
 def get_screen_info(icon):
+    """Get window manager's title bar height and screen height. This function
+    masquerades as a progress bar :) Returns tuple: screen h, deco w, deco h.
+    winfo_? includes the top panel if it exists, xwininfo just the titlebar.
+    """
     try:
         import Tix
     # Python 3
     except ImportError:
         import tkinter.tix as Tix
+    import time
     r = Tix.Tk()
     r.withdraw()
     top = Tix.Toplevel(r)
@@ -53,7 +55,6 @@ def get_screen_info(icon):
     top.geometry('+0+0')
     show_icons(top, icon)
     top.update_idletasks()
-    import time
     p = Tix.Meter(top, value=0.0)
     p.pack()
     for i in range(100):
@@ -71,7 +72,6 @@ def get_screen_info(icon):
     TK_x = top.winfo_x()
     TK_y = top.winfo_y()
     # so subtract the xwininfo x dimension from winfo_x; same for the y dimensions
-    #stderr.write(str(TK_y) + '-' + str(X_y))
     # if xwininfo gives a lesser value, assume it just window deco, and subtract it
     # else default to the greater (or equal) value of winfo_x (same for y dimension)
     if TK_x > int(X_x):
@@ -82,7 +82,6 @@ def get_screen_info(icon):
         frame_height = TK_y - int(X_y)
     else:
         frame_height = TK_y
-    #stderr.write(' '.join([str(TK_x), str(TK_y), str(X_x), str(X_y)]))
     screeninfo = top.winfo_screenheight(), frame_width, frame_height
     r.destroy()
     return screeninfo

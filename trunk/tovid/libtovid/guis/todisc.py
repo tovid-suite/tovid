@@ -1024,6 +1024,8 @@ def run(args=None, geometry=None):
     import os
     # if the first arg is a text file, treat it as a script and try to load
     # the options from it as a list into args
+    # load_script from helpers overrides load_script from gui.py as the latter
+    # suffers from the load_args bug mentioned in that file.
     if args:
         script = args[0]
         if not script.startswith('-'):
