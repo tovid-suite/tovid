@@ -1,0 +1,54 @@
+#! /usr/bin/env python
+# livegui.py
+
+"""Experimental script for launching a metagui application and allowing
+"live editing" of the metagui code.
+
+Usage:
+
+    livegui.py <metagui_file.py>
+
+Desired behavior: After launching a metagui using this script, metagui_file.py
+is monitored for changes. Any time the file is updated (as when you "save" a
+new version from an editor), the running GUI is refreshed to show the changes.
+
+For now, it should simply kill/restart the entire GUI. Later, it may be possible
+to refresh only the portions of the GUI that were altered in the code, to make
+interactive changes easier.
+"""
+
+import sys
+import os
+from libtovid import cli
+import time
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print "Usage: livegui.py <metagui_file.py>"
+        sys.exit(1)
+    
+    # Run the GUI in the background
+    filename = os.path.expanduser(sys.argv[1])
+    gui = cli.Command('python', filename)
+    gui.run(background=True)
+
+    print "Monitoring", filename, "for changes"
+    last_time = os.path.getmtime(filename)
+    
+    while True:
+        # If source code was modified, restart the GUI
+        this_time = os.path.getmtime(filename)
+        if this_time > last_time:
+            print "File", filename, "modified, reloading GUI"
+            last_time = this_time
+            gui.kill()
+            gui = cli.Command('python', filename)
+            gui.run(background=True)
+        else:
+            time.sleep(5)
+
+        # If the GUI was manually closed, exit
+        if gui.done():
+            print "GUI closed with returncode of %d" % gui.proc.returncode
+            print "livegui exiting."
+            sys.exit(0)
