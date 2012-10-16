@@ -20,7 +20,12 @@ def svn_version():
     as a string like 'svn-r1234'. If svn is not installed, or if something goes
     wrong, return 'svn-unknown'
     """
-    from commands import getoutput
+    try:
+        from commands import getoutput
+    except ImportError:
+        # python 3
+        from subprocess import getoutput
+
     rev_line = getoutput('svn info 2>/dev/null | grep ^Revision')
     # If rev_line is found, get the revision number
     if rev_line:
