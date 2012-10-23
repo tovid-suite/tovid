@@ -22,7 +22,7 @@ __all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
 'find_masks', 'nodupes', 'video_filetypes', 'image_filetypes',
 'visual_filetypes', 'dvd_video_files', 'av_filetypes', 'sys_dir',
 'thumb_masks', 'home_dir', 'tovid_prefix', 'tovid_icon', 'os_path',
-'heading_text', '_files_and_titles', '_out', 'copyable_info' ]
+'heading_text', '_files_and_titles', '_out', 'CopyableInfo' ]
 
 
 class VideoGui(tk.Frame):
@@ -781,7 +781,7 @@ def filter_args(master=None, args=None):
                 nonloadable.append(i)
         #data = ' '.join(nonloadable)
         master.title('Important!')
-        info_msg = copyable_info(master, 'Important', dedent(heading),
+        info_msg = CopyableInfo(master, 'Important', dedent(heading),
                                      ' '.join(nonloadable), tovid_icon)
         info_msg.mainloop()
     return args
@@ -789,7 +789,7 @@ def filter_args(master=None, args=None):
 
 from libtovid.metagui.support import show_icons
 from libtovid.metagui import Style
-class copyable_info(tk.Frame):
+class CopyableInfo(tk.Frame):
     def __init__(self, master, title='', heading='', data='', icon=None):
         tk.Frame.__init__(self, master)
         self.pack()
