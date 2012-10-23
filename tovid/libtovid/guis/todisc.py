@@ -1019,7 +1019,7 @@ encoding = VPanel('Encoding',
 
 ### --------------------------------------------------------------------
 
-def run(args=None, geometry=None):
+def run(args=None, position='', project=''):
     from libtovid.guis.helpers import get_loadable_opts, load_script
     import os
     # if the first arg is a text file, treat it as a script and try to load
@@ -1063,13 +1063,8 @@ def run(args=None, geometry=None):
     # finally, run it
     app = Application('todisc',
         main, main_menu, submenus, thumbnails, slideshows, playback, behavior, encoding)
-    gui = GUI("tovid gui", gui_width, gui_height, app, icon=tovid_icon)
-
-    # these lines are needed for titleset wizard
-    if geometry:
-        gui.geometry(geometry)
-        #gui.update_idletasks()
-    gui.run(args)
+    gui = GUI("tovid gui", gui_width, gui_height, app, icon=tovid_icon, position=position)
+    gui.run(args, script=project)
 
 if __name__ == '__main__':
 
