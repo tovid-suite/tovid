@@ -250,10 +250,14 @@ class Application (Widget):
         """Draw the Application in the given master.
         """
         Widget.draw(self, master)
+        self.master = master
         # Draw all panels as tabs
         self.tabs = Tabs('', *self.panels)
         self.tabs.draw(self)
         self.tabs.pack(anchor='n', fill='both', expand=True)
+        # need to wait until draw is called before setting this variable
+        self.script = tk.StringVar()
+        self.script.set('')
 
 
     def draw_toolbar(self, config_function, exit_function):
@@ -268,15 +272,12 @@ class Application (Widget):
             self.toolbar, text="Run %s now" % self.program, command=self.execute)
         save_button = tk.Button(
             self.toolbar, text="Save script", command=self.prompt_save_script)
-        #FIXME disabled until load_args is refactored
-        # see http://code.google.com/p/tovid/issues/detail?id=121
         load_button = tk.Button(
             self.toolbar, text="Load script", command=self.prompt_load_script)
         exit_button = tk.Button(
             self.toolbar, text="Exit", command=exit_function)
         # Pack the buttons
         config_button.pack(anchor='w', side='left', fill='x')
-        #FIXME disabled until load_args is refactored
         load_button.pack(anchor='w', side='left', fill='x')
         run_button.pack(anchor='w', side='left', fill='x', expand=True)
         save_button.pack(anchor='w', side='left', fill='x')
@@ -286,9 +287,8 @@ class Application (Widget):
         # hack to allow wizard to use less clicks and remove uneeded commmands
         if os.getenv('METAGUI_WIZARD'):
             save_button.pack_forget()
-            #FIXME disabled until load_args is refactored
-            #load_button.pack_forget()
-            #load_button.pack(anchor='w', side='left', fill='x', expand=True)
+            load_button.pack_forget()
+            load_button.pack(anchor='w', side='left', fill='x', expand=True)
             save_button.pack(anchor='w', side='left', fill='x', expand=True)
             save_button.config(command=self.save_exit, text='Save to wizard')
             run_button.pack_forget()
@@ -336,6 +336,13 @@ class Application (Widget):
             self.executor.notify("Cancelled.")
             self.toolbar.enable()
 
+    def set_scriptname(self, name):
+        """Set script filename.  Called externally, this sets the variable
+        that used used for save_exit() as well as the 'initial file' for
+        prompt_save_script().
+        """
+        self.script.set(name)
+
 
     def prompt_save_script(self):
         """Prompt for a script filename, then save the current
@@ -344,7 +351,8 @@ class Application (Widget):
         # TODO: Make initialfile same as last saved script, if it exists
         filename = asksaveasfilename(parent=self,
             title="Select a filename for the script",
-            initialfile='%s_commands.bash' % self.program)
+            #initialfile='%s_commands.bash' % self.program)
+            initialfile=self.script.get() or '%s_commands.bash' % self.program)
 
         if not filename:
             return
@@ -355,39 +363,34 @@ class Application (Widget):
             showerror(title="Error", message="Failed to save '%s'" % filename)
             raise
         else:
-            # HACK  this message was alteredd because load_args is broken and
-            # 'tovid gui' is the only metagui program that uses saving
-            # scripts. It should be modified if load_args is refactored
             saved_script = os.path.split(filename)[1]
-            mess = dedent('''
-
-            To load this script again into the GUI
-            you must do it from the command line
-            when you start the program.
-            For example:
-
-            tovid disc %s
-
-            
-            See "man tovid" under "Command:gui" for
-            details on command line options.
-            ''' %saved_script)
-            showinfo(title="Script saved", message="Saved '%s'" % filename + mess)
+            showinfo(title="Script saved", message="Saved '%s'" % filename)
 
 
     def save_exit(self):
-        filename = os.getcwd() + os.path.sep + '%s_commands.bash' % self.program
+        """Save current command to script and exit, without prompt
+        """
+        # hack for titleset wizard to get gui's screen position
+        from sys import stderr
+        stderr.write("%s %+d%+d" 
+          %('gui position', self._root().winfo_x(), self._root().winfo_y()))
+
+        default = os.getcwd() + os.path.sep + '%s_commands.bash' % self.program
+        filename = self.script.get() or default
         self.save_script(filename)
         exit()
 
 
     def prompt_load_script(self):
+        """Prompt for script filename; reload gui with current Control settings
+        """
         #"""Prompt for a script filename, then load current Control settings
         #from that file.
         #"""
         # Hack: This is broken (commented section), presumably because of
         # load_args limitations. This hack fixes it for libtovid, but does not
         # belong in metagui.  So refactor this when load_args is fixed.
+        # see http://code.google.com/p/tovid/issues/detail?id=121
         filename = askopenfilename(parent=self,
             title="Select a shell script or text file to load",
             filetypes=[('Shell scripts', '*.sh *.bash'),
@@ -433,6 +436,8 @@ class Application (Widget):
 
 
     def load_script(self, filename):
+        # this is now disabled and its functionality passed to guis.helpers.py
+        # see http://code.google.com/p/tovid/issues/detail?id=121
         pass
         #"""Load current Control settings from a text file.
         #"""
@@ -542,7 +547,7 @@ class GUI (Tix.Tk):
 
         self.style = Style()
         if os.path.exists(self.inifile):
-            print("Loading style from config file: '%s'" % self.inifile)
+            print("Loading style from the config file: '%s'" % self.inifile)
             self.style.load(self.inifile)
         else:
             print("Creating config file: '%s'" % self.inifile)
@@ -558,11 +563,14 @@ class GUI (Tix.Tk):
         self.bind('<Control-q>', self.confirm_exit)
 
 
-    def run(self, args=None):
+    def run(self, args=None, script=''):
         """Run the GUI and enter the main event handler.
         This function does not return until the GUI is closed.
+        args: arguments to the programe being run
+        script: a filename to save the GUI command output to
         """
         self.draw()
+        
         if args:
             # If first argument looks like a filename, load
             # a script from that file
@@ -580,6 +588,9 @@ class GUI (Tix.Tk):
             # If more args remain, load those too
             if args:
                 self.application.load_args(args)
+            # if a script/project name was provided, set it in 'application'
+        if script:
+            self.application.set_scriptname(script)
 
         # Enter the main event handler
         self.mainloop()
