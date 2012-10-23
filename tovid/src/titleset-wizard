@@ -5,7 +5,7 @@ import shlex
 import re
 from time import sleep
 from tempfile import mktemp
-from sys import argv, exit, stderr
+from sys import argv, exit
 from base64 import b64encode
 from copy import deepcopy
 from subprocess import Popen, PIPE
@@ -38,9 +38,10 @@ except ImportError:
       )
 
 def get_screen_info(icon):
-    """Get window manager's title bar height and screen height. This function
-    masquerades as a progress bar :) Returns tuple: screen h, deco w, deco h.
+    """Get window manager's title bar height and screen height.
+    This function  masquerades as a progress bar.
     winfo_? includes the top panel if it exists, xwininfo just the titlebar.
+    Returns tuple: screen h, deco w, deco h.
     """
     try:
         import Tix
@@ -89,19 +90,21 @@ def get_screen_info(icon):
 
 
 class Wizard(tk.Frame):
-    """A frame to hold the wizard pages.  It will also hold the commands
-       that will  be processed and written out as a script.  Its base frame
-       holds a frame common to all pages that displays an icon, title, and
-       status panel.  It also has a bottom frame that contains the [Next] and
-       [Exit] buttons.  It will hold a list of all of the wizard pages.
+    """A frame to hold the wizard pages.
+       It will also hold the commands that will  be processed and written out
+       as a script.  Its base frame holds a frame common to all pages that
+       displays an icon, title, and status panel.  It also has a bottom frame
+       that contains the [Next] and [Exit] buttons.
+       It will hold a list of all of the wizard pages.
 
        master: the Tk() instance called by __main__
-       icon: Path to an image file (gif) to display on the left frame
        text: The text for the wizard title above and/or below the icon
              Use \n to break title into above\nbelow.
+       icon: Path to an image file (gif) to display on the left frame
+       infile: an infile provided as a saved project, that will be loaded
        
     """
-    def __init__(self, master, text, icon):
+    def __init__(self, master, text, icon, infile=''):
         tk.Frame.__init__(self, master)
         self.pages = []
         self.index = tk.IntVar()
@@ -117,6 +120,10 @@ class Wizard(tk.Frame):
         # for waiting on [Next>>>] being pushed to continue titleset loop
         self.waitVar = tk.BooleanVar()
         self.waitVar.set(False)
+        # variable for name of final script
+        self.project = ''
+        # variable for possible pre-loaded script -
+        self.is_infile = False
         # bindings for exit
         self.root.protocol("WM_DELETE_WINDOW", self.confirm_exit)
         self.root.bind('<Control-q>', self.confirm_exit)
@@ -147,6 +154,11 @@ class Wizard(tk.Frame):
             style.save(inifile)
         self.font = style.font
         self.draw()
+
+        # if a script is being loaded (infile), then assign to self.project
+        if infile:
+            self.is_infile = True
+            self.project = infile
 
     def draw(self):
         # get fonts
@@ -179,7 +191,8 @@ class Wizard(tk.Frame):
             app_label2.pack(side='top', fill='both', expand=1, anchor='nw')
 
     def next(self):
-        """Move to the next wizard page"""
+        """Move to the next wizard page.
+        """
         index = self.index.get()
         try:
             self.pages[index].hide_page()
@@ -193,14 +206,15 @@ class Wizard(tk.Frame):
         self.pages[index].previous()
 
     def set_pages(self, page):
-        """Accept incoming list of wizard page instances"""
+        """Accept incoming list of wizard page instances.
+        """
         self.pages.append(page)
 
     def set_screen_info(self, iterable):
         self.screen_info = iterable
 
     def get_font(self, font_descriptor, name='', size='', _style=''):
-        """Get metagui font configuration
+        """Get metagui font configuration.
         """
         font = [name, size, _style]
         for i in range(len(font_descriptor)):
@@ -209,7 +223,7 @@ class Wizard(tk.Frame):
         return tuple(font)
 
     def show_status(self, status):
-        """Show status label on all pages, with timeout
+        """Show status label on all pages, with timeout.
         """
         if status == 0:
             text='\nOptions saved!\n'
@@ -231,13 +245,19 @@ class Wizard(tk.Frame):
         if askyesno(message="Exit?"):
             # set is_running to false so the gui doesn't get run
             self.is_running.set(False)
+            # remove project file if we quit early and it exists and is empty
+            if os.path.exists(self.project):
+                if os.stat(self.project).st_size == 0:
+                    print('removing empty file: %s' %self.project)
+                    os.remove(self.project)
             # waitVar may cause things to hang, spring it
             self.set_waitvar()
             self.root.quit()
 
     # unused
     def kill_pid(self, pid):
-        """Test and kill xterm pid in case of premature exit"""
+        """Test and kill xterm pid in case of premature exit.
+        """
         if not pid:
             return
         test_pid = getstatusoutput('kill -0 %s' %pid)
@@ -246,31 +266,24 @@ class Wizard(tk.Frame):
             Popen(cmd, stderr=PIPE)
 
     def set_waitvar(self):
-        """Set a BooleanVar() so tk.wait_var can exit
+        """Set a BooleanVar() so tk.wait_var can exit.
         """
         self.waitVar.set(True)
 
 
 class WizardPage(tk.Frame):
-    """Base class for the wizard pages.  As such it contains everythig
-       common to all wizard pages.
+    """Base class for the wizard pages.
+       As such it contains everythig common to all wizard pages.
     """
     def __init__(self, master):
         tk.Frame.__init__(self, master)
         tk.Frame.pack(master)
         self.master = master
         self.root = self._root()
-        # a temp file name for the final script name if it exists already
-        curdir = os.path.abspath('')
-        self.newname = mktemp(suffix='.bash', prefix='todisc_commands.',
-                                                             dir=curdir)
         # get tovid prefix
         tovid_prefix = getoutput('tovid -prefix')
         self.tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
         os.environ['PATH'] = self.tovid_prefix + os.pathsep + os.environ['PATH']
-        # the script we will be using for options
-        cur_dir = os.path.abspath('')
-        self.script_file = cur_dir + '/todisc_commands.bash'
         # get script header
         shebang = '#!/usr/bin/env bash'
         _path = 'PATH=' + self.tovid_prefix + ':$PATH'
@@ -295,61 +308,78 @@ class WizardPage(tk.Frame):
         self.frame.pack_forget()
 
     def get_screen_position(self):
+        """get real screen position, taking into account window decorations.
+        """
         r = self.root
         r.update_idletasks() # make sure geometry is updated before we 'get' it
         geo_x = r.winfo_rootx() - self.titlebar_width
         geo_y = r.winfo_rooty() - self.titlebar_height
         return '+%s+%s' %(geo_x, geo_y)
 
-    def run_gui(self, args=[], index='', script=''):
-        """Run the tovid GUI, collecting options, and saving to wizard
+    def check_int(self, List):
+        """return list of ints from list of strings, checking 1st if castable.
+        """
+        for index, item in enumerate(List):
+            try:
+                List[index] = int(item)
+            except ValueError:
+                return []
+        return List
+
+    def run_gui(self, args=[], index='', project=''):
+        """Run the tovid GUI, collecting options, and saving to wizard.
         """
         title = 'load saved script'
-        script = 'todisc_commands.bash'
-        # get modification time of the script, so we can see if it changes
-        mtime = os.path.getmtime(script)
-        set_env = []
         if index:
             os.environ['METAGUI_WIZARD'] = '%s' %index
         self.root.update_idletasks() # update geometry before it is 'deiconified'
-        screen_pos = self.get_screen_position()
-        cmd = ['todiscgui'] + ['--geometry', screen_pos] + args
-        todiscgui_cmd = Popen(cmd, stdout=PIPE)
+        self.screen_pos = self.get_screen_position()
+        # these 2 are just convenience vars for shorter line length
+        script = self.master.project
+        position = self.screen_pos
+        # get modification time of the script, so we can see if it changes
+        mtime = os.path.getmtime(script)
+        #cmd = ['todiscgui'] + ['--position', self.screen_pos] + ['--project', self.master.project.get()] + args
+        cmd = ['todiscgui', '--position', position, '--project', script] + args
+        todiscgui_cmd = Popen(cmd, stdout=PIPE, stderr=PIPE)
         # sleep to avoid the 'void' of time before the GUI loads
         sleep(0.5)
         if self.root.state() is not 'withdrawn':
             self.root.withdraw()
         todiscgui_cmd.wait()
+        # hack to deiconify wizard at same position as the exiting tovid gui
+        for line in todiscgui_cmd.stderr.readlines():
+            L = line.split(b'+') # python 3 compatibility (b'')
+            if b'gui position ' in L and len(L) == 3:
+                result = self.check_int(L[-2:])
+                if result:
+                    x = result[0]-self.master.screen_info[1]
+                    y = result[1]-self.master.screen_info[2]
+                    self.screen_pos = '+%d+%d' %(x, y)
+                    break
+            
         # if modification time changed, then the script was saved from the gui
         if os.path.getmtime(script) > mtime:
-        # if script doesn't exist prompt for load.
-            if os.path.exists(self.script_file):
-                script = self.script_file
-            else:
-                err = 'A problem has occured with saving your options.  ' + \
-                  'The saved script file was not found.  ' + \
-                  'Please submit a bug report'
-                showerror(message=err)
-                return
             # Read lines from the file and reassemble the command
             todisc_opts = self.script_to_list(script)
-            os.remove(script)
+            # blank file: don't remove as we need it to get mtime in run_gui()
+            open(script, 'w').close()
         else:
             todisc_opts  = []
         # set wizard screen position again, then update
-        self.root.geometry(screen_pos)
+        self.root.geometry(self.screen_pos)
         self.root.update_idletasks()
         return todisc_opts
 
     def page_controller(self):
         self.master.next()
 
-    def script_to_list(self, infile):
-        """File contents to a list, trimming '-from-gui' and header
+    def script_to_list(self, script):
+        """File contents to a list, trimming '-from-gui' and header.
         """
         add_line = False
         command = ''
-        for line in open(infile, 'r'):
+        for line in open(script, 'r'):
             if line.startswith('-'):
                 add_line = True
             if add_line and not line.startswith('-from-gui'):
@@ -358,13 +388,13 @@ class WizardPage(tk.Frame):
         return shlex.split(command)
 
     def write_script(self):
-        """Write out the final script to todisc_commands.bash
+        """Write out the final script to project filename.
         """
         commands = self.master.commands
         header = self.header
-        cmdout = open(self.script_file, 'w')
-        # octal notation for chmod for python 3 compatibility
-        os.chmod(self.script_file, 0o755)
+        cmdout = open(self.master.project, 'w')
+        # mode compatibility for 2.4 to 3.x python
+        os.chmod(self.master.project, int('755', 8))
         # add the shebang, PATH, and 'todisc \' lines
         cmdout.writelines(header)
         # flatten the list
@@ -381,7 +411,7 @@ class WizardPage(tk.Frame):
         cmdout.close()
 
     def trim_list_header(self, cmds):
-            """Trim header (items before 1st '-' type option) from a list
+            """Trim header (items before 1st '-' type option) from a list.
             """
             # remove shebang, identifier and PATH
             try:
@@ -411,7 +441,7 @@ class WizardPage(tk.Frame):
         return chunk
 
     def get_list_args(self, items, option):
-        """Get option arguments from a list (to next item starting with '-')
+        """Get option arguments from a list (to next item starting with '-').
         """
         try:
             index = items.index(option)
@@ -429,7 +459,7 @@ class WizardPage(tk.Frame):
         return chunk
 
     def see_me(self, widget):
-        """Bring attention to widget by changing text colour
+        """Bring attention to widget by changing text colour.
         """
         # 3000 and 4000 ms because show_status uses up 3000 already
         self.root.after(3000, lambda: widget.configure(foreground='blue'))
@@ -438,7 +468,7 @@ class WizardPage(tk.Frame):
 
 
     def refill_listbox(self, listbox, opts):
-        """Repopulate the rerun listbox with option list titles
+        """Repopulate the rerun listbox with option list titles.
         """
         if '-titles' in opts:
             new_titles = self.get_list_args(opts, '-titles')
@@ -452,10 +482,11 @@ class WizardPage(tk.Frame):
         for i in xrange(numtitles):
             listbox.insert('end', new_titles[i])
 
-    def rename_script(self):
+    # unused (note self.script_file also unused now)
+    def rename_script(self, path):
         # if todisc_commands.bash exists in current dir, prompt for rename
         rename_msg = 'The option file we will use:\n' + \
-          '"todisc_commands.bash"\n' + \
+          self.master.script.get() + '\n' + \
           'exists in the current directory.\n' + \
           'It will be renamed to:\n' + \
           '"%s"' + \
@@ -469,14 +500,15 @@ class WizardPage(tk.Frame):
 
 
 class Page1(WizardPage):
-    """Wizard intro page"""
+    """Wizard intro page.
+    """
     def __init__(self, master):
         WizardPage.__init__(self, master)
         # draw the page by default unless script file arg passed
-        if len(argv) < 2:
+        if not self.master.is_infile:
             self.draw()
-        index = self.master.pages.index(self)
-        self.master.index.set(index)
+            index = self.master.pages.index(self)
+            self.master.index.set(index)
 
     def draw(self):
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
@@ -512,13 +544,19 @@ class Page1(WizardPage):
 
 
 class Page2(WizardPage):
-    """Wizard general options page"""
+    """Wizard general options page.
+    """
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
     def draw(self):
         self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
         text = '''GENERAL OPTIONS
+
+        Please set a name for your 'project' in the box at the bottom of the page,
+        by pressing the "Browse" button, and browsing to the directory you want
+        to save it.  This will be a bash script that can be run standalone, or
+        reloaded into the titleset-wizard for further editing.
 
         When you press the  "Next >>>"  button at the bottom of the wizard, we
         will start the GUI and begin with general options applying to all
@@ -530,17 +568,31 @@ class Page2(WizardPage):
         bottom of the GUI's main tab.  Options you enter will be overridden if
         you use the same option again later for titlesets.
 
-        After making your selections, press [ Save to wizard ] in the GUI
+        In the GUI, after making your selections, press [ Save to wizard ].
 
-        Press  "Next >>>"  to begin ...
+        Enter a project name, then press  "Next >>>"
         '''
         text = trim(text)
         self.label = PrettyLabel(self.frame, text, self.master.font)
         self.label.pack(fill='both', expand=1, anchor='nw')
+        # setting project name
+        self.project_label = tk.Label(self.frame, text='Project name', font=self.master.font,
+                                       justify='left', padx=10, pady=10)
+        self.project_label.pack(fill='both', expand=1, anchor='sw')
+        self.project_frame = tk.Frame(self.frame)
+        self.project_entry = tk.Entry(self.project_frame, width=50)
+        self.project_entry.insert(0, 'Press Browse Button')
+        self.project_entry.bind("<KeyPress>", lambda e: "break")
+        self.browse_button = tk.Button(self.project_frame, text="Browse...",
+                                                        command=self.browse)
+        self.project_frame.pack(fill='both', expand=1, anchor='sw')
+        self.project_entry.pack(side='left')
+        self.browse_button.pack(side='right')
 
     def page_controller(self):
-        if os.path.exists(self.script_file):
-            self.rename_script()
+        if not self.master.project:
+            # here we need a popup telling user to enter a project name #FIXME
+            return 
         wizard = self.master
         index = wizard.index.get()
         move = True
@@ -551,16 +603,25 @@ class Page2(WizardPage):
             move = False
         else:
             status = 0
-            cmds = [l for l in cmds if l]
+            cmds = [L for L in cmds if L]
             wizard.commands.append(cmds)
         wizard.show_status(status)
         self.root.deiconify()
         if move:
             wizard.next()
 
+    def browse(self, e=None):
+        title = 'Type a filename'
+        filename = asksaveasfilename(parent=self, title=title, initialfile='my_project.tovid')
+        if filename:
+            self.project_entry.delete(0, 'end')
+            self.project_entry.insert(0, filename)
+            self.master.project = filename
+            open(filename, 'w').close()
 
 class Page3(WizardPage):
-    """Wizard root menu page"""
+    """Wizard root menu page.
+    """
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
@@ -591,16 +652,16 @@ class Page3(WizardPage):
         self.titlebox = TitleBox(self.frame, text="Root 'menu link' titles")
 
     def save_list(self):
-        """Save the current listbox contents
+        """Save the current listbox contents.
         """
         # get a list of listbox lines
         temp_list = list(self.titlebox.get(0, 'end'))
-        return [ l for l in temp_list if l]
+        return [ L for L in temp_list if L]
 
     def page_controller(self):
         wizard = self.master
         run_cmds = list(self.titlebox.get(0, 'end'))
-        run_cmds = [l for l in run_cmds if l]
+        run_cmds = [L for L in run_cmds if L]
         if len(run_cmds) < 2:
             showerror(message=\
               'At least two titlesets (titles) must be defined')
@@ -628,7 +689,8 @@ class Page3(WizardPage):
 
 
 class Page4(WizardPage):
-    """Wizard titleset menu page"""
+    """Wizard titleset menu page.
+    """
     def __init__(self, master):
         WizardPage.__init__(self, master)
 
@@ -704,16 +766,17 @@ class Page4(WizardPage):
 
 
 class Page5(WizardPage):
-    """Final wizard page.  Here you can rerun options that have been saved
-       from the tovid GUI, and add or remove titlesets.  You can also
-       choose to run the final project
+    """Final wizard page.
+       Here you can rerun options that have been saved from the tovid GUI, and
+       add or remove titlesets.  You can also choose to run the final project.
     """
     def __init__(self, master):
         WizardPage.__init__(self, master)
         self.curindex = 0
         self.lastindex = 0
-        # set commands and draw this page if script file arg passed
-        if len(argv) > 1:
+        # set commands and draw by default if script (infile) arg passed
+        # self.master.project.get() would be set to that file
+        if self.master.is_infile:
             self.set_project_commands()
             self.draw()
             index = self.master.pages.index(self)
@@ -744,7 +807,7 @@ class Page5(WizardPage):
         tovid titlesets %s
 
         Edit your selections, or press [Run script now] or [Exit].
-        ''' % (self.script_file, self.script_file)
+        ''' % (self.master.project, self.master.project)
 
         text = trim(text)
         self.heading_label = tk.Label(self.frame,
@@ -847,8 +910,9 @@ class Page5(WizardPage):
             self.write_script()
 
     def set_index(self, Event=None):
-        """Called when item in listbox selected.  Set curindex and change
-           cursor to double-arrow.  lastindex==curindex if no drag occurs.
+        """Called when item in listbox selected.
+           Set curindex and change cursor to double-arrow.
+           lastindex==curindex if no drag occurs.
         """
         self.curindex = self.listbox.nearest(Event.y)
         self.lastindex = self.curindex
@@ -866,7 +930,7 @@ class Page5(WizardPage):
 
     # used to repopulate titleset titles after adding new one
     def get_option(self, items, option):
-        """Get option and arguments from a list (to next item starting with '-')
+        """Get option and args from a list (to next item starting with '-').
         The list is modified in place.
         """
         try:
@@ -951,10 +1015,11 @@ class Page5(WizardPage):
         self.write_script()
 
     def mod_sublist(self, item='', *index):
-        """Modify commands sublist.  If 2 indexes, just swap items.  If one
-           index the default behavior is to delete the index from the sublist
-           and remove it from commands, but if item is passed, add it as a
-           new index instead.
+        """Modify commands sublist.
+           If 2 indexes, just swap items.
+           If one index the default behavior is to delete the index from the
+           sublist and remove it from commands, but if item is passed,
+           add it as a new index instead.
         """
         wizard = self.master
         vmgm_cmds = [w for w in wizard.commands[1]]
@@ -981,7 +1046,7 @@ class Page5(WizardPage):
         wizard.commands.insert(1, vmgm_cmds)
 
     def rerun_options(self, Event=None, index=None):
-        """Run the gui with the selected options
+        """Run the gui with the selected options.
         """
         # self.master is the WizardPage
         commands = self.master.commands
@@ -996,7 +1061,7 @@ class Page5(WizardPage):
         # the GUI doesn't understand the titleset type options
         remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
         options = [ i for i in commands[index] if not i in remove ]
-        rerun_opts = self.run_gui(options, '%s' %(index+1))
+        rerun_opts = self.run_gui(options, '%d' %(index+1))
         if rerun_opts:
             status = 0
             # trim header from todisc_cmds
@@ -1026,15 +1091,16 @@ class Page5(WizardPage):
     def set_project_commands(self):
         in_contents = self.script_to_list(argv[1])
         in_cmds = in_contents[:]
-        all = [self.get_chunk(in_cmds, '-vmgm', '-end-vmgm')]
+        _all = [self.get_chunk(in_cmds, '-vmgm', '-end-vmgm')]
         while '-titleset' in in_cmds:
-            all.append( self.get_chunk(in_cmds, '-titleset', '-end-titleset') )
-        all.insert(0, in_cmds)
-        self.master.commands = all
+            _all.append( self.get_chunk(in_cmds, '-titleset', '-end-titleset') )
+        _all.insert(0, in_cmds)
+        self.master.commands = _all
 
     def load_project(self):
-        """Load a saved project script for editing with the wizard and GUI
+        """Load a saved project script for editing with the wizard and GUI.
         """
+        script = os.path.abspath(self.master.project)
         #self.heading_label.configure(text='Editing a saved project')
         error_msg = 'This is not a saved tovid project script.  ' + \
           'Do you want to try to load it anyway?'
@@ -1043,20 +1109,26 @@ class Page5(WizardPage):
                 quit()
         numtitles = len(self.master.commands[2:])
         menu_titles = []
-        l = self.master.commands[1]
-        menu_titles.extend(self.get_list_args(l, '-titles'))
+        L = self.master.commands[1]
+        menu_titles.extend(self.get_list_args(L, '-titles'))
         self.refill_listbox(self.listbox, menu_titles)
         self.listbox.selection_set('end')
-        # write out todisc_commands.bash in current dir
-        # if it exists in current dir, prompt for rename
-        if os.path.exists(self.script_file):
-            mess = '%s has been loaded for editing.  Your ' %self.script_file + \
-              'new edits will be saved to the same file.  Continue?'
+        # write out to project filename
+        if os.path.exists(script):
+            infile_prefix = os.path.basename(script)
+            backup = mktemp(prefix=infile_prefix + '.', dir='/tmp')
+            backup_prefix = os.path.basename(backup)
+            mess = '%s has been loaded for editing, ' %infile_prefix + \
+              'and will be used for new edits. A backup ' + \
+              'will be saved to /tmp .\n' + \
+              'Continue ?'
             if askokcancel\
               (message=mess):
                 pass
             else:
                 quit()
+        from shutil import copyfile
+        copyfile(script, backup)
         self.write_script()
 
 class Page6(WizardPage):
@@ -1120,7 +1192,8 @@ class Page6(WizardPage):
         self.cmd_label.configure(text=self.cmd)
 
     def previous(self):
-        """Move to the previous wizard page"""
+        """Move to the previous wizard page.
+        """
         self.frame.pack_forget()
         wizard = self.master
         index = wizard.index.get()
@@ -1146,26 +1219,25 @@ class Page6(WizardPage):
         wizard.next_button.pack_forget()
 
     def run_in_xterm(self):
-        """Run the final script in an xterm, completing the project
+        """Run the final script in an xterm, completing the project.
         """
         if not askyesno(message="Run in xterm now?"):
             self.master.show_status(1)
             return
-        script = self.script_file
-        screen_pos = self.get_screen_position()
-        xterm_geo = '80x40' + screen_pos
+        self.screen_pos = self.get_screen_position()
+        xterm_geo = '80x40' + self.screen_pos
         cmd = \
           ['-sb', '-title', 'todisc',
             '-g', xterm_geo, '-e', 'sh', '-c']
         self.xterm_cmd.extend(cmd)
         wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
-        tovid_cmd = 'bash %s' % script
+        tovid_cmd = 'bash %s' % self.master.project
         self.xterm_cmd.append(tovid_cmd + wait_cmd)
         self.root.withdraw()
         command = Popen(self.xterm_cmd, stderr=PIPE)
         command.wait()
         # without the following the position of restored window can jump around
-        self.root.geometry(screen_pos)
+        self.root.geometry(self.screen_pos)
         self.root.update_idletasks() # update geometry before it is 'deiconified'
         self.root.deiconify()
 
@@ -1204,7 +1276,7 @@ class Messagebox(tk.Frame):
         return False
 
 class TitleBox(tk.Frame):
-    """A Listbox in a LabelFrame with Entry associated with it
+    """A Listbox in a LabelFrame with Entry associated with it.
        text: the label for the frame
     """
     def __init__(self, master=None, text=''):
@@ -1237,7 +1309,7 @@ class TitleBox(tk.Frame):
         self.listbox.bind('<ButtonRelease-1>', self.get_list)
 
     def set_list(self, event):
-        """Insert an edited line from the entry widget back into the listbox
+        """Insert an edited line from the entry widget back into the listbox.
         """
         try:
             index = self.listbox.curselection()[0]
@@ -1258,7 +1330,7 @@ class TitleBox(tk.Frame):
         self.listbox.selection_set('end')
 
     def get_list(self, event):
-        """Read the listbox selection and put the result in an entry widget
+        """Read the listbox selection and put the result in an entry widget.
         """
         try:
             # get selected line index and text
@@ -1275,6 +1347,13 @@ class TitleBox(tk.Frame):
 
 # Execution
 if __name__ == '__main__':
+    args = argv[1:]
+    infile = ''
+    while args:
+        arg = args.pop(0)
+        # check for script to load: if its a file assume it is one (in)
+        if os.path.exists(arg):
+            infile = arg
     # get tovid prefix so we can find the app image file
     tovid_prefix = getoutput('tovid -prefix')
     tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
@@ -1291,7 +1370,7 @@ if __name__ == '__main__':
     if screen_info[0] < 660:
         root_height = 600
     root.minsize(width=800, height=root_height)
-    app = Wizard(root, 'Tovid\nTitleset Wizard', img_file)
+    app = Wizard(root, 'Tovid\nTitleset Wizard', img_file, infile=infile)
     app.set_screen_info(screen_info)
     root.update_idletasks()
     root.deiconify()
