@@ -98,24 +98,34 @@ if set in ~/.tovid/preferences.
 
 =Command:gui=
 
+=Usage=
+
+**tovid gui** [//OPTIONS//]
+
 **tovid gui** starts the graphical user interface (GUI) for tovid. This is
 the easiest way to start creating DVDs with tovid. The optional arguments
-are any option used by todisc ('tovid disc') which will save entering it
-manually, OR the full path to a saved script from the GUI.  This option to
-save the contents of your project allows you to use it as a bash script later,
-or to reload the project to continue working with it at another time.  Note:
-this feature is still in development so some options may not load properly -
-make sure to check that your selections were all loaded.
+//OPTIONS// are any option used by todisc ('tovid disc') which will save
+entering it manually, OR the full path to a saved script from the GUI.
+(This option to save the contents of your project allows you to use it as a
+bash script later, or to reload the project to continue working with it at
+another time.)  Note that loading options or a script in this way is still
+in development so some options may not load properly - make sure to check
+that your selections were all loaded.
+
+**tovid gui** will also take the option **--position**, which denotes the
+screen position that the GUI will start at, in the form '+X+Y', similar to
+this part of the Xorg -geometry string.
 
 All help is integrated in the form of tooltips.  You can also see
-**Command:disc ** for more detail about the options.  Note: if you wish to
-use a GUI to make multiple titlesets on the same DVD use 'tovid titlesets',
-which is a wizard that uses the the 'tovid gui.
+**Command:disc ** for more detail about the options.  Note: if you wish to use
+a GUI to make multiple titlesets on the same DVD use ***tovid titlesets***,
+which is a wizard that uses the the 'tovid gui. See ***Command titlesets***.
 
 
 Please note that although the interface may seem complex with so many options,
 you can create a fully functional DVD with only a few options on the opening
 tab of the GUI (select video files and an output name).
+
 
 =Command:titlesets=
 
