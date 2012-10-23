@@ -5,16 +5,19 @@ import sys
 from libtovid.guis import todisc
 
 command = []
-geometry = None
+position = ''
+project = ''
 if __name__ == '__main__':
     args = sys.argv[1:]
     while args:
         arg = args.pop(0)
-        # if passing --geometry (titleset-wizard), pop next arg as well
-        if arg in ['--geometry']:
-            geometry = args.pop(0)
+        # if passing --position pop next arg as well
+        if arg in ['--position', '-position']:
+            position = args.pop(0)
+        elif arg in ['--project', '-project']:
+            project = args.pop(0)
         else:
-            # if --geometry not passed, all args append to command
+            # if --position or --project not passed, all args append to command
             command.append(arg)
-    todisc.run(command, geometry=geometry)
+    todisc.run(command, position=position, project=project)
 
