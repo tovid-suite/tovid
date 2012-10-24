@@ -402,7 +402,7 @@ class Application (Widget):
         geometry = self._root().winfo_x(), self._root().winfo_y()
         command = argv[0]
         try:
-            cmd = command, '--geometry', '+%s+%s' %geometry, filename
+            cmd = command, '--position', '+%s+%s' %geometry, filename
             os.execlp(cmd[0], *cmd)
         except:
             showerror(title="Error", message="Failed load '%s'" %filename)
