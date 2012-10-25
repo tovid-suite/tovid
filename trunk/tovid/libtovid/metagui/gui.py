@@ -631,6 +631,11 @@ class GUI (Tix.Tk):
     def confirm_exit(self, event=None):
         """Exit the GUI, with confirmation prompt.
         """
+        # Hack to sync titleset wizard's position with exiting GUI's position
+        if os.getenv('METAGUI_WIZARD'):
+            from sys import stderr
+            stderr.write("%s %+d%+d" 
+            %('gui position', self._root().winfo_x(), self._root().winfo_y()))
         if askyesno(message="Exit?"):
             self.quit()
 
