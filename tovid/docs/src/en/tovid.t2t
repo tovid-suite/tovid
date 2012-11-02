@@ -81,6 +81,7 @@ Two configuration files are created the first time you run tovid:
     ; -no-warn
     -static
     -no-ask
+```
 
 
 Edit these files if you wish to change your configuration.
@@ -263,23 +264,23 @@ Example of using **tovid disc** with titlesets:
 
 ```
  $ tovid disc -static -out MY_DVD \
-    \
+   \
    -titleset -files 1.mpg 2.mpg 3.mpg \
    -titles "Title One" "Title Two" "Title Three" \
    -end-titleset \
    \
    -titleset -files 4.mpg 5.mpg \
    -titles "Title Four" "Title Five" \
-    -background foo.jpg \
-    -showcase bar.png \
-    -end-titleset \
-    \
-    -vmgm \
-    -titles "Season One" "Season Two" \
-    -background bg.jpg \
-    -bgaudio foo.mp3 \
-    -titles-fontsize 20 \
-    -end-vmgm
+   -background foo.jpg \
+   -showcase bar.png \
+   -end-titleset \
+   \
+   -vmgm \
+   -titles "Season One" "Season Two" \
+   -background bg.jpg \
+   -bgaudio foo.mp3 \
+   -titles-fontsize 20 \
+   -end-vmgm
 ```
 
 See also **-titleset** and **-vmgm**
