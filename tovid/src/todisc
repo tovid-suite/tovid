@@ -102,7 +102,7 @@ TITLE_CLR="#EAEAEA"
 SM_TITLE_CLR="#EAEAEA"
 THUMB_BG_CLR=white
 TITLES_CLR=""
-BUTTON_STYLE="rect"
+BUTTON_STYLE="line"
 MIST_COLOUR=white
 MIST_OPACITY=60
 M_TITLE_STROKE=""
@@ -3706,7 +3706,7 @@ if [[ -n $NR ]]; then
     NR="$NR $NR_AMT"
 fi
 # check for -loop or -loop_input
-ffmpeg_help=$($FFmpeg -h 2>&1)
+ffmpeg_help=$($FFmpeg -h full 2>&1)
 if grep -q -- '^-loop ' <<< "$ffmpeg_help"; then
     LOOP="-loop 1"
 else
@@ -3823,6 +3823,13 @@ if $USER_THUMBS && ! $STATIC; then
     fi
 fi
 
+# check for legal -button-style option
+case $BUTTON_STYLE in
+  line|text|text-rect|rect) :
+                            ;;
+  *)                        usage_error "$BUTTON_STYLE not a -button-style arg"
+                            ;;
+esac
 # transparent border around text so rect spumux outline can fit
 if [[ $BUTTON_STYLE = "text-rect" ]]; then
     TEXT_BORDER="-bordercolor Transparent -border 8x8"
@@ -3929,17 +3936,15 @@ if ! $SINGLE_SLIDESHOW; then
     for ((i=0; i<${#FILES[@]}; i++)); do
         if test $(wc -l <<< "$(echo -e "${TITLES[i]}")") -gt 1; then
             MULTILINE_TITLE=:
-            if $FEATHER && [ $THUMB_SHAPE != "normal" ]; then
-                # multiline titles not suitable for text buttons
-                BUTTON_STYLE="text-rect"
-            elif $TEXTMENU; then
-                [[ $BUTTON_STYLE != "line" ]] && BUTTON_STYLE="text-rect"
-            else
-                [[ $BUTTON_STYLE != "text-rect" ]] \
-                && ! $USER_BSTYLE && BUTTON_STYLE="rect"
-            fi
         fi
     done
+    # multiline titles not suitable for text buttons
+    if $MULTILINE_TITLE && [[ $BUTTON_STYLE = "text" ]]; then
+        BUTTON_STYLE="line"
+        info_message "'text' button style not suitable for multi-line
+        titles, using 'line' style instead"
+        $WARN && continue_in 3
+    fi
 
     # remove multiple spaces in video titles for text button style
     if [ "$BUTTON_STYLE" = "text" ]; then
@@ -3957,11 +3962,7 @@ if ! $SINGLE_SLIDESHOW; then
     fi
 fi
 if { $TEXTMENU || $QUICK_MENU ; } && [[ $BUTTON_STYLE = "rect" ]]; then
-    if $MULTILINE_TITLE; then
-        BUTTON_STYLE="text-rect"
-    else
-        BUTTON_STYLE="line"
-    fi
+    BUTTON_STYLE="line"
     if ((MENU_NUM==2)) || { ! $SWITCHED_MODE && ! $SWITCHED_MENUS ; }; then
         if $USER_BSTYLE; then
             info_message "Using button style '$BUTTON_STYLE' instead of 'rect'
