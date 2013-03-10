@@ -107,11 +107,11 @@ if set in ~/.tovid/preferences.
 the easiest way to start creating DVDs with tovid. The optional arguments
 //OPTIONS// are any option used by todisc ('tovid disc') which will save
 entering it manually, OR the full path to a saved script from the GUI.
-(This option to save the contents of your project allows you to use it as a
-bash script later, or to reload the project to continue working with it at
-another time.)  Note that loading options or a script in this way is still
-in development so some options may not load properly - make sure to check
-that your selections were all loaded.
+You can also combine these, but the script must be the FIRST option
+directly after **tovid gui** .  (This option to save the contents of your
+project allows you to use it as a bash script later, or to reload the
+project to continue working with it at another time.)
+
 
 **tovid gui** will also take the option **--position**, which denotes the
 screen position that the GUI will start at, in the form '+X+Y', similar to
@@ -120,7 +120,7 @@ this part of the Xorg -geometry string.
 All help is integrated in the form of tooltips.  You can also see
 **Command:disc ** for more detail about the options.  Note: if you wish to use
 a GUI to make multiple titlesets on the same DVD use ***tovid titlesets***,
-which is a wizard that uses the the 'tovid gui. See ***Command titlesets***.
+which is a wizard that uses the the 'tovid gui. See ***Command:titlesets***.
 
 
 Please note that although the interface may seem complex with so many options,
@@ -265,11 +265,13 @@ Example of using **tovid disc** with titlesets:
 ```
  $ tovid disc -static -out MY_DVD \
    \
-   -titleset -files 1.mpg 2.mpg 3.mpg \
+   -titleset \
+   -files 1.mpg 2.mpg 3.mpg \
    -titles "Title One" "Title Two" "Title Three" \
    -end-titleset \
    \
-   -titleset -files 4.mpg 5.mpg \
+   -titleset \
+   -files 4.mpg 5.mpg \
    -titles "Title Four" "Title Five" \
    -background foo.jpg \
    -showcase bar.png \
@@ -412,7 +414,7 @@ Here is a list of possible options you can pass:
     just encoding rather than making a DVD structure.  But it works well from
     the command line as well as it has the added advantage that you can input
     a list of files.  Remember any makempg ('tovid mpg') options you use will
-    be passed on to the the makempg script when encoding.
+    be passed on to the makempg script when encoding.
 
 
 ==Menu style==
@@ -422,7 +424,7 @@ Here is a list of possible options you can pass:
     This is a different arrangement of images for the menu: small thumbnails
     go at left (and right) side of screen, with a larger image in the centre.
     Maximum of 10 videos.  If the provided argument is a video file, the
-    central thumb will be animated (regardness of whether **-static** is part
+    central thumb will be animated (regardless of whether **-static** is part
     of the command line). Only 4:3 or 16:9 videos and images are accepted for
     for the showcase file: if not one of these todisc will assume it is the
     aspect ratio as the videos in the titleset.
@@ -456,7 +458,7 @@ Here is a list of possible options you can pass:
 
     Example:
 ```
-    -quick-menu -showcase /home/robert/showcase.mpg
+    -quick-menu -showcase /home/grepper/showcase.mpg
 ```
     See **-switched-menus** for example of making switched menus with
     **-quick-menu**
@@ -746,7 +748,7 @@ Here is a list of possible options you can pass:
 : **-submenu-title-color**, **-submenu-title-colour**
     The fill color used for sub-menu title fonts
 : **-submenu-titles**
-    You can supple a list of titles here for sub-menus without the length
+    You can supply a list of titles here for sub-menus without the length
     restrictions found in thumb titles.  Must equal number of videos
 : **-chapters** [ NUM | CHAPTER POINTS in HH:MM:SS ]
     The number of chapters for each video (default: 6) OR
@@ -876,11 +878,11 @@ Here is a list of possible options you can pass:
     Move menu title by this offset from its N|S|E|W|Center position.  You
     may need to use -align as well if you don't want your title covering other
     parts of your menu.  See **-align**
-: **-button-style** rect|text|line|text-rect
+: **-button-style** line|rect|text|text-rect [line]
     The style of button that you will see when you play the DVD.
-    "rect" draws a rectangle around the thumb when you select it
-    in the DVD player.  "text" highlights the video title text, "line"
-    underlines the title, and "text-rect" draws a rectangle around the title
+    "line" style underlines the title, "rect" draws a rectangle around the
+    thumb when you select it in the DVD player, "text" highlights the video
+    title text, and "text-rect" draws a rectangle around the title
     text.
 : **-title-color**, **-title-colour** COLOR
     Color to use for the main menu title.  For list of supported colors do:
