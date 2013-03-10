@@ -283,12 +283,12 @@ function file_output_progress()
         # If file exists, wait a few more seconds, then break out
         if test -e "$FOP_OUTFILE"; then
             $QUIET || printf "Processing started. Please wait...                                               "
-            sleep 1s
+            sleep 1
             CUR_TIME=1
             break
         fi
         printf "Waiting $CUR_TIME seconds for output file \"$FOP_BASENAME_NAME\" to appear...\r"
-        sleep 1s
+        sleep 1
         CUR_TIME=$(expr $CUR_TIME - 1)
     done
 
@@ -321,7 +321,7 @@ function file_output_progress()
 
         # Doze a bit to let the file size increase
         # (SLEEP_TIME defaults to 1s if unset)
-        sleep ${SLEEP_TIME-"1s"}
+        sleep ${SLEEP_TIME-"1"}
 
         FOP_LAST_SIZE=$FOP_CUR_SIZE
         FOP_CUR_SIZE=$(du -b "$FOP_OUTFILE" | awk '{print $1}')
