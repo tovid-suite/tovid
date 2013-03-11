@@ -57,16 +57,16 @@ Usage:
       -files File1.mpg File2.avi ... \\\\
       -titles "Title 1" "Title 2" ... \\\\
       -menu-title "Tovid Demo" \\\\
-      -out OUT_PREFIX
+      -out OUT_DIRECTORY
 
 You can also do slideshows using -slides IMAGES rather than -files VIDEOS
 General Options:
     -no-ask, -no-warn, -keep-files, -jobs, -grid, -no-confirm-backup
 Other quick examples:
 Create 'text menu' DVD filesystem:
-    tovid disc -text-menu -files ... -titles .. -out OUT_PREFIX
+    tovid disc -text-menu -files ... -titles .. -out OUT_DIRECTORY
 Create DVD filesystem with no menu, encoding with ffmpeg and prompt for burn:
-    tovid disc -files *.mp4 -ffmpeg -no-menu -burn -out OUT_PREFIX
+    tovid disc -files *.mp4 -ffmpeg -no-menu -burn -out OUT_DIRECTORY
 Create DVD compatible mpeg2 files using makempg (and ffmpeg) and then quit:
     tovid disc -encode-only -ffmpeg -quality 8 -files *.avi (no -out required)
 See the tovid manual page ('man tovid') for additional documentation.
@@ -82,7 +82,7 @@ SCRIPT_START_TIME=`date +%s`
 WORK_DIR="/tmp/todisc-work"
 
 LOG_FILE=$(readlink -f todisc.log)
-OUT_PREFIX=""
+OUT_DIRECTORY=""
 TV_STANDARD=ntsc
 PIXEL_AR="10:11"
 MENU_LEN=( 20 )
@@ -541,7 +541,7 @@ runtime_error()
     yecho "todisc encountered an error:"
     yecho "    $@"
     echo
-    echo "Please check the contents of 
+    echo "See above message, and also you can check the contents of 
     $LOG_FILE to see what went wrong." |format_output
     echo "See the tovid website ($TOVID_HOME_PAGE) for further help options."
     echo "Latest fixes for ffmpeg api changes go in svn tovid."
@@ -887,7 +887,7 @@ check_compliance()
                     if [[ -e "$IN.enc.mpg" ]]; then
                         if ! grep -w -- -overwrite <<< \
                           "$makempg_ini_opts ${script_args[@]}"; then
-                            : #FIXME need to echo to terminal what makempg would do
+                            : #FIXME echo to terminal what makempg would do ?
                         fi
                     fi
                     yecho "Converting $IN"
@@ -1174,7 +1174,7 @@ carousel_menu_mode()
         fi
         MC_CMD=(todisc -slides "${IN_SLIDES[@]}" $mix_range \
         $NO_CONFIRM_BACKUP ${encopt[@]} $sld_tranition $background_carousel \
-        $showcase_carousel -out "$OUT_PREFIX" -carousel_menu_mode -basedir \
+        $showcase_carousel -out "$OUT_DIRECTORY" -carousel_menu_mode -basedir \
         "$WORK_DIR" $menulen -carousel_num $((c+1)) -todisc_pids "$TODISC_PIDS")
         yecho ""
         yecho "Running ${MC_CMD[@]}"
@@ -1702,7 +1702,7 @@ quick_menu()
           grep -q -w '^crop' <<< "$filters"; then
             print2log "libavfilter movie filter present - using for -quick-menu"
             use_overlay_filter=:
-        elif grep -q ^-vhook <<< "$($FFmpeg -h 2>&1)"; then
+        elif grep -q ^-vhook <<< "$ffmpeg_help"; then
             # find out where vhook lives for ffmpeg
             local config=$($FFmpeg -version 2>&1 | grep -- --prefix=)
             config=${config//*--prefix=}
@@ -1714,9 +1714,6 @@ quick_menu()
                 use_vhooks=:
                 print2log "vhooks present, using imlib2 vhook for -quick-menu"
             fi
-            #else
-            #    yecho "!!!!! $imlib2_vhook not found, can not continue !!!!!"
-            #fi
         fi
     fi
 
@@ -1889,24 +1886,27 @@ make_dummy()
     ENC_CMD2=($FFmpeg -f yuv4mpegpipe -i - -an -r $ff_frame_rate -s $VIDSIZE \
     $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
     print2log "Running: ${ENC_CMD1[@]} | ${ENC_CMD2[@]}"
-    if ! ${ENC_CMD1[@]} 2>> "${LOG_FILE}.tmp"  |
-    ${ENC_CMD2[@]} 2>&1 |pipe2log ${FFmpeg##*/}; then
-        runtime_error
-    fi
+    ${ENC_CMD1[@]} 2>> "${LOG_FILE}.tmp"  |
+    ${ENC_CMD2[@]} 2>&1 |pipe2log ${FFmpeg##*/}
     [[ -e ${LOG_FILE}.tmp ]] && cat "${LOG_FILE}.tmp" | pipe2log jpeg2yuv
     rm -f "${LOG_FILE}.tmp"
+    ! [[ -s "$WORK_DIR/dummy.m2v" ]] && \
+      runtime_error "There was a problem creating a dummy vmgm video"
     local VMGM_TIME=$(stream_length "$WORK_DIR/dummy.m2v")
     BGAUDIO_CMD=($FFmpeg -f s16le -ar 48000 -i /dev/zero -t $VMGM_TIME \
     $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
     print2log "Creating silent audio stream."
     print2log "${BGAUDIO_CMD[@]}"
     "${BGAUDIO_CMD[@]}" 2>&1 | pipe2log ${FFmpeg##*/}
-    ! [[ -s "$WORK_DIR/dummy.$AUDIO_EXT" ]] &&  runtime_error
+    ! [[ -s "$WORK_DIR/dummy.$AUDIO_EXT" ]] &&  runtime_error \
+    "There was a problem creating audio for the dummy vmgm menu"
 
     MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o  "$BASEDIR/dummy.mpg" \
      "$WORK_DIR/dummy.$AUDIO_EXT"  "$WORK_DIR/dummy.m2v")
     print2log "Running: ${MPLEX_CMD[@]}"
-    ! "${MPLEX_CMD[@]}" 2>&1 |pipe2log mplex && runtime_error
+    "${MPLEX_CMD[@]}" 2>&1 |pipe2log mplex
+    ((${PIPESTATUS[0]} != 0)) && runtime_error \
+    "There was a problem muxing the audio and video with mplex"
 }
 verify_infiles()
 {
@@ -2342,15 +2342,30 @@ make_mask()
     esac
 }
 
+# wait for file to appear
+# name and timeout are optional: defaults to basename of FILE and 12 secs 
+# usage: wait_for file [name] [timeout]
 wait_for()
 {
-    # wait for file to appear
-    while true; do
-        if test -e $1; then
+    local check_file=$1
+    local filename=${check_file##*/}
+    # default timeout of 10 seconds
+    local timeout=${3:-10}
+    timeout=$((timeout * 10))
+    local name=${2:-$filename}
+    x=0
+    while ((x<timeout)); do
+        if test -e "$check_file"; then
             return
         fi
+        # print a message after 2 seconds: will only run when there's a problem
+        if ((x==20)); then
+            echo Waiting $(( (timeout / 10) - 2)) seconds for $name to appear ...
+        fi
         sleep .1
+        ((x++))
     done
+    return 1
 }
 
 # HACK: transcode produces some scary output when run from python
@@ -2553,8 +2568,8 @@ while test $# -gt 0; do
             ;;
         "-out" )
             shift
-            OUT_PREFIX="$1"
-            OUT_PREFIX=${OUT_PREFIX%/}
+            OUT_DIRECTORY="$1"
+            OUT_DIRECTORY=${OUT_DIRECTORY%/}
             ;;
         "-no-ask" | "-noask" )
             NOASK=:
@@ -3649,10 +3664,10 @@ fi
 : ${BASEDIR:="$WORK_DIR"}
 
 # Make sure -out was provided and it is valid
-if test -n "$OUT_PREFIX"; then
-    OUT_DIR=$(readlink -f "$OUT_PREFIX")
+if test -n "$OUT_DIRECTORY"; then
+    OUT_DIR=$(readlink -f "$OUT_DIRECTORY")
     if [[ ! -d ${OUT_DIR%/*} ]]; then
-        OUT_PATH=$(readlink -m "$OUT_PREFIX")
+        OUT_PATH=$(readlink -m "$OUT_DIRECTORY")
         usage_error "The -out path ${OUT_PATH%/*}/ does not exist"
     fi
     if egrep -q '<|>|&' <<< "$OUT_DIR"; then
@@ -3754,12 +3769,14 @@ $NOASK && NO_ASK="-noask"
 _transcode_version=$(transcode -v 2>&1| awk '{gsub("v", ""); print $2}')
 _baseline_version=1.1.0
 if ! test_version $_transcode_version $_baseline_version; then
+    test -f "$LOG_FILE" && rm -f "$LOG_FILE"
     runtime_error \
     "transcode version 1.1.0 or newer is required to run this script (todisc).
     If you must use version $_transcode_version use tovid 0.34 or older."
 fi
 # stock debian transcode and probably other dists missing export_yuv4mpeg module
 if !  ls -1 $( tcmodinfo -p )/export*.so |grep -q yuv4mpeg; then
+    test -f "$LOG_FILE" && rm -f "$LOG_FILE"
     _url="http://tovid.wikia.com/wiki/Known_bugs#tovid_is_broken_on_Debian"
     runtime_error \
     "your transcode is missing the yuv4mpeg export module. See $_url"
@@ -3825,10 +3842,12 @@ fi
 
 # check for legal -button-style option
 case $BUTTON_STYLE in
-  line|text|text-rect|rect) :
-                            ;;
-  *)                        usage_error "$BUTTON_STYLE not a -button-style arg"
-                            ;;
+  line|text|text-rect|rect)
+    :
+    ;;
+  *)
+    usage_error "\"$BUTTON_STYLE\" is not a -button-style arg"
+    ;;
 esac
 # transparent border around text so rect spumux outline can fit
 if [[ $BUTTON_STYLE = "text-rect" ]]; then
@@ -4064,8 +4083,15 @@ if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] \
     for ((i=0; i<${#FILES[@]}; i++)); do
         curfile=${FILES[i]}
         ! $SINGLE_SLIDESHOW && print2log "Checking aspect ratios: ${FILES[i]##*/}"
-        stat=$(idvid -terse -fast "${FILES[i]}" 2>/dev/null |
-          awk -F= '/V_ASPECT_WIDTH=/ {print $2}' 2>/dev/null)
+        # check if image, then check aspect ratio of image if so
+        if [[ $(file -L "$curfile"  | awk '{ $1 = ""; print }') =~ image ]]; then
+            stat=133
+        else
+            # else it is a video, check aspect ratio
+            stat=$(idvid -terse -fast "${FILES[i]}" 2>/dev/null |
+              awk -F= '/V_ASPECT_WIDTH=/ {print $2}' 2>/dev/null)
+        fi
+        # exit from the loop 
         # save list of files without reported aspect ratio for a warning
         { [[ $stat = 0 ]] || ! test_is_number $stat; } &&  warn_files[i]=${FILES[i]}
         stats[i]=${stat:-0}
@@ -4073,6 +4099,12 @@ if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] \
         # padding, so we know what aspect it will be after conversion
         if (( ${stats[i]} > 153 )); then
             ar_stats[i]=177
+            # exit with usage error if videos are 16:9 and a slideshow is included
+            if ((sshows >=1)); then
+                usage_error \
+                "Slides are encoded using 4:3 aspect ratio.  You can not mix \
+                16:9 videos with a slideshow in the same titleset"
+            fi
         else
             ar_stats[i]=133
         fi
@@ -4094,6 +4126,7 @@ if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] \
     ((ws > lb)) && ar=177 || ar=133
     # set the global var for aspect ratio
     { [[ $ar = 177 ]] && ASPECT_RATIO=16:9; } || ASPECT_RATIO=4:3
+    
     # warn about files that have a differing aspect ratio
     for i in ${!ar_stats[@]}; do
         if ! grep -q $ar <<< ${ar_stats[i]}; then
@@ -6190,7 +6223,8 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICKMENU_IS_BACKGROUND; then
     #echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     print2log "Running ${FFMPEG_CMD[@]}"
     SED_VAR="frame="
-    if ! "${FFMPEG_CMD[@]}" 2>&1 | pipe2log ${FFmpeg##*/};then
+    "${FFMPEG_CMD[@]}" 2>&1 | pipe2log ${FFmpeg##*/}
+    if ((${PIPESTATUS[0]} != 0)); then
         runtime_error "Problem creating images from the video."
     fi
     echo | tee -a "$LOG_FILE"
@@ -6274,7 +6308,8 @@ if $SHOWCASE && { $SC_THUMB || $QUICK_MENU ; }; then
                 "$WORK_DIR/showcase_img.png")
                 print2log "Running: ${FFMPEG_CMD[@]}"
                 SED_VAR="frame="
-                if ! "${FFMPEG_CMD[@]}" 2>&1 | pipe2log ${FFmpeg##*/};then
+                "${FFMPEG_CMD[@]}" 2>&1 | pipe2log ${FFmpeg##*/}
+                if ((${PIPESTATUS[0]} != 0)); then
                     runtime_error "Problem creating images from the video."
                 fi
             fi
@@ -6350,7 +6385,8 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU && ! $USER_THUMBS; then
             mv -f $largest_img "$WORK_DIR/pics/$i/$(printf "%06d%s" 0 .$IMG_FMT)"
             rm -f "$WORK_DIR"/000*[0-9].png
         elif [ "$SC_FRAMESTYLE" = "none" ]; then
-            if ! "${FFMPEG_CMD[@]}" 2>&1 | pipe2log ${FFmpeg##*/} 2>&1;then
+            "${FFMPEG_CMD[@]}" 2>&1 | pipe2log ${FFmpeg##*/} 2>&1
+            if ((${PIPESTATUS[0]} != 0)); then
                 runtime_error "Problem creating images from the video."
             fi
             
@@ -6365,7 +6401,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU && ! $USER_THUMBS; then
         fi
 
         wait
-        unset NAVSEEK_CMD rectangle run_transcode FFMPEG_CMD TRANSCODE_CMD
+        unset NAVSEEK_CMD rectangle FFMPEG_CMD TRANSCODE_CMD
     done
     echo
 fi
@@ -7786,7 +7822,19 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                     awk -F / '{ field = $NF }; END{ print field }')
                     spin "Seeking in video and creating images: $last_image"
                 done
-                wait # wait for ffmpeg and transcode to finish
+                # wait for ffmpeg and transcode to finish
+                wait $ffm_pid # get exit code of ffmpeg
+                if (($? != 0)); then
+                    cat "$log_tmp" | sed '/time=10000000000.00/d' | pipe2log ${FFmpeg##*/}
+                    rm -f "$log_tmp"
+                    runtime_error \
+                      "Problem with ffmpeg while creating images from video"
+                fi
+                wait $TRANSCODE_PID # get exit code of transcode
+                if (($? != 0)); then
+                    runtime_error \
+                      "Problem with transcode while creating images from video"
+                fi
                 # get the largest image if static menu(we made 9)
                 # get largest image of 9 if static menu and not -frame-safe
                 if $STATIC && $FRAME_SAFE; then
@@ -8754,9 +8802,8 @@ if $SUB_MENU; then
                     runtime_error "Problem creating images from the video."
                 fi
                 cat "$log_tmp" | pipe2log ${FFmpeg##*/}
-                #cat "$log_tmp" >> "$LOG_FILE" #FIXME
                 rm -f "$log_tmp"
-                unset TCODE_CMD cmd run_transcode
+                unset TCODE_CMD cmd
                 if ! $ANI_SUB_MENU ; then
                     #echo
                     mv $WORK_DIR/submenu/000001.$SM_IMG_FMT \
@@ -8958,10 +9005,8 @@ if $SUB_MENU; then
                 -y "$WORK_DIR/menu$i.m2v")
                 print2log "Running ${IMG_STREAM_CMD1[@]} | ${IMG_STREAM_CMD2[@]} | \
                 ${ENC_CMD1[@]}"| format_output | tee -a "$LOG_FILE" 2>&1
-                if ! "${IMG_STREAM_CMD1[@]}" | "${IMG_STREAM_CMD2[@]}" |
-                "${ENC_CMD1[@]}" 2>&1|strings >> "$LOG_FILE"; then
-                    runtime_error
-                fi
+                "${IMG_STREAM_CMD1[@]}" | "${IMG_STREAM_CMD2[@]}" |
+                "${ENC_CMD1[@]}" 2>&1|strings >> "$LOG_FILE"
             fi
 
             # check if m2v was created ok before proceeding
@@ -9071,8 +9116,8 @@ if $SUB_MENU; then
                 mv $WORK_DIR/menu$s-processed.wav $WORK_DIR/menu$s.wav
             fi
             print2log "Running ${BGAUDIO_CMD2[@]}"
-            ! "${BGAUDIO_CMD2[@]}" 2>&1 | pipe2log ${FFmpeg##*/} \
-            && runtime_error "Problem getting audio for the submenu"
+            "${BGAUDIO_CMD2[@]}" 2>&1 | pipe2log ${FFmpeg##*/}
+             ((${PIPESTATUS[0]} != 0)) && runtime_error "Problem getting audio for the submenu"
             unset TIME
         fi
         # if "1" audio file, then convert it if it has not been done yet
@@ -9095,8 +9140,8 @@ if $SUB_MENU; then
                 :
             else
                 print2log "Running ${BGAUDIO_CMD3[@]}"
-                ! "${BGAUDIO_CMD3[@]}" 2>&1 | pipe2log ${FFmpeg##*/} \
-                && runtime_error
+                "${BGAUDIO_CMD3[@]}" 2>&1 | pipe2log ${FFmpeg##*/}
+                ((${PIPESTATUS[0]} != 0)) && runtime_error "Problem getting audio for the submenu"
             fi
         fi
         # copy the final file for each submenu if only 1 supplied
@@ -9106,7 +9151,9 @@ if $SUB_MENU; then
         MPLEX_CMD=(mplex -V -f $MPLEX_FORMAT -o $WORK_DIR/menu$S.mpg \
         $WORK_DIR/menu$s.$AUDIO_EXT $WORK_DIR/menu$s.m2v)
         print2log "Running: ${MPLEX_CMD[@]}"
-        ! "${MPLEX_CMD[@]}" 2>&1 |pipe2log mplex  && runtime_error
+        "${MPLEX_CMD[@]}" 2>&1 |pipe2log mplex
+        ((${PIPESTATUS[0]} != 0)) && runtime_error \
+          "Problem muxing audio and video with mplex"
         # remove wav to save space
         rm -f $WORK_DIR/menu$s.wav
     done
@@ -10020,7 +10067,9 @@ if $DO_MENU; then
             -acodec pcm_s16le $WORK_DIR/intro.wav)
         fi
         print2log "Running ${BGAUDIO_CMD[@]}"
-        ! "${BGAUDIO_CMD[@]}" 2>&1 |pipe2log $pipe_prog && runtime_error
+        "${BGAUDIO_CMD[@]}" 2>&1 |pipe2log $pipe_prog
+        ((${PIPESTATUS[0]} != 0)) && runtime_error \
+          "Problem creating wav file during background audio processing"
 
         if $AUDIO_FADE; then  # bgaudio supplied and audio fade selected
             WAV_TIME=$(stream_length "$WORK_DIR/intro.wav" audio)
@@ -10049,7 +10098,9 @@ if $DO_MENU; then
     INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -o $WORK_DIR/intro.mpg \
       $WORK_DIR/intro.$AUDIO_EXT $WORK_DIR/intro.m2v"
     print2log "Running: $INTRO_MPLEX_CMD"
-    ! ${INTRO_MPLEX_CMD[@]} 2>&1 |pipe2log mplex  && runtime_error
+    ${INTRO_MPLEX_CMD[@]} 2>&1 |pipe2log mplex
+    ((${PIPESTATUS[0]} != 0)) && runtime_error \
+      "Problem muxing the menu video and audio with mplex"  
 
     if $SWITCHED_MODE || $SWITCHED_MENUS; then
         echo "Copying the menu mpeg" |pipe2log
