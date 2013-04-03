@@ -16,7 +16,7 @@ exit 1 ; }
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005-2010
+# Copyright (C) 2005-2013
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -887,6 +887,22 @@ if ((USE_FILTERS)) && $USE_FFMPEG; then
     video, either by choice or another option requires it.
     You can not use -filters with -ffmpeg"
 fi
+
+# see if ffmpeg is new enough to support -b:v etc
+# remove this when 0.9x ffmpeg is the oldest tovid will support
+# note ffmpeg is used for audio so this must run even when using mpeg2enc
+if $FFmpeg -f rawvideo  -pix_fmt yuv420p -s cif \
+    -i /dev/zero -t 1 -r 30 -f rawvideo \
+      -b:v 500k -y /dev/null > /dev/null 2>&1; then
+    VB=-b:v
+    AB=-b:a
+    CA=-c:a
+else
+    VB=-b
+    AB=-ab
+    CA=-acodec
+fi
+
 # make sure we are not running from the gui and set some options
 ! $FROM_GUI && NOCONSOLE_CONTROLS="-noconsolecontrols"
 
@@ -1633,14 +1649,14 @@ else
     FF_ASPECT='-aspect '
 fi
 # newer ffmpegs using filters use "-vf"
-FF_HELP=$($FFmpeg -h 2>&1)
+FF_HELP=$($FFmpeg -h full 2>&1)
 if grep -qw -- -vf <<< "$FF_HELP"; then
     VF="-vf"
 # somewhat older is "-vfilters"
 elif grep -qw -- -vfilters <<< "$FF_HELP"; then
     VF="-vfilters"
 else
-    VF=""
+    runtime_error "Your $FFmpeg is too old to support video filters"   
 fi
 # newaudio was removed in ffmpeg 0.9 as it was redundant because of -map opt
 grep -qw -- -newaudio <<< "$FF_HELP" && NEWAUDIO_OPT=true
@@ -1815,8 +1831,8 @@ if $DOWNMIX; then
     done
     testfile="/tmp/$(date +%s).mpg"
     track_key=${AUDIO_TRACK[max_key]}
-    ffm_cmd=( $FFmpeg -i "$IN_FILE" $FF_THREAD -ss 2 -ab 224k -ac 2 \
-     -target ntsc-dvd -b 6000k -vframes 1 $VIDEO_MAP \
+    ffm_cmd=( $FFmpeg -i "$IN_FILE" $FF_THREAD -ss 2 $AB 224k -ac 2 \
+     -target ntsc-dvd $VB 6000k -vframes 1 $VIDEO_MAP \
      -map ${AIDS[track_key-1]//./:} "$testfile")
     yecho "Running ${ffm_cmd[@]}"
     if ! "${ffm_cmd[@]}" >/dev/null 2>&1; then
@@ -1853,7 +1869,7 @@ else # set up mapping for ffmpeg, for each track we are going to encode
         STREAM_CHANS=( "${STREAM_CHANS[@]}" ${AUDIO_CHAN[track-1]} "${AUDIO_STREAM[i]}" )
         # -newaudio for ffmpeg versions prior to 0.9
         $NEWAUDIO_OPT && \
-          NEW_AUDIO[i]="-acodec ac3 -ab 224k ${AUDIO_CHAN[track-1]} -newaudio"
+          NEW_AUDIO[i]="$CA ac3 $AB 224k ${AUDIO_CHAN[track-1]} -newaudio"
         AUDIO_WAV[i]="$TMP_DIR/audio${i}.wav"
         AUDIO_WAV_CHANS=( "${AUDIO_WAV_CHANS[@]}" ${AUDIO_CHAN[track-1]} "${AUDIO_WAV[i]}" )
     done
@@ -1872,15 +1888,15 @@ fi
 # ******************************************************************************
 
 if $USE_FFMPEG; then
-    FF_BITRATE="-b ${VID_BITRATE}k"
-    FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
+    FF_BITRATE="$VB ${VID_BITRATE}k"
+    FF_SIZE="scale=${INNER_WIDTH}:${INNER_HEIGHT}"
     FF_CODEC="-f mpeg1video"
     FF_FPS="-r $TGT_FPS"
     FF_SAMPRATE="-ar $SAMPRATE"
     # try to get -quality 9 between quality 8 and 10
     if ((VID_QUALITY == 9)); then
         FF_ADD_ARGS="-trellis 1"
-        ! $FFmpeg -h 2>&1 | grep -q trellis && usage_error \
+        ! grep -q trellis <<< "$FF_HELP" && usage_error \
         "Your $FFmpeg is too old to have the '-trellis' switch.  Use a -quality setting other than '9'."
     fi
     [[ $TARGET = "DVD-VCD" ]] && FF_ADD_ARGS="$FF_ADD_ARGS -g 12" # experiment FIXME
@@ -1894,21 +1910,19 @@ if $USE_FFMPEG; then
     (( FF_VPIX )) || (( FF_HPIX )) && PAD=1
     # changed options: -pad{side} to -vf(ilters) pad= .
     if ((PAD)); then
-        if [[ $VF ]]; then
-            FF_PAD="pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
-        else
-            ((FF_HPIX)) && FF_HPAD="-padleft $FF_HPIX -padright $FF_HPIX"
-            ((FF_VPIX)) && FF_VPAD="-padtop $FF_VPIX -padbottom $FF_VPIX"
-            FF_PAD="$FF_HPAD $FF_VPAD"
-        fi 
+        FF_PAD="pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
     fi
 
     # use single variable for current, or legacy ffmpeg: VF_FILTERS and OLD_OPTS
     if [[ $VF ]]; then # libavfilter is being used, FF_ASPECT always passed
-        VF_FILTERS="${FF_PAD},${FF_ASPECT}"
+        VF_FILTERS="${FF_SIZE},${FF_PAD},${FF_ASPECT}"
         VF_FILTERS="$VF ${VF_FILTERS#,}" # add -vf*, axe possible leading comma
     else # legacy ffmpeg
         OLD_OPTS="$FF_PAD $FF_ASPECT"
+    fi
+    # Remove extraneous commas from filter command
+    if test -n "$VF_FILTERS"; then
+        VF_FILTERS=$(sed 's/,,/,/g;s/,$//' <<< "$VF_FILTERS")
     fi
 
     # Target TV system
@@ -1934,10 +1948,10 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; the
     yecho
     yecho "Using $FFmpeg to encode audio and video."
 
-    FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
+    FF_BITRATE="$VB ${VID_BITRATE}k $AB ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
     FF_ENC_CMD="$PRIORITY $FFmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
-        $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
-        $FF_SIZE $VF_FILTERS $OLD_OPTS $FF_CHANNEL_MAP"
+        $FF_TARGET $FF_QUANT $FF_ADD_ARGS $FF_ILACE \
+        $VF_FILTERS $OLD_OPTS $FF_BITRATE $FF_CHANNEL_MAP"
     $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
     FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
     yecho "Encoding video and audio with the following command:"
@@ -1979,14 +1993,12 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
-    AUDIO_CMD=($PRIORITY $FFmpeg $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${STREAM_CHANS[@]}")
+    AUDIO_CMD=($PRIORITY $FFmpeg $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn $CA copy $AUDIO_MAP "${STREAM_CHANS[@]}")
     yecho "${AUDIO_CMD[@]}"
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     run_audio_cmd()
     {
         "${AUDIO_CMD[@]}" >> "$LOG_FILE" 2>&1 &
-        #$PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy \
-        #$AUDIO_MAP "${AUDIO_STREAM[@]}" >> "$LOG_FILE" 2>&1
     }
     run_audio_cmd &
     PIDS="$PIDS $!"
@@ -2011,7 +2023,7 @@ else
         AUDIO_IN_FILE[1]="${AUDIO_WAV[0]}"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
-        AUDIO_CMD=( $PRIORITY $FFmpeg -y $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE -acodec pcm_s16le "${AUDIO_WAV_CHANS[@]}" )
+        AUDIO_CMD=( $PRIORITY $FFmpeg -y $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE $CA pcm_s16le "${AUDIO_WAV_CHANS[@]}" )
 
         # Generate or dump audio
         yecho "Normalizing the audio stream${s}."
@@ -2045,9 +2057,9 @@ else
         AUDIO_ENC=( "${AUDIO_ENC[@]}" -i "${AUDIO_IN_FILE[@]}" )
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
-    AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn -ab ${AUD_BITRATE}k -ar $SAMPRATE )
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn $AB ${AUD_BITRATE}k -ar $SAMPRATE )
     ! $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" $CLIP_SEEK $FF_LENGTH $AUDIO_MAP )
-    AUDIO_ENC=( "${AUDIO_ENC[@]}" -acodec $AUD_SUF)
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" $CA $AUD_SUF)
     $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" "${AUDIO_WAV_MAP[@]}" )
     AUDIO_ENC=( "${AUDIO_ENC[@]}" -y "${STREAM_CHANS[@]}" )
     "${AUDIO_ENC[@]}" >> "$LOG_FILE" 2>&1 &
@@ -2112,7 +2124,7 @@ else
     fi
     VID_PLAY_CMD="$PRIORITY $MPLAYER -nomsgcolor $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="$FFmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $VF_FILTERS $OLD_OPTS -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="$FFmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_ADD_ARGS $FF_ILACE $VF_FILTERS $OLD_OPTS $FF_BITRATE -y \"$VIDEO_STREAM\""
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
