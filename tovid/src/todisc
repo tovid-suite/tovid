@@ -15,7 +15,7 @@ exit 1 ; }
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005-2010
+# Copyright (C) 2005-2013
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -94,6 +94,7 @@ TARGET=dvd
 FRAME_RATE=29.970 # for bc. mjpegtools and transcode convert this to 30000/1001
 ff_frame_rate="30000/1001" # ffmpeg needs to be explicitly told exact framerate
 VIDSIZE=720x480
+VF_SCALE=${VIDSIZE%x*}:${VIDSIZE#*x}
 MENU_TITLE="My Video Collection"
 STATIC=false
 SUB_MENU=false
@@ -269,7 +270,7 @@ SC_AR=133
 THUMB_COLUMNS=""
 FAST_SEEK=false # ffmpeg: default:decode during seek (more accurate but slower)
 USER_THUMBS=false # is user providing images for the menu link thumbs ?
-FRAME_SAFE=false # (-static) if true take the best of 9 frames. default: 1 frame
+FRAME_SAFE=false # (-static) if true take the best of 9 frames. default 1 frame
 USE_V_TITLES_DECO=false
 USE_M_TITLE_DECO=false
 PIPE_FORMAT=""
@@ -458,11 +459,25 @@ stream_length()
     local ff_opts="-an -vcodec copy"
     [[ -n $2 ]] && stream_type=$2
     [[ -n $3 ]] && end="-t $3"
-    [[ $stream_type = 'audio' ]] && ff_opts="-vn -acodec copy"
-    print2log "Using $FFmpeg to get accurate $stream_type length of $1"
+    sed_var="{s/^.*time= *\([^ ]*\).*/\1/p}"
+    stream_name=$stream_type
+    if [[ $stream_type = 'audio' ]]; then
+        ff_opts="-vn -acodec copy"
+    # workaround for avconv which is broken atm wrt getting m2v framerate right
+    # overload stream_type to have another meaning, 
+    elif [[ $stream_type = 'm2v' ]]; then
+        sed_var="{s/^.*frame= *\([^ ]*\).*/\1/p}"
+        stream_name=video
+    fi
+    print2log "Using $FFmpeg to get accurate $stream_name length of $1"
     local len=$($FFmpeg -i "$1" $end $ff_opts -f null -y /dev/null 2>&1 |
-    sed -n 's/^.*time= *\([^ ]*\).*/\1/p' | tail -n 1)
-    unformat_time $len
+    sed -n "$sed_var" | tail -n 1)
+    # sed -n 's/^.*time= *\([^ ]*\).*/\1/p' | tail -n 1)
+    if [[ $stream_type = 'm2v' ]]; then
+        bc_math "$len / $FRAME_RATE"
+    else
+        unformat_time $len # no need for echo, prints to stdout
+    fi
 }
 
 cleanup()
@@ -545,8 +560,8 @@ runtime_error()
     $LOG_FILE to see what went wrong." |format_output
     echo "See the tovid website ($TOVID_HOME_PAGE) for further help options."
     echo "Latest fixes for ffmpeg api changes go in svn tovid."
-    echo "So you should try that if you get ffmpeg errors in the log."
-    echo "See the subversion section of http://tovid.wikia.com/wiki/Installing_tovid"
+    echo "So you should try that if you get ${FFmpeg##*/} errors in the log."
+    echo "See subversion section: http://tovid.wikia.com/wiki/Installing_tovid"
     echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     cleanup
@@ -581,12 +596,15 @@ format_seconds()
 # usage: bc_math "expression" [int]
 bc_math()
 {
+    OLC_ALL=$LC_ALL
+    LC_ALL=C
     bc_out=$(bc <<< "scale=3;$1" 2>/dev/null)
     if [[ -n $2 && $2 = "int" ]]; then
         echo ${bc_out%.*}
     else
         printf  "%.03f" $bc_out
     fi
+    LC_ALL=$OLC_ALL
 }
 
 confirm_preview()
@@ -683,16 +701,16 @@ check_filetype()
 {
     fstats=$(file -L "$1" | awk '{ $1 = ""; print }')
     if [[ $fstats =~ "image" || $fstats =~ "bitmap" ]]; then
-        TYPE="image"
+        file_type="image"
         CONVRT=:
         if [[ $fstats = *JPEG* || $fstats = *PNG || $fstats = *PPM* ]]; then
             CONVRT=false
         fi
     elif mencoder \
     -endpos 2 -oac pcm -ovc copy "$1" -o /dev/null >/dev/null 2>&1; then
-        TYPE=video
+        file_type=video
     else
-        TYPE=unknown
+        file_type=unknown
     fi
 }
 
@@ -1119,11 +1137,14 @@ image2mpeg2()
 {
     IN_IMAGE="$1"
     OUT_MPEG="$2"
+    # need to set VIDSIZE here as pal VIDSIZE assignment is later in script
+    [ $TV_STANDARD = "pal" ] && VIDSIZE=720x576
+    VF_SCALE=${VIDSIZE%x*}:${VIDSIZE#*x}
     # remove symlinks, as otherwise we overwrite symlink target
-    IMAGE_ENC_CMD=($FFmpeg -f image2 $LOOP -vframes $vlength \
+    IMAGE_ENC_CMD=($FFmpeg -f image2 $LOOP \
     -i "$IN_IMAGE" -f s16le -ar 48000 -i /dev/zero -t $alength \
     -ar $SAMPLERATE -ac 2 -ab 224k -target ${TV_STANDARD}-${TARGET} \
-    -s $VIDSIZE $ASPECT -y "$OUT_MPEG")
+    $VF scale=${VF_SCALE},${ASPECT} -y -vframes $vlength  "$OUT_MPEG")
     print2log ""
     print2log "Running ${IMAGE_ENC_CMD[@]}"
     print2log ""
@@ -1616,61 +1637,61 @@ EOF`
     sed 's/^    //g' <<< "$goodbye" | tee -a "$LOG_FILE"
 }
 
-# usage mk_return_button (mk_play_button) COLOUR1 COLOUR2 OUTBUTTON
+# usage mk_return_button (mk_play_button) COLOUR1 COLOUR2 outbutton
 # ex. for menu button ( not spumux ):
 # mk_return_button "#C6C6C6" black "$WORK_DIR/Main.png"
 mk_return_button()
 {
 
-    COLR1="$1"
-    COLR2="$2"
-    TYPE=$3
-    OUTBUTTON="$4"
-    if [[ $TYPE = "spu" ]]; then
-        CLR1="none"
-    elif [[ $TYPE = "default" ]]; then
-        CLR1="$COLR1"
+    colr1="$1"
+    colr2="$2"
+    local auth_type=$3
+    outbutton="$4"
+    if [[ $auth_type = "spu" ]]; then
+        clr1="none"
+    elif [[ $auth_type = "default" ]]; then
+        clr1="$colr1"
     fi
 
-    MK_RTN_CMD=(convert -size 100x80 xc:none \
-    -strokewidth 1 -stroke "$COLR2" -fill "$CLR1" \
+    mk_rtn_cmd=(convert -size 100x80 xc:none \
+    -strokewidth 1 -stroke "$colr2" -fill "$clr1" \
     -draw 'rectangle 0,0 70,62' \
-    -fill "$COLR2" -stroke none \
+    -fill "$colr2" -stroke none \
     -draw "polyline 40,10 40,50 10,30 40,10" \
     -draw "polyline 60,10 60,50 30,30 60,10" \
-    -fill "$COLR2" -draw "rectangle 6,10 10,50" \
-    -resize 30% -trim +repage +antialias "$OUTBUTTON")
-    print2log "Running ${MK_RTN_CMD[@]}"
-    "${MK_RTN_CMD[@]}"
-    mogrify -channel A -threshold 50% "$OUTBUTTON"
-    RTN_BTN_DIM=$(get_image_dim "$OUTBUTTON")
-    rtn_btn_width=$(awk -Fx '{print $1}' <<< $RTN_BTN_DIM )
-    rtn_btn_height=$(awk -Fx '{print $2}' <<< $RTN_BTN_DIM )
+    -fill "$colr2" -draw "rectangle 6,10 10,50" \
+    -resize 30% -trim +repage +antialias "$outbutton")
+    print2log "Running ${mk_rtn_cmd[@]}"
+    "${mk_rtn_cmd[@]}"
+    mogrify -channel A -threshold 50% "$outbutton"
+    rtn_btn_dim=$(get_image_dim "$outbutton")
+    rtn_btn_width=$(awk -Fx '{print $1}' <<< $rtn_btn_dim )
+    rtn_btn_height=$(awk -Fx '{print $2}' <<< $rtn_btn_dim )
 }
 mk_play_button()
 {
-    COLR1="$1"
-    COLR2="$2"
-    TYPE=$3
-    OUTBUTTON="$4"
-    if [[ $TYPE = "spu" ]]; then
-        CLR1="none"
-    elif [[ $TYPE = "default" ]]; then
-        CLR1="$COLR1"
+    colr1="$1"
+    colr2="$2"
+    local auth_type=$3
+    outbutton="$4"
+    if [[ $auth_type = "spu" ]]; then
+        clr1="none"
+    elif [[ $auth_type = "default" ]]; then
+        clr1="$colr1"
     fi
-    #-fill "$COLR2" -draw "line 40,10 40,50"  \
-    # -fill "$COLR2" -draw "rectangle 36,10 40,50" \
-    MK_PLAY_CMD=(convert +antialias -size 100x80 xc:none  \
-    -strokewidth 2 -stroke "$COLR2" -fill "$CLR1" \
+    #-fill "$colr2" -draw "line 40,10 40,50"  \
+    # -fill "$colr2" -draw "rectangle 36,10 40,50" \
+    mk_play_cmd=(convert +antialias -size 100x80 xc:none  \
+    -strokewidth 2 -stroke "$colr2" -fill "$clr1" \
     -draw 'rectangle 22,0 92,62' \
-    -fill "$COLR2" -stroke none \
+    -fill "$colr2" -stroke none \
     -draw "polyline 40,10 40,50 80,30 40,10" \
-    -resize 30% -trim +repage "$OUTBUTTON")
-     print2log "Running ${MK_PLAY_CMD[@]}"
-    "${MK_PLAY_CMD[@]}"
-    PLAY_BTN_DIM=$(get_image_dim "$OUTBUTTON")
-    play_btn_width=$(awk -Fx '{print $1}' <<< $PLAY_BTN_DIM )
-    play_btn_height=$(awk -Fx '{print $2}' <<< $PLAY_BTN_DIM )
+    -resize 30% -trim +repage "$outbutton")
+     print2log "Running ${mk_play_cmd[@]}"
+    "${mk_play_cmd[@]}"
+    play_btn_dim=$(get_image_dim "$outbutton")
+    play_btn_width=$(awk -Fx '{print $1}' <<< $play_btn_dim )
+    play_btn_height=$(awk -Fx '{print $2}' <<< $play_btn_dim )
 }
 
 check_menufile()
@@ -1688,40 +1709,27 @@ check_menufile()
 quick_menu()
 {
     funct_arg=$1
-    unset LEFTPAD TOPPAD RIGHTPAD BOTTOMPAD
     # is it a preview or main run of menu creation
     if [[ -n $funct_arg && $funct_arg = "preview" ]]; then
         QM_MENU_TIME=2 && QM_PREVIEW=:
     else
         QM_MENU_TIME=${MENU_LEN[MENU_NUM-1]} && QM_PREVIEW=false
     fi
-    # test for filters and vhook
+    # test for filters presense in ffmpeg
     if ! ((filter_test_completed)); then
         filters=$($FFmpeg -filters 2>/dev/null)
         if grep -q -w '^movie' <<< "$filters" && \
           grep -q -w '^crop' <<< "$filters"; then
-            print2log "libavfilter movie filter present - using for -quick-menu"
+            print2log "libavfilter movie filter present, using for -quick-menu"
             use_overlay_filter=:
-        elif grep -q ^-vhook <<< "$ffmpeg_help"; then
-            # find out where vhook lives for ffmpeg
-            local config=$($FFmpeg -version 2>&1 | grep -- --prefix=)
-            config=${config//*--prefix=}
-            ffmpeg_prefix=${config// *}
-            # empty var means no --prefix passed, use default prefix of /usr/local
-            ffmpeg_prefix=${ffmpeg_prefix:-/usr/local}
-            imlib2_vhook="${ffmpeg_prefix}/lib/vhook/imlib2.so"
-            if [[ -s "$imlib2_vhook" ]]; then
-                use_vhooks=:
-                print2log "vhooks present, using imlib2 vhook for -quick-menu"
-            fi
+        else
+            # exit if missing a needed video filter
+            runtime_error \
+              "Missing ${FFmpeg##*/} filters
+              (movie or crop) -quick-menu impossible."
         fi
     fi
 
-    # exit if neither vhooks or movie filter found
-    if ! $use_vhooks && ! $use_overlay_filter; then
-        runtime_error \
-          "No ffmpeg 'movie' filter or (older) 'vhooks'. -quick-menu impossible"
-    fi
     # ensure the filter test is only run once
     filter_test_completed=1
     if $QUICKMENU_IS_SHOWCASE; then
@@ -1729,14 +1737,6 @@ quick_menu()
             yecho ""
             yecho "resizing and padding showcase file: $SHOWCASE_VIDEO"
         fi
-        LEFTPAD=$SC_X
-        TOPPAD=$SC_Y
-        RIGHTPAD="-padright \
-        $(( ${VIDSIZE%%x*} - $LEFTPAD - ${SHOWCASE_SIZE%%x*} ))"
-        BOTTOMPAD="-padbottom \
-        $(( ${VIDSIZE##*x} - $TOPPAD - ${SHOWCASE_SIZE##*x} ))"
-        LEFTPAD="-padleft $SC_X"
-        TOPPAD="-padtop $SC_Y"
         local VF_PADX=$SC_X
         local VF_PADY=$SC_Y
         QM_FRAMESIZE=$SHOWCASE_SIZE
@@ -1758,7 +1758,7 @@ quick_menu()
     fi
 
     $QM_PREVIEW && ! $NOASK && yecho "Creating a quick-menu preview image"
-    # pad/resize if needed, use overlay filter (or vhook) to add menu graphics
+    # pad/resize if needed, use overlay filter to add menu graphics
     # framing (if showcase) by ntsc-safe black bg
     if ! $QM_PREVIEW; then
         yecho ""
@@ -1770,16 +1770,9 @@ quick_menu()
         # vhook uses the next var for scaling, but overlay does not
         unset QM_FRAMESIZE
         local overlay="$WORK_DIR/quick_menu_bg.png"
-        local PADDING="$VF scale=${qw}:${qh},pad=720:480:${VF_PADX}:${VF_PADY}"
-        local aspect=""
+        local PADDING="$VF scale=${qw}:${qh},pad=$VF_SCALE:${VF_PADX}:${VF_PADY}"
         overlay_filter="movie=$overlay [wm];[in][wm] overlay=0:0 [wm2]"
         ffmpeg_filter=($VF "$overlay_filter; [wm2] setdar=4:3 [out]")
-    elif $use_vhooks; then
-        local PADDING="$TOPPAD $BOTTOMPAD $LEFTPAD $RIGHTPAD"
-        local aspect="-aspect 4:3"
-        local PAD_CLR="-padcolor $BG_CLR"
-        local QM_FRAMESIZE="-s $QM_FRAMESIZE"
-        ffmpeg_filter=(-vhook "$imlib2_vhook -x 0 -y 0 -i $WORK_DIR/quick_menu_bg.png")
     fi
     # no padding needed for background video, just resizing
     $QUICKMENU_IS_BACKGROUND && PADDING=""
@@ -1789,12 +1782,15 @@ quick_menu()
     # run the commands to make the final menu m2v video
     PAD_CMD=($FFmpeg -async 1 $qm_pre_seek \
     -i "$QUICK_MENU_FILE" $qm_post_seek -t "$QM_MENU_TIME" \
-    -an $QM_FRAMESIZE $PADDING -r $ff_frame_rate \
+    -an $PADDING -r $ff_frame_rate \
     $PAD_CLR -f yuv4mpegpipe -vcodec rawvideo -y "$yuvout")
+    # removed-s $VIDSIZE from following cmd, don't think it needs it
+    # check if I need to add a scale filter, perhaps comma sep at end.
+    # http://forum.videohelp.com/threads/338494-Multiple-filter-problem-with-ffmpeg-help-please
     QUICKMENU_CMD=($FFmpeg -f yuv4mpegpipe \
-    -i "$yuvout" -an -s $VIDSIZE -f mpeg2video -r $ff_frame_rate \
-    -b 7000k -maxrate 8000k -bufsize 224KiB \
-    $aspect "${ffmpeg_filter[@]}" -y "$WORK_DIR/intro.m2v")
+    -i "$yuvout" -an -f mpeg2video -r $ff_frame_rate \
+    $VB 7000k -maxrate 8000k -bufsize 224KiB \
+    "${ffmpeg_filter[@]}" -y "$WORK_DIR/intro.m2v")
     echo "Running ${PAD_CMD[@]}" > "${LOG_FILE}-1.tmp"
     "${PAD_CMD[@]}" < /dev/null  >> "${LOG_FILE}-1.tmp" 2>&1 &
     echo "Running ${QUICKMENU_CMD[@]}" > "${LOG_FILE}-2.tmp"
@@ -1881,10 +1877,11 @@ confirm_backup()
 make_dummy()
 {
     convert  -resize $VIDSIZE! xc:"#101010" "$WORK_DIR/dummy.jpg"
-    ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l 30 \
+    [[ $TV_STANDARD = "ntsc" ]] && local len=30 || local len=25
+    ENC_CMD1=(jpeg2yuv -v 1 -f $FRAME_RATE -I p -n 1 -l $len \
     -L 1 -b1 -j "$WORK_DIR/dummy.jpg")
-    ENC_CMD2=($FFmpeg -f yuv4mpegpipe -i - -an -r $ff_frame_rate -s $VIDSIZE \
-    $FFMPEG_OPTS -y "$WORK_DIR/dummy.m2v")
+    ENC_CMD2=($FFmpeg -f yuv4mpegpipe -i - -an -r $ff_frame_rate \
+    $FFMPEG_OPTS -vf scale=${VF_SCALE},${ASPECT} -y "$WORK_DIR/dummy.m2v")
     print2log "Running: ${ENC_CMD1[@]} | ${ENC_CMD2[@]}"
     ${ENC_CMD1[@]} 2>> "${LOG_FILE}.tmp"  |
     ${ENC_CMD2[@]} 2>&1 |pipe2log ${FFmpeg##*/}
@@ -1892,7 +1889,7 @@ make_dummy()
     rm -f "${LOG_FILE}.tmp"
     ! [[ -s "$WORK_DIR/dummy.m2v" ]] && \
       runtime_error "There was a problem creating a dummy vmgm video"
-    local VMGM_TIME=$(stream_length "$WORK_DIR/dummy.m2v")
+    local VMGM_TIME=1 # use one second as dummy.m2v or either 30 or 25 frames
     BGAUDIO_CMD=($FFmpeg -f s16le -ar 48000 -i /dev/zero -t $VMGM_TIME \
     $AUDIO_OPTS -y "$WORK_DIR/dummy.$AUDIO_EXT")
     print2log "Creating silent audio stream."
@@ -1924,7 +1921,7 @@ verify_infiles()
         IN_FILE="${in_files[i]}"
         if test -s "$IN_FILE"; then
             check_filetype "$IN_FILE"
-            if [[ $TYPE = "image" ]]; then
+            if [[ $file_type = "image" ]]; then
                 IMG_STATS=( $(identify -ping -format "%z %w %h" "$IN_FILE") )
                 DEPTH=${IMG_STATS[0]}
                 IMG_WIDTH=${IMG_STATS[1]}
@@ -2104,22 +2101,23 @@ EOF
 
 transition_slide()
 {
-    TYPE=$1
+    local fade_type=$1
+    local value
     index=$2
     outppm="$WORK_DIR/animenu/$(printf %06d%s $index .ppm)"
-    if [[ $TYPE = "crossfade" ]]; then
-        local VALUE=$(bc -l <<< "scale=2; ($fade_slide + 1) * $fade_incr") >&2
-        fade_cmd=(composite -blend $VALUE -depth 8 "$overlay_ppm" \
+    if [[ $fade_type = "crossfade" ]]; then
+        value=$(bc -l <<< "scale=2; ($fade_slide + 1) * $fade_incr") >&2
+        fade_cmd=(composite -blend $value -depth 8 "$overlay_ppm" \
         "$base_ppm" "$outppm")
-    elif [[ $TYPE = "fadein" ]]; then
-        local VALUE=$(bc -l <<< "scale=2; $fade_slide * $fade_incr") >&2
+    elif [[ $fade_type = "fadein" ]]; then
+        value=$(bc -l <<< "scale=2; $fade_slide * $fade_incr") >&2
         fade_cmd=(composite -depth 8 "$base_ppm" "$WORK_DIR/black.ppm" \
-        -blend ${VALUE}% "$outppm")
-    elif [[ $TYPE = "fadeout" ]]; then
-        local VALUE=$(bc -l <<< "scale=2;100 - (($fade_slide + 1) * $fade_incr)") >&2
-        (( $(bc <<< "$VALUE < 0") == 1 )) && local VALUE=0
+        -blend ${value}% "$outppm")
+    elif [[ $fade_type = "fadeout" ]]; then
+        value=$(bc -l <<< "scale=2;100 - (($fade_slide + 1) * $fade_incr)") >&2
+        (( $(bc <<< "$value < 0") == 1 )) && value=0
         fade_cmd=(composite -depth 8 "$base_ppm" "$WORK_DIR/black.ppm" \
-        -blend ${VALUE}% "$outppm")
+        -blend ${value}% "$outppm")
     fi
      "${fade_cmd[@]}" >/dev/null
 }
@@ -2127,10 +2125,10 @@ transition_slide()
 # this function does a loop with transition_slide() ... combine them into 1 ?
 do_transitions()
 {
-    TYPE=$1
+    local fade_type=$1
     fade_slide=0
     for ((i=0; i<=fade_frames; i++)); do
-        transition_slide $TYPE $i &
+        transition_slide $fade_type $i &
         transition_pids="$transition_pids $!"
         ((num_procs++))
         if ((num_procs == max_procs || i == fade_frames-1)); then
@@ -2139,7 +2137,7 @@ do_transitions()
         fi
         let fade_slide=fade_slide+1
     done
-    if [[ $TYPE = "fadeout" ]] && ((f == ${#MIX_IN[@]}-1)); then
+    if [[ $fade_type = "fadeout" ]] && ((f == ${#MIX_IN[@]}-1)); then
         for p in {0..12}; do
             cp "$WORK_DIR/black.ppm" \
             "$WORK_DIR/animenu/$(printf %06d%s $((p +i)) .ppm)" >&2
@@ -3720,13 +3718,6 @@ if [[ -n $NR ]]; then
     [[ -z $NR_AMT ]] && NR_AMT=200
     NR="$NR $NR_AMT"
 fi
-# check for -loop or -loop_input
-ffmpeg_help=$($FFmpeg -h full 2>&1)
-if grep -q -- '^-loop ' <<< "$ffmpeg_help"; then
-    LOOP="-loop 1"
-else
-    LOOP="-loop_input"
-fi
 
 # assign values for slides
 # blurs
@@ -3764,7 +3755,11 @@ fi
 
 # honour -noask for functions and called scripts that use them
 $NOASK && NO_ASK="-noask"
-# backend checks
+
+#####################################
+#           backend checks          #
+####################################
+
 # transcode version >= 1.1.0 mandated
 _transcode_version=$(transcode -v 2>&1| awk '{gsub("v", ""); print $2}')
 _baseline_version=1.1.0
@@ -3781,34 +3776,35 @@ if !  ls -1 $( tcmodinfo -p )/export*.so |grep -q yuv4mpeg; then
     runtime_error \
     "your transcode is missing the yuv4mpeg export module. See $_url"
 fi
-# ffmpeg has been buggy with setting AR with -aspect, use -vf aspect if present
+# ffmpeg - minimum version: 0.7, which has necessary filters
+ffmpeg_help=$($FFmpeg -h full 2>&1)
+ff_filters=$($FFmpeg -filters 2>/dev/null | awk 'f;/Filters:/{f=1}')
+# if no filters present show a runtime error and exit
+[[ "$ff_filters" ]] || \
+  runtime_error "Your ${FFmpeg##*/} is too old ! No filter support."
+# newer ffmpeg's use setdar= and setsar=
+if grep -qw ^setdar <<< "$ff_filters"; then
+    ASPECT="setdar=4:3"  # for menu.  Always 4:3 aspect
+# somewhat older rev's used aspect=
+elif grep -qw ^aspect <<< "$ff_filters"; then
+    ASPECT="aspect=4:3"
+fi
+# check for -loop or -loop_input (-loop from 0.9 onwards)
+if grep -q -- '^-loop ' <<< "$ffmpeg_help"; then
+    LOOP="-loop 1"
+else
+    LOOP="-loop_input"
+fi
+# switch form video filters: -vf or -vfilters
 # "-vf" was "-vfilters" briefly, check
 if grep -qw -- -vf <<< "$ffmpeg_help"; then
     VF="-vf"
 # somewhat older is "-vfilters"
 elif grep -qw -- -vfilters <<< "$ffmpeg_help"; then
     VF="-vfilters"
+else # this should not run as we would have exited checking for -filters above
+    runtime_error "Your ffmpeg is too old: missing video filters"
 fi
-# ffmpeg's -vf aspect is more dependable than -aspect, if ffmpeg is new enough
-FF_FILTERS=$($FFmpeg -filters 2>&1)
-# newer ffmpeg's use setdar= and setsar=
-if grep -qw ^setdar <<< "$FF_FILTERS"; then
-    ASPECT="$VF setdar=4:3"  # for menu.  Always 4:3 aspect
-    SS_ASPECT="$VF setdar=4:3" # for slideshows.  Always 4:3 aspect
-# somewhat older rev's used aspect=
-elif grep -qw ^aspect <<< "$FF_FILTERS"; then
-    ASPECT="$VF aspect=4:3"
-    SS_ASPECT="$VF aspect=4:3"
-else
-    ASPECT="-aspect 4:3"
-    SS_ASPECT="-aspect 4:3"
-fi
-# ffmpeg now uses -standard rather than -tvstd (honour both for now)
-#if grep -q -- "-standard" <<< "$FF_HELP"; then
-#    STANDARD="-standard"
-#else
-#    STANDARD="-tvstd"
-#fi
 
 # ffmpeg will not allow setting -pix_fmt before the -i if  > 0.8.x
 make_dummy
@@ -3818,7 +3814,23 @@ if $FFmpeg -pix_fmt yuv420p -t 0.13 -i "$WORK_DIR/dummy.mpg" \
 else
     PIPE_FORMAT="-f yuv4mpegpipe"
 fi
-rm -f "$WORK_DIR/dummy.mpg" 
+# -acodec, -vcodec, -b and -ab now use per stream options (-b:v)
+if $FFmpeg -i "$WORK_DIR/dummy.mpg" -t 0.13 \
+  -b:v 500k -f null -y /dev/null >/dev/null 2>&1; then
+    VB=-b:v
+    AB=-b:a
+    CA=-c:a
+else
+    VB=-b
+    AB=-ab
+    CA=-acodec
+fi
+rm -f "$WORK_DIR/dummy.mpg"
+
+#####################################
+#         end backend checks        #
+#####################################
+
 # set some vars for switched menus so we know where we are
 $SWITCHED_MODE && SWITCHED_MENUS=false
 { $SWITCHED_MODE || $SWITCHED_MENUS ; } && SWITCHED=:
@@ -4084,13 +4096,25 @@ if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] \
         curfile=${FILES[i]}
         ! $SINGLE_SLIDESHOW && print2log "Checking aspect ratios: ${FILES[i]##*/}"
         # check if image, then check aspect ratio of image if so
-        if [[ $(file -L "$curfile"  | awk '{ $1 = ""; print }') =~ image ]]; then
+        check_filetype "$curfile"
+        if [[ $file_type = 'image' ]]; then
             stat=133
-        else
-            # else it is a video, check aspect ratio
+        elif [[ $file_type = 'video' ]]; then
             stat=$(idvid -terse -fast "${FILES[i]}" 2>/dev/null |
               awk -F= '/V_ASPECT_WIDTH=/ {print $2}' 2>/dev/null)
+        else
+            usage_error "Sorry could not identify file ${FILES[i]}"
         fi
+        #if [[ $(file -L "$curfile"  | awk '{ $1 = ""; print }') =~ image ]]; then
+        #    stat=133
+        #elif mencoder -quiet -oac pcm -ovc copy \
+        #    -frames 0 -o /dev/null "${FILES[i]}" &>/dev/null; then
+                # it is a video, check aspect ratio
+        #        stat=$(idvid -terse -fast "${FILES[i]}" 2>/dev/null |
+        #          awk -F= '/V_ASPECT_WIDTH=/ {print $2}' 2>/dev/null)
+        #else
+        #    usage_error "Sorry could not identify file ${FILES[i]}"
+        #fi
         # exit from the loop 
         # save list of files without reported aspect ratio for a warning
         { [[ $stat = 0 ]] || ! test_is_number $stat; } &&  warn_files[i]=${FILES[i]}
@@ -4297,9 +4321,9 @@ fi
 # check file type of background file and assign to BG_VIDEO or BG_IMAGE
 if [[ -n $BACKGROUND ]]; then
     check_filetype "$BACKGROUND"
-    if [[ $TYPE = "image" ]]; then
+    if [[ $file_type = "image" ]]; then
         BG_PIC="$BACKGROUND"
-    elif [[ $TYPE = "video" ]]; then
+    elif [[ $file_type = "video" ]]; then
         BG_VIDEO="$BACKGROUND"
     else
         usage_error "Sorry, can not identify "$BACKGROUND""
@@ -4308,7 +4332,7 @@ fi
 if [[ -n ${SM_BACKGROUND[@]} ]]; then
     for smbg in ${!SM_BACKGROUND[@]}; do
         check_filetype "${SM_BACKGROUND[smbg]}"
-        if [[ $TYPE != "image" ]]; then
+        if [[ $file_type != "image" ]]; then
             usage_error "-submenu-background takes image files only"
         fi
     done
@@ -4318,9 +4342,9 @@ fi
 if $SHOWCASE; then
     if [[ -n ${SHOWCASE_FILE[@]} ]]; then
         check_filetype "${SHOWCASE_FILE[@]}"
-        if [[ $TYPE = "image" ]]; then
+        if [[ $file_type = "image" ]]; then
             SHOWCASE_IMG=${SHOWCASE_FILE[@]}
-        elif [[ $TYPE = "video" ]]; then
+        elif [[ $file_type = "video" ]]; then
             SHOWCASE_VIDEO=${SHOWCASE_FILE[@]}
         else
             usage_error "Can not identify showcase file: "${SHOWCASE_FILE[@]}""
@@ -4679,7 +4703,7 @@ if $NOMENU; then
     for i in "${!IN_FILES[@]}"; do
         ln -s "${IN_FILES[i]}" "$WORK_DIR/$(printf %03d%s%s $i .mpg)"
         idvid_stats[i]=$(idvid -terse "${IN_FILES[i]}" 2>/dev/null)
-        # run mencoder to get the length if using arbitrary chapters
+        # run stream_length to get the length if using arbitrary chapters
         if $USER_CHAPTERS; then
             chapter_points[i]=${CHAPT_ARRAY[i]}
         else
@@ -5208,8 +5232,8 @@ if $SHOWCASE && ! $TEXTMENU; then
 fi
 
 
-FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB $ASPECT"
-SS_FFMOPTS="-b 8000k -maxrate 9000k -bufsize 224KiB $SS_ASPECT"
+FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB"
+SS_FFMOPTS="-b 8000k -maxrate 9000k -bufsize 224KiB"
 SHOWCASE_SIZE=384x256
 if [ $TV_STANDARD = "ntsc" ]; then
     if [[ $ASPECT_RATIO = "4:3" ]]; then
@@ -5246,6 +5270,8 @@ elif [ $TV_STANDARD = "pal" ]; then
         GEO_ARRAY=("${PAL_1777_DVD[@]}")
     fi
 fi
+# set a variable for vfilter scaling based on above sizes VFSCALE
+VF_SCALE=${VIDSIZE%x*}:${VIDSIZE#*x}
 if [[ $TV_STANDARD = "ntsc" ]]; then
     YUV_FR=30000:1001
 else
@@ -6218,8 +6244,8 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICKMENU_IS_BACKGROUND; then
     else
         bg_post_seek="-ss $BG_SEEK" && unset bg_pre_seek
     fi
-    FFMPEG_CMD=($FFmpeg $bg_pre_seek -i "$BG_VIDEO" -s $VIDSIZE -vframes 1 \
-    -an $bg_post_seek -f image2 -y "$WORK_DIR/pics/template.$IMG_FMT")
+    FFMPEG_CMD=($FFmpeg $bg_pre_seek -i "$BG_VIDEO" $VF scale=$VF_SCALE \
+    -an $bg_post_seek -f image2 -vframes 1 -y "$WORK_DIR/pics/template.$IMG_FMT")
     #echo -e "\nRunning: "${FFMPEG_CMD[@]}"\n" | fold -bs >> "$LOG_FILE"
     print2log "Running ${FFMPEG_CMD[@]}"
     SED_VAR="frame="
@@ -6304,8 +6330,8 @@ if $SHOWCASE && { $SC_THUMB || $QUICK_MENU ; }; then
                 "$WORK_DIR/showcase_img.png"
             else
                 FFMPEG_CMD=($FFmpeg $ffm_pre_seek -i "$SHOWCASE_VIDEO" \
-                -s $SHOWCASE_SIZE -an $ffm_post_seek -vframes 1 -f image2 -y \
-                "$WORK_DIR/showcase_img.png")
+                $VF scale=${SHOWCASE_SIZE%x*}:${SHOWCASE_SIZE#*x} -an \
+                $ffm_post_seek -f image2 -y -vframes 1 "$WORK_DIR/showcase_img.png")
                 print2log "Running: ${FFMPEG_CMD[@]}"
                 SED_VAR="frame="
                 "${FFMPEG_CMD[@]}" 2>&1 | pipe2log ${FFmpeg##*/}
@@ -6368,7 +6394,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU && ! $USER_THUMBS; then
 
         FFMPEG_CMD=($FFmpeg $fmt $ffm_pre_seek -i "${IN_FILES[i]}" -an \
         $ffm_postseek -f image2 -vframes $V_FRAMES \
-        -s $THUMB_SIZE -y $WORK_DIR/pics/$i/%06d.$IMG_FMT)
+        $VF scale=${THUMB_SIZE%x*}:${THUMB_SIZE#*x} -y $WORK_DIR/pics/$i/%06d.$IMG_FMT)
         CMD=( "${FFMPEG_CMD[@]}" )
         SED_VAR="frame="
         ! [[ "$SC_FRAMESTYLE" = "glass" ]] \
@@ -7283,7 +7309,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
             fi
         done
     done
-    IMGENC_CMD=($FFmpeg -f yuv4mpegpipe -i - -s $VIDSIZE \
+    IMGENC_CMD=($FFmpeg -f yuv4mpegpipe -i - $VF scale=${VF_SCALE},${ASPECT} \
     $SS_FFMOPTS -r $ff_frame_rate -bf 2 -y "$WORK_DIR/slideshow.m2v")
     for p in ${!MIX_IN[@]}; do
         if [[ "${F2BIN[p]}" = "yes" ]]; then
@@ -7433,7 +7459,7 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
     fi
 
     # get length
-    bgaudio_time=$(stream_length "$WORK_DIR/slideshow.m2v")
+    bgaudio_time=$(stream_length "$WORK_DIR/slideshow.m2v" m2v)
 
     if [[ -n $BG_AUDIO ]]; then
         # convert background audio to wav
@@ -7551,7 +7577,7 @@ for i in ${!IN_FILES[@]}; do
     # if we have a non empty nav_log get the length from that
     if [ -s "${IN_FILES[i]}".nav_log ]; then
         VID_LEN[i]=$(bc_math "${length[i]} / $FRAME_RATE")
-    else # otherwise, we run mencoder to get the length
+    else # otherwise, we run ffmpeg to get the length
         VID_LEN[i]=$(stream_length  "${IN_FILES[i]}" )
     fi
     if [[ ${VID_LEN[i]%.*} -lt ${SEEK_VAL[i]%.*} ]]; then
@@ -7799,7 +7825,8 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
             [[ ! -p "$yuv_fifo" ]] && mkfifo "$yuv_fifo"
             # resize using ffmpeg instead of transcode
             FFMPEG_CMD2=($FFmpeg $PIPE_FORMAT -i "$yuv_fifo" \
-            -f image2 -s $THUMB_SIZE -y "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
+            -f image2 $VF scale=${THUMB_SIZE%x*}:${THUMB_SIZE#*x} \
+            -y "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
             TRANSCODE_CMD2=(transcode --progress_rate 10 \
             --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
             -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $thumb_frames)) \
@@ -7828,7 +7855,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                     cat "$log_tmp" | sed '/time=10000000000.00/d' | pipe2log ${FFmpeg##*/}
                     rm -f "$log_tmp"
                     runtime_error \
-                      "Problem with ffmpeg while creating images from video"
+                      "Problem with ${FFmpeg##*/} while creating images from video"
                 fi
                 wait $TRANSCODE_PID # get exit code of transcode
                 if (($? != 0)); then
@@ -7848,7 +7875,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 ((numpics > ani_pics)) && ani_pics=$numpics
                 # append ffmpeg output to the log
                 echo -e \
-                "\n$ME Log from ffmpeg (processing transcode stream)\n" \
+                "\n$ME Log from ${FFmpeg##*/} (processing transcode stream)\n" \
                 >> "$LOG_FILE"
                 cat "$log_tmp" | sed '/time=10000000000.00/d' | pipe2log ${FFmpeg##*/}
                 rm -f "$log_tmp"
@@ -8641,6 +8668,7 @@ if $SUB_MENU; then
         smframes=${SUBMENU_FRAMES[i]}
         if ! ${SLIDESHOW[i]}; then
             C=$((${CHAPTERS[i]} - 1))
+            VSIZE=${GEO_ARRAY[C]}
             SN_BTN_XY=${GEO_ARRAY[C]} # button dimensions
             NUM_CHAPTERS=${CHAPTERS[i]}
             print2log "Creating a transparent title PNG"
@@ -8771,7 +8799,7 @@ if $SUB_MENU; then
                 [[ ! -p "$yuv_fifo" ]] && mkfifo "$yuv_fifo"
                 # resize using ffmpeg instead of transcode
                 FFMPEG_CMD=($FFmpeg $PIPE_FORMAT -i "$yuv_fifo" \
-                -f image2 -s ${GEO_ARRAY[C]} -y "$PICS_OUT/%06d.$SM_IMG_FMT")
+                -f image2 $VF scale=${VSIZE%x*}:${VSIZE#*x} -y "$PICS_OUT/%06d.$SM_IMG_FMT")
                 TCODE_CMD=(nice transcode --progress_rate 10 \
                 --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "$CUR_FILE" \
                 $NAVSEEK "$NAVLOG" -o "$yuv_fifo" -f \
@@ -8903,7 +8931,7 @@ if $SUB_MENU; then
                 TOYUV_CMD=(ppmtoy4m -v 0 -n $smframes -A $PIXEL_AR -F $YUV_FR \
                 -I p -S 420mpeg2 -r)
                 IMGENC_CMD=($FFmpeg -f yuv4mpegpipe -i - -an \
-                -r $ff_frame_rate -s $VIDSIZE $FFMPEG_OPTS \
+                -r $ff_frame_rate $VF scale=${VF_SCALE},${ASPECT} \
                 -y "$WORK_DIR/menu$i.m2v")
                 yecho ""
                 print2log "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo |
@@ -9001,7 +9029,7 @@ if $SUB_MENU; then
                 IMG_STREAM_CMD2=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A $PIXEL_AR -F $YUV_FR -I p \
                 -S 420mpeg2 -r)
                 ENC_CMD1=($FFmpeg -f yuv4mpegpipe -i - \
-                -r $ff_frame_rate -s $VIDSIZE $FFMPEG_OPTS \
+                -r $ff_frame_rate $VF scale=${VF_SCALE},${ASPECT} $FFMPEG_OPTS \
                 -y "$WORK_DIR/menu$i.m2v")
                 print2log "Running ${IMG_STREAM_CMD1[@]} | ${IMG_STREAM_CMD2[@]} | \
                 ${ENC_CMD1[@]}"| format_output | tee -a "$LOG_FILE" 2>&1
@@ -9056,7 +9084,7 @@ if $SUB_MENU; then
                 PPM_CMD=(ppmtoy4m -v 0 -n ${SM_LOOPS[i]} -A $PIXEL_AR -I p \
                 -F $YUV_FR -S 420mpeg2 -r)
                 FFM_CMD=($FFmpeg $PIPE_FORMAT -i - \
-                -an -r $ff_frame_rate -s $VIDSIZE \
+                -an -r $ff_frame_rate $VF scale=${VF_SCALE},${ASPECT} \
                 $FFMPEG_OPTS -y "$WORK_DIR/menu${i}.m2v")
                 yecho "Running ${PPM_CMD[@]} | ${FFM_CMD[@]}" | format_output
                 cat "$WORK_DIR/polaroid_stack${i}.ppm" |
@@ -9078,12 +9106,13 @@ if $SUB_MENU; then
                 -t ${SUBMENU_AUDIOLEN[s]} -ar 48000 -acodec pcm_s16le \
                 -y $WORK_DIR/submenu.wav)
             elif [[ "${SM_AUDIO[s]}" = "none" ]]; then # user asked for silence
-                SUBMENU_AUDIOLEN[s]=$(stream_length "$WORK_DIR/menu$s.m2v")
+                SUBMENU_AUDIOLEN[s]=$(stream_length "$WORK_DIR/menu$s.m2v" m2v)
                 BGAUDIO_CMD=($FFmpeg -f s16le -ar 48000 -i /dev/zero $AUDIO_OPTS \
                 -t ${SUBMENU_AUDIOLEN[s]} -y $WORK_DIR/menu$s.$AUDIO_EXT)
             else
                 # SM_AUDIO[s] is an audio file we will process it
                 # do separate wavs for each supplied audio bg for each submenu
+                # again using default or given submenu length
                 BGAUDIO_CMD=($FFmpeg -i "${SM_AUDIO[s]}" \
                 -t ${SUBMENU_AUDIOLEN[s]} -ar 48000 -acodec pcm_s16le \
                 -y $WORK_DIR/menu$s.wav)
@@ -9091,7 +9120,7 @@ if $SUB_MENU; then
                 $AUDIO_OPTS -y $WORK_DIR/menu$s.$AUDIO_EXT)
             fi
         else # no supplied audio for submenu so create silence
-            SUBMENU_AUDIOLEN[s]=$(stream_length "$WORK_DIR/menu$s.m2v")
+            SUBMENU_AUDIOLEN[s]=$(stream_length "$WORK_DIR/menu$s.m2v" m2v)
             BGAUDIO_CMD=($FFmpeg -f s16le -ar 48000 -i /dev/zero $AUDIO_OPTS \
             -t ${SUBMENU_AUDIOLEN[s]} -y $WORK_DIR/menu$s.$AUDIO_EXT)
         fi
@@ -9180,8 +9209,8 @@ if [[ -n "$BG_VIDEO" ]] && ! $QUICK_MENU; then
     fi
     yecho "Getting background video from $BG_VIDEO"
     FFMPEG_CMD=($FFmpeg $bg_pre_seek -i "$BG_VIDEO" -an $bg_post_seek \
-    -vframes $BG_VIDEO_FRAMES -s $VIDSIZE  -f image2 \
-    -y "$WORK_DIR/bg/%d.$IMG_FMT")
+    $VF scale=$VF_SCALE -f image2 \
+    -vframes $BG_VIDEO_FRAMES -y "$WORK_DIR/bg/%d.$IMG_FMT")
     print2log "Extracting/resizing background images"
     print2log "Running: ${FFMPEG_CMD[@]}"
     # Run command and check for failure
@@ -9234,9 +9263,9 @@ if [[ -n "$SHOWCASE_VIDEO" ]] && $SC_THUMB; then
             #convert ${USER_PICS[MENU_NUM-1]} -resize $SHOWCASE_SIZE \
             cp "$WORK_DIR/showcase_img.png" "$WORK_DIR/showcase/000001.png"
         else
-            FFMPEG_CMD=($FFmpeg $ffm_pre_seek -i "$SHOWCASE_VIDEO" -s \
-            $SHOWCASE_SIZE -vframes $FRAMES -an $ffm_post_seek -f image2 \
-            -y "$WORK_DIR/showcase/%06d.png")
+            FFMPEG_CMD=($FFmpeg $ffm_pre_seek -i "$SHOWCASE_VIDEO" \
+            $VF scale=${SHOWCASE_SIZE%x*}:${SHOWCASE_SIZE#*x} -an -vframes \
+            $FRAMES $ffm_post_seek -f image2 -y "$WORK_DIR/showcase/%06d.png")
             print2log "Running: ${FFMPEG_CMD[@]}"
             SED_VAR="frame="
             #"${FFMPEG_CMD[@]}" >> "$LOG_FILE.tmp" 2>&1 &
@@ -9518,7 +9547,6 @@ if $STATIC; then
     PPM_LOOPS=$LOOPS
 fi
 if ! $QUICK_MENU && $DO_MENU; then
-    $STATIC && INSIZE="-s $VIDSIZE"
     echo
     echo \
     "Converting images to video and encoding to $TARGET-compliant format" >&2
@@ -9533,7 +9561,7 @@ if ! $QUICK_MENU && $DO_MENU; then
     TOYUV_CMD=(ppmtoy4m -v 2 -n $PPM_FRAMES -A $PIXEL_AR -I p -F $YUV_FR \
     -S 420mpeg2 -r)
     IMGENC_CMD=($FFmpeg $PIPE_FORMAT -i - -an \
-    -r $ff_frame_rate -s $VIDSIZE $FFMPEG_OPTS \
+    -r $ff_frame_rate $VF scale=${VF_SCALE},${ASPECT} $FFMPEG_OPTS \
     -y $WORK_DIR/intro.m2v)
     #print2log "Running ${TOYUV_CMD[@]} < $WORK_DIR/ppm.fifo | ${IMGENC_CMD[@]}" |
     print2log "Running:"
@@ -10028,10 +10056,9 @@ if $DO_MENU; then
     fi
 fi
 if $DO_MENU; then
-    MENU_ATIME=$(stream_length "$WORK_DIR/intro.m2v")
+    MENU_ATIME=$(stream_length "$WORK_DIR/intro.m2v" m2v)
     $SWITCHED && MENU_ATIME=${MENU_LEN[MENU_NUM-1]}
 fi
-
 # use mplayer to dump audio if mplayer used for video
 # but first check if audio same file as video and its not a static menu
 if [[ $SC_FRAMESTYLE = "glass" && $BG_AUDIO = $SHOWCASE_VIDEO ]]; then
@@ -10061,9 +10088,9 @@ if $DO_MENU; then
             $MPLAYER_SEEK_VAL -ao pcm:waveheader:file="$WORK_DIR/intro.wav" \
             -endpos $MENU_ATIME  "$BG_AUDIO")
         else
-            pipe_prog=ffmpeg
-            BGAUDIO_CMD=($FFmpeg -y -async 1 -ss $BG_AUDIO_SEEK \
-            $BG_AUDIO_LENGTH -i "$BG_AUDIO" -r $ff_frame_rate -ar 48000 \
+            pipe_prog=${FFmpeg##*/}
+            BGAUDIO_CMD=($FFmpeg -y \
+            -i "$BG_AUDIO" -vn -ss $BG_AUDIO_SEEK $BG_AUDIO_LENGTH -ar 48000 \
             -acodec pcm_s16le $WORK_DIR/intro.wav)
         fi
         print2log "Running ${BGAUDIO_CMD[@]}"
@@ -10078,7 +10105,7 @@ if $DO_MENU; then
             $FADE $WAV_TIME $FADE"
             sox $WORK_DIR/intro.wav \
             $WORK_DIR/intro-processed.wav fade t $FADE $WAV_TIME $FADE 2>&1 | pipe2log sox
-            rm $WORK_DIR/intro.wav
+            $KEEP_FILES || rm $WORK_DIR/intro.wav
             mv $WORK_DIR/intro-processed.wav $WORK_DIR/intro.wav
         fi
     fi
@@ -10092,7 +10119,7 @@ if $DO_MENU; then
 
      ! [[ -s $WORK_DIR/intro.$AUDIO_EXT ]] && runtime_error
     unset BGAUDIO_CMD
-    rm -f "$WORK_DIR/intro.wav"
+    $KEEP_FILES || rm -f "$WORK_DIR/intro.wav"
     print2log "Multiplexing main menu audio and video together"
     # mplex main menu audio and video together
     INTRO_MPLEX_CMD="mplex -V -f $MPLEX_FORMAT -o $WORK_DIR/intro.mpg \
