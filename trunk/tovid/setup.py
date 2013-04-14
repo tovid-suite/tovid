@@ -228,9 +228,7 @@ setup(
             'src/todisc',
             'src/todisc-fade-routine',
             'src/makempg',
-            'src/tovid-batch',
             'src/tovid-init',
-            'src/tovid-interactive',
 
             # Python scripts
             'src/todiscgui',
