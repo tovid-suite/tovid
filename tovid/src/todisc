@@ -3783,7 +3783,7 @@ ff_filters=$($FFmpeg -filters 2>/dev/null | awk 'f;/Filters:/{f=1}')
 [[ "$ff_filters" ]] || \
   runtime_error "Your ${FFmpeg##*/} is too old ! No filter support."
 # newer ffmpeg's use setdar= and setsar=
-if grep -qw ^setdar <<< "$ff_filters"; then
+if grep -qw setdar <<< "$ff_filters"; then
     ASPECT="setdar=4:3"  # for menu.  Always 4:3 aspect
 # somewhat older rev's used aspect=
 elif grep -qw ^aspect <<< "$ff_filters"; then

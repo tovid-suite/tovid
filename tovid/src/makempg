@@ -1640,7 +1640,7 @@ fi
 # ffmpeg's -vf aspect is more dependable than -aspect, if ffmpeg is new enough
 FF_FILTERS=$($FFmpeg -filters 2>&1)
 # newer ffmpeg's use setdar= and setsar=
-if grep -qw ^setdar <<< "$FF_FILTERS"; then
+if grep -qw setdar <<< "$FF_FILTERS"; then
     FF_ASPECT="setdar="
 # somewhat older rev's used aspect=
 elif grep -qw ^aspect <<< "$FF_FILTERS"; then
