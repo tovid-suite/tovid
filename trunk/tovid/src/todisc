@@ -1716,10 +1716,12 @@ quick_menu()
         QM_MENU_TIME=${MENU_LEN[MENU_NUM-1]} && QM_PREVIEW=false
     fi
     # test for filters presense in ffmpeg
+    # ffmpeg has really poor support for scripts so we can't do something
+    # sane like grep for ^movie or ^crop.
     if ! ((filter_test_completed)); then
         filters=$($FFmpeg -filters 2>/dev/null)
-        if grep -q -w '^movie' <<< "$filters" && \
-          grep -q -w '^crop' <<< "$filters"; then
+        if grep -q -w 'movie' <<< "$filters" && \
+          grep -q -w 'crop' <<< "$filters"; then
             print2log "libavfilter movie filter present, using for -quick-menu"
             use_overlay_filter=:
         else
