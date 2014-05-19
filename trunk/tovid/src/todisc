@@ -1718,10 +1718,12 @@ quick_menu()
     # test for filters presense in ffmpeg
     # ffmpeg has really poor support for scripts so we can't do something
     # sane like grep for ^movie or ^crop.
+    # using these ugly repeated grep calls because they are easier to
+    # understand/maintain than an awk command.
     if ! ((filter_test_completed)); then
         filters=$($FFmpeg -filters 2>/dev/null)
-        if grep -q -w 'movie' <<< "$filters" && \
-          grep -q -w 'crop' <<< "$filters"; then
+        if grep  -w 'movie'  <<< "$filters" | grep -q -v 'amovie' &&
+          grep -w 'crop' <<< "$filters" | grep -q -v 'cropdetect'; then
             print2log "libavfilter movie filter present, using for -quick-menu"
             use_overlay_filter=:
         else
@@ -5259,6 +5261,7 @@ elif [ $TV_STANDARD = "pal" ]; then
     VIDSIZE="720x576"
     TILE_ARRAY=("${TILE_1333[@]}")
     FRAME_RATE=25
+    ff_frame_rate="25/1"
     if [[ $SC_AR = 133 ]]; then
         SHOWCASE_SIZE=380x304
         SM_SHOWCASE_SIZE=290x232
