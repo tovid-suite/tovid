@@ -15,7 +15,7 @@ exit 1 ; }
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005-2013
+# Copyright (C) 2005-2015
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -87,7 +87,7 @@ V_TV=""
 MATCH_FORMAT=""
 MATCH_TVSYS=""
 TABULAR=false
-USE_MENCODER=:
+GET_FFMPEG_LEN=:
 USE_NAVLOG=false
 ID_FILES=""
 
@@ -143,13 +143,15 @@ function get_info ()
             $FFmpeg -i "$INFILE" >> "$SCRATCH_FILE" 2>&1
         fi
     fi
-    # Identify video using tcprobe
+    # Identify video using tcprobe - output seems to be unused atm
     if test -n "$TCPROBE"; then
         if $VERBOSE ; then
             echo $SEPARATOR
             echo "Identifying video with tcprobe..."
             echo $SEPARATOR
-            tcprobe -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
+            # tcprobe has a -X option that shows more, esp. bitrate and duration
+            tcprobe |grep -q -- -X && Xtended=-X
+            tcprobe $Xtended -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE" 2>/dev/null
         else
             tcprobe -i "$INFILE" >> "$SCRATCH_FILE" 2>/dev/null
         fi
@@ -167,6 +169,10 @@ function get_info ()
         fi
         exit 1
     fi
+    # remove ffmpeg metadata from scratch file
+    # make portable for bsd sed etc
+    #sed  '/Metadata/,/Duration/{//!d}' "$SCRATCH_FILE" > "${SCRATCH_FILE}2"
+    #mv "${SCRATCH_FILE}2" "$SCRATCH_FILE"
 
     # Defaults. Many of these values may be overridden by
     # vars from mplayer's output to be sourced later.
@@ -215,12 +221,18 @@ function get_info ()
     test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
 
     # ffmpeg has a better concept of the actual bitrate than mplayer
-    TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /bitrate:/ {print $6*1000}' "$SCRATCH_FILE")
+    TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /Duration:.*bitrate:/ {print $6*1000;exit}' "$SCRATCH_FILE")
     ## take the lower of the two
     if test $ID_VIDEO_BITRATE -eq 0 || test $TOTAL_AV_BITRATE -lt $ID_VIDEO_BITRATE; then
         # make sure we have a value from ffmpeg
         if test_is_number $TOTAL_AV_BITRATE; then
             ID_VIDEO_BITRATE=$TOTAL_AV_BITRATE
+        else
+            mplayer_stats_br=$(sed '/VIDEO:/!d;s/.*(//; s/).*=\ /:/;s/[kK][bB].*//g' "$SCRATCH_FILE")
+            # make sure it is a number
+            if test_is_number $mplayer_stats_br; then
+                ID_VIDEO_BITRATE=$(( ${mplayer_stats_br%.*} * 8 * 1000 ))
+            fi
         fi
     else
         ID_VIDEO_BITRATE=$ID_VIDEO_BITRATE
@@ -236,12 +248,13 @@ function get_info ()
 
     # Find out which channel is the video channel ( 1st )
     # TODO Do we want to worry about videos with multiple channels of video ?
-    VIDEO_INFO=$(grep "Video:" "$SCRATCH_FILE")
+    VIDEO_INFO=$(grep "Video:" "$SCRATCH_FILE" 2>&1| uniq)
     ID_VIDEO_TRACKS=( $(sed -r 's/.*Stream #([0-9][:.][0-9]+).*/\1/' <<< "$VIDEO_INFO") )
     ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
     # Find out what audio channels are available
     if test -n "$ID_AUDIO_ID"; then
-        AUDIO_INFO=$(grep -w "Audio:" "$SCRATCH_FILE")
+        # grep for Steam.*Audio instead of just "Audio:" fixes some wmv issues
+        AUDIO_INFO=$(grep -w "Stream.*Audio:" "$SCRATCH_FILE")
         # ID_AUDIO_ID needs "TRACKS" var to remain in columns
         TRACKS=$(sed -r 's/.*Stream #([0-9][:.][0-9]+).*/\1/' <<< "$AUDIO_INFO")
         A_TRACKS=(${TRACKS//$'\n'/ })
@@ -281,10 +294,6 @@ function get_info ()
                 if test_is_number $MP_ABITRATE; then
                     MP_ABITRATE=${MP_ABITRATE%.*}
                     A_BITRATES[i]=${MP_ABITRATE/000*}
-                else # final attempt
-                    MENC_ABITRATE=$(mencoder "$INFILE" -aid $MP_TRACKNUM  -oac pcm -ovc copy \
-                    -frames 30 -o /dev/null 2>&1 | awk '/AUDIO/ {print $7}')
-                    test_is_number $MENC_ABITRATE && A_BITRATES[i]=${MENC_ABITRATE%.*}
                 fi
             fi
             A_HEX_TRACKS=("${A_HEX_TRACKS[@]}" "$MP_TRACKNUM")
@@ -331,18 +340,9 @@ function get_info ()
         TRACKS=${tracks[@]/Unsupported/}
         ID_AUDIO_TRACKS=${TRACKS// /,}
     fi # if test -n "$ID_AUDIO_ID"
-    # tcprobe broken for webm AR id'ing, and MP is better maintained anyway
-    # If tcprobe reports an aspect ratio, use that
-    #if grep -q "aspect ratio" "$SCRATCH_FILE"; then
-    #    RATIO=$(awk '/aspect ratio/ {print $3}'  "$SCRATCH_FILE")
-    #    V_ASPECT_WIDTH=$(expr ${RATIO%:*} \* 100 \/ ${RATIO#*:})
-    # Otherwise, infer from mplayer
-    #else
     # Infer aspect ratio from width/height of mplayer playback
     MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
-        sed -e "s/..*=> *//g" -e "s/ .*$//g")
-    #PLAY_WIDTH=$(echo $MPLAYER_RES | awk -F 'x' '{print $1}')
-    #PLAY_HEIGHT=$(echo $MPLAYER_RES | awk -F 'x' '{print $2}')
+     sed -e "s/..*=> *//g" -e "s/ .*$//g")
     # patch from ML:
     PLAY_WIDTH=$(awk -F '[x ]' 'BEGIN {wid = 0}; {if ($1 > wid) wid = $1}; END {print wid}'<<< "$MPLAYER_RES")
     PLAY_HEIGHT=$(awk -F '[x ]' 'BEGIN {hgt = 0}; {if ($2 > hgt) hgt = $2}; END {print hgt}' <<< "$MPLAYER_RES")
@@ -352,7 +352,6 @@ function get_info ()
         PLAY_HEIGHT="100"
     fi
     V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
-    #fi
     # Normalized aspect ratio
     V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
     sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
@@ -367,40 +366,40 @@ function get_info ()
     # if a nav_log file exists and we have a value for FPS, use the log
     if  [[ -s "$NAV_LOG"  &&  ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
         ! $TERSE && echo "Using $NAV_LOG"
-        USE_MENCODER=false
+        GET_FFMPEG_LEN=false
         USE_NAVLOG=:
     else # no nav_log or ID_VIDEO_FPS missing
         # If doing -fast identification, skip "accurate" length determination
         if $FAST; then # skip this long process
-            USE_MENCODER=false  # USE_NAV_LOG already set to false
+            GET_FFMPEG_LEN=false  # USE_NAV_LOG already set to false
         else
-            # check if tcdemux present, and if mpg extension (vob uses mencoder)
-            if grep -qi mpg <<< "${INFILE##*.}" && hash tcdemux 2>/dev/null && \
+            # check if tcdemux present, and if mpg extension (vob uses ffmpeg)
+            if egrep -qi 'mpg$|mpeg$' <<< "${INFILE##*.}" && hash tcdemux 2>/dev/null && \
               [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
                 NAVSEEK_CMD=(nice tcdemux  -f $ID_VIDEO_FPS -W -i "$INFILE")
             # or check if aviindex installed, and if extension is avi
             elif grep -qi avi <<< "${INFILE##*.}" && hash aviindex 2>/dev/null && \
               [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
                 NAVSEEK_CMD=(nice aviindex -x -i "$INFILE" -o "$NAV_LOG")
-            else # not $FAST and indexing not possible, so use mencoder
-                USE_MENCODER=:
+            else # not $FAST, no indexing: so use ffmpeg for length/frames
+                GET_FFMPEG_LEN=:
             fi
         fi
         if [[ "${NAVSEEK_CMD[@]}" ]]; then
             "${NAVSEEK_CMD[@]}"  >  "$NAV_LOG" 2>/dev/null
             if [[ -s  "$NAV_LOG" ]]; then # if non empty lets use it
-                USE_MENCODER=false
+                GET_FFMPEG_LEN=false
                 USE_NAVLOG=:
             else
-                # remove empty log and we will use mencoder in next code block
+                # remove empty log and we will use ffmpeg in next code block
                 [[ -e "$NAV_LOG" ]] && rm -f "$NAV_LOG"
-                USE_MENCODER=:
+                GET_FFMPEG_LEN=:
             fi
         fi
     fi
     # set variables from NAV_LOG results
     if $USE_NAVLOG; then
-        if grep -qi mpg <<< "${INFILE##*.}"; then
+        if egrep -qi 'mpeg$|mpg$' <<< "${INFILE##*.}"; then
             ID_VIDEO_FRAMES=$(cat "$NAV_LOG" | awk 'END{print NR}')
             V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
             V_DURATION=${V_DUR%%.*} # final value is integer ( seconds )
@@ -411,27 +410,27 @@ function get_info ()
             # final value is in seconds
             V_DURATION=${V_DURATION%%.*} # integer
         fi
-        # if no usable value, use mencoder
-        { ! test_is_number $V_DURATION || ((V_DURATION == 0)) ; } && USE_MENCODER=:
+        # if no usable value, use ffmpegs
+        { ! test_is_number $V_DURATION || ((V_DURATION == 0)) ; } && GET_FFMPEG_LEN=:
     fi
-    # find duration by playing the video with mencoder into /dev/null
+    # find duration by playing the video with ffmpeg into /dev/null
     # any of: no/empty log file, ! $FAST, no tcdemux/aviindex, or not an mpg/avi
-    if $USE_MENCODER; then
-        MENCODER_STATS=$(LC_ALL=C mencoder -ovc copy -nosound -noskiplimit \
-        "$INFILE" -o /dev/null 2>/dev/null)
-        V_DURATION=$(awk 'END{print $(NF-3)}' <<< "$MENCODER_STATS")
-        V_DURATION=${V_DURATION%%.*}  # integer in seconds
+    if $GET_FFMPEG_LEN; then
+        ff_opts="-an -vcodec copy -f null -y /dev/null"
+        ffmpeg_cmd=($FFmpeg -i "$INFILE"  $ff_opts)
+        ffmpeg_full_output=$( "${ffmpeg_cmd[@]}" 2>&1 )
+        sed_var_time='x;$s/^.*time= *\([^ ]*\).*/\1/p'
+        sed_var_frames='{s/^.*frame= *\([^ ]*\).*/\1/p}'
+        V_DURATION=$(sed -n "$sed_var_time" <<< "$ffmpeg_full_output")
+        V_DURATION=$(unformat_time $V_DURATION int)
         # overwrite ID_VIDEO_FRAMES since we have a more accurate count now
-        ID_VIDEO_FRAMES=$(awk 'END{print $(NF-1)}' <<< "$MENCODER_STATS")
-        # if we failed to get a video bitrate earlier, use mencoder stats
-        if test $ID_VIDEO_BITRATE -eq 0; then
-            MENCODER_STATS_BR=$(awk -F: 'END{print $2}' <<< "$MENCODER_STATS" | awk '{print $1}')
-            # make sure it is a number
-            if test_is_number $MENCODER_STATS_BR; then
-                ID_VIDEO_BITRATE=${MENCODER_STATS_BR%.*}000
-            fi
+        ID_VIDEO_FRAMES=$(sed -n "$sed_var_frames" <<< "$ffmpeg_full_output")
+        if $VERBOSE; then
+            echo "getting video length with ffmpeg"
+            echo "$ffmpeg_full_output"
         fi
-        $VERBOSE && echo "$MENCODER_STATS"
+
+        # old stuff
     fi
 
     # Use mplayer-reported length as a last resort (truncate floating-point)

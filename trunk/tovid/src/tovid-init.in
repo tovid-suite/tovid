@@ -8,7 +8,7 @@
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005-2013
+# Copyright (C) 2005-2014
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -180,9 +180,8 @@ function format_time()
 # ******************************************************************************
 # Take a string containing a time (like "02:15:25.3") and
 # format it as an integer number of seconds. Fractional seconds
-# are truncated. Result is echoed to stdout, so to use the output
-# as a "return value", call the function like this:
-#     RETURN_VALUE=$(unformat_time $TIME_STRING)
+# are truncated. Result is echoed to stdout, so to use the output you can
+# call the function like this: var=$(unformat_time $TIME_STRING)
 # ******************************************************************************
 function unformat_time()
 {
@@ -195,7 +194,11 @@ function unformat_time()
     else
         TOT_SECONDS=$1
     fi
-    echo $TOT_SECONDS
+    if [[ -n $2 && $2 = "int" ]]; then
+        echo ${TOT_SECONDS%%.*}
+    else
+        echo $TOT_SECONDS
+    fi
 }
 
 # *****************************************************************************
@@ -586,7 +589,7 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
     # *************************************************************************
     # Required Dependencies
     # *************************************************************************
-    core="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv"
+    core="grep sed md5sum mplayer mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv"
 
     # *************************************************************************
     # Optional Dependencies
