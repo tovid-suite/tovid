@@ -16,7 +16,7 @@ exit 1 ; }
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005-2013
+# Copyright (C) 2005-2015
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -1734,10 +1734,6 @@ elif test "$ID_VIDEO_FPS" = "1000.000"; then
     FORCE_FPSRATIO=$TGT_FPSRATIO
     yecho "Found 1000fps (wmv) source, setting input to $TGT_FPS fps."
     yecho "Use -fps to force a different input fps (see 'man tovid')"
-    # TODO: Instead, use a two-pass encoding (since mencoder can
-    # do -ofps)
-    # mencoder -ovc copy -oac copy -ofps $TGT_FPSRATIO $INFILE -o twopass
-    # then do normal encoding on twopass
 fi
 
 # If forced FPS was used, apply it
@@ -2102,7 +2098,7 @@ fi
 
 # If existing video is OK, skip video encoding and just copy the stream
 if ! $FORCE_ENCODING && $VIDEO_OK; then
-    VID_COPY_CMD="mencoder -of rawvideo -nosound -ovc copy \"$IN_FILE\" -o \"$VIDEO_STREAM\""
+    VID_COPY_CMD="$FFmpeg -i \"$IN_FILE\" -an -sn -vcodec copy -f rawvideo -o \"$VIDEO_STREAM\""
     yecho "Copying existing video stream with the following command:"
     yecho "$VID_COPY_CMD"
 

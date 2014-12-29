@@ -89,12 +89,13 @@ Edit these files if you wish to change your configuration.
 
 The following environment variables are also honoured:
 ```
+    TOVID_HOME (directory containing preferences: ~/.tovid)
     TOVID_WORKING_DIR (working directory for all scripts).
     TOVID_OUTPUT_DIR (output directory for the makempg script).
     TOVID_FFMPEG_CMD (the 'ffmpeg' executable to use: ffmpeg or avconv)
 ```
-These will override 'WORKING_DIR', 'OUTPUT_DIR', and 'TOVID_FFMPEG'
-if set in ~/.tovid/preferences.
+These will override 'TOVID_HOME', 'WORKING_DIR', 'OUTPUT_DIR',
+and 'TOVID_FFMPEG' if set in ~/.tovid/preferences.
 
 
 =Command:gui=

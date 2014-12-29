@@ -15,7 +15,7 @@ exit 1 ; }
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005-2013
+# Copyright (C) 2005-2015
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -697,6 +697,11 @@ ff_ver=$($FFmpeg -version 2>&1 | awk '{ gsub(",", ""); if(NR == 1) print $3 }')
 (( ${ff_ver:2:1} == test_version )) 2>/dev/null
 } 
 
+is_video()
+{
+file -biL "$1" |grep -qw video || return 1
+}
+
 check_filetype()
 {
     fstats=$(file -L "$1" | awk '{ $1 = ""; print }')
@@ -706,8 +711,7 @@ check_filetype()
         if [[ $fstats = *JPEG* || $fstats = *PNG || $fstats = *PPM* ]]; then
             CONVRT=false
         fi
-    elif mencoder \
-    -endpos 2 -oac pcm -ovc copy "$1" -o /dev/null >/dev/null 2>&1; then
+    elif is_video "$1"; then
         file_type=video
     else
         file_type=unknown
@@ -1991,8 +1995,7 @@ verify_infiles()
                     grp_file_is_image[i]="yes"
                 fi
                 spin checking "${IN_FILE##*/}"
-            elif mencoder -quiet -oac pcm -ovc copy \
-            -frames 0 -o /dev/null "$IN_FILE" &>/dev/null; then
+            elif is_video "$IN_FILE"; then
                 checkfile="${IN_FILE##*/}"
                 spin checking "$checkfile"
             else
@@ -7609,7 +7612,7 @@ for g in ${!grouping[@]}; do
     # if we have a value for ${group_length[g]}  get the length from that
     if [[ -n "${group_length[g]}" ]]; then
         GROUP_VID_LEN[g]=$(bc_math "${group_length[g]} / $FRAME_RATE")
-    else # otherwise, we run mencoder to get the length
+    else # otherwise, we run stream_length to get the length
         GROUP_VID_LEN[g]=$(stream_length "${grouping[g]}")
     fi
 done
@@ -9043,8 +9046,7 @@ if $SUB_MENU; then
             fi
 
             # check if m2v was created ok before proceeding
-            if mencoder -quiet -oac pcm -ovc copy -frames 0 \
-            "$WORK_DIR/menu$i.m2v" -o /dev/null &>/dev/null; then
+            if is_video "$WORK_DIR/menu$i.m2v"l; then
                 :
             else
                 echo
@@ -10054,8 +10056,7 @@ if ! $QUICK_MENU && $DO_MENU; then
 fi
 # check if m2v was created ok before proceeding
 if $DO_MENU; then
-    if ! mencoder -quiet -oac pcm -ovc copy -frames 0 \
-      "$WORK_DIR/intro.m2v" -o /dev/null &> /dev/null; then
+    if ! is_video "$WORK_DIR/intro.m2v"; then
         echo
         runtime_error  "The menu video file has not been created !"
     fi

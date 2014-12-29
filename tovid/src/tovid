@@ -174,23 +174,30 @@ class Frontend:
             return
 
         # Create ~/.tovid if it doesn't exist already
-        user_tovid_dir = os.path.expanduser('~/.tovid')
-        if not os.path.exists(user_tovid_dir):
-            print("Creating '%s'" % user_tovid_dir)
-            os.mkdir(user_tovid_dir)
+        # honour TOVID_HOME environment variable
+        self.user_tovid_dir = os.getenv('TOVID_HOME') or os.path.expanduser('~/.tovid')
+        #user_tovid_dir = os.path.expanduser('~/.tovid')
 
+        if not os.path.exists(self.user_tovid_dir):
+            try:
+                os.mkdir(self.user_tovid_dir)
+                print("Creating '%s'" % self.user_tovid_dir)
+            except OSError:
+                print("Cannot create %s, exiting ..." %self.user_tovid_dir)
+                sys.exit(1)
         # Copy default tovid.ini to ~/.tovid if it doesn't exist already
-        user_tovid_ini = os.path.join(user_tovid_dir, 'tovid.ini')
-        if not os.path.exists(user_tovid_ini):
-            print("Creating '%s'" % user_tovid_ini)
-            shutil.copy(default_tovid_ini, user_tovid_ini)
+        self.user_tovid_ini = os.path.join(self.user_tovid_dir, 'tovid.ini')
+        if not os.path.exists(self.user_tovid_ini):
+            print("Creating '%s'" % self.user_tovid_ini)
+            shutil.copy(default_tovid_ini, self.user_tovid_ini)
 
 
     def get_config_options(self, command):
         """Return any options found in ~/.tovid/tovid.ini for the given command.
         """
         # Parse the user's tovid.ini file
-        filename = os.path.expanduser('~/.tovid/tovid.ini')
+        #filename = os.path.expanduser('~/.tovid/tovid.ini')
+        filename = self.user_tovid_ini
         config = ConfigParser()
         config.read(filename)
         # If no [command] section exists, or if there's no 'options' setting,
