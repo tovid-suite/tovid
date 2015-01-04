@@ -149,9 +149,7 @@ function get_info ()
             echo $SEPARATOR
             echo "Identifying video with tcprobe..."
             echo $SEPARATOR
-            # tcprobe has a -X option that shows more, esp. bitrate and duration
-            tcprobe |grep -q -- -X && Xtended=-X
-            tcprobe $Xtended -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE" 2>/dev/null
+            tcprobe -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE" 2>/dev/null
         else
             tcprobe -i "$INFILE" >> "$SCRATCH_FILE" 2>/dev/null
         fi
@@ -194,14 +192,14 @@ function get_info ()
     V_DURATION=""
     ID_LENGTH="0"
 
-    # bash appears to have no way of initializing empty arrays; we append to these later,
-    # so unsetting them clears out their previous contents
-    unset A_SAMPRATES
-    unset A_BITRATES
-    unset A_CODECS
-    unset A_HEX_TRACKS
-    unset A_TRACKS
-    unset wavs
+    # arrays
+    A_SAMPRATES=()
+    A_BITRATES=()
+    A_CODECS=()
+    A_HEX_TRACKS=()
+    A_TRACKS=()
+    MPL_AIDS=()
+    wavs=()
 
     # send formated mplayer's output to a vars file to be sourced to set relevant variables.
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
@@ -216,31 +214,35 @@ function get_info ()
     # get array of mplayer audio ids, used if no hextracks from ffmpeg
     while read; do MPL_AIDS+=(${REPLY##*=}); done < <(grep ID_AUDIO_ID "$SCRATCH_FILE")
 
-    ID_VIDEO_FRAMES=$(grep 'length:' "$SCRATCH_FILE" | \
-        awk -F ' ' '{print $2}')
-    test -z $ID_VIDEO_FRAMES && ID_VIDEO_FRAMES="0"
+    # try tcprobe to determine length (# of frames)
+    #[[ $Xtended ]] && Length="frames:" || Length="length:"
+    #ID_VIDEO_FRAMES=$(awk -v len=$Length   '$0 ~ len  {print $2}' "$SCRATCH_FILE")
+    ID_VIDEO_FRAMES=$(awk '/length:/ {print $2}' "$SCRATCH_FILE")
+    test_is_number $ID_VIDEO_FRAMES || ID_VIDEO_FRAMES="0"
 
     # ffmpeg has a better concept of the actual bitrate than mplayer
-    TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /Duration:.*bitrate:/ {print $6*1000;exit}' "$SCRATCH_FILE")
-    ## take the lower of the two
-    if test $ID_VIDEO_BITRATE -eq 0 || test $TOTAL_AV_BITRATE -lt $ID_VIDEO_BITRATE; then
-        # make sure we have a value from ffmpeg
-        if test_is_number $TOTAL_AV_BITRATE; then
-            ID_VIDEO_BITRATE=$TOTAL_AV_BITRATE
-        else
-            mplayer_stats_br=$(sed '/VIDEO:/!d;s/.*(//; s/).*=\ /:/;s/[kK][bB].*//g' "$SCRATCH_FILE")
-            # make sure it is a number
-            if test_is_number $mplayer_stats_br; then
-                ID_VIDEO_BITRATE=$(( ${mplayer_stats_br%.*} * 8 * 1000 ))
-            fi
+    FF_V_BITRATE=$(sed -n 's/.*Stream.*Video:.*\(\ [0-9][0-9][0-9]*\) kb\/s.*/\1/p' "$SCRATCH_FILE" |uniq)
+    FF_V_BITRATE=${FF_V_BITRATE// /} # trim spaces
+    # make sure we have a value from ffmpeg (a number and non zero)
+    if test_is_number "$FF_V_BITRATE" && (( FF_V_BITRATE )); then
+        # kilobits to bits
+        ID_VIDEO_BITRATE=${FF_V_BITRATE}000
+    elif [[ -z $ID_VIDEO_BITRATE || $ID_VIDEO_BITRATE = 0 ]]; then
+        mplayer_stats_br=$(sed '/VIDEO:/!d;s/.*(//; s/).*=\ /:/;s/[kK][bB].*//g' "$SCRATCH_FILE")
+        # make an integer
+        mplayer_stats_br=${mplayer_stats_br%.*}
+        # make sure it is a number
+        if test_is_number $mplayer_stats_br && (( mplayer_stats_br )); then
+            ID_VIDEO_BITRATE=$(( mplayer_stats_br * 8 * 1000 ))
         fi
-    else
-        ID_VIDEO_BITRATE=$ID_VIDEO_BITRATE
     fi
+    # if mplayer decides there is no video, unset ID_VIDEO_BITRATE
+    # else it will still show a value from TOTAL_AV_BITRATE
+    grep -qi "no video" "$SCRATCH_FILE" && unset ID_VIDEO_BITRATE
     # if we still don't have a value for ID_VIDEO_WIDTH and ID_VIDEO_HEIGHT
     MP_FRAMESIZE=$(awk '/=>/ {print $3}' "$SCRATCH_FILE")
     if test $ID_VIDEO_WIDTH -eq 0; then
-        test_is_number ${MP_FRAMESIZE%x*} &&  ID_VIDEO_WIDTH=${MP_FRAMESIZE%x*}
+        test_is_number ${MP_FRAMESIZE%x*} && ID_VIDEO_WIDTH=${MP_FRAMESIZE%x*}
     fi
     if test $ID_VIDEO_HEIGHT -eq 0; then
         test_is_number ${MP_FRAMESIZE#*x} && ID_VIDEO_HEIGHT=${MP_FRAMESIZE#*x}
@@ -250,7 +252,7 @@ function get_info ()
     # TODO Do we want to worry about videos with multiple channels of video ?
     VIDEO_INFO=$(grep "Video:" "$SCRATCH_FILE" 2>&1| uniq)
     ID_VIDEO_TRACKS=( $(sed -r 's/.*Stream #([0-9][:.][0-9]+).*/\1/' <<< "$VIDEO_INFO") )
-    ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
+    test_is_number "${ID_VIDEO_TRACKS[0]}" && ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
     # Find out what audio channels are available
     if test -n "$ID_AUDIO_ID"; then
         # grep for Steam.*Audio instead of just "Audio:" fixes some wmv issues
@@ -269,15 +271,16 @@ function get_info ()
         # Loop through available tracks and get specs on each
         for ((i=0; i<${#A_TRACKS[@]}; i++)); do
             CUR_CHAN=$(grep "Stream #${A_TRACKS[i]}" <<< "$AUDIO_INFO")
-            A_SAMPRATES=("${A_SAMPRATES[@]}" "$(echo $CUR_CHAN | \
-                sed -r 's/.* ([0-9]+) Hz.*/\1/')")
+            A_SAMPRATES[i]=$(sed -r 's/.* ([0-9]+) Hz.*/\1/' <<< "$CUR_CHAN")
             ! test_is_number ${A_SAMPRATES[i]} && A_SAMPRATES[i]=?
-            A_BITRATES=("${A_BITRATES[@]}" "$(echo $CUR_CHAN | \
-                sed -r 's/.* ([0-9]+) kb\/s.*/\1/')")
-            # make sure the above is a number, else set  A_BITRATE to 0
-            ! test_is_number ${A_BITRATES[i]} && A_BITRATES[i]=0
-            A_CODECS=("${A_CODECS[@]}" "$(echo $CUR_CHAN | \
-                sed -r 's/.*Audio: ([^,]+),.*/\1/')")
+            A_BITRATES[i]=$(sed -r 's/.* ([0-9]+) kb\/s.*/\1/' <<< "$CUR_CHAN")
+            # test for a number, add 3 zeros (bits), else set  A_BITRATE to 0
+            if test_is_number ${A_BITRATES[i]} && (( ${A_BITRATES[i]} )); then
+                A_BITRATES[i]=${A_BITRATES[i]}000
+            else
+                  A_BITRATES[i]="?"
+            fi
+            A_CODECS[i]=$(sed -r 's/.*Audio: ([^,]+),.*/\1/' <<< "$CUR_CHAN")
             if $USE_HEX_TRACKS; then
                 MP_TRACKNUM=$((16#${HEX_TRACKS[i]}))
             else
@@ -287,16 +290,16 @@ function get_info ()
             ID_AUDIO_IDS="$ID_AUDIO_IDS ${MP_TRACKNUM//$'\n'/ }"
 
             # last ditch efforts to get audio bitrate if we still don't have it
-            if test ${A_BITRATES[i]} -eq 0; then
+            if [[ ${A_BITRATES[i]} = "?" ]]; then
                 MP_ABITRATE=$(mplayer -nomsgcolor -vo null -ao null -frames 30 \
                 -channels 6 -identify -aid $MP_TRACKNUM -noconsolecontrols \
                 "$INFILE" 2>&1 | grep ID_AUDIO_BITRATE|awk -F=  'END{print $2}')
-                if test_is_number $MP_ABITRATE; then
+                if test_is_number $MP_ABITRATE && (( MP_ABITRATE )); then
                     MP_ABITRATE=${MP_ABITRATE%.*}
-                    A_BITRATES[i]=${MP_ABITRATE/000*}
+                    A_BITRATES[i]=$MP_ABITRATE
                 fi
             fi
-            A_HEX_TRACKS=("${A_HEX_TRACKS[@]}" "$MP_TRACKNUM")
+            A_HEX_TRACKS[i]=$MP_TRACKNUM
         done
         # use comma separator and remove possible leading comma
         ID_AUDIO_IDS=${ID_AUDIO_IDS// /,}
@@ -322,8 +325,10 @@ function get_info ()
         tracks=( ${TRACKS[@]} )
         if (( ${#tracks[@]} > 0 )); then
             for i in ${!tracks[@]}; do
-                map_cmd[i]="-map ${tracks[i]}"
-                wavs=( "${wavs[@]}" "$TMP_DIR/$i.wav" )
+                #map_cmd[i]="-map ${tracks[i]}"
+                # for -map seperator needs to be ':' not '.'
+                map_cmd[i]="-map ${tracks[i]/./:}"
+                wavs[i]="$TMP_DIR/$i.wav"
             done
             for r in ${!tracks[@]}; do
                 test_tracks[r]="$($FFmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[r]} -y ${wavs[r]} 2>&1)"
@@ -340,21 +345,38 @@ function get_info ()
         TRACKS=${tracks[@]/Unsupported/}
         ID_AUDIO_TRACKS=${TRACKS// /,}
     fi # if test -n "$ID_AUDIO_ID"
+    # now that we have (hopefully) an audio bitrate, we can try another way
+    # to get video bitrate if we don't have it yet, from the total bitate
+    # make sure of numerical values for audio and video bitrate, then subtract
+    if ! test_is_number $ID_VIDEO_BITRATE || ! (( ID_VIDEO_BITRATE )); then
+        TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /Duration:.*bitrate:/ {print $6*1000;exit}' "$SCRATCH_FILE")
+        if test_is_number $TOTAL_AV_BITRATE && (( TOTAL_AV_BITRATE )); then
+            (( ID_AUDIO_BITRATE )) && test_is_number $ID_AUDIO_BITRATE && \
+            ID_VIDEO_BITRATE=$(( TOTAL_AV_BITRATE - ID_AUDIO_BITRATE ))
+        fi
+    fi
+    # use "?" for unknown video bitrate, same as unknown audio bitrate
+    [[ $ID_VIDEO_BITRATE = 0 ]] && ID_VIDEO_BITRATE="?"
+
     # Infer aspect ratio from width/height of mplayer playback
     MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
      sed -e "s/..*=> *//g" -e "s/ .*$//g")
     # patch from ML:
     PLAY_WIDTH=$(awk -F '[x ]' 'BEGIN {wid = 0}; {if ($1 > wid) wid = $1}; END {print wid}'<<< "$MPLAYER_RES")
     PLAY_HEIGHT=$(awk -F '[x ]' 'BEGIN {hgt = 0}; {if ($2 > hgt) hgt = $2}; END {print hgt}' <<< "$MPLAYER_RES")
-    # Fix nulls
-    if test -z "$PLAY_WIDTH" || test -z "$PLAY_HEIGHT"; then
+    # fix nulls and division by 0 errors as well (( xxx ))
+    if ! (( PLAY_WIDTH )) || ! (( PLAY_HEIGHT )); then
         PLAY_WIDTH="100"
         PLAY_HEIGHT="100"
     fi
     V_ASPECT_WIDTH=$(expr $PLAY_WIDTH \* 100 \/ $PLAY_HEIGHT)
     # Normalized aspect ratio
-    V_ASPECT_RATIO=$(echo $V_ASPECT_WIDTH | \
-    sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g')
+    if test_is_number "$V_ASPECT_WIDTH"; then
+        V_ASPECT_RATIO=$(sed -r -e 's/([0-9]*)([0-9][0-9])/\1.\2:1/g' \
+        <<< "$V_ASPECT_WIDTH")
+    fi
+    # if mplayer decides there is no video, unset V_ASPECT_WIDTH
+    grep -qi "no video" "$SCRATCH_FILE" && unset V_ASPECT_WIDTH
 
     NAV_LOG="${INFILE}.nav_log"
     USE_NAVLOG=false
@@ -374,7 +396,7 @@ function get_info ()
             GET_FFMPEG_LEN=false  # USE_NAV_LOG already set to false
         else
             # check if tcdemux present, and if mpg extension (vob uses ffmpeg)
-            if egrep -qi 'mpg$|mpeg$' <<< "${INFILE##*.}" && hash tcdemux 2>/dev/null && \
+            if egrep -qi 'mpg$|mpeg$|vob$' <<< "${INFILE##*.}" && hash tcdemux 2>/dev/null && \
               [[ ${ID_VIDEO_FPS%%.*} -ne 0 ]]; then
                 NAVSEEK_CMD=(nice tcdemux  -f $ID_VIDEO_FPS -W -i "$INFILE")
             # or check if aviindex installed, and if extension is avi
@@ -399,7 +421,7 @@ function get_info ()
     fi
     # set variables from NAV_LOG results
     if $USE_NAVLOG; then
-        if egrep -qi 'mpeg$|mpg$' <<< "${INFILE##*.}"; then
+        if egrep -qi 'mpeg$|mpg$|vob$' <<< "${INFILE##*.}"; then
             ID_VIDEO_FRAMES=$(cat "$NAV_LOG" | awk 'END{print NR}')
             V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
             V_DURATION=${V_DUR%%.*} # final value is integer ( seconds )
@@ -422,9 +444,11 @@ function get_info ()
         sed_var_time='x;$s/^.*time= *\([^ ]*\).*/\1/p'
         sed_var_frames='{s/^.*frame= *\([^ ]*\).*/\1/p}'
         V_DURATION=$(sed -n "$sed_var_time" <<< "$ffmpeg_full_output")
-        V_DURATION=$(unformat_time $V_DURATION int)
+        test_is_number ${V_DURATION//:} && V_DURATION=$(unformat_time $V_DURATION int) || \
+          V_DURATION=0
         # overwrite ID_VIDEO_FRAMES since we have a more accurate count now
-        ID_VIDEO_FRAMES=$(sed -n "$sed_var_frames" <<< "$ffmpeg_full_output")
+        ID_V_FRAMES=$(sed -n "$sed_var_frames" <<< "$ffmpeg_full_output")
+        test_is_number "$ID_V_FRAMES" && ID_VIDEO_FRAMES=$ID_V_FRAMES
         if $VERBOSE; then
             echo "getting video length with ffmpeg"
             echo "$ffmpeg_full_output"
@@ -433,8 +457,30 @@ function get_info ()
         # old stuff
     fi
 
-    # Use mplayer-reported length as a last resort (truncate floating-point)
-    test -z $V_DURATION && V_DURATION=$(echo $ID_LENGTH | sed 's/\.[0-9]*//')
+    # try ffmpeg's estimate of duration first, then tcprobe's, then mplayers
+    if ! (( ${V_DURATION//:} )); then
+        # below from go|dfish on #sed, quits after 1st match (we have 2 matches)
+        V_DURATION=$(sed -n '/.*Duration: /{ s///; s/\..*//; p; q; }' "$SCRATCH_FILE")
+        if egrep -q  '([0-9]+:[0-9][0-9]:[0-9][0-9])' <<< "$V_DURATION"; then
+            V_DURATION=$(unformat_time $V_DURATION int)
+        else
+            V_DURATION=0
+        fi
+        # try tcprobe if above fails
+        if ! (( ${V_DURATION//:} )); then
+            V_DURATION=$(sed -n '/.*duration=/{ s///; s/\..*//; p; q; }' "$SCRATCH_FILE")
+            if egrep -q '([0-9]+:[0-9][0-9]:[0-9][0-9])' <<< "$V_DURATION"; then
+                V_DURATION=$(unformat_time $V_DURATION int)
+            else
+                V_DURATION=0
+            fi
+        fi
+        # Lastly try mplayer-reported length (secs) (truncate floating-point)
+        if ! (( ${V_DURATION} )); then
+            V_DURATION=$(sed 's/\.[0-9]*//' <<< "$ID_LENGTH")
+            (( $V_DURATION )) || V_DURATION=0
+        fi
+    fi
 
     # TODO: WARN if video is less than one second!
 
@@ -531,7 +577,7 @@ function idvid_main ()
             echo "---------------------------"
             echo "              Codec: ${A_CODECS[j]}"
             if [[ ${tracks[j]} != Unsupported ]]; then
-                echo "            Bitrate: ${A_BITRATES[j]}000 bits per second"
+                echo "            Bitrate: ${A_BITRATES[j]} bits per second"
                 echo "      Sampling rate: ${A_SAMPRATES[j]} Hz"
             fi
         done
@@ -565,8 +611,8 @@ function idvid_main ()
 
     # VCD/SVCD must be 44.1khz mp2
     elif test "$ID_AUDIO_RATE" = "44100" && test "$ID_AUDIO_CODEC" = "mp2"; then
-        # SVCD can be 32-384 bps, 1-4 channels
-        if test "$ID_AUDIO_NCH" -le "4" && \
+        # SVCD can be 32-384 bps, 1-4 channels - check 1st audio stream only
+        if test "${ID_AUDIO_NCH%%,*}" -le "4" && \
           test "$ID_AUDIO_BITRATE" -ge "32000" && \
           test "$ID_AUDIO_BITRATE" -le "384000"; then
             A_SVCD="$ID_AUDIO_NCH-channel $ID_AUDIO_BITRATE bps SVCD"
