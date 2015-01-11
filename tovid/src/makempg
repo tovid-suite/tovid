@@ -1661,19 +1661,29 @@ fi
 # newaudio was removed in ffmpeg 0.9 as it was redundant because of -map opt
 grep -qw -- -newaudio <<< "$FF_HELP" && NEWAUDIO_OPT=true
 
+# we can't really parse which syntax to use for all filters, so here is a test
+errors=$( $FFmpeg -i "$IN_FILE" -t 1  \
+-vf scale=w=720:h=352,pad=width=720:height=480:x=0:y=64,setdar=16/9 \
+-f null  -y /dev/null 2>&1)
+if grep -q "Error.*\(width\|height\|setdar\|w=\|h=\)" <<< "$errors"; then
+    ff_legacy=1
+fi
+
 # Anamorphic widescreen (16:9 output)
 # Used if the format supports it, and it will minimize the number of pixels
 # wasted on letterbox bars (or if the user requested -widetv output).
 if $ANAMORPH && { ((V_ASPECT_WIDTH >= 153)) || $WIDE_TV ; }; then
     TGT_ASPECT_WIDTH=177
-    FF_ASPECT="${FF_ASPECT}16:9"
+    ((ff_legacy)) && asp=16:9 || asp=16/9
+    FF_ASPECT="${FF_ASPECT}${asp}"
     ASPECT_FMT="--aspect 3"
 # For all others, use "non-anamorphic" (4:3 output)
 # Aspects from 133:100 to 153:100 have minimum pixel wastage
 # when letterboxed in 4:3
 else
     TGT_ASPECT_WIDTH=133
-    FF_ASPECT="${FF_ASPECT}4:3"
+    ((ff_legacy)) && asp=4:3 || asp=4/3
+    FF_ASPECT="${FF_ASPECT}${asp}"
     ASPECT_FMT="--aspect 2"
 fi
 
@@ -1885,7 +1895,11 @@ fi
 
 if $USE_FFMPEG; then
     FF_BITRATE="$VB ${VID_BITRATE}k"
-    FF_SIZE="scale=${INNER_WIDTH}:${INNER_HEIGHT}"
+    if ((ff_legacy)); then
+        FF_SIZE="scale=${INNER_WIDTH}:${INNER_HEIGHT}"
+    else
+        FF_SIZE="scale=w=${INNER_WIDTH}:h=${INNER_HEIGHT}"
+    fi
     FF_CODEC="-f mpeg1video"
     FF_FPS="-r $TGT_FPS"
     FF_SAMPRATE="-ar $SAMPRATE"
@@ -1906,7 +1920,11 @@ if $USE_FFMPEG; then
     (( FF_VPIX )) || (( FF_HPIX )) && PAD=1
     # changed options: -pad{side} to -vf(ilters) pad= .
     if ((PAD)); then
-        FF_PAD="pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
+        if ((ff_legacy)); then
+            FF_PAD="pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
+        else
+            FF_PAD="pad=width=${TGT_WIDTH}:height=${TGT_HEIGHT}:x=${FF_HPIX}:y=${FF_VPIX}"
+        fi
     fi
 
     # use single variable for current, or legacy ffmpeg: VF_FILTERS and OLD_OPTS
