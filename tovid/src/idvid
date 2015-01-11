@@ -252,7 +252,7 @@ function get_info ()
     # TODO Do we want to worry about videos with multiple channels of video ?
     VIDEO_INFO=$(grep "Video:" "$SCRATCH_FILE" 2>&1| uniq)
     ID_VIDEO_TRACKS=( $(sed -r 's/.*Stream #([0-9][:.][0-9]+).*/\1/' <<< "$VIDEO_INFO") )
-    test_is_number "${ID_VIDEO_TRACKS[0]}" && ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
+    test_is_number "${ID_VIDEO_TRACKS[0]/:/}" && ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
     # Find out what audio channels are available
     if test -n "$ID_AUDIO_ID"; then
         # grep for Steam.*Audio instead of just "Audio:" fixes some wmv issues
