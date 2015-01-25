@@ -281,6 +281,7 @@ AUDIO_OPTS="-ab 224k -ar $SAMPLERATE -acodec $AUDIO_EXT"
 MPLEX_FORMAT="8"
 FROM_GUI=false # needed to disable tput (colour output) in GUI
 TOVID_PREFIX=$(tovid -prefix)
+use_transcode=:
 
 ##############################################################################
 #                                 Functions                                  #
@@ -2370,6 +2371,7 @@ wait_for()
         sleep .1
         ((x++))
     done
+    unset x
     return 1
 }
 
@@ -3767,21 +3769,27 @@ $NOASK && NO_ASK="-noask"
 #           backend checks          #
 ####################################
 
-# transcode version >= 1.1.0 mandated
-_transcode_version=$(transcode -v 2>&1| awk '{gsub("v", ""); print $2}')
-_baseline_version=1.1.0
-if ! test_version $_transcode_version $_baseline_version; then
-    test -f "$LOG_FILE" && rm -f "$LOG_FILE"
-    runtime_error \
-    "transcode version 1.1.0 or newer is required to run this script (todisc).
-    If you must use version $_transcode_version use tovid 0.34 or older."
-fi
-# stock debian transcode and probably other dists missing export_yuv4mpeg module
-if !  ls -1 $( tcmodinfo -p )/export*.so |grep -q yuv4mpeg; then
-    test -f "$LOG_FILE" && rm -f "$LOG_FILE"
-    _url="http://tovid.wikia.com/wiki/Known_bugs#tovid_is_broken_on_Debian"
-    runtime_error \
-    "your transcode is missing the yuv4mpeg export module. See $_url"
+# transcode is needed for making animated submenu, else we can use just ffmpeg
+hash transcode 2>/dev/null || use_transcode=false
+#$ANI_SUB_MENU && assert_dep transcode "transcode is required for making
+#  animated submenus"
+if $use_transcode; then
+    # transcode version >= 1.1.0 mandated
+    _transcode_version=$(transcode -v 2>&1| awk '{gsub("v", ""); print $2}')
+    _baseline_version=1.1.0
+    if ! test_version $_transcode_version $_baseline_version; then
+        test -f "$LOG_FILE" && rm -f "$LOG_FILE"
+        runtime_error \
+        "transcode version 1.1.0 or newer required to run this script (todisc).
+        If you must use version $_transcode_version use tovid 0.34 or older."
+    fi
+    # stock debian transcode and probably others missing export_yuv4mpeg module
+    if !  ls -1 $( tcmodinfo -p )/export*.so |grep -q yuv4mpeg; then
+        test -f "$LOG_FILE" && rm -f "$LOG_FILE"
+        _url="http://tovid.wikia.com/wiki/Known_bugs#tovid_is_broken_on_Debian"
+        runtime_error \
+        "your transcode is missing the yuv4mpeg export module. See $_url"
+    fi
 fi
 # ffmpeg - minimum version: 0.7, which has necessary filters
 ffmpeg_help=$($FFmpeg -h full 2>&1)
@@ -4413,7 +4421,7 @@ if $QUICK_MENU; then
 # quick-menu needs TEXTMENU=: , and does its own showcase and bg with ffmpeg
     TEXTMENU=:
     SC_THUMB=false
-    STATIC=: #FIXME
+    STATIC=:
 fi
 if [[ $SC_FRAMESTYLE = "glass" ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]]; then
     yecho
@@ -5786,7 +5794,7 @@ if $DO_MENU && $SHOWCASE; then
                     #fi
             fi
             SC_TITLES_X_ARRAY[i]=$(( ${SC_THUMB_X_ARRAY[i]} + t_w + 5 ))
-            SC_TITLES_Y_ARRAY[i]=${SC_THUMB_Y_ARRAY[i]} # DEBUG:why not originally?
+            SC_TITLES_Y_ARRAY[i]=${SC_THUMB_Y_ARRAY[i]}
             titles_xdelta[i]=$(( ${SC_THUMB_X_ARRAY[i]} - ${SC_TITLES_X_ARRAY[i]} ))
             ;;
           center)
@@ -6425,7 +6433,7 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU && ! $USER_THUMBS; then
             fi
             
             # get largest image of 9 if static menu and -frame-safe
-            if $FRAME_SAFE; then #FIXME $STATIC not necessary, this is a preview!
+            if $FRAME_SAFE; then
                 largest_img=$(get_largest 6 $V_FRAMES "$WORK_DIR/pics/$i")
                 mv -f "$largest_img" "$WORK_DIR/pics/largest.$IMG_FMT"
                 rm -f "$WORK_DIR"/pics/$i/*.$IMG_FMT
@@ -6840,7 +6848,7 @@ EOF
             # make sure coordinates are even
             ((X0%2 && X0--)); ((Y0%2 && Y0--))
             ((X1%2 && X1++)); ((Y1%2 && Y1++))
-            button_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\") #FIXME
+            button_geos=(x0=\"$X0\" y0=\"$Y0\" x1=\"$X1\" y1=\"$Y1\")
             btn_geos[i]=${button_geos[@]}
             unset button_geos
             echo \
@@ -7179,7 +7187,7 @@ if $DISPLAY_PREVIEW; then
     echo "(Press 'q' or ESC in the preview window to close it.)"
 fi
 # make the fake montage with highlighted 1st button and display it
-if $DO_MENU && ! $SINGLE_SLIDESHOW; then #FIXME ?
+if $DO_MENU && ! $SINGLE_SLIDESHOW; then
     composite -compose Over "$WORK_DIR/fake_montage.png" \
       "$PREVIEW_IMG" "$PREVIEW_IMG"
 fi
@@ -7522,7 +7530,7 @@ if $DO_CAROUSEL && $USE_DVD_SLIDESHOW; then
     "${SS_AUDIO[@]}" -f "$WORK_DIR/dvd-slideshow.conf"
     mv "$WORK_DIR/slideshow.vob" "$WORK_DIR/intro.mpg"
 fi
-# check bgvideo and showcase VIDEO for compliance ( if present ) #FIXME
+# check bgvideo and showcase VIDEO for compliance ( if present )
 if [[ -n $BG_VIDEO && $BG_VIDEO = $BG_AUDIO ]]; then
     # do not reencode animated slideshow made in MK_CAROUSEL_MODE
     if ! [[ $BG_VIDEO = $WORK_DIR/carousel-00.m2v ]]; then
@@ -7558,7 +7566,7 @@ for ((i=0; i<${#IN_FILES[@]}; i++)); do
     if [[ $MENU_NUM -eq 1 ]]; then
         ! $SINGLE_SLIDESHOW && \
           spin "getting stats for the log" $SPINNER #on ${IN_FILES[i]##*/}"
-        idvid_stats[i]=$(idvid -terse -accurate "${IN_FILES[i]}" 2>/dev/null)
+        idvid_stats[i]=$(idvid -terse -accurate "${IN_FILES[i]}" 2> /dev/null)
     fi
     if [ -s  "${IN_FILES[i]}.nav_log" ]; then
         length[i]=$(awk 'END{print NR}' "${IN_FILES[i]}.nav_log")
@@ -7570,7 +7578,7 @@ if $GROUPING &&  [[ $MENU_NUM -eq 1 ]]; then
     for u in ${!grouping[@]}; do
         CUR_VID=$(readlink -f "${grouping[u]}")
         spin "Getting grouped video stats for the log on "${CUR_VID##*/}""
-        group_idvid_stats[u]=$(idvid -terse -accurate "$CUR_VID" 2>/dev/null)
+        group_idvid_stats[u]=$(idvid -terse -accurate "$CUR_VID" 2> /dev/null)
         if [ -s "$CUR_VID.nav_log" ]; then
             group_length[u]=$(awk 'END{print NR}' "$CUR_VID.nav_log")
         fi
@@ -7823,31 +7831,46 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 thumb_frames=$THUMB_FRAMES
             fi
             # warning to ignore transcode error messages
-            print_tcode_info
+            $use_transcode && print_tcode_info
             if [ -s  "${IN_FILES[i]}.nav_log" ]; then
                 NAV_SEEK[i]="--nav_seek"
                 NAVSEEK[i]=${IN_FILES[i]}.nav_log
             fi
-            yuv_fifo="$WORK_DIR/pics/$i/out.yuv"
-            log_tmp="$WORK_DIR/pics/$i/log.tmp"
-            [[ ! -p "$yuv_fifo" ]] && mkfifo "$yuv_fifo"
+            ff_log_tmp="$WORK_DIR/pics/$i/ff_log.tmp"
+            tc_log_tmp="$WORK_DIR/pics/$i/tc_log.tmp"
+            if $use_transcode; then
+                vid_stream="$WORK_DIR/pics/$i/out.yuv"
+                 [[ ! -p "$vid_stream" ]] && mkfifo "$vid_stream"
+                ff_seek=""
+                ff_frames=""
+            else
+                # using ffmpeg directly on file, PIPE_FORMAT not needed
+                vid_stream="${IN_FILES[i]}"
+                unset PIPE_FORMAT
+                ff_seek="-ss ${SEEK_VAL[i]}"
+                ff_frames="-vframes $thumb_frames"
+            fi
+
             # resize using ffmpeg instead of transcode
-            FFMPEG_CMD2=($FFmpeg $PIPE_FORMAT -i "$yuv_fifo" \
-            -f image2 $VF scale=${THUMB_SIZE%x*}:${THUMB_SIZE#*x} \
+            FFMPEG_CMD2=($FFmpeg $PIPE_FORMAT -i "$vid_stream" $ff_seek \
+            $ff_frames -f image2 $VF scale=${THUMB_SIZE%x*}:${THUMB_SIZE#*x} \
             -y "$WORK_DIR/pics/$i/%06d.$IMG_FMT")
             TRANSCODE_CMD2=(transcode --progress_rate 10 \
             --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "${IN_FILES[i]}" \
             -c ${SEEK_FRAMES[i]}-$((${SEEK_FRAMES[i]} + $thumb_frames)) \
-            ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o "$yuv_fifo" \
+            ${NAV_SEEK[i]} "${NAVSEEK[i]}" -o "$vid_stream" \
             -f $FRAME_RATE $EXPORT)
-            print2log "Running ${TRANSCODE_CMD2[@]}"
+            if $use_transcode; then
+                print2log "Running ${TRANSCODE_CMD2[@]}"
+                "${TRANSCODE_CMD2[@]}"  2>&1 | pipe2log transcode &
+            fi
             print2log "Running ${FFMPEG_CMD2[@]}"
-            "${TRANSCODE_CMD2[@]}"  2>&1 | pipe2log transcode &
-            "${FFMPEG_CMD2[@]}" > "$log_tmp" 2>&1 &
+            "${FFMPEG_CMD2[@]}" > "$ff_log_tmp" 2>&1 &
             ffm_pid=$!
-            wait_for "$WORK_DIR/tcode$i.pid"
-            TRANSCODE_PID=$(<$WORK_DIR/tcode$i.pid)
-            tcode_pids="$tcode_pids $TRANSCODE_PID"
+            if $use_transcode; then
+                wait_for "$WORK_DIR/tcode$i.pid"
+                tcode_pids="$tcode_pids $(<$WORK_DIR/tcode$i.pid)"
+            fi
             if [[ -n "$ffm_pid" ]]; then
                 wait_for "$WORK_DIR/pics/$i/000001.$IMG_FMT"
                 while ps -p $ffm_pid >/dev/null; do
@@ -7860,15 +7883,18 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 # wait for ffmpeg and transcode to finish
                 wait $ffm_pid # get exit code of ffmpeg
                 if (($? != 0)); then
-                    cat "$log_tmp" | sed '/time=10000000000.00/d' | pipe2log ${FFmpeg##*/}
-                    rm -f "$log_tmp"
+                    cat "$ff_log_tmp" | sed '/time=10000000000.00/d' | pipe2log ${FFmpeg##*/}
+                    rm -f "$ff_log_tmp"
                     runtime_error \
                       "Problem with ${FFmpeg##*/} while creating images from video"
                 fi
-                wait $TRANSCODE_PID # get exit code of transcode
-                if (($? != 0)); then
-                    runtime_error \
-                      "Problem with transcode while creating images from video"
+                if $use_transcode; then
+                    wait $(<$WORK_DIR/tcode$i.pid)
+                    # get exit code of transcode
+                    if (($? != 0)); then
+                        runtime_error \
+                        "Problem with transcode while creating images from video"
+                    fi
                 fi
                 # get the largest image if static menu(we made 9)
                 # get largest image of 9 if static menu and not -frame-safe
@@ -7883,10 +7909,10 @@ if ! $TEXTMENU && ! $SINGLE_SLIDESHOW && $DO_MENU; then
                 ((numpics > ani_pics)) && ani_pics=$numpics
                 # append ffmpeg output to the log
                 echo -e \
-                "\n$ME Log from ${FFmpeg##*/} (processing transcode stream)\n" \
+                "\n$ME Log from ${FFmpeg##*/} (processing video stream)\n" \
                 >> "$LOG_FILE"
-                cat "$log_tmp" | sed '/time=10000000000.00/d' | pipe2log ${FFmpeg##*/}
-                rm -f "$log_tmp"
+                cat "$ff_log_tmp" | sed '/time=10000000000.00/d' | pipe2log ${FFmpeg##*/}
+                rm -f "$ff_log_tmp"
                 echo
                 echo -n "Created $numpics images of $THUMB_FRAMES"
                 echo -ne "\r$(printf %60s)" # print spaces to overwrite previous line
@@ -8195,7 +8221,7 @@ elif $QUICK_NAV; then
         fi
         if ((i==NUM_FILES+2)); then # quick-nav assumes titlesets
             # VMGM_MENU means NOT -no-vmgm
-            if $VMGM_MENU && $PLAYALL && ! $VMGM_ONLY; then #DEBUG
+            if $VMGM_MENU && $PLAYALL && ! $VMGM_ONLY; then
                 echo -n "       <button name=\"$i\" ${btn_geos[i-1]} "
                 echo -e "up=\"$((i-1))\" down=\"$((i+1))\"/>"
                 echo -e "       <button name=\"$((i+1))\" ${btn_geos[i]} $down/>"
@@ -8788,7 +8814,9 @@ if $SUB_MENU; then
             unset cf f
             x=0
             for t in "${cmd[@]}"; do
+                ! $use_transcode && break # don't run block if just using ffmpeg
                 ((x++)) # index for spin()'s chapter number output
+                #echo x is $x >&2
                 # warning to ignore transcode error messages
                 print_tcode_info
                 if [[ -n ${GROUP_ARR[i]} ]]; then
@@ -8802,7 +8830,8 @@ if $SUB_MENU; then
                 else
                     unset NAVSEEK NAVLOG
                 fi
-                log_tmp="$PICS_OUT/log.tmp"
+                ff_log_tmp="$PICS_OUT/ff_log.tmp"
+                tc_log_tmp="$PICS_OUT/tc_log.tmp"
                 yuv_fifo="$PICS_OUT/out.yuv"
                 [[ ! -p "$yuv_fifo" ]] && mkfifo "$yuv_fifo"
                 # resize using ffmpeg instead of transcode
@@ -8815,12 +8844,12 @@ if $SUB_MENU; then
                 print2log "Running ${TCODE_CMD[@]}"
                 print2log "Running ${FFMPEG_CMD[@]}"
                 "${TCODE_CMD[@]}"  2>&1 | pipe2log transcode &
-                "${FFMPEG_CMD[@]}" > "$log_tmp" 2>&1 &
+                "${FFMPEG_CMD[@]}" > "$ff_log_tmp" 2>&1 &
                 ffm_pid=$!
                 wait_for "$WORK_DIR/tcode$i.pid"
                 TCODE_PID=$(<$WORK_DIR/tcode$i.pid)
                 tcode_pids="$tcode_pids $TCODE_PID"
-                if [[ -n "$TCODE_PID" ]]; then
+                if [[ -n $TCODE_PID ]]; then
                     while ps -p $ffm_pid >/dev/null; do
                         wait_for "$IMG_DIR/000001.$SM_IMG_FMT"
                         sleep 1 # spinner interval
@@ -8837,16 +8866,15 @@ if $SUB_MENU; then
                 else
                     runtime_error "Problem creating images from the video."
                 fi
-                cat "$log_tmp" | pipe2log ${FFmpeg##*/}
-                rm -f "$log_tmp"
-                unset TCODE_CMD cmd
+                cat "$ff_log_tmp" | pipe2log ${FFmpeg##*/}
+                rm -f "$ff_log_tmp"
+                unset TCODE_CMD
+                # transcode loops so each loop uses %06d, then moved to %08d
                 if ! $ANI_SUB_MENU ; then
-                    #echo
                     mv $WORK_DIR/submenu/000001.$SM_IMG_FMT \
                     $WORK_DIR/submenu/$(printf "%08d%s\n" $((f++)) .$SM_IMG_FMT)
                     let f+=1
                 elif $ANI_SUB_MENU; then
-                    #echo
                     u=${t/*-}; v=${t/-*}
                     # names now start with 000001.  Rename starting at 000000.
                     for ((n=1; n<smframes+1; n++)); do
@@ -8866,6 +8894,56 @@ if $SUB_MENU; then
                     done
                 fi
             done
+            if ! $use_transcode; then # don't run block if using transcode
+                if [[ -n ${GROUP_ARR[i]} ]]; then
+                    CUR_FILE="${FILE_IN[cf++]}"
+                else
+                    CUR_FILE="${IN_FILES[i]}"
+                fi
+                ff_log_tmp="$PICS_OUT/ff_log.tmp"
+                frames=$CUT_TIME
+                #frames=$((CUT_TIME - 1))
+                # avconv dies on 'between' expr but keeping commented reference
+                #[[ ${FFmpeg##*/} =~ avconv ]] && frames=$CUT_TIME
+                # between filter is "inclusive" so between(300, 300) is 300
+                cur_frame=${cf%-*}
+                #if [[ ${FFmpeg##*/} =~ avconv ]]; then
+                for fr in ${cmd[@]}; do
+                    cur_frame=${fr%-*}
+                    select1+="(gt(n,${cur_frame}))*lte(n,$(( cur_frame + frames)))+"
+                done
+                #else # ffmpeg
+                    # "select using "between" expr
+                #    for fr in ${cmd[@]}; do
+                        cur_frame=${fr%-*}
+                #        select1+="between(n,${cur_frame},$(( cur_frame + frames)))+"
+                #    done
+                #fi
+                # remove last '+' sign
+                select1=${select1%+}
+                select1="'${select1}'",setpts="'N/(29.97*TB)'"
+                scale1=scale=${VSIZE%x*}:${VSIZE#*x}
+                #(( x++ )) # increment now as we don't loop for 'select' filter
+                ffm_cmd=($FFmpeg -i "$CUR_FILE" -vf select="${select1}",${scale1} \
+                -y "$IMG_DIR/%08d.$SM_IMG_FMT")
+                yecho "Running ${ffm_cmd[@]}" # DEBUG: should be print2log
+                "${ffm_cmd[@]}" > "$ff_log_tmp" 2>&1 &
+                ffm_pid=$!
+                while ps -p $ffm_pid >/dev/null; do
+                    wait_for "$IMG_DIR/00000001.$SM_IMG_FMT"
+                    sleep 1 # spinner interval
+                    end=$(find "$IMG_DIR" -maxdepth 1 -name \*.$SM_IMG_FMT |
+                    sort | awk -F / '{ field = $NF }; END{ print field }')
+                    e=${end##*/};  e=${e%%.*}; e=${e##*0} # strip to digit
+                    spin \
+                      "Seeking and making $TOTAL_IMGS images for chapters: $end"
+                done
+                total_imgs=$(find "$IMG_DIR" -name "*.$SM_IMG_FMT" | wc -l)
+                print2log "Created $total_imgs $sm_img_fmt of $TOTAL_IMGS"
+                wait
+                cat "$ff_log_tmp" | pipe2log ${FFmpeg##*/}
+                unset select1 ffm_cmd
+            fi
             # make the chapter titles if needed.  Shadow is hardcoded at #101010
             if [[ -n  ${CHAPTER_TITLES[@]} ]]; then
                 echo "Making Chapter titles for Video $((i+1))"
@@ -8938,7 +9016,7 @@ if $SUB_MENU; then
                 $DEBUG && stime=$(date +%s)
                 TOYUV_CMD=(ppmtoy4m -v 0 -n $smframes -A $PIXEL_AR -F $YUV_FR \
                 -I p -S 420mpeg2 -r)
-                IMGENC_CMD=($FFmpeg -f yuv4mpegpipe -i - -an \
+                IMGENC_CMD=($FFmpeg -f yuv4mpegpipe -i - -an $FFMPEG_OPTS \
                 -r $ff_frame_rate $VF scale=${VF_SCALE},${ASPECT} \
                 -y "$WORK_DIR/menu$i.m2v")
                 yecho ""
@@ -9046,7 +9124,7 @@ if $SUB_MENU; then
             fi
 
             # check if m2v was created ok before proceeding
-            if is_video "$WORK_DIR/menu$i.m2v"l; then
+            if is_video "$WORK_DIR/menu$i.m2v"; then
                 :
             else
                 echo
