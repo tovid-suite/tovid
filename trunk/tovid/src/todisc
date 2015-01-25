@@ -8921,7 +8921,7 @@ if $SUB_MENU; then
                 #fi
                 # remove last '+' sign
                 select1=${select1%+}
-                select1="'${select1}'",setpts="'N/(29.97*TB)'"
+                select1="'${select1}'",setpts="'N/($ff_frame_rate*TB)'"
                 scale1=scale=${VSIZE%x*}:${VSIZE#*x}
                 #(( x++ )) # increment now as we don't loop for 'select' filter
                 ffm_cmd=($FFmpeg -i "$CUR_FILE" -vf select="${select1}",${scale1} \
