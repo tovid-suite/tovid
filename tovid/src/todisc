@@ -8812,11 +8812,8 @@ if $SUB_MENU; then
             print2log "Creating $TOTAL_IMGS chapter images for ${IN_FILES[i]}"
             print2log ""
             unset cf f
-            x=0
-            for t in "${cmd[@]}"; do
+            for t in "${!cmd[@]}"; do
                 ! $use_transcode && break # don't run block if just using ffmpeg
-                ((x++)) # index for spin()'s chapter number output
-                #echo x is $x >&2
                 # warning to ignore transcode error messages
                 print_tcode_info
                 if [[ -n ${GROUP_ARR[i]} ]]; then
@@ -8840,7 +8837,7 @@ if $SUB_MENU; then
                 TCODE_CMD=(nice transcode --progress_rate 10 \
                 --write_pid $WORK_DIR/tcode$i.pid -q 1 -i "$CUR_FILE" \
                 $NAVSEEK "$NAVLOG" -o "$yuv_fifo" -f \
-                $FRAME_RATE -c $t $EXPORT)
+                $FRAME_RATE -c ${cmd[t]} $EXPORT)
                 print2log "Running ${TCODE_CMD[@]}"
                 print2log "Running ${FFMPEG_CMD[@]}"
                 "${TCODE_CMD[@]}"  2>&1 | pipe2log transcode &
@@ -8857,7 +8854,7 @@ if $SUB_MENU; then
                         sort | awk -F / '{ field = $NF }; END{ print field }')
                         e=${end##*/};  e=${e%%.*}; e=${e##*0} # strip to digit
                         spin \
-                          "Seeking and making $e images for chapter ${x}: $end"
+                          "Seeking and making $e images for chapter $((t+1)): $end"
                     done
                     total_imgs=$(find "$IMG_DIR" -name "*.$SM_IMG_FMT" | wc -l)
                     wait
@@ -8902,16 +8899,19 @@ if $SUB_MENU; then
                 fi
                 ff_log_tmp="$PICS_OUT/ff_log.tmp"
                 frames=$CUT_TIME
+
                 #frames=$((CUT_TIME - 1))
                 # avconv dies on 'between' expr but keeping commented reference
                 #[[ ${FFmpeg##*/} =~ avconv ]] && frames=$CUT_TIME
                 # between filter is "inclusive" so between(300, 300) is 300
                 cur_frame=${cf%-*}
                 #if [[ ${FFmpeg##*/} =~ avconv ]]; then
+
                 for fr in ${cmd[@]}; do
                     cur_frame=${fr%-*}
                     select1+="(gt(n,${cur_frame}))*lte(n,$(( cur_frame + frames)))+"
                 done
+
                 #else # ffmpeg
                     # "select using "between" expr
                 #    for fr in ${cmd[@]}; do
@@ -8920,6 +8920,7 @@ if $SUB_MENU; then
                 #    done
                 #fi
                 # remove last '+' sign
+
                 select1=${select1%+}
                 select1="'${select1}'",setpts="'N/($ff_frame_rate*TB)'"
                 scale1=scale=${VSIZE%x*}:${VSIZE#*x}
