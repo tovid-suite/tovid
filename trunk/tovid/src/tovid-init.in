@@ -557,11 +557,15 @@ fi
 [[ $TOVID_WORKING_DIR ]] && WORKING_DIR="$TOVID_WORKING_DIR"
 [[ $TOVID_OUTPUT_DIR ]] && OUTPUT_DIR="$TOVID_WORKING_DIR"
 [[ $TOVID_FFMPEG_CMD ]] && TOVID_FFMPEG="$TOVID_FFMPEG_CMD"
-# FFmpeg is the var used for ffmpeg by all scripts needing ffmpeg/avconv
+# FFmpeg and FFprobe are vars used for ffmpeg by scripts needing ffmpeg/avconv
 # if avconv is installed, use that unless env var set
-hash avconv 2>/dev/null && TOVID_FFMPEG=${TOVID_FFMPEG:=avconv}
+hash avconv 2>/dev/null && TOVID_FFMPEG=${TOVID_FFMPEG:-avconv}
+hash avprobe 2>/dev/null && TOVID_FFPROBE=${TOVID_FFPROBE:=avprobe}
 # finally, default to ffmpeg if non of the above override it
 FFmpeg=${TOVID_FFMPEG:=ffmpeg}
+[[ $FFmpeg =~ ffmpeg ]] && TOVID_FFPROBE=ffprobe
+[[ $FFmpeg =~ avconv ]] && TOVID_FFPROBE=avprobe
+FFprobe=${TOVID_FFPROBE:=ffprobe}
 
 # stdbuf (coreutils>=7.5) is useful to todisc and makempg, use it if present
 hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
@@ -624,7 +628,7 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
 
     # -------------------------------------------------------------------------
     # todisc dependencies
-    todisc_deps="$magick mogrify spumux dvdauthor transcode sox"
+    todisc_deps="$magick mogrify spumux dvdauthor sox"
 
     # Quit and complain if ANY core dependency is missing.
     assert_dep "$core" "You are missing CORE tovid dependencies!"

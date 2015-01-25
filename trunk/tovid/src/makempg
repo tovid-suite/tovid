@@ -1665,7 +1665,7 @@ grep -qw -- -newaudio <<< "$FF_HELP" && NEWAUDIO_OPT=true
 errors=$( $FFmpeg -i "$IN_FILE" -t 1  \
 -vf scale=w=720:h=352,pad=width=720:height=480:x=0:y=64,setdar=16/9 \
 -f null  -y /dev/null 2>&1)
-if grep -q "Error.*\(width\|height\|setdar\|w=\|h=\)" <<< "$errors"; then
+if grep -qE "Error.*\(width\|height\|setdar\|w=\|h=\)" <<< "$errors"; then
     ff_legacy=1
 fi
 
