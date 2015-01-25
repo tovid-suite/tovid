@@ -282,6 +282,7 @@ MPLEX_FORMAT="8"
 FROM_GUI=false # needed to disable tput (colour output) in GUI
 TOVID_PREFIX=$(tovid -prefix)
 use_transcode=:
+yuv_correct="yuvcorrect -T NO_HEADER"
 
 ##############################################################################
 #                                 Functions                                  #
@@ -2364,7 +2365,7 @@ wait_for()
         if test -e "$check_file"; then
             return
         fi
-        # print a message after 2 seconds: will only run when there's a problem
+        # print a message after 2 seconds: will only run when there is a problem
         if ((x==20)); then
             echo Waiting $(( (timeout / 10) - 2)) seconds for $name to appear ...
         fi
@@ -2404,6 +2405,16 @@ get_largest()
         fi
     done
     echo $result
+}
+
+# tip from Steven M. Schultz
+# https://www.mail-archive.com/mjpeg-users@lists.sourceforge.net/msg03511.html
+# an alternative to yuvcorrect -T NO_HEADER
+remove_header()
+{
+read junk
+cat
+return 0
 }
 
 ##############################################################################
@@ -3771,6 +3782,8 @@ $NOASK && NO_ASK="-noask"
 
 # transcode is needed for making animated submenu, else we can use just ffmpeg
 hash transcode 2>/dev/null || use_transcode=false
+# todisc should run if mjpegtools not installed, assumes -ffmpeg for 'tovid mpg'
+hash yuvcorrect 2>/dev/null || yuv_correct=remove_header
 #$ANI_SUB_MENU && assert_dep transcode "transcode is required for making
 #  animated submenus"
 if $use_transcode; then
@@ -7413,20 +7426,21 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
         fi
         # encode still frames
         # need yuvcorrect if for fade style (remove headers)
-        [[ $EFFECT = "fade" ]] && YUVCORRECT="yuvcorrect -T NO_HEADER"
+        [[ $EFFECT = "fade" ]] && YUVCORRECT="$yuv_correct"
         if [[ $EFFECT = "crossfade" ]]; then
             # encoding 1st slide
             if ((f==0)); then
                 YUVCORRECT="cat"
             else # subsequent slides and fades need header removed
-                YUVCORRECT="yuvcorrect -T NO_HEADER"
+                YUVCORRECT="$yuv_correct"
             fi
+            echo YUVCORRECT is $YUVCORRECT >>/tmp/data # DEBUG
         fi
         spin "Doing stills for slide $((f+1))" >&2
         "${TOYUV_STILLS_CMD[@]}" "${MIX_IN[f]}" 2>/dev/null |
         $YUVCORRECT 2> /dev/null
         # now we need yuvcorrect for everything
-        YUVCORRECT="yuvcorrect -T NO_HEADER"
+        YUVCORRECT="$yuv_correct"
         # do a transition to the next slide
         [[ $EFFECT = "fade" ]] && fadetype=fadeout || fadetype="crossfade"
         spin "Doing $fadetype for slide $((f+1))" >&2
@@ -8900,31 +8914,29 @@ if $SUB_MENU; then
                 ff_log_tmp="$PICS_OUT/ff_log.tmp"
                 frames=$CUT_TIME
 
+                # avconv has no 'between' expr but keep commented code below
                 #frames=$((CUT_TIME - 1))
-                # avconv dies on 'between' expr but keeping commented reference
                 #[[ ${FFmpeg##*/} =~ avconv ]] && frames=$CUT_TIME
                 # between filter is "inclusive" so between(300, 300) is 300
-                cur_frame=${cf%-*}
+                #cur_frame=${cf%-*}
                 #if [[ ${FFmpeg##*/} =~ avconv ]]; then
+                #else # ffmpeg
+                # "select using "between" expr
+                #    for fr in ${cmd[@]}; do
+                #        cur_frame=${fr%-*}
+                #        select1+="between(n,${cur_frame},$(( cur_frame + frames)))+"
+                #    done
+                #fi
 
                 for fr in ${cmd[@]}; do
                     cur_frame=${fr%-*}
                     select1+="(gt(n,${cur_frame}))*lte(n,$(( cur_frame + frames)))+"
                 done
 
-                #else # ffmpeg
-                    # "select using "between" expr
-                #    for fr in ${cmd[@]}; do
-                        cur_frame=${fr%-*}
-                #        select1+="between(n,${cur_frame},$(( cur_frame + frames)))+"
-                #    done
-                #fi
                 # remove last '+' sign
-
                 select1=${select1%+}
                 select1="'${select1}'",setpts="'N/($ff_frame_rate*TB)'"
                 scale1=scale=${VSIZE%x*}:${VSIZE#*x}
-                #(( x++ )) # increment now as we don't loop for 'select' filter
                 ffm_cmd=($FFmpeg -i "$CUR_FILE" -vf select="${select1}",${scale1} \
                 -y "$IMG_DIR/%08d.$SM_IMG_FMT")
                 yecho "Running ${ffm_cmd[@]}" # DEBUG: should be print2log
