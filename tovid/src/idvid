@@ -526,14 +526,14 @@ function get_info ()
         if test_is_number $TOTAL_AV_BITRATE && (( TOTAL_AV_BITRATE )); then
             (( ID_AUDIO_BITRATE )) && test_is_number $ID_AUDIO_BITRATE && \
             ID_VIDEO_BITRATE=$(( TOTAL_AV_BITRATE - ID_AUDIO_BITRATE ))
-            echo -e "Probed video bitrate not available, infering from total bitrate and audio bitrate\n"
+            #echo -e "Probed video bitrate not available, infering from total bitrate and audio bitrate\n"
         else
             # infer bitrate from file size and duration
             v_size=$(( $(du -m "$INFILE" | awk '{ print $1 }') * 8192 ))
             if (( ${V_DURATION%.*} )); then
                 ID_VIDEO_BITRATE=$(bc -l <<< "$v_size / $V_DURATION")
                 ID_VIDEO_BITRATE=$(( v_size / V_DURATION ))000
-                echo -e "Probed video bitrate not available, infering from file size and duration\n"
+                #echo -e "Probed video bitrate not available, infering from file size and duration\n"
             fi
         fi
     fi
@@ -548,7 +548,7 @@ function get_info ()
         VIDEO_FRAMES=$(bc -l <<< "$V_DURATION * $ID_VIDEO_FPS")
         if (( $ID_VIDEO_FRAMES == 0 )); then
             ID_VIDEO_FRAMES=${VIDEO_FRAMES%.*}
-            echo -e "Probed frame count not available, infering from duration and framerate\n"
+            #echo -e "Probed frame count not available, infering from duration and framerate\n"
         fi
    fi 
     # TODO: WARN if video is less than one second!
@@ -606,7 +606,6 @@ function idvid_main ()
     # Print out identifying information, either in terse form
     # or in human-readable form
     elif $TERSE; then
-        echo "$INFILE"
         echo "ID_VIDEO_WIDTH=$ID_VIDEO_WIDTH"
         echo "ID_VIDEO_HEIGHT=$ID_VIDEO_HEIGHT"
         echo "V_DURATION=$V_DURATION"
