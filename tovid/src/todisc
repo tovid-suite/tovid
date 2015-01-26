@@ -7434,7 +7434,6 @@ if $DO_CAROUSEL && ! $USE_DVD_SLIDESHOW; then
             else # subsequent slides and fades need header removed
                 YUVCORRECT="$yuv_correct"
             fi
-            echo YUVCORRECT is $YUVCORRECT >>/tmp/data # DEBUG
         fi
         spin "Doing stills for slide $((f+1))" >&2
         "${TOYUV_STILLS_CMD[@]}" "${MIX_IN[f]}" 2>/dev/null |
@@ -8939,7 +8938,7 @@ if $SUB_MENU; then
                 scale1=scale=${VSIZE%x*}:${VSIZE#*x}
                 ffm_cmd=($FFmpeg -i "$CUR_FILE" -vf select="${select1}",${scale1} \
                 -y "$IMG_DIR/%08d.$SM_IMG_FMT")
-                yecho "Running ${ffm_cmd[@]}" # DEBUG: should be print2log
+                print2log "Running ${ffm_cmd[@]}"
                 "${ffm_cmd[@]}" > "$ff_log_tmp" 2>&1 &
                 ffm_pid=$!
                 while ps -p $ffm_pid >/dev/null; do
