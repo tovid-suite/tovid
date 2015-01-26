@@ -1,0 +1,5 @@
+has_video_ext () 
+    { 
+        egrep -qi '\.mp4$|\.m4v$|\.xvid$|\.mov$|\.ogv$|\.mkv$|\.wmv$|\.flv$|\.webm$|\.mov$|\.avi$|\.mpeg$|\.mpeg1$|\.mpeg2$|\.mpg$|\.wmv$|\.mts$|\.3gp$|\.m2p$|\.qt$|\.wm$|\.mpeg4$|\.h264$|\.264$|\.x264$|\.m2t$|\.y4m$|mpv2$|\.nut$|\.dv$|\.hdv$|\.asf$|\.rmvb$|\.ts$' <<< "$1" || return 1
+    }
+
