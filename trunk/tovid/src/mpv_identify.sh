@@ -16,6 +16,10 @@
 #
 # When multiple files were specified, their info will be put into FOO_* for the
 # first file, FOO_1_* for the second file, FOO_2_* for the third file, etc.
+#
+# Note: this script appears without a COPYRIGHT header in the mpv source
+# according to the mpv COPYRIGHT:
+# "Files without Copyright notice are licensed as LGPLv2+."
 
 __midentify__main() {
 
