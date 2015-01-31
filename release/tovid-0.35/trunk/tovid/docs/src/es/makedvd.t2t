@@ -1,0 +1,50 @@
+makedvd
+
+
+El componente makedvd crea una imagen de disco DVD-Video
+y opcionalmente la tuesta en un disco DVD grabable.
+
+===Prestaciones y características===
+- La velocidad de grabación y el dispositivo de grabación son configurables.
+- Puede crear sólo una imagen, o tostar una imagen existente
+
+===Utilización===
+Puedes invocar makedvd sin parámetros para ver qué
+argumentos espera:
+Usage: makedvd {OPTIONS} DVDAUTHOR_XML
+
+Where OPTIONS may be any of the following:
+
+```
+  -author
+      Overwrite an existing directory containing the dvdauthor output
+  -image
+      Overwrite an existing ISO file
+  -burn
+      Burn the disc after creating the ISO file
+  -device DEVFS_NAME (default /dev/dvd)
+      Burn the disc image to DEVICE, the Linux device filesystem
+      name of your DVD-recorder. Common examples might be /dev/dvdrw,
+      /dev/scd1, and /dev/hdc. You can also use a bus/id/lun triple
+      such as ATAPI:0,1,0
+  -speed NUM (default 1)
+      Burn disc at speed NUM.
+  -label DISC_LABEL
+      Uses "DISC_LABEL" as the volume ID. This appears as the mount
+      name of the disc on some computer platforms. Must be <=32
+      alphanumeric digits without spaces.
+```
+
+And:
+
+```
+  DVDAUTHOR_XML is an XML description of the DVD navigational structure
+      in a format that dvdauthor can understand. (For a description of
+      the XML format, run 'man dvdauthor'.) If you use(d) 'makexml' to
+      create the XML file, you can use that as input here.
+```
+
+
+===Planes futuros===
+Ninguno de momento.
+
