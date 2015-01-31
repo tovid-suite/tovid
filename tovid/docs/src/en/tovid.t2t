@@ -1213,8 +1213,7 @@ For example:
 : **-ffmpeg**
     Use ffmpeg for video encoding, instead of mplayer/mpeg2enc. Try this if
     you have any problems with the default encoding method. Using this option,
-    encoding will be considerably faster. Currently does not work with
-    **-subtitles** or  **-filters**.
+    encoding will be considerably faster.
 
 
 ===Television standards===
@@ -1349,7 +1348,8 @@ for a widescreen monitor or TV.
     hard-codes the subtitles into the video, and you cannot turn them off while
     viewing the video. By default, no subtitles are loaded. If your video is
     already compliant with the chosen output format, it will be re-encoded to
-    include the subtitles.
+    include the subtitles. This works with both -ffmpeg and the default,
+    mpeg2enc.
 
 : **-type** {live|animation|bw}
     Optimize video encoding for different kinds of video. Use 'live' (default)
