@@ -7,7 +7,7 @@ echo -e "Or are you trying to run the script directly?"
 echo -e "Please run makempg as:\ntovid mpg OPTIONS"
 exit 1 ; }
 
-# tovid
+# makempg
 # Part of the tovid suite
 # =======================
 # Convert any video/audio stream that mplayer can play
@@ -221,6 +221,9 @@ AUDIO_MAP=""
 SLICE=false
 DOWNMIX=false
 ASYNC=""
+YUV4PIPE="" # -f yuv4mpegpipe for mplayer->ffmpeg
+FFMPEG_WITH_MPLAYER=false
+FF_M2V=false # are we splitting up video and audio processing?
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=$(date +%s)
@@ -876,16 +879,9 @@ if [[ $TGT_RES = *VCD* && $TGT_RES != "DVD-VCD" ]]; then
     fi
 fi
 
-# Can't do -subtitles with -ffmpeg; if both were used, print error and exit
-# TODO: Support subtitles in ffmpeg!
-if $USE_FFMPEG && $DO_SUBS; then
-    usage_error "Sorry, -subtitles is not currently supported with -ffmpeg."
-fi
 
-if ((USE_FILTERS)) && $USE_FFMPEG; then
-    usage_error "Sorry, you are using $FFmpeg to encode
-    video, either by choice or another option requires it.
-    You can not use -filters with -ffmpeg"
+if { ((USE_FILTERS)) || $DO_SUBS; } && $USE_FFMPEG; then
+    FFMPEG_WITH_MPLAYER=:
 fi
 
 # see if ffmpeg is new enough to support -b:v etc
@@ -1009,12 +1005,14 @@ case "$TVSYS" in
         VID_FPS="--frame-rate 3"
         TGT_FPS="25.000"
         TGT_FPSRATIO="25:1"
+        FF_FPS="25/1"
         ;;
     "NTSC" )
         VID_NORM="--video-norm n"
         VID_FPS="--frame-rate 4"
         TGT_FPS="29.970"
         TGT_FPSRATIO="30000:1001"
+        FF_FPS="30000/1001"
         ;;
     "NTSCFILM" )
         VID_NORM="--video-norm n"
@@ -1026,6 +1024,7 @@ case "$TVSYS" in
         fi
         TGT_FPS="23.976"
         TGT_FPSRATIO="24000:1001"
+        FF_FPS="24000/1001"
         ;;
 esac
 
@@ -1321,6 +1320,9 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 1 -K hi-res"
         MUX_OPTS="-f 1"
         VID_SUF="m1v"
+        FF_CODEC="-f mpeg1video"
+        FF_BITRATE="$VB ${VID_BITRATE}k"
+        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 112KiB"
         ;;
 
     # KVCD: VCD resolution, but using MPEG-2 and with KVCD quantization
@@ -1338,6 +1340,9 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 2 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
         MUX_OPTS="-V -f 5 -b 350 -r 10800"
         VID_SUF="m2v"
+        FF_CODEC="-f mpeg1video"
+        FF_BITRATE="$VB ${VID_BITRATE}k"
+        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         ;;
 
 
@@ -1355,6 +1360,9 @@ case "$TGT_RES" in
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
+        FF_CODEC="-f mpeg1video"
+        FF_BITRATE="$VB ${VID_BITRATE}k"
+        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
         ;;
@@ -1375,6 +1383,9 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 4 -b $VID_BITRATE -K hi-res"
         MUX_OPTS="-V -f 4"
         VID_SUF="m2v"
+        FF_CODEC="-f mpeg1video"
+        FF_BITRATE="$VB ${VID_BITRATE}k"
+        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
 
         ;;
 
@@ -1394,6 +1405,9 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
+        FF_CODEC="-f mpeg1video"
+        FF_BITRATE="$VB ${VID_BITRATE}k"
+        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         ;;
 
     # KVCDx3(a) long-playing, high-resolution MPEG for (S)VCD
@@ -1427,6 +1441,9 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 5 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
         MUX_OPTS="-V -f 5 -b 350 -r 10800"
         VID_SUF="m2v"
+        FF_CODEC="-f mpeg2video"
+        FF_BITRATE="$VB ${VID_BITRATE}k"
+        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         ;;
 
     # DVD (and KDVD/BDVD)
@@ -1481,6 +1498,9 @@ case "$TGT_RES" in
         esac
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
+        FF_CODEC="-f mpeg2video"
+        FF_BITRATE="$VB ${VID_BITRATE}k"
+        FF_M2VOPTS="$FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         ;;
 
 esac # End resolution
@@ -1511,7 +1531,8 @@ yecho
 NONVIDEO_BITRATE=$(expr \( 101 \* $AUD_BITRATE \+ $VID_BITRATE \) \/ 100)
 
 # Put available mplayer -vf filters into temp file
-mplayer -vf help > "$SCRATCH_FILE" 2>&1
+#mplayer -vf help > "$SCRATCH_FILE" 2>&1
+mplayer -nomsgcolor -vf help | cat -v - | sed 's/^[ \t]*//' > "$SCRATCH_FILE" 2>&1
 
 # Find out if mplayer's 'pp' option is available.
 if grep -q "^ *pp " "$SCRATCH_FILE"; then
@@ -1613,6 +1634,24 @@ if $FAST_ENCODING; then
     QUANT=$(expr $QUANT \+ 4)
     MPEG2_QUALITY="-4 4 -2 4 -q $QUANT"
 fi
+
+# set varible for encoding with mplayer and ffmpeg (output to m2v/m1v)
+if $DO_NORM || $FFMPEG_WITH_MPLAYER || [[ $AUDIO_SYNC ]]; then
+    FF_M2V=:
+fi
+if $FF_M2V; then # splitting audio and video. This includes FFMPEG_WITH_MPLAYER
+    FF_M2VOPTS=$FF_M2VOPTS
+    INFILE="$IN_FILE"
+else
+    INFILE="$IN_FILE"
+    FF_M2VOPTS=""
+fi
+if $FFMPEG_WITH_MPLAYER; then # encoding from mplayer pipe
+    INFILE=$YUV_STREAM
+    YUV4PIPE="-f yuv4mpegpipe"
+    FF_M2VOPTS=$FF_M2VOPTS
+fi
+
 
 
 # ******************************************************************************
@@ -1900,9 +1939,9 @@ if $USE_FFMPEG; then
     else
         FF_SIZE="scale=w=${INNER_WIDTH}:h=${INNER_HEIGHT}"
     fi
-    FF_CODEC="-f mpeg1video"
-    FF_FPS="-r $TGT_FPS"
+    FF_CODEC="-f mpeg2video"
     FF_SAMPRATE="-ar $SAMPRATE"
+
     # try to get -quality 9 between quality 8 and 10
     if ((VID_QUALITY == 9)); then
         FF_ADD_ARGS="-trellis 1"
@@ -1929,7 +1968,7 @@ if $USE_FFMPEG; then
 
     # use single variable for current, or legacy ffmpeg: VF_FILTERS and OLD_OPTS
     if [[ $VF ]]; then # libavfilter is being used, FF_ASPECT always passed
-        VF_FILTERS="${FF_SIZE},${FF_PAD},${FF_ASPECT}"
+        VF_FILTERS="${FF_SIZE},${FF_PAD},${FF_ASPECT},fps=$FF_FPS"
         VF_FILTERS="$VF ${VF_FILTERS#,}" # add -vf*, axe possible leading comma
     else # legacy ffmpeg
         OLD_OPTS="$FF_PAD $FF_ASPECT"
@@ -1956,8 +1995,17 @@ if $USE_FFMPEG; then
             FF_TARGET="$FF_TARGET-dvd"
             ;;
     esac
+    
+    set -x
+    if $FF_M2V; then # if spitting audio and video we don't need these
+        FF_TARGET="" # we don't use -target (ntsc-dvd etc) with m2v creation
+        FF_BITRATE="" # FF_BITRATE is already used in FF_M2VOPTS
+    fi
+    set +x
 fi
-if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
+
+if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO \
+    && ! $FFMPEG_WITH_MPLAYER; then
     chan1=${AUDIO_TRACK[0]}
     yecho
     yecho "Using $FFmpeg to encode audio and video."
@@ -1984,7 +2032,6 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; the
     cleanup
     goodbye
 fi
-
 # ******************************************************************************
 #
 # Encode and normalize audio
@@ -2138,14 +2185,16 @@ else
     fi
     VID_PLAY_CMD="$PRIORITY $MPLAYER -nomsgcolor $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="$FFmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_ADD_ARGS $FF_ILACE $VF_FILTERS $OLD_OPTS $FF_BITRATE -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="$FFmpeg $YUV4PIPE -i \"$INFILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_CODEC $FF_M2VOPTS $FF_TARGET $FF_QUANT $FF_ADD_ARGS $FF_ILACE $VF_FILTERS $OLD_OPTS $FF_BITRATE -y \"$VIDEO_STREAM\""
+#-f mpeg2video -maxrate 8000k -bufsize 224KiB
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
 
     yecho "Encoding video stream with the following commands:"
 
-    if ! $USE_FFMPEG; then
+    if { $USE_FFMPEG && $FFMPEG_WITH_MPLAYER; } || \
+      ! $USE_FFMPEG; then
         yecho $VID_PLAY_CMD
         cmd_exec "$VID_PLAY_CMD"
     fi
