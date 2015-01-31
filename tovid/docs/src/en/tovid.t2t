@@ -1213,7 +1213,11 @@ For example:
 : **-ffmpeg**
     Use ffmpeg for video encoding, instead of mplayer/mpeg2enc. Try this if
     you have any problems with the default encoding method. Using this option,
-    encoding will be considerably faster.
+    encoding will be considerably faster. It can do almost everything that 
+    mpeg2enc does such as -filters and -subtitles by using a pipe from mplayer
+    though using these options will make encoding somewhat slower. The 
+    exceptions are some special options like -kvcd* -bdvd where you will still
+    need to use the default mpeg2enc option.
 
 
 ===Television standards===
@@ -1367,7 +1371,8 @@ for a widescreen monitor or TV.
     Apply post-processing filters to enhance the video. If your input video is
     very high quality, use 'none'. If your input video is grainy, use 'denoise';
     if it looks washed out or faded, use 'contrast'. You can use multiple
-    filters separated by commas. To apply all filters, use 'all'.
+    filters separated by commas. To apply all filters, use 'all'. This works
+    with both mpeg2enc and -ffmpeg.
 
 : **-fps** //RATIO//
     Force input video to be interpreted as //RATIO// frames per second.  May be
