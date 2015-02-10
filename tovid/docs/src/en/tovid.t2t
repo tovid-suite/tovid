@@ -1355,6 +1355,22 @@ for a widescreen monitor or TV.
     include the subtitles. This works with both -ffmpeg and the default,
     mpeg2enc.
 
+: **-dvd-subtitles**, **-dvdsubs** | //FILE//
+    Get subtitles from //FILE(S)// and add them **as a subtitle stream** into the
+    video.  This allows selectable subtitles on your DVD. You can use more than
+    one file for multiple languages. Be sure to use the -subtitle-lang option
+    in 'tovid disc' so the name of the language will show up on the DVD instead
+    of 'UNKNOWN' or similar
+
+: **-dvdsubs-only**
+    Use this if you have an already complient MPEG and wish to add a subtitle
+    stream without re-encoding, using **-dvdsubs** ,
+
+: **-dvdsubs-fontsize** //NUM// [18]
+    The pointsize in pixels for DVD selectable subtitles. To affect this for
+    hard-coded subtitles ( **-subtitles** ) you will need to pass options to
+    the player via **-mplayeropts** or **-mpvopts**.
+
 : **-type** {live|animation|bw}
     Optimize video encoding for different kinds of video. Use 'live' (default)
     for live-action video, use 'animation' for cartoons or anime, and 'bw' for
@@ -1479,11 +1495,20 @@ for a widescreen monitor or TV.
     regularly the progress-meter is updated. The default is once every five
     seconds.
 
+: **-mpv**
+    Use mpv instead of mplayer. This option is experimental.
+
 : **-mplayeropts** //OPTIONS//
     Append //OPTIONS// to the mplayer command run during video encoding.  Use
     this if you want to add specific video filters (documented in the mplayer
     manual page). Overriding some options will cause encoding to fail, so use
     this with caution!
+
+: **-mpvopts** //OPTIONS//
+    Append //OPTIONS// to the mpv command run during video encoding.  Use
+    this if you want to add specific video filters (documented in the mplayer
+    or mpv manual page). Overriding some options will cause encoding to fail,
+    so use this with caution!
 
 : **-nofifo** (EXPERIMENTAL)
     Do not use a FIFO pipe for video encoding. If you are getting "Broken pipe"
@@ -1558,6 +1583,11 @@ For example:
     and exits successfully. Otherwise, **tovid id** reports "false" and exits
     with status 1 (failure).  This checks and reports both vcd/svcd/dvd
     and pal/ntsc.
+
+: **-mpv**
+    This option is mainly for testing. If you have only mpv installed instead
+    of mplayer, it is used automatically. With this option, you can have BOTH
+    installed and choose which one to use. (default: mplayer)
 
 
 ==Examples==
