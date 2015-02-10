@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 ME="[idvid]:"
 . tovid-init 2>/dev/null ||
 { echo -e "===============================================================\n"
@@ -92,6 +91,8 @@ GET_FFMPEG_LEN=:
 USE_NAVLOG=false
 KEEPFILES=false
 ID_FILES=""
+USE_MPLAYER=:
+USE_MPV=false
 
 mkdir -p "$STAT_DIR"
 touch "$STAT_FILE"
@@ -105,6 +106,15 @@ function usage_error ()
   echo $@
   rm -rf "$TMP_DIR"
   exit 1
+}
+
+# join array elements into $1 separated string
+# from http://stackoverflow.com/users/789544/nicholas-sushkin
+function join_ ()
+{
+    local IFS="$1"
+    shift
+    echo "$*"
 }
 
 # Get video information from available utilities
@@ -121,7 +131,7 @@ function get_info ()
     fi
 
     # Identify video using mplayer
-    if test -n "$MPLAYER"; then
+    if $USE_MPLAYER; then
         if $VERBOSE; then
             echo $SEPARATOR
             echo "Identifying video with mplayer..."
@@ -132,9 +142,21 @@ function get_info ()
             mplayer -nomsgcolor -vo null -ao null -frames 30 -channels 6 -identify \
                 -noconsolecontrols "$INFILE" > "$SCRATCH_FILE" 2>&1
         fi
+    elif $USE_MPV; then
+        if $VERBOSE; then
+            echo $SEPARATOR
+            echo "Identifying video with mpv..."
+            echo $SEPARATOR
+            mpv --quiet -v  -frames 30 -vo null -ao null "$INFILE" 2>&1| \
+             sed  '/#define/d;/global/d' 2>&1 |tee -a "$SCRATCH_FILE"
+        else
+            mpv --quiet -v  -frames 30 -vo null -ao null "$INFILE" 2>&1| \
+             sed  '/#define/d;/global/d' > "$SCRATCH_FILE" 2>&1
+        fi
     fi
+        
     # Identify video using ffmpeg
-    if test -n "$FFMPEG"; then
+    if [[ $FFMPEG ]]; then
         if $VERBOSE; then
             echo $SEPARATOR
             echo "Identifying video with ffmpeg..."
@@ -145,6 +167,24 @@ function get_info ()
             $FFmpeg -i "$INFILE" >> "$SCRATCH_FILE" 2>&1
         fi
     fi
+    # if we have mpv and the mpv_indentify.sh is in path (should be)
+    # source it so we have vars beginning with lower case id_ like id_video_fps
+    if $USE_MPV; then
+        if hash mpv_identify.sh 2>/dev/null; then
+            /usr/local/lib/tovid/mpv_identify.sh "$INFILE" | \
+            awk -F= '{print "ID_"toupper($1)"="$2}' >> "$SCRATCH_FILE" 2>&1
+            #awk -F= -v OFS== '$1=toupper($1)' >> "$SCRATCH_FILE"
+            # prepend with ID_
+            #sed -i 's/^/ID_/' "$SCRATCH_FILE"
+        else
+            echo '!!!!!!!!!!!!!!!!!!!'
+            echo "mpv_identify.sh not found"
+            echo "This should not happen as it is installed with tovid"
+            echo '!!!!!!!!!!!!!!!!!!!'
+        fi
+    fi
+    
+    cp  "$SCRATCH_FILE" /tmp/scratch_file #DEBUG
     # avconv messed with formatting, so we need to move to ffprobe/avprobe
     # ffprobe and avprobe show slightly different formatting, but this should do
     # adds a new line after [/STREAM] (ffmpeg). avconv already has it.
@@ -218,7 +258,7 @@ function get_info ()
     A_CODECS=()
     A_HEX_TRACKS=()
     A_TRACKS=()
-    MPL_AIDS=()
+    MP_AIDS=()
     wavs=()
     probe_audio_info=()
 
@@ -226,14 +266,54 @@ function get_info ()
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
     # Grep out special characters ()[
     # # put the VARS in a file
-    grep "^ID_[VAL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/$/"/;s/=/="/' > "$SCRATCH_FILE".vars
+    if  $USE_MPV; then
+        sed -i 's/ID_HEIGHT/ID_VIDEO_HEIGHT/g' "$SCRATCH_FILE"
+        sed -i 's/ID_WIDTH/ID_VIDEO_WIDTH/g' "$SCRATCH_FILE"
+        sed -i 's/ID_FPS/ID_VIDEO_FPS/g' "$SCRATCH_FILE"
+    fi
+    grep "^ID_[VADL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/$/"/;s/=/="/' > "$SCRATCH_FILE".vars
     # source the file to set the variables
     . "$SCRATCH_FILE".vars
+    cp "$SCRATCH_FILE".vars /tmp/
     # (If you've got a problem with eval, give me an alternative that
     # works as well and is as readable :-) ... but no less safe :(
     # DONE :)
+
+    # a few modifications to get it looking more like mplayer's output
+    # use less processed SCRATCH_FILE as we need to parse more than 2 fields
+    #ID_AUDIO_CODEC=$(awk -F '[][]' '/ID_AUDIO_CODEC/ {gsub("lavc:", ""); print $2}' "$SCRATCH_FILE")
+    
+    if $USE_MPV; then 
+        ID_AUDIO_CODEC=$(sed -nr  '/AUDIO_CODEC/ s/.* \[.*:(.*)\].*$/\1/p' "$SCRATCH_FILE")
+        ID_VIDEO_FPS=$(printf "%.3f" $ID_VIDEO_FPS)
+    fi
+    # truncate each var to one 'word'  now that the full lines are parsed
+    #sed -i 's/ .*//g' "$SCRATCH_FILE"
+
+    # use mpv's vars if present and fill in any blanks hopefully
+    #if [[ $MPV ]]; then
+    #    [[ -z $ID_VIDEO_FORMAT ]] && ID_VIDEO_FORMAT=${id_video_format%% *}
+    #    [[ -z $ID_VIDEO_BITRATE ]] && ID_VIDEO_BITRATE=$id_video_bitrate
+    #    [[ -z $ID_VIDEO_WIDTH ]] && ID_VIDEO_WIDTH=$id_width
+    #    [[ -z $ID_HEIGHT ]] && ID_VIDEO_VIDEO_HEIGHT=$id_height
+    #    [[ -z $ID_FPS ]] && ID_VIDEO_VIDEO_FPS=$id_fps
+    #    [[ -z $ID_VIDEO_ASPECT ]] && ID_VIDEO_VIDEO_ASPECT=$id_video_aspect
+    #    [[ -z $ID_VIDEO_FORMAT ]] && ID_VIDEO_FORMAT=$id_video_format
+    #    [[ -z $ID_AUDIO_RATE ]] && ID_AUDIO_RATE=$id_audio_rate # unused
+    #    [[ -z $ID_LENGTH ]] && ID_LENGTH=$id_length
+    #    [[ -z $ID_VIDEO_ASPECT ]] && ID_VIDEO_ASPECT=$id_video_aspect
+    #    [[ -z $ID_VIDEO_CODEC ]] && ID_VIDEO_CODEC=${id_video_codec%% *}
+    #    [[ -z $ID_AUDIO_CODEC ]] && ID_AUDIO_CODEC=$id_audio_codec
+    #fi
+    #dwidth=720
+    #dheight=480
     # get array of mplayer audio ids, used if no hextracks from ffmpeg
-    while read; do MPL_AIDS+=(${REPLY##*=}); done < <(grep ID_AUDIO_ID "$SCRATCH_FILE")
+    if $USE_MPLAYER; then
+        while read; do MP_AIDS+=(${REPLY##*=}); done < <(grep ID_AUDIO_ID "$SCRATCH_FILE")
+    else
+        ID_MPV_AUDIO_IDS=$(sed -nr  '/stream.*Audio/ s/.* --aid=(.*) .*$/\1/p' "$SCRATCH_FILE")
+        MP_AIDS=( $ID_MPV_AUDIO_IDS )
+    fi
 
     # try tcprobe to determine length (# of frames)
     # assuming it is installed, otherwise this should 'fail' silently
@@ -279,7 +359,7 @@ function get_info ()
             probe_audio_info+=( "${probe_info[p]}" )
         fi
     done
-    if test -n "$ID_AUDIO_ID"; then
+    if [[ $ID_AUDIO_ID || $ID_MPV_AUDIO_IDS ]]; then
         # grep for Steam.*Audio instead of just "Audio:" fixes some wmv issues
         AUDIO_INFO=$(grep "Stream.*Audio:" "$SCRATCH_FILE")
         # ID_AUDIO_ID needs "TRACKS" var to remain in columns
@@ -294,6 +374,7 @@ function get_info ()
             USE_HEX_TRACKS=false
         fi
         # Loop through available tracks and get specs on each
+
         for ((i=0; i<${#A_TRACKS[@]}; i++)); do
             CUR_CHAN=$(grep "Stream #${A_TRACKS[i]}" <<< "$AUDIO_INFO")
             A_SAMPRATES[i]=$(sed -r 's/.* ([0-9]+) Hz.*/\1/' <<< "$CUR_CHAN")
@@ -324,35 +405,54 @@ function get_info ()
                 MP_TRACKNUM=$((16#${HEX_TRACKS[i]}))
             else
                 # use aids from mplayer output instead of hex tracks
-                MP_TRACKNUM=${MPL_AIDS[i]}
+                MP_TRACKNUM=${MP_AIDS[i]}
             fi
             ID_AUDIO_IDS="$ID_AUDIO_IDS ${MP_TRACKNUM//$'\n'/ }"
+            ID_MPLAYER_AUDIO_IDS+=( ${MP_AIDS[i]} )
 
             # last ditch efforts to get audio {bit,sample}rate if 0
             if (( ${A_BITRATES[i]} == 0 )) || (( ${A_SAMPRATES[i]} == 0 )); then
-                MP_CHAN_INFO=$(mplayer -nomsgcolor -vo null -ao null -frames 30 \
-                -channels 6 -identify -aid ${MPL_AIDS[i]} -noconsolecontrols \
-                "$INFILE" 2>&1)
+                if $USE_MPLAYER; then
+                    MP_CHAN_INFO=$(mplayer -nomsgcolor -vo null -ao null -frames 30 \
+                    -channels 6 -identify -aid ${MP_AIDS[i]} -noconsolecontrols \
+                    "$INFILE" 2>&1)
+                else #mpv
+                    MP_CHAN_INFO=$(mpv --quiet -v -frames 30 -vo null -ao null \
+                      --audio-channels 6 --aid ${MP_AIDS[i]}  "$INFILE" 2>&1 | \
+                      sed  '/#define/d;/global/d')
+                fi
+            fi
+            if (( ${A_BITRATES[i]} == 0 )) && $USE_MPLAYER; then 
                 # we want the last match: AFTER mplayer plays it a bit
                 MP_ABITRATE=$(awk -F= '/^ID_AUDIO_BITRATE=/ {b=$2} END{print b}' <<< "$MP_CHAN_INFO")
-                MP_SAMPRATE=$(awk -F= '/^ID_AUDIO_RATE=/  {b=$2} END{print b}' <<< "$MP_CHAN_INFO")
                 MP_ABITRATE=${MP_ABITRATE%.*}
-                MP_SAMPRATE=${MP_SAMPRATE%.*}
                 if test_is_number $MP_ABITRATE && (( MP_ABITRATE )); then
                     [[ ${A_BITRATES[i]} = 0 ]] && A_BITRATES[i]=$MP_ABITRATE
                 fi
+            fi
+            if  (( ${A_SAMPRATES[i]} == 0 )) && $USE_MPLAYER; then
+                MP_SAMPRATE=$(awk -F= '/^ID_AUDIO_RATE=/  {b=$2} END{print b}' <<< "$MP_CHAN_INFO")
+                MP_SAMPRATE=${MP_SAMPRATE%.*}
                 if test_is_number $MP_SAMPRATE && (( MP_SAMPRATE )); then
                     [[ ${A_SAMPRATES[i]} = 0 ]] && A_SAMPRATES[i]=$MP_SAMPRATE
                 fi
             fi
             A_HEX_TRACKS[i]=$MP_TRACKNUM
         done
+        ((${#A_SAMPRATES[@]} > 0)) &&  ID_AUDIO_RATE=$(printf  "%s," "${A_SAMPRATES[@]}" | sed 's/,$//g')
         # use comma separator and remove possible leading comma
         ID_AUDIO_IDS=${ID_AUDIO_IDS// /,}
         ID_AUDIO_IDS=${ID_AUDIO_IDS#,}
         # read output of grep into AUDIO_NCH array to get Audio: lines
-        if [[ -n $ID_AUDIO_ID ]]; then
+        if [[ $ID_AUDIO_ID || $ID_MPV_AUDIO_IDS ]]; then
             O=$IFS IFS=$'\n' AUDIO_NCH=($(grep -w Audio: "$SCRATCH_FILE")) IFS=$O
+            if ! grep -q Audio:.*Hz "$SCRATCH_FILE" "$SCRATCH_FILE" \
+                && { grep -q -A 1 Audio: "$SCRATCH_FILE" | grep -q Hz; }; then
+                # avconv has split it into 2 lines in recent versions, so join them
+                AUDIO_NC=$(grep -w -A 1 'Stream.*Audio' "$SCRATCH_FILE" |  sed -n '$!N;s/\n/ /p')
+                # read into the AUDIO_NCH array, split on newline for multiple streams
+                IFS=$'\n' read -rd '' -a AUDIO_NCH <<< "$AUDIO_NC"
+            fi
             for chn in ${!AUDIO_NCH[@]}; do
                 # TODO flesh this out with other possibilities: 7.1 etc
                 if egrep -q '5:1|5.1' <<<  ${AUDIO_NCH[chn]}; then
@@ -394,8 +494,13 @@ function get_info ()
     MPLAYER_RES=$(grep '^VO:' "$SCRATCH_FILE" | \
      sed -e "s/..*=> *//g" -e "s/ .*$//g")
     # patch from ML:
-    PLAY_WIDTH=$(awk -F '[x ]' 'BEGIN {wid = 0}; {if ($1 > wid) wid = $1}; END {print wid}'<<< "$MPLAYER_RES")
-    PLAY_HEIGHT=$(awk -F '[x ]' 'BEGIN {hgt = 0}; {if ($2 > hgt) hgt = $2}; END {print hgt}' <<< "$MPLAYER_RES")
+    if $USE_MPLAYER; then
+        PLAY_WIDTH=$(awk -F '[x ]' 'BEGIN {wid = 0}; {if ($1 > wid) wid = $1}; END {print wid}'<<< "$MPLAYER_RES")
+        PLAY_HEIGHT=$(awk -F '[x ]' 'BEGIN {hgt = 0}; {if ($2 > hgt) hgt = $2}; END {print hgt}' <<< "$MPLAYER_RES")
+    else # mpv
+        PLAY_WIDTH=$ID_DWIDTH
+        PLAY_HEIGHT=$ID_DHEIGHT
+    fi
     # fix nulls and division by 0 errors as well (( xxx ))
     if ! (( PLAY_WIDTH )) || ! (( PLAY_HEIGHT )); then
         PLAY_WIDTH="100"
@@ -618,6 +723,13 @@ function idvid_main ()
         echo "ID_AUDIO_TRACKS=$ID_AUDIO_TRACKS"
         echo "ID_VIDEO_TRACK=$ID_VIDEO_TRACK"
         echo "ID_AUDIO_IDS=$ID_AUDIO_IDS"
+        if $USE_MPV; then
+            ID_MPV_AUDIO_IDS=${ID_MPV_AUDIO_IDS//$'\n'/ }
+            echo "ID_MPV_AUDIO_IDS=${ID_MPV_AUDIO_IDS// /,}"
+        else
+            [[ $ID_AUDIO_IDS != $( join_ , ${MP_AIDS[@]}) ]] && \
+              echo "ID_MPLAYER_AUDIO_IDS=$(join_ , ${MP_AIDS[@]})"
+        fi
         echo "ID_AUDIO_RATE=$ID_AUDIO_RATE"
         echo "V_ASPECT_WIDTH=$V_ASPECT_WIDTH"
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
@@ -666,7 +778,7 @@ function idvid_main ()
 
     # Find matching audio profile(s)
     # DVD audio must be 48khz, 32-1536 kbps
-    if test "$ID_AUDIO_RATE" = "48000" && \
+    if test "${ID_AUDIO_RATE%%,*}" = "48000" && \
       test "$ID_AUDIO_BITRATE" -ge "32000" && \
       test "$ID_AUDIO_BITRATE" -le "1536000"; then
         case "$ID_AUDIO_CODEC" in
@@ -695,7 +807,7 @@ function idvid_main ()
     fi
 
     # Check for missing audio stream (0 channels, 0 Hz)
-    if test -z "$ID_AUDIO_ID"; then
+    if ! [[ $ID_AUDIO_ID || $ID_MPV_AUDIO_IDS ]]; then
         A_NONE="No audio stream present"
     fi
 
@@ -779,7 +891,8 @@ function idvid_main ()
         fi
 
     # Test for SVCD/DVD MPEG2 compliance
-    elif test "$ID_VIDEO_FORMAT" = "MPEG2" && test "$ID_VIDEO_BITRATE" -le "9800000"; then
+    elif [[ $ID_VIDEO_FORMAT = "MPEG2" || $ID_VIDEO_FORMAT = "mpeg2video" ]] && \
+     ((ID_VIDEO_BITRATE < 9800000)); then
         # *********************
         # NTSC
         # *********************
@@ -832,7 +945,6 @@ function idvid_main ()
             esac
         fi
     fi # Video profile (MPEG-1/2)
-
     # See if audio is not compliant with anything
     if test -z "$A_VCD1" && test -z "$A_VCD2" && test -z "$A_SVCD" \
         && test -z "$A_DVD" && test -z "$A_DVD"; then
@@ -971,7 +1083,17 @@ EOF`
 # ===========================
 
 # See what programs are available for doing identification
+if hash mplayer 2>/dev/null; then
+    USE_MPLAYER=false
+    USE_MPV=:
+elif hash mpv 2>/dev/null; then
+    USE_MPLAYER=:
+    USE_MPV=false
+else
+    assert_dep mplayer "You need either mplayer or mpv installed to run 'tovid id'"
+fi
 MPLAYER=$(type -p mplayer)
+MPV=$(type -p mpv)
 FFMPEG=$(type -p $FFmpeg)
 TCPROBE=$(type -p tcprobe)
 
@@ -989,6 +1111,10 @@ while test $# -gt 0; do
         "-accurate" ) FAST=false ;;
         "-tabular" ) TABULAR=: ;;
         "-keepfiles" ) KEEPFILES=: ;;
+        "-mpv" )
+            USE_MPV=:
+            USE_MPLAYER=false
+            ;;
         "-isformat" )
             shift
             MATCH_FORMAT="$1"
