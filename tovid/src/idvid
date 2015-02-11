@@ -156,15 +156,21 @@ function get_info ()
     fi
         
     # Identify video using ffmpeg
-    if [[ $FFMPEG ]]; then
+    if [[ $FFmpeg ]]; then
         if $VERBOSE; then
             echo $SEPARATOR
-            echo "Identifying video with ffmpeg..."
+            echo "Identifying video with ${FFmpeg##*/}..."
             echo $SEPARATOR
             # ffmpeg puts its output on standard error
             $FFmpeg -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
         else
             $FFmpeg -i "$INFILE" >> "$SCRATCH_FILE" 2>&1
+        fi
+        #
+        if ! grep -q Video:.*kb/s "$SCRATCH_FILE" \
+            && { grep -A 1 Video: "$SCRATCH_FILE" | grep -q kb/s; }; then
+            # avconv has split it into 2 lines in recent versions, so join them
+            sed -i '/Stream.*Video/{;N;s/\n/ /p;}' "$SCRATCH_FILE"
         fi
     fi
     # if we have mpv and the mpv_indentify.sh is in path (should be)
@@ -184,7 +190,6 @@ function get_info ()
         fi
     fi
     
-    cp  "$SCRATCH_FILE" /tmp/scratch_file #DEBUG
     # avconv messed with formatting, so we need to move to ffprobe/avprobe
     # ffprobe and avprobe show slightly different formatting, but this should do
     # adds a new line after [/STREAM] (ffmpeg). avconv already has it.
@@ -287,32 +292,13 @@ function get_info ()
         ID_AUDIO_CODEC=$(sed -nr  '/AUDIO_CODEC/ s/.* \[.*:(.*)\].*$/\1/p' "$SCRATCH_FILE")
         ID_VIDEO_FPS=$(printf "%.3f" $ID_VIDEO_FPS)
     fi
-    # truncate each var to one 'word'  now that the full lines are parsed
-    #sed -i 's/ .*//g' "$SCRATCH_FILE"
 
-    # use mpv's vars if present and fill in any blanks hopefully
-    #if [[ $MPV ]]; then
-    #    [[ -z $ID_VIDEO_FORMAT ]] && ID_VIDEO_FORMAT=${id_video_format%% *}
-    #    [[ -z $ID_VIDEO_BITRATE ]] && ID_VIDEO_BITRATE=$id_video_bitrate
-    #    [[ -z $ID_VIDEO_WIDTH ]] && ID_VIDEO_WIDTH=$id_width
-    #    [[ -z $ID_HEIGHT ]] && ID_VIDEO_VIDEO_HEIGHT=$id_height
-    #    [[ -z $ID_FPS ]] && ID_VIDEO_VIDEO_FPS=$id_fps
-    #    [[ -z $ID_VIDEO_ASPECT ]] && ID_VIDEO_VIDEO_ASPECT=$id_video_aspect
-    #    [[ -z $ID_VIDEO_FORMAT ]] && ID_VIDEO_FORMAT=$id_video_format
-    #    [[ -z $ID_AUDIO_RATE ]] && ID_AUDIO_RATE=$id_audio_rate # unused
-    #    [[ -z $ID_LENGTH ]] && ID_LENGTH=$id_length
-    #    [[ -z $ID_VIDEO_ASPECT ]] && ID_VIDEO_ASPECT=$id_video_aspect
-    #    [[ -z $ID_VIDEO_CODEC ]] && ID_VIDEO_CODEC=${id_video_codec%% *}
-    #    [[ -z $ID_AUDIO_CODEC ]] && ID_AUDIO_CODEC=$id_audio_codec
-    #fi
-    #dwidth=720
-    #dheight=480
     # get array of mplayer audio ids, used if no hextracks from ffmpeg
     if $USE_MPLAYER; then
         while read; do MP_AIDS+=(${REPLY##*=}); done < <(grep ID_AUDIO_ID "$SCRATCH_FILE")
     else
-        ID_MPV_AUDIO_IDS=$(sed -nr  '/stream.*Audio/ s/.* --aid=(.*) .*$/\1/p' "$SCRATCH_FILE")
-        MP_AIDS=( $ID_MPV_AUDIO_IDS )
+        ID_MPV_AUDIO_IDS=$(sed -nr  '/.*Audio/ s/.* --aid=([0-9]*).*$/\1/p' "$SCRATCH_FILE")
+        MP_AIDS=( $ID_MPV_AUDIO_IDS)
     fi
 
     # try tcprobe to determine length (# of frames)
@@ -760,12 +746,9 @@ function idvid_main ()
             if [[ ${tracks[j]} != Unsupported ]]; then
                 echo "            Bitrate: ${A_BITRATES[j]} bits per second"
                 echo "      Sampling rate: ${A_SAMPRATES[j]} Hz"
+                echo "     Audio channels: ${ID_AUDIO_NCH[j]%%,*} channels"
             fi
         done
-        #echo "       Audio format: $ID_AUDIO_CODEC"
-        #echo "      Audio bitrate: $ID_AUDIO_BITRATE bits per second"
-        #echo "     Audio channels: $ID_AUDIO_NCH channels"
-        #echo "Audio sampling rate: $ID_AUDIO_RATE Hz"
         echo $SEPARATOR
     fi
 
@@ -891,8 +874,9 @@ function idvid_main ()
         fi
 
     # Test for SVCD/DVD MPEG2 compliance
-    elif [[ $ID_VIDEO_FORMAT = "MPEG2" || $ID_VIDEO_FORMAT = "mpeg2video" ]] && \
-     ((ID_VIDEO_BITRATE < 9800000)); then
+    #elif [[ $ID_VIDEO_FORMAT = "MPEG2" || $ID_VIDEO_FORMAT = "mpeg2video" ]] && \
+    elif grep -qEw 'MPEG2|MPG2|mpeg2video' <<< "$ID_VIDEO_FORMAT" && \
+     ((ID_VIDEO_BITRATE <= 9800000)); then
         # *********************
         # NTSC
         # *********************
@@ -1084,11 +1068,11 @@ EOF`
 
 # See what programs are available for doing identification
 if hash mplayer 2>/dev/null; then
-    USE_MPLAYER=false
-    USE_MPV=:
-elif hash mpv 2>/dev/null; then
     USE_MPLAYER=:
     USE_MPV=false
+elif hash mpv 2>/dev/null; then
+    USE_MPLAYER=false
+    USE_MPV=:
 else
     assert_dep mplayer "You need either mplayer or mpv installed to run 'tovid id'"
 fi
