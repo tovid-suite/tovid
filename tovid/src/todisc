@@ -701,7 +701,7 @@ ff_ver=$($FFmpeg -version 2>&1 | awk '{ gsub(",", ""); if(NR == 1) print $3 }')
 
 is_video()
 {
-file -biL "$1" |grep -qw video || return 1
+    { file -biL "$1" |grep -qw video; } || { file -bL "$1" | grep -qw video; }
 }
 
 check_filetype()
