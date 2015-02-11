@@ -1704,10 +1704,10 @@ check_menufile()
 {
     yecho ""
     if test -f "$MENU_FILE"; then
-        echo "Menu file $MENU_FILE created"
+        echo "Menu file $( readlink -f "$MENU_FILE") created"
         echo
     else
-        runtime_error "Menu file $MENU_FILE not found.  \
+        runtime_error "Menu file $(readlink -f "$MENU_FILE") not found.  \
         Spumux seems to have had problems"
     fi
 }
@@ -3485,7 +3485,8 @@ while test $# -gt 0; do
         "-parallel" | "-mkvsub" | "-autosubs" | "-subtitles" | "-update" | \
         "-mplayeropts" | "-audiotrack" | "-downmix" | "-ffmpeg" | "-avconv" | \
         "-nofifo" | "-from-gui" | "-noask" | "-slice" | "-async" | "-quiet" | \
-        "-fake" | "-keepfiles" )
+        "-fake" | "-keepfiles" | "-mpv" | "-dvdsubs" | "-dvd-subtitles" | \
+        "-dvdsubs-fontsize" | "-dvdsubs-only" )
             # remove this warning for tovid 0.33 TODO
             if [[ $1 = "-subtitles" ]]; then
                 if (( ${#2} == 2 )); then
