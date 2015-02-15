@@ -702,7 +702,7 @@ ff_ver=$($FFmpeg -version 2>&1 | awk '{ gsub(",", ""); if(NR == 1) print $3 }')
 # check if file is a video. Usage: is_video FILE
 is_video () 
 { 
-    local result=$(ffmpeg -i "$1" 2>&1);
+    local result=$($FFmpeg -i "$1" 2>&1);
     # ffmpeg calls an image a video stream, so eliminate that
     grep -qi image2 <<< "$result" && return 1;
 
