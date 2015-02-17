@@ -555,7 +555,7 @@ function get_args()
                 # Hackish list-parsing
                 while test $# -gt 0 && test ${1:0:1} != "-"; do
                     if test -e "$1"; then
-                        DVD_SUBS=( "${DVD_SUBS[@]}"  $(readlink -f "$1") )
+                        DVD_SUBS=( "${DVD_SUBS[@]}"  "$(readlink -f "$1")" )
                         DO_DVD_SUBS=:
                         #FORCE_ENCODING=:
                     else
@@ -930,6 +930,21 @@ fi
 # ******************************************************************************
 
 # print warning message about saving the original output file if -dvdsubs used.
+if $DO_DVD_SUBS && $SUBS_ONLY; then
+    # test for dvd compatibility as no encoding done
+    if ! idvid -isformat ${TVSYS,,}-dvd "$IN_FILE"; then
+        yecho "The file you have supplied does not appear to be DVD complient."
+        yecho "Since you used -dvdsubs-only there will be no re-encoding done."
+        yecho "It would be better to quit now and use -dvdsubs option, so "
+        yecho "your file will be re-encoded."
+        yecho "If you continue anyway, it will probably fail."
+        yecho "Exit now?  [press y or n]"
+        read input
+        if [[ $input = y ]]; then
+            exit 1
+        fi
+    fi
+fi
 if $DO_ENCODING && $DO_DVD_SUBS; then
     yecho
     yecho '**********'
@@ -2177,7 +2192,7 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO \
         fi
     fi
     if $DO_DVD_SUBS; then
-        spumux_subtitles "$IN_FILE"
+        spumux_subtitles "$OUT_FILENAME"
     fi
     yecho
     $DO_ENCODING && { $FAKE || write_stats; }
