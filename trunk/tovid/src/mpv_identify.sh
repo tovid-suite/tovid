@@ -143,7 +143,7 @@ EOF
         esac
     done <<EOF
 $(${MPV:-mpv} --term-playing-msg="$propstr" --vo=null --ao=null \
-              --frames=1 --quiet --no-cache --no-config -- "$@")
+              --frames=30 --quiet --no-cache --no-config -- "$@")
 EOF
 }
 
