@@ -2066,7 +2066,7 @@ cat  <<EOF
 <subpictures format="$TVSYS">
    <stream>
       <textsub filename="${DVD_SUBS[s]}" characterset="$charset" outline-color="rgba(0,0,0,200)"
-        outline-thickness="2" fill-color="rgba(255,255,255,200)" shadow-offset="0, 0" 
+        outline-thickness="2" fill-color="rgba(255,255,255,255)" shadow-offset="0, 0" 
         shadow-color="rgba(0,0,0,200)" fontsize="$DVD_SUBSIZE"
         $spumux_font horizontal-alignment="center"
         vertical-alignment="bottom" left-margin="60" right-margin="60"
