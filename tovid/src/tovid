@@ -59,7 +59,6 @@ _scripts = {
     'disc': 'todisc',
     'gui': 'todiscgui',
     'mpg': 'makempg',
-    'batch': 'tovid-batch',
     'titlesets': 'titleset-wizard',
     'chapters': 'set_chapters',
 }
