@@ -698,16 +698,11 @@ local test_version=$1
 ff_ver=$($FFmpeg -version 2>&1 | awk '{ gsub(",", ""); if(NR == 1) print $3 }')
 (( ${ff_ver:2:1} == test_version )) 2>/dev/null
 } 
- 
-# check if file is a video. Usage: is_video FILE
-is_video() 
-{ 
-    local result=$($FFmpeg -i "$1" 2>&1);
-    # ffmpeg calls an image a video stream, so eliminate that
-    grep -E -qi 'image2|_pipe' <<< "$result" && return 1;
-    grep -qi Stream.*Video <<< "$result"
-}
 
+is_video()
+{
+file -biL "$1" |grep -qw video || return 1
+}
 
 check_filetype()
 {
@@ -1709,10 +1704,10 @@ check_menufile()
 {
     yecho ""
     if test -f "$MENU_FILE"; then
-        echo "Menu file $( readlink -f "$MENU_FILE") created"
+        echo "Menu file $MENU_FILE created"
         echo
     else
-        runtime_error "Menu file $(readlink -f "$MENU_FILE") not found.  \
+        runtime_error "Menu file $MENU_FILE not found.  \
         Spumux seems to have had problems"
     fi
 }
@@ -3490,8 +3485,7 @@ while test $# -gt 0; do
         "-parallel" | "-mkvsub" | "-autosubs" | "-subtitles" | "-update" | \
         "-mplayeropts" | "-audiotrack" | "-downmix" | "-ffmpeg" | "-avconv" | \
         "-nofifo" | "-from-gui" | "-noask" | "-slice" | "-async" | "-quiet" | \
-        "-fake" | "-keepfiles" | "-mpv" | "-dvdsubs" | "-dvd-subtitles" | \
-        "-dvdsubs-fontsize" | "-dvdsubs-only" )
+        "-fake" | "-keepfiles" )
             # remove this warning for tovid 0.33 TODO
             if [[ $1 = "-subtitles" ]]; then
                 if (( ${#2} == 2 )); then
