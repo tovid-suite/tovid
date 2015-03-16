@@ -24,8 +24,6 @@ import shlex
 import doctest
 import mimetypes
 import tempfile
-# Python 3 compatibility
-from libtovid import basestring, unicode
 
 # Special characters that may need escaping
 special_chars = '\\ #*:;&?!<>[]()"\''
@@ -91,21 +89,14 @@ def trim(text):
     # Split text into lines, converting tabs to spaces
     lines = text.expandtabs().splitlines()
     # Determine minimum indentation (except first line)
-    try:
-        MAXINT = sys.maxint
-    # python 3 compatibility
-    except AttributeError:
-        MAXINT = sys.maxsize
-
-    indent = MAXINT
-
+    indent = sys.maxint
     for line in lines[1:]:
         stripped = line.lstrip()
         if stripped:
             indent = min(indent, len(line) - len(stripped))
     # Remove indentation (first line is special)
     trimmed = [lines[0].strip()]
-    if indent < MAXINT:
+    if indent < sys.maxint:
         for line in lines[1:]:
             # Append line, minus indentation
             trimmed.append(line[indent:].rstrip())
@@ -259,7 +250,7 @@ def wait(seconds):
     """Print a message and pause for the given number of seconds.
     """
     print("Resuming in %s seconds..." % seconds)
-    os.system('sleep %s' % seconds)
+    os.system('sleep %ss' % seconds)
 
 
 def imagemagick_version():

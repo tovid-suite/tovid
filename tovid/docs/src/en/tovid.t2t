@@ -13,16 +13,11 @@ files to DVD-compliant MPEG format, generate simple or complex DVD menus,
 author and burn a ready-to-watch DVD, with just a few shell commands. A
 graphical interface is also provided to make the process even easier.
 
-**NOTE**: As of tovid 0.35, the legacy scripts **makemenu** and **makexml**
-have been removed and no longer appear in this manpage.
-All of their functions and more can be done with the 'tovid disc' command,
-(todisc script). See **Command:disc** and the [wiki http://tovid.wikia.com]
-for more info.
-
-Also note that as of tovid 0.32, this is the only manual page provided by tovid.
+**NOTE**: As of tovid 0.32, this is the only manual page provided by tovid.
 There is now a single executable frontend to all functionality in the suite, so
-if you were expecting to find manpages for **todisc**, **idvid**, **makempg**
+if you were expecting to find manpages for **todisc**, **idvid**, **makemenu**
 and their kin, they can all be found in the **tovid** manpage you are reading now.
+
 And yes, this makes for a pretty large manual page. If you are viewing this
 manpage from the command-line **man** utility, which normally pages through the
 **less** utility, you can skip to a section by searching with the **/** key,
@@ -37,27 +32,31 @@ to navigate.
 
 Where //COMMAND// is one of the following:
 
-    Main Commands
-: **disc**
-    Encode, make menus, author, burn. (was **todisc**. See **Command:disc**)
 : **gui**
     Start the tovid GUI (was **todiscgui**. See **Command:gui**)
 : **titlesets**
-    A GUI wizard for multiple titlesets. (new: See **Command:titlesets**)
-
-
-    Helper Commands
+    A tovid GUI wizard for multiple titlesets. (new: See **Command:titlesets**)
+: **disc**
+    Create a DVD with menus (was **todisc**. See **Command:disc**)
 : **mpg**
     Encode videos to MPEG format (was **tovid**. See **Command:mpg**)
-: **dvd**
-    Author and/or burn a DVD (was **makedvd**. See **Command:dvd**)
 : **id**
     Identify one or more video files (was **idvid**. See **Command:id**)
+: **menu**
+    Create an MPEG menu (was **makemenu**. See **Command:menu**)
+: **xml**
+    Create (S)VCD or DVD .xml file (was **makexml**. See **Command:xml**)
+: **dvd**
+    Author and/or burn a DVD (was **makedvd**. See **Command:dvd**)
+: **vcd**
+    Author and/or burn a VCD (was **makevcd**. See **Command:vcd**)
+: **postproc**
+    Post-process an MPEG video file (was **postproc**. See **Command:postproc**)
 : **chapters**
     A GUI using mplayer for setting chapter points.  It will return a string of
-    chapter points to the terminal, in a format recognized by 'tovid disc'
-    (todisc) or by 'tovid gui', for the  **-chapters** option.
-
+    chapter points in a format recognized by 'tovid disc' (todisc) or
+    by 'tovid gui', for the  **-chapters** option.
+    
 
 The //OPTIONS// differ for each command; run **tovid <command>** with no
 further arguments to get help on a command, and what options it expects.
@@ -70,86 +69,47 @@ Two configuration files are created the first time you run tovid:
 
 : **~/.tovid/preferences**
     Defines working directory for all scripts.
-    You can define the output directory for makempg here.
-    The 'ffmpeg' executable can be set here: ffmpeg or avconv (TOVID_FFMPEG)
+    In addition you can define the output directory for makempg here.
 : **~/.tovid/tovid.ini**
     Includes command-line options that should be passed to the various
-    **tovid** sub-commands.  Note: each sub-command has its own section,
-    starting with the line [sub-command], for example:
-```
-    [disc]
-    ; -no-warn
-    -static
-    -no-ask
-```
-
+    **tovid** sub-commands.
 
 Edit these files if you wish to change your configuration.
 
-
 The following environment variables are also honoured:
-```
-    TOVID_HOME (directory containing preferences: ~/.tovid)
-    TOVID_WORKING_DIR (working directory for all scripts).
-    TOVID_OUTPUT_DIR (output directory for the makempg script).
-    TOVID_FFMPEG_CMD (the 'ffmpeg' executable to use: ffmpeg or avconv)
-```
-These will override 'TOVID_HOME', 'WORKING_DIR', 'OUTPUT_DIR',
-and 'TOVID_FFMPEG' if set in ~/.tovid/preferences.
+TOVID_WORKING_DIR (working directory for all scripts).
+TOVID_OUTPUT_DIR (output directory for the makempg script).
 
 
 =Command:gui=
 
-=Usage=
-
-**tovid gui** [//OPTIONS//]
-
 **tovid gui** starts the graphical user interface (GUI) for tovid. This is
-the easiest way to start creating DVDs with tovid. The optional arguments
-//OPTIONS// are any option used by todisc ('tovid disc') which will save
-entering it manually, OR the full path to a saved script from the GUI.
-You can also combine these, but the script must be the FIRST option
-directly after **tovid gui** .  (This option to save the contents of your
-project allows you to use it as a bash script later, or to reload the
-project to continue working with it at another time.)
-
-
-**tovid gui** will also take the option **--position**, which denotes the
-screen position that the GUI will start at, in the form '+X+Y', similar to
-this part of the Xorg -geometry string.
-
-All help is integrated in the form of tooltips.  You can also see
-**Command:disc ** for more detail about the options.  Note: if you wish to use
-a GUI to make multiple titlesets on the same DVD use ***tovid titlesets***,
-which is a wizard that uses the the 'tovid gui. See ***Command:titlesets***.
-
-
-Please note that although the interface may seem complex with so many options,
-you can create a fully functional DVD with only a few options on the opening
-tab of the GUI (select video files and an output name).
+the easiest way to start creating DVDs with tovid. At this time, there are no
+additional command-line options; the GUI controls take care of everything,
+and all help is integrated in the form of tooltips.  You can also see
+**Command:disc ** for more detail about the options.  Note: if you wish to
+make multiple titlesets on the same DVD use 'tovid titlesets', which is a wizard
+that uses the the tovid GUI.  Chapter submenus can be made with 'tovid gui'
+however.
 
 
 =Command:titlesets=
 
 **tovid titlesets** will assist in making a DVD with multiple titlesets.  It can
 be started without any options, or you can feed it the path to a saved titleset
-script as an option.  The option to save a script is also useful as the resulting
-script can be run later from a terminal.
+script as an option.
 
 
 =Command:disc=
 
-**tovid disc** creates a DVD file-system with optional menus, from a list of
-multimedia video files and their titles.  As todisc can function as a master
-script, calling other scripts as it needs them, it is the easiest command line
-program for creating a DVD from start to finish, including automatically
-converting non-compliant videos and prompting to burn at completion.  It can do
-animated menus, static thumbnail menus, text-only menus, or author with no menu.
-In addition, it can do slideshows, using images as input, and even combine
-slideshows with videos.  It supports sub-menus for chapter breaks,
-configurable menu style, animated backgrounds and transparency effects.
-From simple (no menu) to complex (switched menus and titlesets), you should
-be able to do what you want with 'tovid disc'.
+**tovid disc** creates a DVD file-system with menus, from a list of multimedia
+video files and their titles.  As this is a low level script it is the easiest
+command line program for creating a DVD from start to finish, including
+automatically converting non-compliant videos and prompting to burn at
+completion.  It does animated menus, static thumbnail menus and text only
+menus.  In addition, it can do slideshows, using images as input, and combine
+slideshows with videos.  It supports sub-menus for chapter breaks, configurable
+menu style, animated backgrounds and transparency effects.
 
 
 ==Usage==
@@ -157,7 +117,7 @@ be able to do what you want with 'tovid disc'.
 ```
  tovid disc [OPTIONS] \
     -files <file list> -titles <title list>
-    -out mydvd
+    -out OUT_PREFIX
 ```
 
 For example:
@@ -173,11 +133,9 @@ include any titles **tovid disc** will use the basename of the included files
 as titles.  If you are doing a slideshow or multiple slideshows, use
 **-slides** rather than **-files** for passing in the images.  You may use
 -files and -slides more than once to create an ordering in a mixed
-slideshows/videos menu.  See Slideshows part of Usage section, below.
+slideshows/videos menu.  See SLIDESHOWS part of Usage section, below.
 
 If the input files are not mpeg, you will have the option to auto-encode them.
-
-General Options
 
 **At present there are 2 display arrangements or "templates":**
 
@@ -214,7 +172,6 @@ sub-menus, which can display longer titles, for example:
  $ tovid disc -submenus \
       -files file1.mpg file2.mpg ... \
       -titles "Short 1" "Short 2" \
-      -submenus \
       -submenu-titles "Long Title One" "Long Title Two" \
       -out foo
 
@@ -222,22 +179,7 @@ sub-menus, which can display longer titles, for example:
 
 The **-align** argument will position both titles and thumbs either south,
 north east, west, southwest, northwest, southeast, northeast, subject to
-certain constraints of each arrangement. For example a showcase style with
-a showcase thumb can only do north|south|center.
-
-More Examples:
-
-A text-only menu:
-
-```
- $ tovid disc -textmenu ...
-```
-No menu:
-
-```
- $ tovid -nomenu -files file1.mpg file2.mp4 "file 3.avi" -out mydvd
-```
-
+certain constraints of each arrangement.
 
 **Titlesets**
 
@@ -253,9 +195,9 @@ You do not use **-files** for the opening menu options (**-vmgm**), but you
 will need as many TITLES after **-titles** as you have menus.
 
 Any options outside the **-titleset** **-end-titleset** and **-vmgm**
-**-end-vmgm** areas will be global options applying to every titleset.
-If a global option is duplicated inside a **-titleset** or **-vmgm** area, the
-global option will be overridden.
+**-end-vmgm** areas will be general options applying to every titleset.
+If a general option is duplicated inside a **-titleset** or **-vmgm** area, the
+general option will be overridden.
 
 Note: you do not need titlesets for a single menu with chapter break menus, for
 that just use **-submenus** or **-ani-submenus**
@@ -265,25 +207,23 @@ Example of using **tovid disc** with titlesets:
 
 ```
  $ tovid disc -static -out MY_DVD \
-   \
-   -titleset \
-   -files 1.mpg 2.mpg 3.mpg \
+    \
+   -titleset -files 1.mpg 2.mpg 3.mpg \
    -titles "Title One" "Title Two" "Title Three" \
    -end-titleset \
    \
-   -titleset \
-   -files 4.mpg 5.mpg \
+   -titleset -files 4.mpg 5.mpg \
    -titles "Title Four" "Title Five" \
-   -background foo.jpg \
-   -showcase bar.png \
-   -end-titleset \
-   \
-   -vmgm \
-   -titles "Season One" "Season Two" \
-   -background bg.jpg \
-   -bgaudio foo.mp3 \
-   -titles-fontsize 20 \
-   -end-vmgm
+    -background foo.jpg \
+    -showcase bar.png \
+    -end-titleset \
+    \
+    -vmgm \
+    -titles "Season One" "Season Two" \
+    -background bg.jpg \
+    -bgaudio foo.mp3 \
+    -titles-fontsize 20 \
+    -end-vmgm
 ```
 
 See also **-titleset** and **-vmgm**
@@ -343,7 +283,7 @@ Example of mixed videos and slideshows:
    -out myslideshow
 ```
 
-See the other slideshow options in the Slideshows options section.
+See the other slideshow options in the SLIDESHOWS options section.
 
 
 
@@ -359,40 +299,15 @@ Here is a list of possible options you can pass:
     **-vbitrate**, **-quality**, **-safe**, **-crop**, **-filters**,
     **-abitrate**, **-priority**, **-deinterlace**, **-progressive**,
     **-interlaced**, **-interlaced_bf**, **-type**, **-fit**, **-discsize**,
-    **-parallel**, **-mkvsub**, **-autosubs**, **-subtitles**, **-update**,
+    **-parallel**, **-mkvsub**, **-autosubs**, **-subtitles**, **-update**, \
     **-mplayeropts**, **-audiotrack**, **-downmix**, **-ffmpeg**, **-nofifo**,
     **-from-gui**, **-slice**, **-quiet**,
     **-fake**, **-keepfiles**
 
-==General Options==
+==Options==
 
 : **-keep-files**, **-keepfiles**
     Keep all intermediate/temporary files (helps with debugging)
-: **-no-ask** | **-noask**
-    Skip all interactive questions.  No preview, automatic re-encoding with
-    tovid if needed, no interactive option to use background video for bgaudio.
-: **-no-warn**, **-nowarn**
-    Don't pause after outputting warning or info messages
-: **-jobs**
-    By default, **tovid disc** starts a parallel job for each processor
-    detected.  With this option you can manually set the number of jobs.  For
-    example if you have a computer with 2 CPUs you can set "-jobs 1" to keep
-    one processor free for other things.  At present this applies to the time
-    consuming imagemagick loops: you will notice a substantial speedup now if
-    you have a multi-cpu system.
-: **-grid**
-    Show a second preview image with a grid and numbers that will help in finding
-    coordinates for options that might use them, like **-text-start**
-: **-no-confirm-backup**
-    This option is for when your DVD contains images for a slideshow.
-    Slideshows are an experimental (but well tested) feature.  Todisc is
-    unlikely to overwrite your personal files, but you should take precautions
-    and backup your images, as you would with any beta software.  Todisc
-    will prompt you to backup your files normally.  If you have already backed
-    up your images, use this option to disable the prompt.
-
-==Options==
-
 : **-ntsc**
     720x480 output, compatible with NTSC standard (default)
 : **-pal**
@@ -405,17 +320,10 @@ Here is a list of possible options you can pass:
 : **-no-menu | -nomenu**
     With this option todisc will just create a DVD file system, ready for
     burning, with NO MENU, just the supplied video files.  These do not need
-    to be compliant, as non-compliant files will be encoded as usual.  The
-    **-out** option is not required.  Each  video will be a chapter unless
-    **-chapters** OPTION is passed.  The  **-chapters** option is a number
-    indicating the chapter interval in minutes, or a HH:MM:SS string
-    indicating chapter points.  See **-chapters**
-: **-encode-only**
-    This option was originally meant for the GUI, to allow it to be used for
-    just encoding rather than making a DVD structure.  But it works well from
-    the command line as well as it has the added advantage that you can input
-    a list of files.  Remember any makempg ('tovid mpg') options you use will
-    be passed on to the makempg script when encoding.
+    to be compliant, as non-compliant files will be encoded as usual.  Each
+    video will be a chapter unless **-chapters** OPTION is passed.  The
+    **-chapters** option is a number indicating the chapter interval in
+    minutes, or a HH:MM:SS string indicating chapter points.  See **-chapters**
 
 
 ==Menu style==
@@ -425,19 +333,18 @@ Here is a list of possible options you can pass:
     This is a different arrangement of images for the menu: small thumbnails
     go at left (and right) side of screen, with a larger image in the centre.
     Maximum of 10 videos.  If the provided argument is a video file, the
-    central thumb will be animated (regardless of whether **-static** is part
-    of the command line). Only 4:3 or 16:9 videos and images are accepted for
-    for the showcase file: if not one of these todisc will assume it is the
-    aspect ratio as the videos in the titleset.
+    central thumb will be animated. Only 4:3 or 16:9 videos and images are
+    accepted for the showcase file: if not one of these todisc will assume it
+    is the same ratio as the videos in the titleset.
 : **-textmenu**, **-text-menu** NUM
     If used without an argument, create a textmenu out of the supplied titles
     The optional argument specifies how many titles are in the 1st column,
     i.e. giving 4 titles and using "-textmenu 2" would make 2 columns of 2
     titles. The default is to put all titles up to 13 in the first column
     before starting a second column.  Maximum: 2 columns and 26 titles.
-    Note that column 2 titles are justified to the left unless you add
-    **-edge-justify** to the command line. The menu will be static if no video
-    files are supplied with either **-background** or **-showcase** options.
+    Note that column 2 titles are aligned to the right.
+    If no video files for either **-background** or **-showcase** are supplied,
+    the menu will be static.
 : **-quick-menu**
     If you are using ffmpeg 0.8 or newer you can use this option.  This will
     make a very quick  menu by using ffmpeg instead of imagemagick.
@@ -447,19 +354,19 @@ Here is a list of possible options you can pass:
     text-menu style of menu, with no video thumbs, and a central showcase
     IMAGE(static) | VIDEO(animated).
     (i) see **-bg-color** if you are not using a **-background** and want to
-    change the default.  (default is dark blue for -quick-menu arrangements). )
-    (ii) Note: todisc will still work with 'vhooks' if you have an old ffmpeg
-    with vhooks compiled in.
+    change the default black )
+    (ii) Note: todisc will still work with vhooks if you have an old ffmpeg with
+    vhooks compiled in.
 
     Specifying the IMAGE|VIDEO argument to **-showcase** is mandatory for this
     style of menu, unless used in conjunction with **-switched-menus**
     in which case the videos passed with **-files** automatically become the
-    showcase videos.  If **-quick-menu** is used in combination with
-    **-switched-menus** it really speeds up an otherwise time consuming process.
+    showcase videos.  If this is used in combination with **-switched-menus**
+    it can really speed up an otherwise time consuming process.
 
     Example:
 ```
-    -quick-menu -showcase /home/grepper/showcase.mpg
+    -quick-menu -showcase /home/robert/showcase.mpg
 ```
     See **-switched-menus** for example of making switched menus with
     **-quick-menu**
@@ -468,8 +375,7 @@ Here is a list of possible options you can pass:
     The color to use for the menu background. (default: ntsc-safe black)
     Note: use a color a great deal darker than you want, as it appears quite
     a bit lighter in the video version.  You can use hexadecimal ('#ffac5f')
-    notation or named colors ('Lime').  convert -list color will show them.
-    See [colors http://www.imagemagick.org/script/color.php] for more details.
+    or named colors notation.
 : **-submenu-bg-color**, **-submenu-bg-colour**
     The color to use as background for the  submenu(s).
     (default: ntsc-safe black)  See **-bg-color**
@@ -479,7 +385,7 @@ Here is a list of possible options you can pass:
     a 'moving' menu, in spite of the static buttons.  This option also does
     double duty for the **-switched-menus** option, and will create static
     "switched" images.
-    See also **-switched-menus**
+    See also **-switched-menu**
 : **-background** IMAGE|VIDEO
     Menu background.  This can be a image file or an video file.  If it is a
     video file the background will be animated.  Pick a file of correct aspect
@@ -492,21 +398,21 @@ Here is a list of possible options you can pass:
 : **-menu-title**
     Title for the root menu - may be longer than thumbnail labels
     Also if you use \n in the title, you can use multi line titles, but you
-    would need to adjust **-title-fontsize** to something smaller than default
+    would need to adjust **-menu-fontsize** to something smaller than default
     for example:
 
 ```
-    $ tovid disc ... -menu-title "A\nMultilined\nTitle" -title-fontsize 24
+    $ tovid disc ... -menu-title "A\nMultilined\nTitle" -menu-fontsize 24
 ```
-: **-title-font**, **-menu-font** FONT
+: **-menu-font** FONT
     Font to use for titles, either by ImageMagick font name (ex., "Arial") or
     explicit pathname (ex., "/full/path/to/arial.ttf"). To see a complete
     list of acceptable ImageMagick font names, run **convert -list type**, and
     refer to the leftmost column
-: **-title-fontsize**, **-menu-fontsize**
+: **-menu-fontsize**
     Font size for main menu - best to -preview if you use this
 : **-submenu-font**
-    Font to use for the sub-menu main titles.  See **-title-font**
+    Font to use for the sub-menu main titles.  See **-menu-font**
 : **-submenu-fontsize**
     Font size for the sub-menu main titles
 : **-menu-fade** ['BACKGROUND DURATION']
@@ -555,7 +461,7 @@ Here is a list of possible options you can pass:
   using **-quick-nav** as you would not have a way to get to other titlesets.
 : **-skip-vmgm**
   Start DVD from the first titleset instead of the VMGM ( root ) menu.
-: **-switched-menus**, **-switched-menu**
+: **-switched-menus**
     This will make a "switched menu": there will be a central image where the
     showcase image would go, and text menu titles along the menu edge where
     textmenu titles go.  As you select a video title with the down or up arrow
@@ -579,10 +485,6 @@ Here is a list of possible options you can pass:
 
 ==Thumbnail style==
 
-: **-titles-font** FONT
-    Display thumbnail or textmenu titles in the given font
-: **-titles-fontsize** POINTS
-    Font size to use for thumbnail or textmenu titles
 : **-thumb-shape**
     normal|oval|vignette|plectrum|arch|spiral|blob|star|flare
     Apply a shaped transparency mask to thumbnail videos.
@@ -604,6 +506,10 @@ Here is a list of possible options you can pass:
 : **-3d-thumbs**, **-3dthumbs**
     This will give an illusion of 3D to the thumbnails: dynamic lighting on
     rounded thumbs, and a raised effect on rectangular thumbs.  Try it !
+: **-titles-font** FONT
+    Display thumbnail or textmenu titles in the given font
+: **-titles-fontsize** POINTS
+    Font size to use for thumbnail or textmenu titles
 
 
 ==Slideshows==
@@ -697,7 +603,7 @@ Here is a list of possible options you can pass:
     be static.  If you used with a mixed menu of videos and slideshows, then
     the video thumbs WILL be animated, so you may wish to use -static or
     -textmenu with the option in that case.  If you want to use the
-    **-switched-menus option with a mixed menu leave this option out.
+    **-switched-menus option with a mixed menu leave this option out. 
 
 : **-background-slideshow**, **-bg-slideshow**
     If doing multiple slideshows or mixed videos and slideshow(s), then use
@@ -710,7 +616,6 @@ Here is a list of possible options you can pass:
     and backup your images, as you would with any beta software.  Todisc
     will prompt you to backup your files normally.  If you have already backed
     up your images, use this option to disable the prompt.
-    See **General Options**
 
 : **-use-dvd-slideshow** [CONFIG FILE]
     If you pass this option without an argument, tovid will use the
@@ -734,7 +639,7 @@ Here is a list of possible options you can pass:
     The speed to use for burning the disc.
 
 
-==Advanced usage==
+==ADVANCED USAGE==
 
 ===Options===
 
@@ -745,11 +650,11 @@ Here is a list of possible options you can pass:
     audio for static submenus.  (Assuming that -submenu-audio was passed in).
     The default is to use 10 seconds of audio for static menus.
 : **-submenu-stroke** COLOR
-    The color for the sub-menu font shadow
+    The color for the sub-menu font outline (stroke)
 : **-submenu-title-color**, **-submenu-title-colour**
     The fill color used for sub-menu title fonts
 : **-submenu-titles**
-    You can supply a list of titles here for sub-menus without the length
+    You can supple a list of titles here for sub-menus without the length
     restrictions found in thumb titles.  Must equal number of videos
 : **-chapters** [ NUM | CHAPTER POINTS in HH:MM:SS ]
     The number of chapters for each video (default: 6) OR
@@ -820,7 +725,7 @@ Here is a list of possible options you can pass:
 : **-chapter-color** COLOR
     The color for the chapters font.
 : **-chapter-stroke** COLOR
-    The color for the chapters font shadow
+    The color for the chapters font outline (stroke)
 
 : **-seek** NUM | "NUM1 NUM2 NUM3 . . ."
     Seek to NUM seconds before generating thumbnails (default: 2.0 seconds)
@@ -867,6 +772,21 @@ Here is a list of possible options you can pass:
     title and/or thumbnail for bar.mpg will appear in the menu.  You can use
     **-group** more than once for multiple groups.  Be  sure to quote video
     filenames if they contain  spaces.
+: **-jobs**
+    By default, **tovid disc** starts a parallel job for each processor
+    detected.  With this option you can manually set the number of jobs.  For
+    example if you have a computer with 2 CPUs you can set "-jobs 1" to keep
+    one processor free for other things.  At present this applies to the time
+    consuming imagemagick loops: you will notice a substantial speedup now if
+    you have a multi-cpu system.
+: **-no-ask**, **-noask**
+    Skip all interactive questions.  No preview, automatic re-encoding with
+    tovid if needed, no interactive option to use background video for bgaudio.
+: **-no-warn**, **-nowarn**
+    Don't pause after outputting warning or info messages
+: **-grid**
+    Show a second preview image with a grid and numbers that will help in finding
+    coordinates for options that might use them, like **-text-start**
 
 
 ==Menu Style==
@@ -879,35 +799,22 @@ Here is a list of possible options you can pass:
     Move menu title by this offset from its N|S|E|W|Center position.  You
     may need to use -align as well if you don't want your title covering other
     parts of your menu.  See **-align**
-: **-button-style** line|rect|text|text-rect [line]
+: **-button-style** rect|text|line|text-rect
     The style of button that you will see when you play the DVD.
-    "line" style underlines the title, "rect" draws a rectangle around the
-    thumb when you select it in the DVD player, "text" highlights the video
-    title text, and "text-rect" draws a rectangle around the title
+    "rect" draws a rectangle around the thumb when you select it
+    in the DVD player.  "text" highlights the video title text, "line"
+    underlines the title, and "text-rect" draws a rectangle around the title
     text.
 : **-title-color**, **-title-colour** COLOR
     Color to use for the main menu title.  For list of supported colors do:
     **convert -list** color.  HTML notation may be used: "#ff0000". See:
     http://www.imagemagick.org/script/color.php
 : **-title-stroke** COLOR
-    Shadow color for the main menu's title font. Use "none" for transparent
-    outline  (see title-color).  Note: this is not a -stroke in the sense that
-    imagemagick uses the term, but a shadow (the font is drawn twice).  To get
-    a true imagemagick stroke see **-title-font-deco**
-: **-title-font-deco**, **-title-fontdeco** "IMAGEMAGICK STRING"
-    Sets the font decoration method to FONTDECORATION. It is used by the 'convert'
-    ImageMagick command to draw the menu text. You can add colored text
-    outlines, gradient fills, and many others. See **Usage notes**
+    Outline color for the main menu's title font. Use "none" for transparent
+    outline  (see title-color)
 : **-titles-stroke** COLOR
-    Shadow color for the thumb or textmenu video titles font. Use "none" for
-    transparent outline  (see **-titles-color**).  Note: this is not a -stroke
-    in the sense that imagemagick uses the term, but a shadow
-    (the font is drawn twice).  To get a true imagemagick stroke,
-    see **-titles-font-deco**
-: **-titles-font-deco**, **-titles-fontdeco** "IMAGEMAGICK STRING"
-    Sets the font decoration method to FONTDECORATION. It is used by the 'convert'
-    ImageMagick command to draw the menu text. You can add colored text
-    outlines, gradient fills, and others. See **Usage notes** for more info.
+    Outline color for the thumb or textmenu video titles font. Use "none" for
+    transparent outline  (see **-titles-color**).
 : **-highlight-color**, **-highlight-colour**
     Color to use for the menu buttons that your DVD remote uses to navigate.
 : **-select-color**, **-select-colour**
@@ -939,7 +846,7 @@ Here is a list of possible options you can pass:
     Only 4:3 aspect is supported: 16:9 will give unexpected results.
 
 
-===Style options specific to showcase/textmenu arrangements===
+===Menu Style options specific to showcase and textmenu arrangements===
 : **-text-start** N
     This option is for **-textmenu** menus.  The titles will start at the Nth
     pixel from the top of the menu ( Y axis ).
@@ -951,8 +858,7 @@ Here is a list of possible options you can pass:
     (default: if used without options, the rotate will be 5 degrees).  Note:
     this will not turn a portait image into a landscape image!
 : **-showcase-geo** GEOMETRY
-    The position of the showcase image.  ( +X+Y  position )
-    For example: **-showcase-geo** +300+200
+    The position of the showcase image.  ( XxY position )
 : **-wave** default|GEOMETRY
     Wave effect for showcase image|video.  Alters thumbs along a sine wave using
     GEOMETRY. (default: no wave)
@@ -988,12 +894,11 @@ Here is a list of possible options you can pass:
 
 
 ==Thumbnail Style==
-: **-user-thumbs** IMAGE(S)
+: **-user-thumbs** IMAGE
     Supply your own images for menu buttons, rather than relying on todisc to
     generate them from the video.  They must be the same aspect ratio as the
     videos in the titleset (4:3 or 16:9), as todisc will resize them without
-    checking and cropping.  There must be on image for each thumb that will be
-    displayed on the menu (ie. one thumb for each video in a titleset).
+    checking and cropping.
 : **-opacity** [0-100] (default 100)
     Opacity of thumbnail videos as a percentage (no percent sign).
     Anything less than 100(%) is semi-transparent. Not recommended with dark
@@ -1007,22 +912,10 @@ Here is a list of possible options you can pass:
     The amount of 'feather' blur to apply to the showcase image/video.  Choose
     values between 0.1 and 2.0.  This option has no effect on **-3d-showcase**.
     See **-thumb-blur** for more info.
-: **-align** DIRECTION
-    This will align  thumbs/titles in DIRECTION, which is a compass direction
-    as used by imagemagick: ie. north|south|east|west|northeast|northwest etc.
+: **-align** north|south
+    This will align  thumbs/titles north or south.
     If **-align** south then menu title will align north, unless you manually
     set one or both of **-menu-title-geo** or **-menu-title-offset**.
-    Only **-align** north|south|center has any effect on showcase with thumb,
-    or with the default montage arrangement of central thumbs. The most
-    apparent changes with be with textmenu, though with 2 column arrangements
-    only the north* and south* changes will show an effect.
-
-    Diagram:
-:    . northwest   north   northeast .
-:    .                               .
-:    . west        center       east .
-:    .                               .
-:    . southwest   south    souteast .
 : **-thumb-mist** [COLOR]
     Use a mist behind thumbnails.  The optional argument is the color of the
     mist.  This option helps with contrast.  Be sure to set the font color
@@ -1080,7 +973,7 @@ Here is a list of possible options you can pass:
     the **-vmgm** ... **-end-vmgm** options to allow playing ALL titlesets.
     (If you want also to have a playall button in each titleset you could use
     this option between each **-titleset** ... **-end-titleset** option or put
-    it outside of the vmgm and titlset options as a global option.
+    it outside of the vmgm and titlset options as a general option.
 : **-videos-are-chapters**
     A button will be made on the main menu for each video, which you can use as
     a chapter button.  Selecting any video will play them all in order
@@ -1144,39 +1037,11 @@ Here is a list of possible options you can pass:
     equal the number of grouped videos.
 
 
-
-==Usage notes==
-
-The argument given to various *-font options that set the font to use must be
-one of the fonts listed by the command 'convert -list type'. Please note that
-many of your installed fonts may not be available; if you want to maximize the
-number of fonts available to todisc, download and run
-[Anthony Thyssen's http://www.cit.gu.edu.au/~anthony/anthony.html]
-[imagick_type_gen http://www.imagemagick.org/Usage/scripts/imagick_type_gen]
-script and run it like this:
-imagick_type_gen > ~/.magick/type.xml.
-If that doesn't work, try imagick_type_gen > ~/.magick/type.mgk.
-
-Or you can specify a ttf font file directly to the *-font options if you don't
-want to install fonts to ImageMagick.
-
-The *-stroke options in todisc are not a stroke in the sense that ImageMagick
-uses the term, but rather a font shadow (the text is drawn twice)  To get a
-truer Imagemagick -stroke try something like:
--title-font-deco "-stroke black" (or -titles-font-deco "-stroke black").  The
-**-fontdeco** option is quite flexible and takes a lot of ImageMagick's
-//convert// options. Please refer to the tovid
-[wiki http://tovid.wikia.com/wiki/Making_a_DVD_with_text_menus] and Anthony
-Thyssen's guide [http://www.imagemagick.org/Usage] for further explanation and examples.
-
-
-
 =Command:mpg=
 
 **tovid mpg** converts arbitrary video files into (S)VCD/DVD-compliant
 MPEG format, suitable for burning to CD/DVD-R for playback on a
 standalone DVD player.
-
 
 
 ==Usage==
@@ -1213,11 +1078,8 @@ For example:
 : **-ffmpeg**
     Use ffmpeg for video encoding, instead of mplayer/mpeg2enc. Try this if
     you have any problems with the default encoding method. Using this option,
-    encoding will be considerably faster. It can do almost everything that 
-    mpeg2enc does such as -filters and -subtitles by using a pipe from mplayer
-    though using these options will make encoding somewhat slower. The 
-    exceptions are some special options like -kvcd* -bdvd where you will still
-    need to use the default mpeg2enc option.
+    encoding will be considerably faster. Currently does not work with
+    **-subtitles** or  **-filters**.
 
 
 ===Television standards===
@@ -1352,24 +1214,7 @@ for a widescreen monitor or TV.
     hard-codes the subtitles into the video, and you cannot turn them off while
     viewing the video. By default, no subtitles are loaded. If your video is
     already compliant with the chosen output format, it will be re-encoded to
-    include the subtitles. This works with both -ffmpeg and the default,
-    mpeg2enc.
-
-: **-dvd-subtitles**, **-dvdsubs** | //FILE//
-    Get subtitles from //FILE(S)// and add them **as a subtitle stream** into the
-    video.  This allows selectable subtitles on your DVD. You can use more than
-    one file for multiple languages. Be sure to use the -subtitle-lang option
-    in 'tovid disc' so the name of the language will show up on the DVD instead
-    of 'UNKNOWN' or similar
-
-: **-dvdsubs-only**
-    Use this if you have an already complient MPEG and wish to add a subtitle
-    stream without re-encoding, using **-dvdsubs** ,
-
-: **-dvdsubs-fontsize** //NUM// [18]
-    The pointsize in pixels for DVD selectable subtitles. To affect this for
-    hard-coded subtitles ( **-subtitles** ) you will need to pass options to
-    the player via **-mplayeropts** or **-mpvopts**.
+    include the subtitles.
 
 : **-type** {live|animation|bw}
     Optimize video encoding for different kinds of video. Use 'live' (default)
@@ -1387,8 +1232,7 @@ for a widescreen monitor or TV.
     Apply post-processing filters to enhance the video. If your input video is
     very high quality, use 'none'. If your input video is grainy, use 'denoise';
     if it looks washed out or faded, use 'contrast'. You can use multiple
-    filters separated by commas. To apply all filters, use 'all'. This works
-    with both mpeg2enc and -ffmpeg.
+    filters separated by commas. To apply all filters, use 'all'.
 
 : **-fps** //RATIO//
     Force input video to be interpreted as //RATIO// frames per second.  May be
@@ -1495,20 +1339,11 @@ for a widescreen monitor or TV.
     regularly the progress-meter is updated. The default is once every five
     seconds.
 
-: **-mpv**
-    Use mpv instead of mplayer. This option is experimental.
-
-: **-mplayeropts** //OPTIONS//
+: **-mplayeropts** **"**//OPTIONS//**"**
     Append //OPTIONS// to the mplayer command run during video encoding.  Use
     this if you want to add specific video filters (documented in the mplayer
     manual page). Overriding some options will cause encoding to fail, so use
     this with caution!
-
-: **-mpvopts** //OPTIONS//
-    Append //OPTIONS// to the mpv command run during video encoding.  Use
-    this if you want to add specific video filters (documented in the mplayer
-    or mpv manual page). Overriding some options will cause encoding to fail,
-    so use this with caution!
 
 : **-nofifo** (EXPERIMENTAL)
     Do not use a FIFO pipe for video encoding. If you are getting "Broken pipe"
@@ -1574,20 +1409,12 @@ For example:
     Display output in a table format for easier comparison. Most useful
     when identifying multiple video files.
 
-: **-keepfiles**
-    Keep temporary directory for debugging.
-
 : **-isformat** [//pal-dvd//|//ntsc-dvd//] (same syntax for vcd and svcd)
     Check //VIDEO_FILE// for compliance with the given disc format.
     If //VIDEO_FILE// matches the given format, then **tovid id** reports "true"
     and exits successfully. Otherwise, **tovid id** reports "false" and exits
     with status 1 (failure).  This checks and reports both vcd/svcd/dvd
     and pal/ntsc.
-
-: **-mpv**
-    This option is mainly for testing. If you have only mpv installed instead
-    of mplayer, it is used automatically. With this option, you can have BOTH
-    installed and choose which one to use. (default: mplayer)
 
 
 ==Examples==
@@ -1600,35 +1427,365 @@ For example:
     Check to see if homevideo.mpg is compliant with the DVD standard.
 
 
+=Command:menu=
 
-=Command:dvd=
-
-**tovid dvd** takes a DVD directory as generated by tovid with 'tovid disc' or
-one of the GUI frontends like 'tovid gui' or 'tovid titlesets' and burns
-it to appropriate media.  This will also work if the DVD directory is
-generated by the dvdauthor backend that tovid also uses.
-
-Running this program may slow down your other applications, due to intense
-disk activity.
+**tovid menu** generates textual (S)VCD- or DVD-compliant MPEG videos for use
+as navigational menus, given a list of text strings to use for title names. You
+can customize the menu by providing an optional background image or audio clip,
+or by using custom font and font color.
 
 
 ==Usage==
 
+**tovid menu** [//OPTIONS//] //TITLES// **-out** //OUT_PREFIX//
+
+For example:
+
+: ``tovid menu "Season One" "Season Two" "Featurettes" -out MainMenu``
+
+
+==Options==
+
+: **-ntsc** (default)
+    Generate an NTSC-format menu
+: **-ntscfilm**
+    Generate an NTSC-format menu (24000/1001fps)
+: **-pal**
+    Generate a PAL-format menu
+: **-dvd** (default)
+    Generate a DVD-format menu, with highlighted text included
+    as a multiplexed subtitle stream.
+: **-vcd**
+: **-svcd**
+    Generate a VCD/SVCD menu; each menu option will have a
+    number associated with it. You can have up to nine menu
+    options per menu.
+
+
+Menu background/audio options:
+
+: **-background** //IMAGE//
+    Use //IMAGE// (in most any graphic format) as a background. If image is not
+    the correct aspect ratio (4:3), it will be scaled and/or cropped,
+    depending on the **-crop** and **-scale** options. If no background is
+    supplied, a default background will be created.
+
+: **-crop** (default)
+    If provided background image is not 4:3 aspect ratio, crop edges
+    to make it so. Image will be scaled up if it is too small. Cropping
+    keeps the center area of image. If you want to do cropping/scaling
+    yourself in another program, provide an image of 768x576 pixels.
+
+: **-scale**
+    If provided background image is not 4:3 aspect ratio, scale/stretch
+    it to make it fit. May cause visible distortion!
+
+: **-audio** //AUDIOFILE//
+    Use //AUDIOFILE// (in most any audio format) for background music. The
+    menu will play for long enough to hear the whole audio clip. If
+    one is not provided, 4 seconds of silence will be used.
+
+: **-length** //NUM//
+    Make the menu //NUM// seconds long. Useful for menus with **-audio**:
+    if you don't want the entire //AUDIOFILE// in the menu, then you can trim
+    the length of the menu with **-length**.
+
+
+Menu text options:
+
+: **-menu-title** **"**//MENU TITLE TEXT//**"**
+    Add //MENU TITLE TEXT// as a title/header to the menu.
+
+: **-font** //FONTNAME// (default Helvetica)
+    Use //FONTNAME// for the menu text. Run 'convert -list type' to see a
+    list of the fonts that you can use; choose a font name from the
+    leftmost column that is displayed. Or you can specify a ttf font file instead.
+    E.g., '-font /path/to/myfont.ttf'.
+
+: **-fontsize** //NUM// (default 24)
+    Sets the size for the font to //NUM// pixels.
+
+: **-menu-title-fontsize** //NUM// (default **-fontsize** + 8)
+    Sets the size of the menu title.
+
+: **-fontdeco** **'**//FONTDECORATION//**'**
+    Sets the font decoration method to //FONTDECORATION//. It is used by the
+    'convert' ImageMagick command to draw the menu text. You can add colored
+    text outlines, gradient fills, and many others. See **Usage notes**.
+
+: **-align** {**left**|**center**|**middle**|**right**}
+    Align the text at the top left, top center, very middle, or top right
+    side of the screen. You may also substitute any "gravity" keyword
+    allowed by ImageMagick (north|south|east|west|northeast|southwest|...).
+
+: **-textcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
+    Use specified color for menu text. #//RRGGBB// and #//RGB// are
+    hexadecimal triplets (e.g., #FF8035). //COLORNAME// may be any of
+    several hundred named colors; run 'convert -list color' to see them.
+    White (#FFF) is the default color.
+
+
+DVD-only options:
+
+: **-button** //BUTTON// (default '>')
+    Specify the button used for menu selection. Specify either a _single_
+    character or one of the shortcuts:
+    - **play** -- Use a button shaped like 'Play' on many A/V electronics:
+        a triangle pointing to the right. (uses the font Webdings)
+    - **movie** -- Use a button shaped like an old movie projector.
+        (uses the font Webdings)
+    - **utf8** -- Use your own non-keyboard character as a button. Provide
+        only the four hex digits: eg '-button utf8 00b7'. Beware that
+        ImageMagick's utf8 characters aren't the same as those drawn in
+        character browsers like gucharmap.
+
+
+: **-highlightcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
+    Use the specified color for button highlighting. Yellow (#FF0) is the
+    default color.
+
+: **-selectcolor** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
+    Use the specified color for button selections (when a menu item is played
+    or activated). Red (#F00) is the default color.
+
+: **-button-outline** {**#**//RRGGBB//|**#**//RGB//|//COLORNAME//}
+    Outline buttons with the specified color. 'none' is the default.
+
+: **-button-font** //FONTNAME//
+    Specify a differnt font to use for the buttons. By default, the button
+    font will be inherited from the title font (see **-font**). Use this
+    option to use a different font for the buttons. The button font size is
+    inherited from **-fontsize** and cannot be changed.
+
+
+Other options:
+
+: **-debug**
+    Print extra debugging information to the log file. Useful in
+    diagnosing problems if they occur. This option also leaves
+    the log file (with a .log extension) in the directory after
+    encoding finishes as well as all the temporary files created.
+
+: **-nosafearea**
+    Do not attempt to put text inside a TV-safe viewing area. Most
+    television sets cut off about 10% of the image border, so the script
+    automatically leaves a substantial margin. This option turns that
+    behavior off, leaving only a tiny margin. Use at your own risk.
+
+: **-overwrite**
+    Overwrite any existing output menu.
+
+: **-noask**
+    Don't ask interactive questions, and assume answers that will
+    continue making the menu until completion.
+
+: **-quiet**
+    Limit output to essential messages.
+
+
+If the word "**back**" is given as an episode title, a "back" button for
+returning to a higher-level menu will be added at the end of the list
+of titles. "**Back**" //must be the last title listed//.
+
+
+==Examples==
+
+Make an NTSC VCD menu with white Helvetica text containing three centered
+selections: Episode 1, Episode 2, and Episode 3. The finished menu will be
+called Season-1.mpg:
+
+```
+tovid menu -ntsc -vcd \
+    -align center -textcolor white -font "Helvetica" \
+    "Episode 1" "Episode 2" "Episode 3" \
+    -out "Season-1"
+```
+
+Make an NTSC DVD menu with white Kirsty text containing three lower-left
+aligned selections: Episode 1, Episode 2, and Episode 3. Items under the cursor
+will be highlighted a pale blue, and selected items will be a pale orange
+(before going to the selected title). The finished menu will be called
+Main-menu.mpg:
+
+```
+tovid menu -ntsc -dvd \
+    -align southwest \
+    -textcolor white \
+    -highlightcolor "#5f65ff" \
+    -selectcolor "#ffac5f" \
+    -font "Kirsty" \
+    "Episode 1" "Episode 2" "Episode 3" \
+    -out "Main_menu"
+```
+
+
+
+==Usage notes==
+
+The argument given to **-font** must be one of the fonts listed
+by the command 'convert -list type'. Please note that many of
+your installed fonts may not be available; if you want to maximize the
+number of fonts available, download and run
+[Anthony Thyssen's http://www.cit.gu.edu.au/~anthony/anthony.html]
+[imagick_type_gen.pl http://www.cit.gu.edu.au/~anthony/software/imagick_type_gen.pl]
+script and run it like this:
+imagick_type_gen.pl > ~/.magick/type.xml.
+If that doesn't work, try
+imagick_type_gen.pl > ~/.magick/type.mgk.
+
+Or you can specify a ttf font file directly to the **-font** options if you
+don't want to install fonts to ImageMagick.
+
+The **-fontdeco** option is quite flexible and takes a lot of ImageMagick's
+//convert// options. Please refer to the tovid
+[wiki http://tovid.wikia.com/wiki/Making_a_DVD_with_text_menus]
+and Anthony Thyssen's guide for further explanation and examples.
+
+
+=Command:xml=
+
+**tovid xml** generates XML output describing an (S)VCD
+or DVD file structure and navigation hierarchy in the format expected by
+[dvdauthor http://dvdauthor.sourceforge.net/] or
+[vcdxbuild http://www.vcdimager.org/].
+
+
+==Usage==
+
+**tovid xml** [//OPTIONS//] //VIDEOS// -out //OUTFILE//
+
+For example:
+
+```
+$ tovid xml -menu MainMenu.mpg \
+    Season1.mpg Season2.mpg Featurettes.mpg \
+    -out MyDisc
+```
+
+
+==Options==
+
+: **-dvd** (default)
+    Generate the XML for a DVD disc, to be used with dvdauthor or **tovid dvd**.
+: **-vcd**
+    Generate the XML for a VCD disc, to be used with vcdxbuild or **tovid vcd**.
+: **-svcd**
+    Generate the XML for an SVCD disc, to be used with vcdxbuild or **tovid vcd**.
+: **-overwrite**
+    Overwrite any existing output files.
+: **-quiet**
+    Limit output to essential messages.
+
+
+//VIDEOS// may be any of the following:
+
+: //<file list>//
+    List of one or more video files to include, separated by spaces. At
+    minimum, a DVD must have one video file. You can use shell wildcards
+    (i.e., "*.mpg") to include multiple files easily. Put filenames in
+    quotes if they have spaces in them.
+
+: **-menu** //VIDEO// //<file list>//
+    Use video file //VIDEO// as a menu from which you can jump to each of
+    the listed video files. If you have multiple menus, include a
+    top menu so they are reachable.
+
+: **-slides** //<file list>//
+    Create a slide-show of still images
+
+
+DVD-only options
+
+: **-group** //<file list>// **-endgroup**
+    (DVD only) List of video files to include as one single title. This is useful
+    if you have split a movie into several video files.
+
+: **-topmenu** //VIDEO// [**-menu** //VIDEO// //<file list>//] [**-menu** //VIDEO// //<file list>//]...
+    (DVD only) Use video file //VIDEO// for the top-level (VMGM) menu. The
+    top menu will jump to each of the subsequent [-menu...] videos listed.
+    Use this only if you have multiple sub-menus to jump to. You can only
+    have one top menu.
+
+: **-titlesets**
+    (DVD only) Forces the creation of a separate titleset per title. This
+    is useful if the titles of a DVD have different video formats,
+    e.g. PAL + NTSC or 4:3 + 16:9. If used with menus, there must be a
+    **-topmenu** option that specifies a menu file with an entry for each of the
+    titlesets.
+
+: **-chapters** //INTERVAL//
+    (DVD only) Creates a chapter every //INTERVAL// minutes (default 5 minutes:
+    without **-chapters**, each movie will be divided into 5-minute chapters).
+    This option can be put at any position in a //<file list>// and is valid
+    for all subsequent titles until a new **-chapters** option is encountered.
+    Using this option may take some time, since the duration of the video is
+    calculated.
+
+: **-nochapters**
+    (DVD only) Don't create chapters for the videos.
+
+
+//OUT_PREFIX// is the file that will receive the resulting XML.
+
+
+==Usage notes==
+
+The 'xml' command checks to make sure the video filenames you
+give it exist, but it does not check whether they are valid for the
+chosen disc format. MPEG videos of menus should have the specified
+number of buttons for reaching each of the videos, and, if you're
+using DVD, should be multiplexed with their corresponding subtitles
+using spumux of the dvdauthor 0.6.0 package prior to
+authoring using dvdauthor. If you use the 'tovid menu'
+component to generate the menu, this should all be handled for you.
+
+
+==Examples==
+
+: ``tovid xml -dvd title-1.mpg title-2.mpg title-3.mpg -out My_DVD``
+    Make a DVD without a menu. Title 1, 2, and 3 will play in sequence.
+
+: ``tovid xml -dvd -group chapter-1.mpg chapter-2.mpg chapter-3.mpg -endgroup -out My_DVD``
+    Group the file chapter-1|2|3.mpg into one title and make a DVD without a menu.
+
+: ``tovid xml -dvd -menu main_menu.mpg -chapters 3 movie-1.mpg -chapters 10 movie-2.mpg -out My_DVD``
+    Make a DVD with a main menu that points to two movies, with movie-1.mpg
+divided into 3-minute chapters, and movie-2.mpg into 10-minute chapters.
+
+
+
+=Command:dvd=
+
+**tovid dvd** takes a dvdauthor XML file (as generated by the **tovid xml**
+command) and authors a DVD filesytem. This command can also burn a DVD disc
+from either the XML file or from an existing DVD file-system.
+
+To ensure that this script successfully executes, please run it from a
+directory with plenty of free space. "Plenty" would be 10 GB for single-layer
+discs, and 20 GB for dual-layer discs.  Running this program may slow down your
+other applications, due to intense disk activity.
+
+
+==Usage==
+
+**tovid dvd** [//OPTIONS//] //FILE.xml//
 
 **tovid dvd** [//OPTIONS//] //DVD_DIR//
 
 For example:
 
-: ``tovid dvd /path/to/DVD/directory``
+: ``tovid dvd -burn MyDisc.xml``
+: ``tovid dvd -burn /path/to/DVD/directory``
 
 
 ==Options==
 
+: **-author**
+    Author the DVD described by //FILE.xml//. Overwrites an existing
+    directory containing the dvdauthor output if already present.
+
 : **-burn**
     Burn a DVD file-system in //DVD_DIR// (must contain a VIDEO_TS folder).
-    This option is currently not necessary as the makedvd script ONLY burns
-    now that legacy scripts like makexml have been removed.  Left for
-    compatibility only.
 
 : **-eject**
     Eject the DVD tray after burning is complete. By default, the DVD is not
@@ -1656,29 +1813,133 @@ For example:
     execution.
 
 
-    After burning, the DVD can be previewed by calling:
-    //**xine** dvd:/path/to/output/directory//
-    or:
-    //**vlc** /path/to/output/directory//
+==Examples==
 
+: ``tovid dvd -burn -device /dev/dvdrw foo.xml``
+    Author the dvd file-system and burn to /dev/dvdrw. This will
+    automatically call dvdauthor to make the file-system. **-author**
+    is not explicitly needed. If there's an existing file-system, it
+    will be burned.
+
+: ``tovid dvd -author foo.xml``
+    Author the DVD file-system and exit without burning. If the output
+    directory given in foo.xml already exists, then the contents are
+    removed before authoring. At this point, the DVD can be previewed
+    by calling //**xine** dvd:/path/to/output/directory//.
+
+
+=Command:vcd=
+
+**tovid vcd** takes an XML file (which may be generated by **tovid xml**) and
+creates a cue/bin (S)VCD image. It can also burn (S)VCD discs.
+
+To ensure that this script successfully executes, please run it from a directory
+with plenty of free space. "Plenty" would be about 1 GB. Running this program
+may slow down your other applications, due to intense disk activity.
+
+
+==Usage==
+
+**tovid vcd** [//OPTIONS//] //VCDIMAGER.xml//
+
+For example:
+
+: ``tovid vcd -burn MyDisc.xml``
+
+
+==Options==
+
+: **-overwrite** (default off -- nothing is overwritten)
+    Overwrite any existing cue/bin files matching //VCDIMAGER.xml//. Useful
+    if you modified the xml file and wish to re-image or burn the new (S)VCD.
+
+: **-burn** (default off -- no images are burned)
+    Burn the (S)VCD described by //VCDIMAGER.xml//.
+
+: **-device** //DEVICE// (default /dev/cdrw)
+    Burn the disc image to //DEVICE//, the Linux device file-system
+    name of your CD-recorder. Common examples might be /dev/cdrw,
+    /dev/scd1, and /dev/hdc.
+
+: **-speed** //NUM// (default 12)
+    Burn the disc at speed //NUM//.
+
+: **-quiet**
+    Limit output to essential messages.
+
+
+==Examples==
+
+: ``tovid vcd -burn -device /dev/cdrw foo.xml``
+    Create the (S)VCD image and burn it to /dev/cdrw. This will
+    automatically call vcdxbuild to make the image. If there is an existing
+    image, it will be burned.
+
+: ``tovid vcd -overwrite foo.xml``
+    Create the (S)VCD image and exit without burning. If the image
+    already exists, then it is removed before re-imaging.
+
+
+
+=Command:postproc=
+
+**tovid postproc** is designed to do simple post-processing on MPEG video files, such
+as those generated by tovid. It can adjust audio/video sync, and re-quantize
+(shrink) without re-encoding.
+
+
+==Usage==
+
+**tovid postproc** [//OPTIONS//] //IN_FILE// //OUT_FILE//
+
+
+==Options==
+
+: **-audiodelay** //NUM//
+    Delay the audio stream by //NUM// milliseconds. Use this if
+    your final output has audio that is not synced with the
+    video. For example, if the audio comes 2 seconds sooner than
+    the video, use "-audiodelay 2000". Use a negative number for
+    audio that comes later than the video.
+
+: **-normalize**
+    Analyze the audio stream and then normalize the volume of the audio.
+    This is useful if the audio is too quiet or too loud, or you want to
+    make volume consistent for a bunch of videos. Similar to running
+    normalize without any parameters. The default is -12dB average level
+    with 0dB gain.
+
+: **-amplitude** //NUM//[dB]
+    In addition to analyzing and normalizing, apply the gain to the audio
+    such that the 'average' (RMS) sound level is //NUM//. Valid values
+    range 0.0 - 1.0, with 0.0 being silent and 1.0 being full scale. Use
+    //NUM//dB for a decibel gain below full scale (the default without
+    -amplitude is -12dB).
+
+: **-shrink** //NUM//
+    Shrink the video stream by a factor of //NUM//. May be a decimal
+    value. A value of 1.0 means the video will be the same size;
+    larger values cause more reduction in size. Beyond 2.0, the
+    returns are diminishing.
+
+: **-parallel**
+    Run all processes in parallel and pipe into multiplexer, should
+    increase speed significantly.
+
+: **-debug**
+    Save output in a temporary file, for later viewing if
+    something goes wrong.
 
 
 =Command:chapters=
 
 **tovid chapters** will start a GUI using mplayer to set chapter points in a
-video.  If the video plays through and you want to add more chapters you can
-press the play button again, but remember that new chapter points will be
-appended (in correct sequential order).  It will display the resulting chapter
-points, and also output to a terminal (useful for scripts).  As well it will
-give the option of saving the chapters string to a text file.
-
-Note that the 'tovid gui' now features a similar widget when you press the
-chapters button on the opening page.
+video.  Its only (mandatory) option is the path to a video file.
 
 ==Examples==
 : ``tovid chapters foo.avi``
 
-: ``chapters=$(tovid chapters /home/grepper/videos/foo.avi)``
+: ``tovid chapters /home/grepper/videos/foo.avi``
 
 
 =CONTACT=

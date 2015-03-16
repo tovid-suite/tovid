@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#! /usr/bin/env python
 # tovid.py
 
 """Frontend to the tovid suite.
@@ -10,24 +10,19 @@ usage = """Usage:
 
 Where 'command' is one of the following:
 
-    Main commands (one step DVD creation)
-
-    Command     Description                                       Formerly
-    -----------------------------------------------------------------------
-    disc        Options to encode, make menus, author and burn    todisc
-    gui         Start the tovid GUI                               todiscgui
-    titlesets   Start the titleset wizard GUI                     (new)
-
-
-    Helper commands (used by 'Main commands' or run standalone)
-
-    Command     Description                                       Formerly
-    -----------------------------------------------------------------------
-    mpg         Encode videos to MPEG format                      tovid
-    id          Identify one or more video files                  idvid
-    dvd         Author and/or burn a DVD                          makedvd
-    chapters    A GUI to set chapter points with mplayer          (new)
-
+    Command     Description                                 Formerly
+    -----------------------------------------------------------------
+    id          Identify one or more video files            idvid
+    dvd         Author and/or burn a DVD                    makedvd
+    menu        Create an MPEG menu                         makemenu
+    vcd         Author and/or burn a VCD                    makevcd
+    xml         Create (S)VCD or DVD .xml file              makexml
+    postproc    Post-process an MPEG video file             postproc
+    disc        Create a DVD with menus                     todisc
+    gui         Start the tovid GUI                         todiscgui
+    mpg         Encode videos to MPEG format                tovid
+    titlesets   Start the titleset wizard                   (new)
+    chapters    Set video chapter points with mplayer       (new)
 
 The following general options are also available:
     --prefix | -prefix      Return the tovid install prefix
@@ -46,19 +41,20 @@ import signal
 import time
 import shlex
 import shutil
-# python 3 compatibility
-try:
-    from ConfigParser import ConfigParser
-except ImportError:
-    from configparser import ConfigParser
+from ConfigParser import ConfigParser
 
 # Command names to script mappings
 _scripts = {
     'id': 'idvid',
     'dvd': 'makedvd',
+    'menu': 'makemenu',
+    'vcd': 'makevcd',
+    'xml': 'makexml',
+    'postproc': 'postproc',
     'disc': 'todisc',
     'gui': 'todiscgui',
     'mpg': 'makempg',
+    'batch': 'tovid-batch',
     'titlesets': 'titleset-wizard',
     'chapters': 'set_chapters',
 }
@@ -90,11 +86,8 @@ class Frontend:
         """Return the tovid version string.
         """
         tovid_init = self.script_dir + '/tovid-init'
-        # can't just source tovid-init to get TOVID_VERSION - sourcing may fail
-        cmd = shlex.split("awk -F= '/^TOVID_VERSION/ {print $2}' %s" % tovid_init)
-        result = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
-        # Python 3 needs decode("utf-8") as it returns a byte string not str
-        return result.decode("utf-8").replace('"', '').strip()
+        cmd = shlex.split("bash -c '. %s && printf $TOVID_VERSION'" % tovid_init)
+        return subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
 
 
     def parse_options(self, args):
@@ -105,11 +98,11 @@ class Frontend:
             arg = args.pop(0)
 
             if arg in ['-prefix', '--prefix']:
-                print(self.prefix)
+                print self.prefix
                 sys.exit(0)
 
             elif arg in ['-version', '--version']:
-                print(self.version)
+                print self.version
                 sys.exit(0)
 
             elif arg in ['-info', '--info']:
@@ -173,30 +166,23 @@ class Frontend:
             return
 
         # Create ~/.tovid if it doesn't exist already
-        # honour TOVID_HOME environment variable
-        self.user_tovid_dir = os.getenv('TOVID_HOME') or os.path.expanduser('~/.tovid')
-        #user_tovid_dir = os.path.expanduser('~/.tovid')
+        user_tovid_dir = os.path.expanduser('~/.tovid')
+        if not os.path.exists(user_tovid_dir):
+            print("Creating '%s'" % user_tovid_dir)
+            os.mkdir(user_tovid_dir)
 
-        if not os.path.exists(self.user_tovid_dir):
-            try:
-                os.mkdir(self.user_tovid_dir)
-                print("Creating '%s'" % self.user_tovid_dir)
-            except OSError:
-                print("Cannot create %s, exiting ..." %self.user_tovid_dir)
-                sys.exit(1)
         # Copy default tovid.ini to ~/.tovid if it doesn't exist already
-        self.user_tovid_ini = os.path.join(self.user_tovid_dir, 'tovid.ini')
-        if not os.path.exists(self.user_tovid_ini):
-            print("Creating '%s'" % self.user_tovid_ini)
-            shutil.copy(default_tovid_ini, self.user_tovid_ini)
+        user_tovid_ini = os.path.join(user_tovid_dir, 'tovid.ini')
+        if not os.path.exists(user_tovid_ini):
+            print("Creating '%s'" % user_tovid_ini)
+            shutil.copy(default_tovid_ini, user_tovid_ini)
 
 
     def get_config_options(self, command):
         """Return any options found in ~/.tovid/tovid.ini for the given command.
         """
         # Parse the user's tovid.ini file
-        #filename = os.path.expanduser('~/.tovid/tovid.ini')
-        filename = self.user_tovid_ini
+        filename = os.path.expanduser('~/.tovid/tovid.ini')
         config = ConfigParser()
         config.read(filename)
         # If no [command] section exists, or if there's no 'options' setting,

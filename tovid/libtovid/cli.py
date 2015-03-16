@@ -80,9 +80,12 @@ __all__ = [
 import subprocess
 import signal
 import os
-# Small workaround for Python 3.x
-from libtovid import unicode, basestring
 
+# Small workaround for Python 3.x
+try:
+    _temp = unicode
+except NameError:
+    unicode = str
 
 class ProgramNotFound (ValueError):
     """Raised when the program given to a command is not available.

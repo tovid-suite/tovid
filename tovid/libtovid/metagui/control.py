@@ -28,11 +28,9 @@ except NameError:
     def any(iterable):
         """Return True if bool(x) is True for any x in iterable."""
         for item in iterable:
-            if item:
-                return True
-        return False
-
-             
+            if not item:
+                return False
+        return True
 
 # Python < 3.x
 try:
@@ -46,9 +44,6 @@ except ImportError:
     from tkinter.filedialog import \
         (asksaveasfilename, askopenfilename, askopenfilenames)
     from tkinter.colorchooser import askcolor
-
-# Python 3.x
-from libtovid import basestring
 
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.variable import VAR_TYPES, ListVar
@@ -477,10 +472,7 @@ class Color (Control):
         """Event handler to update the color preview.
         """
         color = self.variable.get().strip()
-        try:
-            self.set(color)
-        except (ValueError):
-            pass
+        self.set(color)
 
 
     def pick_color(self):
@@ -1008,8 +1000,7 @@ class Text (Control):
     def next_item(self, event):
         """Select the next item in the parent listbox.
         """
-        if self.parent_list is not None:
-            self.parent_list.listbox.next_item(event)
+        self.parent_list.listbox.next_item(event)
 
 
 class SpacedText (Text):

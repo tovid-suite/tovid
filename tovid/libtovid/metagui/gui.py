@@ -11,35 +11,32 @@ import os
 import tempfile
 import shlex
 import subprocess
-from sys import exit, argv
+from sys import exit
 
 # Python < 3.x
 try:
-    import Tix
     import Tkinter as tk
     from ScrolledText import ScrolledText
+    from tkFileDialog import \
+        (asksaveasfilename, askopenfilename)
     from tkMessageBox import showinfo, showerror
-    from tkFileDialog import (
-      asksaveasfilename, askopenfilename
-      )
+    import Tix
 
 # Python 3.x
 except ImportError:
     import tkinter as tk
-    import tkinter.tix as Tix
     from tkinter.scrolledtext import ScrolledText
+    from tkinter.filedialog import \
+        (asksaveasfilename, askopenfilename)
     from tkinter.messagebox import showinfo, showerror
-    from tkinter.filedialog import (
-      asksaveasfilename, askopenfilename
-      )
+    import tkinter.tix as Tix
 
 from libtovid import cli
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.panel import Panel, Tabs
+from libtovid.metagui.support import \
+    (ConfigWindow, Style, ensure_type, askyesno, get_photo_image, show_icons)
 from libtovid.metagui.control import Control, NoSuchControl
-from libtovid.metagui.support import (
-  ConfigWindow, Style, ensure_type, askyesno, get_photo_image, show_icons
-  )
 
 
 DEFAULT_CONFIG = os.path.expanduser('~/.metagui/config')
@@ -213,7 +210,6 @@ class Executor (Widget):
             self.notify("Output saved to '%s'" % filename)
 
 
-from textwrap import dedent
 class Application (Widget):
     """Graphical frontend for a command-line program
     """
@@ -250,14 +246,10 @@ class Application (Widget):
         """Draw the Application in the given master.
         """
         Widget.draw(self, master)
-        self.master = master
         # Draw all panels as tabs
         self.tabs = Tabs('', *self.panels)
         self.tabs.draw(self)
         self.tabs.pack(anchor='n', fill='both', expand=True)
-        # need to wait until draw is called before setting this variable
-        self.script = tk.StringVar()
-        self.script.set('')
 
 
     def draw_toolbar(self, config_function, exit_function):
@@ -336,13 +328,6 @@ class Application (Widget):
             self.executor.notify("Cancelled.")
             self.toolbar.enable()
 
-    def set_scriptname(self, name):
-        """Set script filename.  Called externally, this sets the variable
-        that used used for save_exit() as well as the 'initial file' for
-        prompt_save_script().
-        """
-        self.script.set(name)
-
 
     def prompt_save_script(self):
         """Prompt for a script filename, then save the current
@@ -351,8 +336,7 @@ class Application (Widget):
         # TODO: Make initialfile same as last saved script, if it exists
         filename = asksaveasfilename(parent=self,
             title="Select a filename for the script",
-            #initialfile='%s_commands.bash' % self.program)
-            initialfile=self.script.get() or '%s_commands.bash' % self.program)
+            initialfile='%s_commands.bash' % self.program)
 
         if not filename:
             return
@@ -363,34 +347,20 @@ class Application (Widget):
             showerror(title="Error", message="Failed to save '%s'" % filename)
             raise
         else:
-            saved_script = os.path.split(filename)[1]
             showinfo(title="Script saved", message="Saved '%s'" % filename)
 
 
     def save_exit(self):
-        """Save current command to script and exit, without prompt
-        """
-        # hack for titleset wizard to get gui's screen position
-        from sys import stderr
-        stderr.write("%s %+d%+d" 
-          %('gui position', self._root().winfo_x(), self._root().winfo_y()))
-
-        default = os.getcwd() + os.path.sep + '%s_commands.bash' % self.program
-        filename = self.script.get() or default
+        filename = os.getcwd() + os.path.sep + '%s_commands.bash' % self.program
         self.save_script(filename)
-        exit()
+        # exit code borrowed from apache so wizard knows it has a file to read
+        exit(200)
 
 
     def prompt_load_script(self):
-        """Prompt for script filename; reload gui with current Control settings
+        """Prompt for a script filename, then load current Control settings
+        from that file.
         """
-        #"""Prompt for a script filename, then load current Control settings
-        #from that file.
-        #"""
-        # Hack: This is broken (commented section), presumably because of
-        # load_args limitations. This hack fixes it for libtovid, but does not
-        # belong in metagui.  So refactor this when load_args is fixed.
-        # see http://code.google.com/p/tovid/issues/detail?id=121
         filename = askopenfilename(parent=self,
             title="Select a shell script or text file to load",
             filetypes=[('Shell scripts', '*.sh *.bash'),
@@ -398,23 +368,15 @@ class Application (Widget):
 
         if not filename:
             return
-        # begin Hack
-        geometry = self._root().winfo_x(), self._root().winfo_y()
-        command = argv[0]
+
         try:
-            cmd = command, '--position', '+%s+%s' %geometry, filename
-            os.execlp(cmd[0], *cmd)
+            self.reset()
+            self.load_script(filename)
         except:
-            showerror(title="Error", message="Failed load '%s'" %filename)
+            showerror(title="Error", message="Failed to load '%s'" % filename)
             raise
-        #try:
-        #    self.reset()
-        #    self.load_script(filename)
-        #except:
-        #    showerror(title="Error", message="Failed to load '%s')
-        #    raise
-        #else:
-        #    showinfo(title="Script loaded", message="Loaded '%s'" % filename)
+        else:
+            showinfo(title="Script loaded", message="Loaded '%s'" % filename)
 
 
     def save_script(self, filename):
@@ -436,29 +398,26 @@ class Application (Widget):
 
 
     def load_script(self, filename):
-        # this is now disabled and its functionality passed to guis.helpers.py
-        # see http://code.google.com/p/tovid/issues/detail?id=121
-        pass
-        #"""Load current Control settings from a text file.
-        #"""
+        """Load current Control settings from a text file.
+        """
         # Read lines from the file and reassemble the command
-        #command = ''
-        #for line in open(filename, 'r'):
-        #    line = line.strip()
+        command = ''
+        for line in open(filename, 'r'):
+            line = line.strip()
             # Discard comment lines and PATH assignment
-        #    if line and not (line.startswith('#') or line.startswith('PATH=')):
-        #        command += line.rstrip('\\')
+            if line and not (line.startswith('#') or line.startswith('PATH=')):
+                command += line.rstrip('\\')
         # Split the full command into arguments, according to shell syntax
-        #args = shlex.split(command)
+        args = shlex.split(command)
 
         # Ensure the expected program is being run
-        #program = args.pop(0)
-        #if program != self.program:
-        #    raise ValueError("This script runs '%s', expected '%s'" %
-        #          (program, self.program))
+        program = args.pop(0)
+        if program != self.program:
+            raise ValueError("This script runs '%s', expected '%s'" %
+                  (program, self.program))
         # Load the rest of the arguments
-        #self.load_args(args)
-        #print("Done reading '%s'" % filename)
+        self.load_args(args)
+        print("Done reading '%s'" % filename)
 
 
     # TODO: Relocate all this stuff into Control and its subclasses
@@ -525,8 +484,6 @@ class GUI (Tix.Tk):
                 Name of an .ini-formatted file with GUI configuration
             icon
                 Full path to an image to use as the titlebar icon
-            position
-                position on screen: '+X+Y'
         """
         Tix.Tk.__init__(self)
 
@@ -534,20 +491,19 @@ class GUI (Tix.Tk):
         ensure_type("GUI needs Application", Application, application)
         self.application = application
 
-        # Get keyword arguments
-        self.inifile = kwargs.get('inifile', DEFAULT_CONFIG)
-        self.icon_file = kwargs.get('icon', None)
-        self.position = kwargs.get('position', '')
-
         # Set main window attributes
-        self.geometry("%dx%d%s" % (width, height, self.position))
+        self.geometry("%dx%d" % (width, height))
         self.title(title)
         self.width = width
         self.height = height
 
+        # Get keyword arguments
+        self.inifile = kwargs.get('inifile', DEFAULT_CONFIG)
+        self.icon_file = kwargs.get('icon', None)
+
         self.style = Style()
         if os.path.exists(self.inifile):
-            print("Loading style from the config file: '%s'" % self.inifile)
+            print("Loading style from config file: '%s'" % self.inifile)
             self.style.load(self.inifile)
         else:
             print("Creating config file: '%s'" % self.inifile)
@@ -563,14 +519,11 @@ class GUI (Tix.Tk):
         self.bind('<Control-q>', self.confirm_exit)
 
 
-    def run(self, args=None, script=''):
+    def run(self, args=None):
         """Run the GUI and enter the main event handler.
         This function does not return until the GUI is closed.
-        args: arguments to the programe being run
-        script: a filename to save the GUI command output to
         """
         self.draw()
-        
         if args:
             # If first argument looks like a filename, load
             # a script from that file
@@ -588,9 +541,6 @@ class GUI (Tix.Tk):
             # If more args remain, load those too
             if args:
                 self.application.load_args(args)
-            # if a script/project name was provided, set it in 'application'
-        if script:
-            self.application.set_scriptname(script)
 
         # Enter the main event handler
         self.mainloop()
@@ -631,11 +581,6 @@ class GUI (Tix.Tk):
     def confirm_exit(self, event=None):
         """Exit the GUI, with confirmation prompt.
         """
-        # Hack to sync titleset wizard's position with exiting GUI's position
-        if os.getenv('METAGUI_WIZARD'):
-            from sys import stderr
-            stderr.write("%s %+d%+d" 
-            %('gui position', self._root().winfo_x(), self._root().winfo_y()))
         if askyesno(message="Exit?"):
             self.quit()
 

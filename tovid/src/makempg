@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-ME="[makempg]:"
+ME="[tovid]:"
 . tovid-init 2>/dev/null ||
 { echo -e "===============================================================\n"
 echo -e "'tovid-init' not found.  Was tovid improperly installed?"
@@ -7,7 +7,7 @@ echo -e "Or are you trying to run the script directly?"
 echo -e "Please run makempg as:\ntovid mpg OPTIONS"
 exit 1 ; }
 
-# makempg
+# tovid
 # Part of the tovid suite
 # =======================
 # Convert any video/audio stream that mplayer can play
@@ -16,7 +16,7 @@ exit 1 ; }
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005-2015
+# Copyright (C) 2005-2010
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -145,7 +145,6 @@ AUDIO_WAV="audiodump.wav"
 # Audio bitrate (for ac3 or mp2)
 AUD_BITRATE="224"
 # Don't generate an empty audio stream
-NEWAUDIO_OPT=false
 GENERATE_AUDIO=false
 # Amplitude used when adjusting audio (-amplitude)
 AUDIO_AMPLITUDE=""
@@ -191,11 +190,7 @@ NONVIDEO_BITRATE=""
 SLEEP_TIME="5s"
 # Don't use subtitles unless user requests it
 DO_SUBS=false
-DO_DVD_SUBS=false
-DVD_SUBSIZE=18.0
-DVD_SUBS=()
 SUBTITLES="-noautosub"
-MPV_SUBS="-no-sub-auto"
 # Input file and type
 IN_FILE=""
 IN_FILE_TYPE="file"
@@ -210,7 +205,6 @@ V_DURATION="0"
 ID_AUDIO_BITRATE="0"
 # mplayer executable to use
 MPLAYER="mplayer"
-USE_MPV=false
 # No custom mplayer opts
 MPLAYER_OPTS=""
 MUX_OPTS=""
@@ -226,11 +220,6 @@ AUDIO_MAP=""
 SLICE=false
 DOWNMIX=false
 ASYNC=""
-YUV4PIPE="" # -f yuv4mpegpipe for mplayer->ffmpeg
-FFMPEG_WITH_MPLAYER=false
-FF_M2V=false # are we splitting up video and audio processing?
-DO_ENCODING=:
-SUBS_ONLY=false
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=$(date +%s)
@@ -308,7 +297,7 @@ function cmd_exec()
         yecho
         return
     else
-        eval "$@" 2>&1 | $std_buf strings >> "$LOG_FILE" &
+        eval "$@" 2>&1 | strings >> "$LOG_FILE" &
         PIDS="$PIDS $!"
     fi
 }
@@ -330,10 +319,8 @@ function killsubprocs()
 # ******************************************************************************
 function check_disk_space()
 {
-    # this function is very inaccurate, needs attention
     # Determine space available in current directory (in MB)
-    # os compatibility patch from 'virtualestates' as per issue #152
-    AVAIL_SPACE=$(df -P . | awk 'NR==1 {sub("-blocks", "", $2); blocksize=$2} NR!=1 {print int($4/1024*blocksize/1024)}')
+    AVAIL_SPACE=$(df -mP . | awk 'NR != 1 {print $4;}')
     # Rough estimates of KB/sec for different formats
     K_PER_SEC=200
     test "$TGT_RES" = "VCD" && K_PER_SEC=172
@@ -346,15 +333,15 @@ function check_disk_space()
     # based on original file size
     $SLICE && VIDEO_DURATION=$CLIP_LENGTH || VIDEO_DURATION=$V_DURATION
     if test "$VIDEO_DURATION" = "0"; then
-        CUR_SIZE=$(du -Dck "$IN_FILE" | awk 'END{print $1}')
+        CUR_SIZE=$(du -Dck \"$IN_FILE\" | awk 'END{print $1}')
         NEED_SPACE=$(expr $CUR_SIZE \* 2)
+        yecho  "The encoding process will require about"
     # Estimate space based as kbps * duration
     else
         NEED_SPACE=$(expr $VIDEO_DURATION \* $K_PER_SEC \/ 500)
+        yecho "The encoding process is estimated to require $NEED_SPACE MB of disk space."
     fi
-    # ffmpeg can do a+v 'at once' so half as much space needed
-    $USE_FFMPEG && ! $DO_NORM && ! [[ $ASYNC ]] && NEED_SPACE=$((NEED_SPACE/2))
-    yecho "The encoding process is estimated to require $NEED_SPACE MB of disk space."
+
     yecho "You currently have $AVAIL_SPACE MB available in this directory."
 }
 
@@ -536,45 +523,17 @@ function get_args()
                 ;;
             "-autosubs" )
                 SUBTITLES=""
-                MPV_SUBS=""
                 ;;
             "-subtitles" )
                 shift
                 if test -e "$1"; then
                     SUBS_FILE=$(readlink -f "$1")
                     SUBTITLES="-sub \"$SUBS_FILE\""
-                    MPV_SUBS="-sub-file \"$SUBS_FILE\""
                     DO_SUBS=:
                 else
                     yecho "Cannot find subtitle file $1."
                 fi
                 FORCE_ENCODING=:
-                ;;
-            "-dvdsubs"|"-dvd-subtitles" )
-                shift
-                # Hackish list-parsing
-                while test $# -gt 0 && test ${1:0:1} != "-"; do
-                    if test -e "$1"; then
-                        DVD_SUBS=( "${DVD_SUBS[@]}"  "$(readlink -f "$1")" )
-                        DO_DVD_SUBS=:
-                        #FORCE_ENCODING=:
-                    else
-                        yecho "Cannot find subtitle file $1."
-                    fi
-                    shift
-                done
-                # Do not skip past the next argument
-                if test $# -gt 0 && test ${1:0:1} = "-";then
-                    DO_SHIFT=false
-                fi
-                ;;
-            "-dvdsubs-fontsize" )
-                shift
-                DVD_SUBSIZE="$1"
-                ;;
-            "-dvdsubs-only" )
-                DO_ENCODING=false
-                SUBS_ONLY=:
                 ;;
             "-update" )
                 # Set status update interval
@@ -584,10 +543,6 @@ function get_args()
             "-mplayeropts" )
                 shift
                 MPLAYER_OPTS="$1"
-                ;;
-            "-mpvopts" )
-                shift
-                MPV_OPTS="$1"
                 ;;
             "-audiotrack" )
                 shift
@@ -605,7 +560,7 @@ function get_args()
             "-downmix" )
                 DOWNMIX=:
                 ;;
-            "-ffmpeg" | "-avconv" )
+            "-ffmpeg" )
                 USE_FFMPEG=:
                 ;;
             "-nofifo" )
@@ -626,7 +581,7 @@ function get_args()
                 SLICE=:
                 CLIP_SEEK="${CLIP/-*}"
                 [[ "$CLIP" = *-* ]] && CLIP_ENDTIME="${CLIP/*-}"
-             #   USE_FFMPEG=:  # for now only ffmpeg works with it
+                USE_FFMPEG=:  # for now only ffmpeg works with it
                 FORCE_ENCODING=:
                 ;;
             "-in" )
@@ -661,10 +616,6 @@ function get_args()
             "-keepfiles" )
                 KEEPFILES=:
                 ;;
-            "-mpv" )
-                USE_MPV=:
-                MPLAYER="mpv"
-                ;;
             * )
                 test -n "$1" && usage_error "Unrecognized command-line option: '$1'"
 
@@ -683,7 +634,7 @@ function cleanup()
 {
     cd "$WORKING_DIR"
     yecho "Cleaning up..."
-    #rm -fv "$YUV_STREAM"
+    rm -fv "$YUV_STREAM"
     if $KEEPFILES; then
         yecho "Keeping temporary files in $TMP_DIR"
     else
@@ -789,7 +740,7 @@ EOF`
     PEAK_BITRATE=$(grep 'Peak bit-rate' "$LOG_FILE" | awk '{print $6}')
     if $USE_FFMPEG && ! $DO_NORM && ! $VIDEO_OK; then
         # get lines with frame= , and print last field with kbit/s removed
-        bitrates=$(sed -n 's/kbits\/s//g;s/^.*bitrate= *\([^ ]*\).*/\1/p' "$LOG_FILE")
+        bitrates=$(awk -F= '/^frame=/ {gsub("kbits/s", ""); print $NF}' "$LOG_FILE")
         # get highest value, and remove spaces with sed
         bitrates=$(sort -un <<< "$bitrates" | sed 's/^[ \t]*//;s/[ \t]*$//')
         # average the values.  Add 000, so it is in bits.
@@ -805,7 +756,7 @@ EOF`
     KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION \+ 1)
     ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / $V_DURATION" | bc)
     if $USE_FFMPEG; then
-        BACKEND="$FFmpeg"
+        BACKEND="ffmpeg"
     else
         BACKEND="mpeg2enc"
     fi
@@ -837,25 +788,6 @@ EOF`
     yecho "Statistics written to $STAT_FILE"
 }
 
-function spumux_subtitles()
-{
-    yecho "Running spumux to add selectable DVD subtitles"
-    yecho "This may take a while if you have multple subtitle streams"
-    
-    in_mpg="$1"
-    in_mpg_tmp="$in_mpg"
-    for x in ${!DVD_SUBS[@]}; do
-        yecho
-        yecho "Running  spumux -m dvd -s $x "$TMP_DIR/spumux${x}.xml" <  "$in_mpg_tmp"  > "$TMP_DIR/out${x}.mpg""
-        VIDEO_FORMAT="ntsc" spumux -m dvd -s $x "$TMP_DIR/spumux${x}.xml" <  "$in_mpg_tmp"  > "$TMP_DIR/out${x}.mpg" 2>> "$LOG_FILE"
-        $KEEP_FILES ||{ [[ -e "$TMP_DIR/out$((x-1)).mpg" ]] && rm -fv "$TMP_DIR/out$((x-1)).mpg"; }
-        in_mpg_tmp="$TMP_DIR/out${x}.mpg"
-    done
-    if $DO_ENCODING && $KEEPFILES; then
-        mv -v "$OUT_FILENAME" "$TMP_DIR/${OUT_FILENAME##*/}.nosubs.mpg"
-    fi
-    mv "$TMP_DIR/out${x}.mpg" "$OUT_FILENAME"
-}
 
 # ******************************************************************************
 # Print a completion message and exit
@@ -866,13 +798,13 @@ function goodbye()
     yecho "Done!"
     yecho
     if ! $QUIET; then
-        yecho "Your encoded video should be in the file(s) $OUT_FILENAME ."
+        yecho "Your encoded video should be in the file(s) $OUT_FILENAME."
         echo
-        echo "You can author a simple disc with this video on it by running:"
-        echo "    tovid disc -no-menu \"$OUT_FILENAME\" -out MyDisc"
-        echo "Add -burn for a prompt to burn (-device and -speed optional)"
-        echo "Or use todisc (tovid disc) to create text-only or animated menus."
-        echo "See the manual ('man tovid') for more information and options."
+        echo "You can author a disc with this video on it by running:"
+        echo "    tovid xml $OUT_FILENAME -out MyDisc"
+        echo "    tovid dvd MyDisc.xml"
+        echo "You can also use todisc or makemenu to create menus for your disc."
+        echo "See the tovid manual page ('man tovid') for more information."
         echo
         echo "Please report bugs to:"
         echo "   http://code.google.com/p/tovid/issues/list"
@@ -929,32 +861,6 @@ fi
 #
 # ******************************************************************************
 
-# print warning message about saving the original output file if -dvdsubs used.
-if $DO_DVD_SUBS && $SUBS_ONLY; then
-    # test for dvd compatibility as no encoding done
-    if ! idvid -isformat ${TVSYS,,}-dvd "$IN_FILE"; then
-        yecho "The file you have supplied does not appear to be DVD complient."
-        yecho "Since you used -dvdsubs-only there will be no re-encoding done."
-        yecho "It would be better to quit now and use -dvdsubs option, so "
-        yecho "your file will be re-encoded."
-        yecho "If you continue anyway, it will probably fail."
-        yecho "Exit now?  [press y or n]"
-        read input
-        if [[ $input = y ]]; then
-            exit 1
-        fi
-    fi
-fi
-if $DO_ENCODING && $DO_DVD_SUBS; then
-    yecho
-    yecho '**********'
-    yecho "Your finished encoded video will be subtitled directly. To "
-    yecho "save a copy of it use -keepfiles . "
-    echo  "CTRL-c to stop or"
-    echo  "continuing"
-    countdown 12
-    echo
-fi
 # hack alert: ffmpeg is broken for encoding from audio
 if [[ $TGT_RES = *VCD* && $TGT_RES != "DVD-VCD" ]]; then
     if ! $USE_FFMPEG || $DO_NORM; then
@@ -967,25 +873,17 @@ if [[ $TGT_RES = *VCD* && $TGT_RES != "DVD-VCD" ]]; then
     fi
 fi
 
-if { ((USE_FILTERS)) || $DO_SUBS; } && $USE_FFMPEG; then
-    FFMPEG_WITH_MPLAYER=:
+# Can't do -subtitles with -ffmpeg; if both were used, print error and exit
+# TODO: Support subtitles in ffmpeg!
+if $USE_FFMPEG && $DO_SUBS; then
+    usage_error "Sorry, -subtitles is not currently supported with -ffmpeg."
 fi
 
-# see if ffmpeg is new enough to support -b:v etc
-# remove this when 0.9x ffmpeg is the oldest tovid will support
-# note ffmpeg is used for audio so this must run even when using mpeg2enc
-if $FFmpeg -f rawvideo  -pix_fmt yuv420p -s cif \
-    -i /dev/zero -t 1 -r 30 -f rawvideo \
-      -b:v 500k -y /dev/null > /dev/null 2>&1; then
-    VB=-b:v
-    AB=-b:a
-    CA=-c:a
-else
-    VB=-b
-    AB=-ab
-    CA=-acodec
+if ((USE_FILTERS)) && $USE_FFMPEG; then
+    usage_error "Sorry, you are using ffmpeg to encode
+    video, either by choice or another option requires it.
+    You can not use -filters with -ffmpeg"
 fi
-
 # make sure we are not running from the gui and set some options
 ! $FROM_GUI && NOCONSOLE_CONTROLS="-noconsolecontrols"
 
@@ -1017,16 +915,6 @@ if test -z "$OUT_PREFIX"; then
     usage_error "Please provide an output name with the -out option."
 fi
 
-# check that outfile does not contain a comma because of a mpeg2enc limitation
-if ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *,* || "$IN_FILE" = *,* ]]; then
-    exit_with_error "Comma illegal in -out and -in NAME (mpeg2enc limitation)"
-fi
-# check that outfile or infile don't use $$ or $[0-9] because of mpeg2 'bug'
-if ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *\$\$* || "$IN_FILE" = *\$\$* ]]; then
-    exit_with_error '"$$" illegal in -out and -in NAME (mpeg2enc limitation)'
-elif ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *\$[0-9]* || "$IN_FILE" = *\$[0-9]* ]]; then
-    exit_with_error '"$" followed by a digit illegal in -out and -in NAME (mpeg2enc limitation)'
-fi
 # check that outfile is not a directory
 if test -d "$OUT_PREFIX"; then
     exit_with_error "Error: The specified output file is a directory.  A filename must be specified."
@@ -1092,14 +980,12 @@ case "$TVSYS" in
         VID_FPS="--frame-rate 3"
         TGT_FPS="25.000"
         TGT_FPSRATIO="25:1"
-        FF_FPS="25/1"
         ;;
     "NTSC" )
         VID_NORM="--video-norm n"
         VID_FPS="--frame-rate 4"
         TGT_FPS="29.970"
         TGT_FPSRATIO="30000:1001"
-        FF_FPS="30000/1001"
         ;;
     "NTSCFILM" )
         VID_NORM="--video-norm n"
@@ -1111,7 +997,6 @@ case "$TVSYS" in
         fi
         TGT_FPS="23.976"
         TGT_FPSRATIO="24000:1001"
-        FF_FPS="24000/1001"
         ;;
 esac
 
@@ -1172,17 +1057,16 @@ fi
 # Probe input file; check for compliance with selected output format.
 #
 # ******************************************************************************
-if $DO_ENCODING; then
-    yecho "Converting $IN_FILE to $TVSYS $TGT_RES format"
-    yecho "Encoding quality is $VID_QUALITY of 10 (use -quality to change)"
-fi
+
+yecho "Converting $IN_FILE to $TVSYS $TGT_RES format"
+yecho "Encoding quality is $VID_QUALITY of 10 (use -quality to change)"
 yecho "Saving to $OUT_FILENAME"
 yecho "Storing log and temporary files in $TMP_DIR"
 yecho "Run 'tail -f \"$LOG_FILE\"' in another terminal to monitor the log"
 
 # If multiple CPUs are available, do multithreading in mpeg2enc
 if $MULTIPLE_CPUS; then
-    yecho "Multiple CPUs detected; mpeg2enc and $FFmpeg will use multithreading."
+    yecho "Multiple CPUs detected; mpeg2enc and ffmpeg will use multithreading."
     MTHREAD="--multi-thread 2"
     FF_THREAD="-threads 4"
 else
@@ -1206,10 +1090,7 @@ if $SLICE; then
         CLIP_LENGTH=$(echo "$CLIP_ENDTIME - $CLIP_SEEK" | bc)
         [[ ${CLIP_LENGTH%.*} -eq 0 ]] && CLIP_LENGTH=1
         FF_LENGTH="-t $CLIP_LENGTH"
-        MP_LENGTH="-endpos $CLIP_LENGTH"
-        MPV_LENGTH="--length $CLIP_LENGTH"
     fi
-    MPV_CLIP_SEEK="--start $CLIP_SEEK"
     CLIP_SEEK="-ss $CLIP_SEEK"
 fi
 #    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_ENDTIME" | bc)
@@ -1246,11 +1127,11 @@ if test "$IN_FILE_TYPE" = "file"; then
 
     # Check for available space and prompt if it's not enough
     # not needed if using ffmpeg to encode video and audio "at once"
-    if $PARALLEL; then
+    if ($USE_FFMPEG && (! $DO_NORM || ! [[ $ASYNC ]])) || $PARALLEL; then
         :
     else
         check_disk_space
-        if ((AVAIL_SPACE < NEED_SPACE)) && ! $FROM_GUI && ! $NOASK; then
+        if test "$AVAIL_SPACE" -lt "$NEED_SPACE" && ! test $FROM_GUI -o $NOASK ; then
             yecho "Available: $AVAIL_SPACE, needed: $NEED_SPACE"
             echo "It doesn't look like you have enough space to encode this video."
             echo "Of course, I could be wrong. Do you want to proceed anyway? (y/n)"
@@ -1304,7 +1185,7 @@ if test "$IN_FILE_TYPE" = "file"; then
     $AUDIO_OK && ! $VIDEO_OK && [[ $ID_AUDIO_CODEC = "mp2" ]] && AUDIO_OK=false
 
     # If both audio and video are OK, stop now - there's no need to convert.
-    if ! $FORCE_ENCODING && $AUDIO_OK && $VIDEO_OK && ! $SUBS_ONLY; then
+    if ! $FORCE_ENCODING && $AUDIO_OK && $VIDEO_OK; then
         # Create a symbolic link in place of the output file
         $OVERWRITE && rm -f "$OUT_FILENAME"
         ln -s "$IN_FILE" "$OUT_FILENAME"
@@ -1393,8 +1274,6 @@ if $DO_FIT; then
     if test "$VID_BITRATE" -gt $VID_MAX_RATE; then
         VID_BITRATE=$VID_MAX_RATE
     fi
-    echo VID_BITRATE is $VID_BITRATE
-    exit 0 # DEBUG
 fi
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
@@ -1413,9 +1292,6 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 1 -K hi-res"
         MUX_OPTS="-f 1"
         VID_SUF="m1v"
-        FF_CODEC="-f mpeg1video"
-        FF_BITRATE="$VB ${VID_BITRATE}k"
-        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 112KiB"
         ;;
 
     # KVCD: VCD resolution, but using MPEG-2 and with KVCD quantization
@@ -1433,9 +1309,6 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 2 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
         MUX_OPTS="-V -f 5 -b 350 -r 10800"
         VID_SUF="m2v"
-        FF_CODEC="-f mpeg1video"
-        FF_BITRATE="$VB ${VID_BITRATE}k"
-        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         ;;
 
 
@@ -1453,9 +1326,6 @@ case "$TGT_RES" in
         # Use default bitrate if none specified
         : ${VID_BITRATE:=$DEFAULT_BR}
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
-        FF_CODEC="-f mpeg1video"
-        FF_BITRATE="$VB ${VID_BITRATE}k"
-        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
         ;;
@@ -1476,9 +1346,6 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 4 -b $VID_BITRATE -K hi-res"
         MUX_OPTS="-V -f 4"
         VID_SUF="m2v"
-        FF_CODEC="-f mpeg1video"
-        FF_BITRATE="$VB ${VID_BITRATE}k"
-        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
 
         ;;
 
@@ -1498,9 +1365,6 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 8 -b $VID_BITRATE -g $GOP_MINSIZE -G $GOP_MAXSIZE -K hi-res"
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
-        FF_CODEC="-f mpeg1video"
-        FF_BITRATE="$VB ${VID_BITRATE}k"
-        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         ;;
 
     # KVCDx3(a) long-playing, high-resolution MPEG for (S)VCD
@@ -1534,9 +1398,6 @@ case "$TGT_RES" in
         MPEG2_FMT="-f 5 -b $VID_BITRATE -V 230 -K kvcd -g $GOP_MINSIZE -G $GOP_MAXSIZE -D 8 -d"
         MUX_OPTS="-V -f 5 -b 350 -r 10800"
         VID_SUF="m2v"
-        FF_CODEC="-f mpeg2video"
-        FF_BITRATE="$VB ${VID_BITRATE}k"
-        FF_M2VOPTS="$FF_CODEC $FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         ;;
 
     # DVD (and KDVD/BDVD)
@@ -1591,51 +1452,22 @@ case "$TGT_RES" in
         esac
         MUX_OPTS="-V -f 8"
         VID_SUF="m2v"
-        FF_CODEC="-f mpeg2video"
-        FF_BITRATE="$VB ${VID_BITRATE}k"
-        FF_M2VOPTS="$FF_BITRATE -maxrate ${VID_BITRATE}k -bufsize 224KiB"
         ;;
 
 esac # End resolution
 
 
 # Now that res and bitrate are set-up, report the target characteristics
-if $DO_ENCODING; then
-    yecho "Target format:"
-    yecho "  $TGT_WIDTH x $TGT_HEIGHT pixels, $TGT_FPS fps"
-    yecho "  $VID_SUF video with $AUD_SUF audio"
-    yecho "  $VID_BITRATE kbits/sec video, $AUD_BITRATE kbits/sec audio"
-fi
+yecho "Target format:"
+yecho "  $TGT_WIDTH x $TGT_HEIGHT pixels, $TGT_FPS fps"
+yecho "  $VID_SUF video with $AUD_SUF audio"
+yecho "  $VID_BITRATE kbits/sec video, $AUD_BITRATE kbits/sec audio"
 
 # Full pathnames for A/V streams and output file
 AUDIO_WAV="$TMP_DIR/audio.wav"
 AUDIO_STREAM="$TMP_DIR/audio.$AUD_SUF"
 YUV_STREAM="$TMP_DIR/video.yuv"
-$USE_MPV && YUV_STREAM="$TMP_DIR/video.y4m"
 VIDEO_STREAM="$TMP_DIR/video.$VID_SUF"
-
-# ffmpeg,avconv and mpeg2enc have trouble with mpv's y4m output
-# without explicitly giving or forcing an input framerate
-if $USE_MPV; then
-    if $USE_FFMPEG; then
-        if test_is_number $ID_VIDEO_FPS; then
-            FF_INPUT_FR="-r $ID_VIDEO_FPS"
-        else
-            FF_INPUT_FR="-r $TGT_FPS"
-        fi
-    else # mpeg2enc
-        FORCE_FPS=:
-        if test_is_number $ID_VIDEO_FPS; then
-            #FORCE_FPSRATIO=$ID_VIDEO_FPS # change to ratio
-            FORCE_FPSRATIO=$TGT_FPSRATIO
-        else
-            FORCE_FPSRATIO=$TGT_FPSRATIO
-        fi
-    fi
-            
-else # mplayer
-    FF_INPUT_FR=""
-fi
 
 # ******************************************************************************
 #
@@ -1650,8 +1482,7 @@ yecho
 NONVIDEO_BITRATE=$(expr \( 101 \* $AUD_BITRATE \+ $VID_BITRATE \) \/ 100)
 
 # Put available mplayer -vf filters into temp file
-#mplayer -vf help > "$SCRATCH_FILE" 2>&1
-mplayer -nomsgcolor -vf help | cat -v - | sed 's/^[ \t]*//' > "$SCRATCH_FILE" 2>&1
+mplayer -vf help > "$SCRATCH_FILE" 2>&1
 
 # Find out if mplayer's 'pp' option is available.
 if grep -q "^ *pp " "$SCRATCH_FILE"; then
@@ -1688,7 +1519,7 @@ if $DEINTERLACE; then
         yecho "I can't find any deinterlacing options to use. No deinterlacing"
         yecho "will be done on this video (but encoding will continue)."
         yecho "Encoding will resume in 5 seconds..."
-        sleep 5
+        sleep 5s
     fi
     # Deinterlacing for ffmpeg
     FF_ILACE="-deinterlace"
@@ -1732,7 +1563,7 @@ if $DO_DENOISE; then
 fi
 if $DO_CONTRAST; then
     if $PP_AVAIL; then
-        VID_FILTER="$VID_FILTER,pp=[al:f]"
+        VID_FILTER="$VID_FILTER,pp=al:f"
     else
         yecho "Unable to find a suitable contrast-enhancement filter. Skipping."
     fi
@@ -1753,25 +1584,6 @@ if $FAST_ENCODING; then
     QUANT=$(expr $QUANT \+ 4)
     MPEG2_QUALITY="-4 4 -2 4 -q $QUANT"
 fi
-
-# set varible for encoding with mplayer and ffmpeg (output to m2v/m1v)
-if $DO_NORM || $FFMPEG_WITH_MPLAYER || [[ $AUDIO_SYNC ]]; then
-    FF_M2V=:
-fi
-if $FF_M2V; then # splitting audio and video. This includes FFMPEG_WITH_MPLAYER
-    FF_M2VOPTS=$FF_M2VOPTS
-    INFILE="$IN_FILE"
-else
-    INFILE="$IN_FILE"
-    FF_M2VOPTS=""
-fi
-if $FFMPEG_WITH_MPLAYER; then # encoding from mplayer pipe
-    INFILE=$YUV_STREAM
-    YUV4PIPE="-f yuv4mpegpipe"
-    #$USE_MPV && YUV4PIPE="-f yuv4mpegpipe -pix_fmt yuv420p"
-    FF_M2VOPTS=$FF_M2VOPTS
-fi
-
 
 
 # ******************************************************************************
@@ -1797,9 +1609,9 @@ else
 fi
 
 # ffmpeg's -vf aspect is more dependable than -aspect, if ffmpeg is new enough
-FF_FILTERS=$($FFmpeg -filters 2>&1)
+FF_FILTERS=$(ffmpeg -filters 2>&1)
 # newer ffmpeg's use setdar= and setsar=
-if grep -qw setdar <<< "$FF_FILTERS"; then
+if grep -qw ^setdar <<< "$FF_FILTERS"; then
     FF_ASPECT="setdar="
 # somewhat older rev's used aspect=
 elif grep -qw ^aspect <<< "$FF_FILTERS"; then
@@ -1808,24 +1620,14 @@ else
     FF_ASPECT='-aspect '
 fi
 # newer ffmpegs using filters use "-vf"
-FF_HELP=$($FFmpeg -h full 2>&1)
+FF_HELP=$(ffmpeg -h 2>&1)
 if grep -qw -- -vf <<< "$FF_HELP"; then
     VF="-vf"
 # somewhat older is "-vfilters"
 elif grep -qw -- -vfilters <<< "$FF_HELP"; then
     VF="-vfilters"
 else
-    runtime_error "Your $FFmpeg is too old to support video filters"   
-fi
-# newaudio was removed in ffmpeg 0.9 as it was redundant because of -map opt
-grep -qw -- -newaudio <<< "$FF_HELP" && NEWAUDIO_OPT=true
-
-# we can't really parse which syntax to use for all filters, so here is a test
-errors=$( $FFmpeg -i "$IN_FILE" -t 1  \
--vf scale=w=720:h=352,pad=width=720:height=480:x=0:y=64,setdar=16/9 \
--f null  -y /dev/null 2>&1)
-if grep -qE "Error.*\(width\|height\|setdar\|w=\|h=\)" <<< "$errors"; then
-    ff_legacy=1
+    VF=""
 fi
 
 # Anamorphic widescreen (16:9 output)
@@ -1833,16 +1635,14 @@ fi
 # wasted on letterbox bars (or if the user requested -widetv output).
 if $ANAMORPH && { ((V_ASPECT_WIDTH >= 153)) || $WIDE_TV ; }; then
     TGT_ASPECT_WIDTH=177
-    ((ff_legacy)) && asp=16:9 || asp=16/9
-    FF_ASPECT="${FF_ASPECT}${asp}"
+    FF_ASPECT="${FF_ASPECT}16:9"
     ASPECT_FMT="--aspect 3"
 # For all others, use "non-anamorphic" (4:3 output)
 # Aspects from 133:100 to 153:100 have minimum pixel wastage
 # when letterboxed in 4:3
 else
     TGT_ASPECT_WIDTH=133
-    ((ff_legacy)) && asp=4:3 || asp=4/3
-    FF_ASPECT="${FF_ASPECT}${asp}"
+    FF_ASPECT="${FF_ASPECT}4:3"
     ASPECT_FMT="--aspect 2"
 fi
 
@@ -1863,18 +1663,18 @@ if test "$V_ASPECT_WIDTH" -eq "$TGT_ASPECT_WIDTH"; then
 # If needed aspect is greater than target format's aspect,
 # use full width, and letterbox vertically
 elif test "$V_ASPECT_WIDTH" -gt "$TGT_ASPECT_WIDTH"; then
-    $DO_ENCODING && yecho "Letterboxing vertically"
+    yecho "Letterboxing vertically"
     INNER_WIDTH=$TGT_WIDTH
     INNER_HEIGHT=$(expr $TGT_HEIGHT \* $TGT_ASPECT_WIDTH \/ $V_ASPECT_WIDTH)
 # Otherwise, use full height, and letterbox horizontally
 else
-    $DO_ENCODING && yecho "Letterboxing horizontally"
+    yecho "Letterboxing horizontally"
     INNER_WIDTH=$(expr $TGT_WIDTH \* $V_ASPECT_WIDTH \/ $TGT_ASPECT_WIDTH)
     INNER_HEIGHT=$TGT_HEIGHT
 fi
 
 if test $SAFE_AREA -lt 100; then
-    $DO_ENCODING && yecho "Using a safe area of ${SAFE_AREA}%"
+    yecho "Using a safe area of ${SAFE_AREA}%"
     # Reduce inner size to fit within safe area
     INNER_WIDTH=$(expr $INNER_WIDTH \* $SAFE_AREA \/ 100)
     INNER_HEIGHT=$(expr $INNER_HEIGHT \* $SAFE_AREA \/ 100)
@@ -1903,6 +1703,10 @@ elif test "$ID_VIDEO_FPS" = "1000.000"; then
     FORCE_FPSRATIO=$TGT_FPSRATIO
     yecho "Found 1000fps (wmv) source, setting input to $TGT_FPS fps."
     yecho "Use -fps to force a different input fps (see 'man tovid')"
+    # TODO: Instead, use a two-pass encoding (since mencoder can
+    # do -ofps)
+    # mencoder -ovc copy -oac copy -ofps $TGT_FPSRATIO $INFILE -o twopass
+    # then do normal encoding on twopass
 fi
 
 # If forced FPS was used, apply it
@@ -1953,10 +1757,7 @@ fi
 
 # Remove extraneous commas from filter command
 if test -n "$VID_FILTER"; then
-    #VID_FILTER="-vf $(echo "$VID_FILTER" | sed -e 's/,,/,/g' -e 's/^,//')"
-    VID_FILTER="$(sed -e 's/,,/,/g' -e 's/^,//' <<< "$VID_FILTER")"
-    VID_FILTER="-vf \"$VID_FILTER\""
-    $USE_MPV && VID_FILTER="-${VID_FILTER}"
+    VID_FILTER="-vf $(echo "$VID_FILTER" | sed -e 's/,,/,/g' -e 's/^,//')"
 fi
 # ******************************************************************************
 #
@@ -1999,8 +1800,8 @@ if $DOWNMIX; then
     done
     testfile="/tmp/$(date +%s).mpg"
     track_key=${AUDIO_TRACK[max_key]}
-    ffm_cmd=( $FFmpeg -i "$IN_FILE" $FF_THREAD -ss 2 $AB 224k -ac 2 \
-     -target ntsc-dvd $VB 6000k -vframes 1 $VIDEO_MAP \
+    ffm_cmd=( ffmpeg -i "$IN_FILE" $FF_THREAD -ss 2 -ab 224k -ac 2 \
+     -target ntsc-dvd -b 6000k -vframes 1 $VIDEO_MAP \
      -map ${AIDS[track_key-1]//./:} "$testfile")
     yecho "Running ${ffm_cmd[@]}"
     if ! "${ffm_cmd[@]}" >/dev/null 2>&1; then
@@ -2035,49 +1836,15 @@ else # set up mapping for ffmpeg, for each track we are going to encode
         AUDIO_WAV_MAP=( "${AUDIO_WAV_MAP[@]}" -map $i:0 )
         AUDIO_STREAM=( "${AUDIO_STREAM[@]}" "${TMP_DIR}/audio${i}.$AUD_SUF" )
         STREAM_CHANS=( "${STREAM_CHANS[@]}" ${AUDIO_CHAN[track-1]} "${AUDIO_STREAM[i]}" )
-        # -newaudio for ffmpeg versions prior to 0.9
-        $NEWAUDIO_OPT && \
-          NEW_AUDIO[i]="$CA ac3 $AB 224k ${AUDIO_CHAN[track-1]} -newaudio"
+        NEW_AUDIO[i]="-acodec ac3 -ab 224k ${AUDIO_CHAN[track-1]} -newaudio"
         AUDIO_WAV[i]="$TMP_DIR/audio${i}.wav"
         AUDIO_WAV_CHANS=( "${AUDIO_WAV_CHANS[@]}" ${AUDIO_CHAN[track-1]} "${AUDIO_WAV[i]}" )
     done
 
     FF_CHANNEL_MAP="$VIDEO_MAP $AUDIO_MAP"
     # we don't need the 1st track for -newaudio
-    $NEWAUDIO_OPT && unset NEW_AUDIO[0]
+    unset NEW_AUDIO[0]
     ((${#AUDIO_TRACK[@]} > 1)) && OUTPUT_FILES="each file" && s=s
-fi
-
-# ******************************************************************************
-# If subtitle file has been provided and soft subs selected, set up spumux xml
-# ******************************************************************************
-
-if $DO_DVD_SUBS; then
-    for s in ${!DVD_SUBS[@]}; do
-        charset=$(file -b --mime-encoding "${DVD_SUBS[s]}")
-        # find a default hopefully ttf font
-        if hash fc-list 2>/dev/null; then
-            spumux_font=\"$(fc-match Verdana | awk -F'"' '{print $2}')\"
-            spumux_font="font="$spumux_font""
-            [[ -z $spumux_font ]] && unset spumux_font
-        fi
-        (
-cat  <<EOF
-<subpictures format="$TVSYS">
-   <stream>
-      <textsub filename="${DVD_SUBS[s]}" characterset="$charset" outline-color="rgba(0,0,0,200)"
-        outline-thickness="2" fill-color="rgba(255,255,255,255)" shadow-offset="0, 0" 
-        shadow-color="rgba(0,0,0,200)" fontsize="$DVD_SUBSIZE"
-        $spumux_font horizontal-alignment="center"
-        vertical-alignment="bottom" left-margin="60" right-margin="60"
-        top-margin="20" bottom-margin="20" subtitle-fps="$TGT_FPS"
-        movie-fps="$TGT_FPS" movie-width="$TGT_WIDTH" movie-height="$TGT_HEIGHT"
-     />
-   </stream>
-</subpictures>
-EOF
-) > "/$TMP_DIR/spumux${s}.xml"
-    done
 fi
 
 
@@ -2088,20 +1855,16 @@ fi
 # ******************************************************************************
 
 if $USE_FFMPEG; then
-    FF_BITRATE="$VB ${VID_BITRATE}k"
-    if ((ff_legacy)); then
-        FF_SIZE="scale=${INNER_WIDTH}:${INNER_HEIGHT}"
-    else
-        FF_SIZE="scale=w=${INNER_WIDTH}:h=${INNER_HEIGHT}"
-    fi
-    FF_CODEC="-f mpeg2video"
+    FF_BITRATE="-b ${VID_BITRATE}k"
+    FF_SIZE="-s ${INNER_WIDTH}x${INNER_HEIGHT}"
+    FF_CODEC="-f mpeg1video"
+    FF_FPS="-r $TGT_FPS"
     FF_SAMPRATE="-ar $SAMPRATE"
-
     # try to get -quality 9 between quality 8 and 10
     if ((VID_QUALITY == 9)); then
         FF_ADD_ARGS="-trellis 1"
-        ! grep -q trellis <<< "$FF_HELP" && usage_error \
-        "Your $FFmpeg is too old to have the '-trellis' switch.  Use a -quality setting other than '9'."
+        ! ffmpeg -h 2>&1 | grep -q trellis && usage_error \
+        "Your ffmpeg is too old to have the '-trellis' switch.  Use a -quality setting other than '9'."
     fi
     [[ $TARGET = "DVD-VCD" ]] && FF_ADD_ARGS="$FF_ADD_ARGS -g 12" # experiment FIXME
 
@@ -2114,25 +1877,21 @@ if $USE_FFMPEG; then
     (( FF_VPIX )) || (( FF_HPIX )) && PAD=1
     # changed options: -pad{side} to -vf(ilters) pad= .
     if ((PAD)); then
-        if ((ff_legacy)); then
+        if [[ $VF ]]; then
             FF_PAD="pad=${TGT_WIDTH}:${TGT_HEIGHT}:${FF_HPIX}:${FF_VPIX}"
         else
-            FF_PAD="pad=width=${TGT_WIDTH}:height=${TGT_HEIGHT}:x=${FF_HPIX}:y=${FF_VPIX}"
-        fi
+            ((FF_HPIX)) && FF_HPAD="-padleft $FF_HPIX -padright $FF_HPIX"
+            ((FF_VPIX)) && FF_VPAD="-padtop $FF_VPIX -padbottom $FF_VPIX"
+            FF_PAD="$FF_HPAD $FF_VPAD"
+        fi 
     fi
 
     # use single variable for current, or legacy ffmpeg: VF_FILTERS and OLD_OPTS
     if [[ $VF ]]; then # libavfilter is being used, FF_ASPECT always passed
-        VF_FILTERS="${FF_SIZE},${FF_PAD},${FF_ASPECT},fps=$FF_FPS"
-        # we don't scale and pad 2x, as it's done by mplayer/mpv in below case
-        $FFMPEG_WITH_MPLAYER && VF_FILTERS="fps=$FF_FPS"
+        VF_FILTERS="${FF_PAD},${FF_ASPECT}"
         VF_FILTERS="$VF ${VF_FILTERS#,}" # add -vf*, axe possible leading comma
     else # legacy ffmpeg
         OLD_OPTS="$FF_PAD $FF_ASPECT"
-    fi
-    # Remove extraneous commas from filter command
-    if test -n "$VF_FILTERS"; then
-        VF_FILTERS=$(sed 's/,,/,/g;s/,$//' <<< "$VF_FILTERS")
     fi
 
     # Target TV system
@@ -2152,53 +1911,35 @@ if $USE_FFMPEG; then
             FF_TARGET="$FF_TARGET-dvd"
             ;;
     esac
-    
-    if $FF_M2V; then # if spitting audio and video we don't need these
-        FF_TARGET="" # we don't use -target (ntsc-dvd etc) with m2v creation
-        FF_BITRATE="" # FF_BITRATE is already used in FF_M2VOPTS
-    fi
 fi
+if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO; then
+    chan1=${AUDIO_TRACK[0]}
+    yecho
+    yecho "Using ffmpeg to encode audio and video."
 
-# if just adding DVD subs to a complient MPEG (no encoding), spumux and exit
-if $DO_DVD_SUBS && $SUBS_ONLY; then
-    spumux_subtitles "$IN_FILE"
-    cleanup
-    goodbye
-fi
+    FF_BITRATE="-b ${VID_BITRATE}k -ab ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
+    FF_ENC_CMD="$PRIORITY ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
+        $FF_TARGET $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_FPS $FF_ILACE \
+        $FF_SIZE $VF_FILTERS $OLD_OPTS $FF_CHANNEL_MAP"
+    $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
+    FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
+    yecho "Encoding video and audio with the following command:"
+    yecho "$FF_ENC_CMD"
 
-if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO \
-    && ! $FFMPEG_WITH_MPLAYER; then
-    if $DO_ENCODING; then
-        chan1=${AUDIO_TRACK[0]}
-        yecho
-        yecho "Using $FFmpeg to encode audio and video."
+    cmd_exec "$FF_ENC_CMD"
 
-        FF_BITRATE="$VB ${VID_BITRATE}k $AB ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
-        FF_ENC_CMD="$PRIORITY $FFmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
-            $FF_TARGET $FF_QUANT $FF_ADD_ARGS $FF_ILACE \
-            $VF_FILTERS $OLD_OPTS $FF_BITRATE $FF_CHANNEL_MAP"
-        $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
-        FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
-        yecho "Encoding video and audio with the following command:"
-        yecho "$FF_ENC_CMD"
-
-        cmd_exec "$FF_ENC_CMD"
-
-        if $FAKE; then
-            :
-        else
-            file_output_progress "$OUT_FILENAME" "Encoding with $FFmpeg"
-            wait
-        fi
-    fi
-    if $DO_DVD_SUBS; then
-        spumux_subtitles "$OUT_FILENAME"
+    if $FAKE; then
+        :
+    else
+        file_output_progress "$OUT_FILENAME" "Encoding with ffmpeg"
+        wait
     fi
     yecho
-    $DO_ENCODING && { $FAKE || write_stats; }
+    $FAKE || write_stats
     cleanup
     goodbye
 fi
+
 # ******************************************************************************
 #
 # Encode and normalize audio
@@ -2221,12 +1962,14 @@ if ! $FORCE_ENCODING && $AUDIO_OK; then
     yecho "Found compliant audio and dumping the stream."
     precho "This sometimes causes errors when multiplexing; add '-force' to the tovid command line to re-encode if multiplexing fails."
     yecho "Copying the existing audio stream with the following command:"
-    AUDIO_CMD=($PRIORITY $FFmpeg $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn $CA copy $AUDIO_MAP "${STREAM_CHANS[@]}")
+    AUDIO_CMD=($PRIORITY ffmpeg $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy $AUDIO_MAP "${STREAM_CHANS[@]}")
     yecho "${AUDIO_CMD[@]}"
     #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS \"$IN_FILE\" -dumpaudio -dumpfile \"$AUDIO_STREAM\""
     run_audio_cmd()
     {
         "${AUDIO_CMD[@]}" >> "$LOG_FILE" 2>&1 &
+        #$PRIORITY ffmpeg $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" -vn -acodec copy \
+        #$AUDIO_MAP "${AUDIO_STREAM[@]}" >> "$LOG_FILE" 2>&1
     }
     run_audio_cmd &
     PIDS="$PIDS $!"
@@ -2251,7 +1994,7 @@ else
         AUDIO_IN_FILE[1]="${AUDIO_WAV[0]}"
 
         #AUDIO_CMD="$PRIORITY mplayer $MPLAYER_OPTS -quiet -vc null -vo null $MP_AUDIOTRACK_CMD -ao pcm:waveheader:file=\"$AUDIO_WAV\" \"$IN_FILE\""
-        AUDIO_CMD=( $PRIORITY $FFmpeg -y $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE $CA pcm_s16le "${AUDIO_WAV_CHANS[@]}" )
+        AUDIO_CMD=( $PRIORITY ffmpeg -y $FF_THREAD $CLIP_SEEK $FF_LENGTH -i "$IN_FILE" $ASYNC1 $AUDIO_MAP -ar $SAMPRATE -acodec pcm_s16le "${AUDIO_WAV_CHANS[@]}" )
 
         # Generate or dump audio
         yecho "Normalizing the audio stream${s}."
@@ -2274,20 +2017,20 @@ else
         yecho
     fi
 
-    AUDIO_ENC=( $PRIORITY $FFmpeg )
+    AUDIO_ENC=( $PRIORITY ffmpeg )
 
     if $GENERATE_AUDIO; then
         # Read input from /dev/zero to generate a silent audio file
-        AUDIO_ENC=( "${AUDIO_ENC[@]}" -f s16le -ar 48000 -i /dev/zero -t $V_DURATION )
+        AUDIO_ENC=( "${AUDIO_ENC[@]}" -f s16le -i /dev/zero -t $V_DURATION )
         yecho "Generating a silent audio stream with the following command:"
     else
         # Encode audio stream directly from the input file
         AUDIO_ENC=( "${AUDIO_ENC[@]}" -i "${AUDIO_IN_FILE[@]}" )
         yecho "Encoding audio stream to $AUD_SUF with the following command:"
     fi
-    AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn $AB ${AUD_BITRATE}k -ar $SAMPRATE )
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -vn -ab ${AUD_BITRATE}k -ar $SAMPRATE )
     ! $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" $CLIP_SEEK $FF_LENGTH $AUDIO_MAP )
-    AUDIO_ENC=( "${AUDIO_ENC[@]}" $CA $AUD_SUF)
+    AUDIO_ENC=( "${AUDIO_ENC[@]}" -acodec $AUD_SUF)
     $DO_NORM && AUDIO_ENC=( "${AUDIO_ENC[@]}" "${AUDIO_WAV_MAP[@]}" )
     AUDIO_ENC=( "${AUDIO_ENC[@]}" -y "${STREAM_CHANS[@]}" )
     "${AUDIO_ENC[@]}" >> "$LOG_FILE" 2>&1 &
@@ -2330,7 +2073,7 @@ fi
 
 # If existing video is OK, skip video encoding and just copy the stream
 if ! $FORCE_ENCODING && $VIDEO_OK; then
-    VID_COPY_CMD="$FFmpeg -i \"$IN_FILE\" -an -sn -vcodec copy -f rawvideo -o \"$VIDEO_STREAM\""
+    VID_COPY_CMD="mencoder -of rawvideo -nosound -ovc copy \"$IN_FILE\" -o \"$VIDEO_STREAM\""
     yecho "Copying existing video stream with the following command:"
     yecho "$VID_COPY_CMD"
 
@@ -2350,21 +2093,16 @@ else
     if $USE_FIFO; then
         mkfifo "$YUV_STREAM" || runtime_error "Cannot create fifo $YUV_STREAM"
     fi
-    if $USE_MPV; then
-        VID_PLAY_CMD="$PRIORITY $MPLAYER --no-msg-color --no-input-terminal --untimed --oautofps -no-audio -oneverdrop "$MPV_SUBS" -o \"$YUV_STREAM\" $VID_FILTER $MPV_OPTS $MPV_CLIP_SEEK $MPV_LENGTH \"$IN_FILE\""
-    else
-        VID_PLAY_CMD="$PRIORITY $MPLAYER -nomsgcolor $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS $CLIP_SEEK $MP_LENGTH \"$IN_FILE\""
-    fi
+    VID_PLAY_CMD="$PRIORITY $MPLAYER $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS \"$IN_FILE\" $CLIP_SEEK $MP_FRAMES"
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="$PRIORITY $FFmpeg -debug 1 $YUV4PIPE -i \"$INFILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_CODEC $FF_M2VOPTS $FF_TARGET $FF_QUANT $FF_ADD_ARGS $FF_ILACE $VF_FILTERS $OLD_OPTS $FF_BITRATE -y \"$VIDEO_STREAM\""
-#-f mpeg2video -maxrate 8000k -bufsize 224KiB
+        VID_ENC_CMD="ffmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_TARGET $FF_CODEC $FF_QUANT $FF_BITRATE $FF_ADD_ARGS $FF_ILACE $FF_SIZE $VF_FILTERS $OLD_OPTS -y \"$VIDEO_STREAM\""
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""
     fi
 
     yecho "Encoding video stream with the following commands:"
 
-    if $FFMPEG_WITH_MPLAYER || ! $USE_FFMPEG; then
+    if ! $USE_FFMPEG; then
         yecho $VID_PLAY_CMD
         cmd_exec "$VID_PLAY_CMD"
     fi
@@ -2443,11 +2181,6 @@ else
     runtime_error "There was a problem multiplexing the audio and video together."
 fi
 
-if $DO_DVD_SUBS; then
-    spumux_subtitles "$OUT_FILENAME"
-fi
-
 $FAKE || write_stats
 cleanup
 goodbye
-
