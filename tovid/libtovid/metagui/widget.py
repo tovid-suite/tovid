@@ -12,9 +12,6 @@ try:
 except ImportError:
     import tkinter as tk
 
-# Python 3 compatibility
-from libtovid import basestring
-
 class Widget (tk.Frame):
     """Generic metagui widget, suitable for Controls, Panels, etc.
     """
@@ -51,14 +48,6 @@ class Widget (tk.Frame):
         """Return a list of command-line options for this widget.
         """
         return []
-
-
-    def set_args(self, args):
-        """Set widget options from the given list of command-line arguments,
-        and remove any successfully parsed options and arguments from ``args``.
-        Override this in derived classes.
-        """
-        pass
 
 
     def enable(self, enabled=True):

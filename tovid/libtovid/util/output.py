@@ -1,14 +1,14 @@
 """This module does colored console output by calling color-named functions.
-To use it, simply::
+To use it, simply:
 
-    print(green("Looking good"))
-    print(red("Uh-oh..."))
+    >>> print(green("Looking good"))
+    >>> print(red("Uh-oh..."))
 
-It was stolen from an early version of a Gentoo module called ``output.py``,
+It was stolen from an early version of a Gentoo module called output.py,
 copyright 1998-2003 Daniel Robbins, Gentoo Technologies, Inc., distributed
-under the GNU GPL v2::
+under the GNU GPL v2:
 
-    # $Header: /home/cvsroot/gentoo-src/portage/pym/output.py,v 1.16 \
+# $Header: /home/cvsroot/gentoo-src/portage/pym/output.py,v 1.16 \
     2003/05/29 08:34:55 carpaski Exp $
 
 Modified for inclusion in libtovid.
@@ -29,8 +29,7 @@ __all__ = [
     'yellow',
     'brown',
     'red',
-    'darkred',
-]
+    'darkred']
 
 codes = {
     'reset':     '\x1b[0m',
@@ -46,24 +45,18 @@ codes = {
     'yellow':    '\x1b[33;01m',
     'brown':     '\x1b[33;06m',
     'red':       '\x1b[31;01m',
-    'darkred':   '\x1b[31;06m',
-}
+    'darkred':   '\x1b[31;06m'}
 
 _do_color = True
 
 def color(do_color):
-    """Turn colored output on or off at a global level.
-    
-        do_color
-            ``True`` to enable colored output, ``False`` to disable
-
+    """Turn colored output on (True) or off (False).
     """
     global _do_color
     _do_color = do_color
 
 def ctext(color, text):
-    """Return a string containing text in the given color.
-    """
+    """Return a string containing text in the given color."""
     if _do_color:
         return codes[color] + text + codes['reset']
     else:

@@ -14,40 +14,28 @@ or:
 At this time, there is no 'uninstall' mechanism...
 """
 
+import os
 
 def svn_version():
     """Return the current SVN revision number, as reported by 'svn info',
     as a string like 'svn-r1234'. If svn is not installed, or if something goes
     wrong, return 'svn-unknown'
     """
-    try:
-        from commands import getoutput
-    except ImportError:
-        # python 3
-        from subprocess import getoutput
-
-    rev_line = getoutput('svn info 2>/dev/null | grep ^Revision')
-    # If rev_line is found, get the revision number
+    rev_line = os.popen('svn info 2>/dev/null | grep ^Revision').read()
+    # If rev_line is empty, either svn is missing or the command failed
     if rev_line:
         return 'svn-r' + rev_line.split(':')[1].strip()
-    # If rev_line is empty, try using bzr instead
     else:
-        rev_line = getoutput('bzr log -l 1 2>/dev/null | grep "^svn revno"')
-        # "svn revno: NNNN (on /trunk)"
-        if rev_line:
-            return 'svn-r' + rev_line.split(':')[1].strip().split(' ')[0]
-    # If all else fails...
-    return 'svn-unknown'
+        return 'svn-unknown'
 
 # Current version number of tovid, as a string.
 # Examples:
 # Current SVN version number
-_tovid_version = svn_version()
+#_tovid_version = svn_version()
 # Official release number
-#_tovid_version = '0.35'
+_tovid_version = '0.33'
 
 
-import os
 import sys
 import shutil
 from distutils.core import setup, Command
@@ -139,8 +127,7 @@ class BuildDocs (Command):
     user_options = []
 
     def initialize_options(self):
-        self.source = os.path.join('docs', 'src', 'en', 'tovid.t2t')
-        self.target = os.path.join('docs', 'man', 'tovid.1')
+        pass
 
     def finalize_options(self):
         pass
@@ -148,14 +135,13 @@ class BuildDocs (Command):
     def run(self):
         """Build the tovid manual page.
         """
+        source = 'docs/src/en/tovid.t2t'
+        target = 'docs/man/tovid.1'
         # Build only if target does not exist, or if source is newer than target
         mod = os.path.getmtime
-        if not os.path.exists(self.target) or (mod(self.source) > mod(self.target)):
-            print("Rebuilding tovid manual page")
-            command = 'txt2tags -t man -i "%s" -o "%s"' % (self.source, self.target)
+        if not os.path.exists(target) or (mod(source) > mod(target)):
+            command = 'txt2tags -t man -i "%s" -o "%s"' % (source, target)
             os.system(command)
-        else:
-            print("Manual page already built, not building again")
 
 
 class BuildTovidInit (Command):
@@ -163,30 +149,26 @@ class BuildTovidInit (Command):
     user_options = []
 
     def initialize_options(self):
-        self.source = os.path.join('src', 'tovid-init.in')
-        self.target = os.path.join('src', 'tovid-init')
-        # Touch the source file to ensure that it gets rebuilt
-        os.utime(self.source, None)
+        pass
 
     def finalize_options(self):
         pass
 
+
     def run(self):
         """Build src/tovid-init from tovid-init.in.
         """
+        source = 'src/tovid-init.in'
+        target = 'src/tovid-init'
         # We basically just need to replace @VERSION@ in tovid-init.in with
         # the current version of tovid.
         lines = [line.replace('@VERSION@', _tovid_version)
-                 for line in open(self.source, 'r')]
+                 for line in open(source, 'r')]
         # Write all lines to the target file
-        outfile = open(self.target, 'w')
+        outfile = open(target, 'w')
         outfile.writelines(lines)
         outfile.close()
 
-
-# Build tovid-init with regular 'build' command
-build.sub_commands.append(('build_tovid_init', None))
-build.sub_commands.append(('build_docs', None))
 
 # The actual setup
 setup(
@@ -210,6 +192,8 @@ setup(
         'libtovid.guis',
         'libtovid.util',
         'libtovid.metagui',
+        'libtovid.render',
+        'libtovid.backend',
     ],
 
     # Executable files go into /$PREFIX/bin/
@@ -225,20 +209,25 @@ setup(
             # Bash scripts
             'src/idvid',
             'src/makedvd',
+            'src/makemenu',
+            'src/makevcd',
+            'src/makexml',
+            'src/postproc',
             'src/todisc',
             'src/todisc-fade-routine',
             'src/makempg',
+            'src/tovid-batch',
             'src/tovid-init',
+            'src/tovid-interactive',
+            'src/make_titlesets',
 
             # Python scripts
             'src/todiscgui',
             'src/tovid-stats',
             'src/titleset-wizard',
-            'src/set_chapters',
 
-            # Icons used in the GUIs
-            'icons/hicolor/128x128/apps/tovid.png',
-            'icons/hicolor/128x128/apps/titleset-wizard.png',
+            # Icon used by titleset wizard
+            'icons/tovid.gif',
 
             # Config file
             'src/tovid.ini',
@@ -248,37 +237,22 @@ setup(
          ['docs/man/tovid.1']),
         # Desktop shortcut
         ('share/applications',
-         ['tovidgui.desktop',
-         'titleset-wizard.desktop']),
+         ['tovidgui.desktop']),
         # Icons
         ('share/icons/hicolor/scalable/apps',
-         [
-             'icons/hicolor/scalable/apps/tovid.svg',
-             'icons/hicolor/scalable/apps/titleset-wizard.svg',
-             'icons/hicolor/scalable/apps/tovid_bw.svg',
-             'icons/hicolor/scalable/apps/disc.svg',
-             'icons/hicolor/scalable/apps/cd.svg',
+         ['icons/hicolor/scalable/apps/tovid.svg',
+          'icons/hicolor/scalable/apps/tovid_bw.svg',
+          'icons/hicolor/scalable/apps/disc.svg',
+          'icons/hicolor/scalable/apps/cd.svg',
          ]),
         ('share/icons/hicolor/128x128/apps',
-         [
-             'icons/hicolor/128x128/apps/tovid.png',
-             'icons/hicolor/128x128/apps/titleset-wizard.png',
-         ]),
+         ['icons/hicolor/128x128/apps/tovid.png']),
         ('share/icons/hicolor/64x64/apps',
-         [
-             'icons/hicolor/64x64/apps/tovid.png',
-             'icons/hicolor/64x64/apps/titleset-wizard.png',
-         ]),
+         ['icons/hicolor/64x64/apps/tovid.png']),
         ('share/icons/hicolor/48x48/apps',
-         [
-             'icons/hicolor/48x48/apps/tovid.png',
-             'icons/hicolor/48x48/apps/titleset-wizard.png',
-         ]),
+         ['icons/hicolor/48x48/apps/tovid.png']),
         ('share/icons/hicolor/32x32/apps',
-         [
-             'icons/hicolor/32x32/apps/tovid.png',
-             'icons/hicolor/32x32/apps/titleset-wizard.png',
-         ]),
+         ['icons/hicolor/32x32/apps/tovid.png']),
     ]
 )
 

@@ -1,1388 +1,752 @@
 #!/usr/bin/env python
 
+from Tkinter import *
+from tkFileDialog import askopenfilename
+from subprocess import Popen, PIPE
 import os.path
-import shlex
-import re
+from libtovid.metagui import Style
+from libtovid.cli import _enc_arg
+from tkMessageBox import *
 from time import sleep
 from tempfile import mktemp
-from sys import argv, exit
-from base64 import b64encode
-from copy import deepcopy
-from subprocess import Popen, PIPE
-from libtovid import xrange
-from libtovid.cli import _enc_arg, Command
-from libtovid.util import trim
-from libtovid.metagui import Style
-from libtovid.metagui.support import (
-  PrettyLabel, show_icons, get_photo_image
-)
+from sys import argv
+import shlex
+import signal
 
-# Python 3 compatibility
-try:
-    import Tkinter as tk
-    import tkFont
-    from tkSimpleDialog import askstring
-    from tkFileDialog import asksaveasfilename
-    from commands import getoutput, getstatusoutput
-    from tkMessageBox import (
-      askyesno, showwarning, showinfo, showerror, askokcancel
-      )
-except ImportError:
-    import tkinter as tk
-    import tkinter.font as tkFont
-    from tkinter.simpledialog import askstring
-    from tkinter.filedialog import asksaveasfilename
-    from subprocess import getoutput, getstatusoutput
-    from tkinter.messagebox import (
-      askyesno, showwarning, showinfo, showerror, askokcancel
-      )
+todisc_cmds = []
+all_options = []
+error_msg = 'This is not a saved GUI script\n' + \
+  'Please select the file that you saved'
+labels = ['General', 'VMGM menu', 'Titlesets']
+curdir = os.path.abspath('')
+newname = mktemp(suffix='.bash', prefix='todisc_commands.', dir=curdir)
+pid_file = mktemp(suffix='.pid', prefix='todiscgui.', dir='/tmp')
+os.environ['METAGUI_WIZARD'] = '1'
 
-def get_screen_info(icon):
-    """Get window manager's title bar height and screen height.
-    This function  masquerades as a progress bar.
-    winfo_? includes the top panel if it exists, xwininfo just the titlebar.
-    Returns tuple: screen h, deco w, deco h.
-    """
-    try:
-        import Tix
-    # Python 3
-    except ImportError:
-        import tkinter.tix as Tix
-    import time
-    r = Tix.Tk()
-    r.withdraw()
-    top = Tix.Toplevel(r)
-    top.title('Loading ...')
-    top.geometry('+0+0')
-    show_icons(top, icon)
-    top.update_idletasks()
-    p = Tix.Meter(top, value=0.0)
-    p.pack()
-    for i in range(100):
-         time.sleep(0.01)
-         p.configure(value=(i/100.0))
-         p.update_idletasks()
-    xid = top.wm_frame()
-    # xwininfo returns a geometry string like '+2+23':  split it on '+'
-    # it tends to give just window decoration h, w rather than including a panel
-    Xwininfo = \
-      getoutput("xwininfo -frame -id %s |awk '/Corners:/ {print $2}'" %xid)
-    X_x = Xwininfo.split('+')[1]
-    X_y = Xwininfo.split('+')[2]
-    # winfo_x() winfo_y() tend to give panel AND window decoration
-    TK_x = top.winfo_x()
-    TK_y = top.winfo_y()
-    # so subtract the xwininfo x dimension from winfo_x; same for the y dimensions
-    # if xwininfo gives a lesser value, assume it just window deco, and subtract it
-    # else default to the greater (or equal) value of winfo_x (same for y dimension)
-    if TK_x > int(X_x):
-        frame_width = TK_x - int(X_x)
-    else:
-        frame_width = TK_x
-    if TK_y > int(X_y):
-        frame_height = TK_y - int(X_y)
-    else:
-        frame_height = TK_y
-    screeninfo = top.winfo_screenheight(), frame_width, frame_height
-    r.destroy()
-    return screeninfo
+# get metagui font configuration
+def get_font(name='', size='', _style=''):
+    font = [name, size, _style]
+    for i in range(len(style.font)):
+        if not font[i]:
+            font[i] = style.font[i]
+    return font
 
+def move(amt):
+    global current
+    ind = pages.index(current) + amt
+    if not 0 <= ind < len(pages):
+        return
+    current.pack_forget()
+    current = pages[ind]
+    # when move is called, change the page number displayed
+    pg1_label4.configure(text='Page %s' %int(ind+1))
+    current.pack(side=TOP, fill=BOTH, expand=1)
 
-
-class Wizard(tk.Frame):
-    """A frame to hold the wizard pages.
-       It will also hold the commands that will  be processed and written out
-       as a script.  Its base frame holds a frame common to all pages that
-       displays an icon, title, and status panel.  It also has a bottom frame
-       that contains the [Next] and [Exit] buttons.
-       It will hold a list of all of the wizard pages.
-
-       master: the Tk() instance called by __main__
-       text: The text for the wizard title above and/or below the icon
-             Use \n to break title into above\nbelow.
-       icon: Path to an image file (gif) to display on the left frame
-       infile: an infile provided as a saved project, that will be loaded
-       
-    """
-    def __init__(self, master, text, icon, infile=''):
-        tk.Frame.__init__(self, master)
-        self.pages = []
-        self.index = tk.IntVar()
-        self.text = text
-        self.icon = icon
-        self.master = master
-        self.root = self._root()
-        self.commands = []
-        self.screen_info = []
-        # for cancelling run_gui if exit is called
-        self.is_running = tk.BooleanVar()
-        self.is_running.set(True)
-        # for waiting on [Next>>>] being pushed to continue titleset loop
-        self.waitVar = tk.BooleanVar()
-        self.waitVar.set(False)
-        # variable for name of final script
-        self.project = ''
-        # variable for possible pre-loaded script -
-        self.is_infile = False
-        # bindings for exit
-        self.root.protocol("WM_DELETE_WINDOW", self.confirm_exit)
-        self.root.bind('<Control-q>', self.confirm_exit)
-        self.root.title('Tovid titleset wizard')
-
-        # button frame
-        self.button_frame = tk.Frame(master)
-        self.button_frame.pack(side='bottom', fill='x', expand=1,  anchor='se')
-        self.exit_button = tk.Button(self.button_frame, text='Exit',
-                                       command=self.confirm_exit)
-        self.exit_button.pack(side='left', anchor='sw')
-        self.next_button = tk.Button(self.button_frame, text='Next >>',
-                                                  command=self.next)
-        self.next_button.pack(side='right', anchor='se')
-        self.prev_button = tk.Button(self.button_frame, text='<< Back',
-                                                    command=self.previous)
-        # frame for icon and status display
-        self.frame1 = tk.Frame(master)
-        self.frame1.pack(side='left', anchor='nw', padx=10, pady=80)
-        inifile = os.path.expanduser('~/.metagui/config')
-        style = Style()
-        # make sure ~/.metagui and the config file exist
-        if os.path.exists(inifile):
-            style.load(inifile)
-            print("Loading style from config file: '%s'" % inifile)
-        else:
-            print("Creating config file: '%s'" % inifile)
-            style.save(inifile)
-        self.font = style.font
-        self.draw()
-
-        # if a script is being loaded (infile), then assign to self.project
-        if infile:
-            self.is_infile = True
-            self.project = infile
-
-    def draw(self):
-        # get fonts
-        font = self.font
-        self.lrg_font = self.get_font(font, size=font[1]+4, _style='bold')
-        self.medium_font = self.get_font(font, size=font[1]+2)
-        self.heading_font = self.get_font(font, size=font[1]+8, _style='bold')
-        #fixed =  '-misc-fixed-medium-r-normal--13-100-100-100-c-70-iso8859-1'
-        self.background = self.root.cget('background')
-        if self.text:
-            txt = self.text.split('\n')
-            app_label1 = tk.Label(self.frame1, text=txt[0], font=self.heading_font)
-            app_label1.pack(side='top', fill='both', expand=1, anchor='nw')
-        # icons and image
-        if os.path.isfile(self.icon):
-            img = get_photo_image(self.icon, 0, 0, self.background)
-            self.img = img
-            # Display the image in a label on all pages
-            img_label = tk.Label(self.frame1, image=self.img)
-            img_label.pack(side='top', fill='both', expand=1,
-                                        anchor='nw', pady=20)
-            # If Tcl supports it, generate an icon for the window manager
-            show_icons(self.master, img_file)
-        # No image file? Print a message and continue
-        else:
-            print('%s does not exist' % img_file)
-        # if 2 lines of text for image, split top and bottom
-        if self.text and len(txt) > 1:
-            app_label2 = tk.Label(self.frame1, text=txt[1], font=self.lrg_font)
-            app_label2.pack(side='top', fill='both', expand=1, anchor='nw')
-
-    def next(self):
-        """Move to the next wizard page.
-        """
-        index = self.index.get()
-        try:
-            self.pages[index].hide_page()
-            self.pages[index+1].frame.pack(side='right')
-            self.pages[index+1].show_page()
-        except IndexError:
-            pass
-
-    def previous(self):
-        index = self.index.get()
-        self.pages[index].previous()
-
-    def set_pages(self, page):
-        """Accept incoming list of wizard page instances.
-        """
-        self.pages.append(page)
-
-    def set_screen_info(self, iterable):
-        self.screen_info = iterable
-
-    def get_font(self, font_descriptor, name='', size='', _style=''):
-        """Get metagui font configuration.
-        """
-        font = [name, size, _style]
-        for i in range(len(font_descriptor)):
-            if not font[i]:
-                font[i] = font_descriptor[i]
-        return tuple(font)
-
-    def show_status(self, status):
-        """Show status label on all pages, with timeout.
-        """
-        if status == 0:
-            text='\nOptions saved!\n'
-        else:
-            text='\nCancelled!\n'
-        font = self.medium_font
-        status_frame = tk.Frame(self.frame1, borderwidth=1, relief=tk.RAISED)
-        status_frame.pack(pady=40)
-        label1 = tk.Label(status_frame, text=text, font=font, fg='blue')
-        label1.pack(side='top')
-        label2 = tk.Label(status_frame, text='ok', borderwidth=2, relief=tk.GROOVE)
-        label2.pack(side='top')
-        self.root.after(1000, lambda: label2.configure(relief=tk.SUNKEN))
-        self.root.after(2000, lambda: status_frame.pack_forget())
-
-    def confirm_exit(self, event=None):
-        """Exit the GUI, with confirmation prompt.
-        """
-        if askyesno(message="Exit?"):
-            # set is_running to false so the gui doesn't get run
-            self.is_running.set(False)
-            # remove project file if we quit early and it exists and is empty
-            if os.path.exists(self.project):
-                if os.stat(self.project).st_size == 0:
-                    print('removing empty file: %s' %self.project)
-                    os.remove(self.project)
-            # waitVar may cause things to hang, spring it
-            self.set_waitvar()
-            self.root.quit()
-
-    # unused
-    def kill_pid(self, pid):
-        """Test and kill xterm pid in case of premature exit.
-        """
-        if not pid:
-            return
-        test_pid = getstatusoutput('kill -0 %s' %pid)
-        if test_pid[0] == 0:
-            cmd = ['kill', '%s' %pid]
-            Popen(cmd, stderr=PIPE)
-
-    def set_waitvar(self):
-        """Set a BooleanVar() so tk.wait_var can exit.
-        """
-        self.waitVar.set(True)
-
-
-class WizardPage(tk.Frame):
-    """Base class for the wizard pages.
-       As such it contains everythig common to all wizard pages.
-    """
-    def __init__(self, master):
-        tk.Frame.__init__(self, master)
-        tk.Frame.pack(master)
-        self.master = master
-        self.root = self._root()
-        # get tovid prefix
-        tovid_prefix = getoutput('tovid -prefix')
-        self.tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
-        os.environ['PATH'] = self.tovid_prefix + os.pathsep + os.environ['PATH']
-        # get script header
-        shebang = '#!/usr/bin/env bash'
-        _path = 'PATH=' + self.tovid_prefix + ':$PATH'
-        _cmd = ['tovid', '--version']
-        _version = Popen(_cmd, stdout=PIPE).communicate()[0].strip()
-        identifier = '# tovid project script\n# tovid version %s' % _version
-        self.header = '%s\n\n%s\n\n%s\n\n' % (shebang, identifier, _path )
-        # ititialize a frame, but don't pack yet
-        self.frame = tk.Frame(self.master)
-        # initialize widgets, but don't show yet
-        self.master.set_pages(self)
-        self.titlebar_width, self.titlebar_height = self.master.screen_info[1:]
-
-    def show_page(self):
-        wizard = self.master
-        index = wizard.pages.index(self)
-        wizard.index.set(index)
-        self.draw()
-        wizard.next_button.configure(command=self.page_controller)
-
-    def hide_page(self):
-        self.frame.pack_forget()
-
-    def get_screen_position(self):
-        """get real screen position, taking into account window decorations.
-        """
-        r = self.root
-        r.update_idletasks() # make sure geometry is updated before we 'get' it
-        geo_x = r.winfo_rootx() - self.titlebar_width
-        geo_y = r.winfo_rooty() - self.titlebar_height
-        return '+%s+%s' %(geo_x, geo_y)
-
-    def check_int(self, List):
-        """return list of ints from list of strings, checking 1st if castable.
-        """
-        for index, item in enumerate(List):
-            try:
-                List[index] = int(item)
-            except ValueError:
-                return []
-        return List
-
-    def run_gui(self, args=[], index='', project=''):
-        """Run the tovid GUI, collecting options, and saving to wizard.
-        """
-        title = 'load saved script'
-        if index:
-            os.environ['METAGUI_WIZARD'] = '%s' %index
-        self.root.update_idletasks() # update geometry before it is 'deiconified'
-        self.screen_pos = self.get_screen_position()
-        # these 2 are just convenience vars for shorter line length
-        script = self.master.project
-        position = self.screen_pos
-        # get modification time of the script, so we can see if it changes
-        mtime = os.path.getmtime(script)
-        #cmd = ['todiscgui'] + ['--position', self.screen_pos] + ['--project', self.master.project.get()] + args
-        cmd = ['todiscgui', '--position', position, '--project', script] + args
-        todiscgui_cmd = Popen(cmd, stdout=PIPE, stderr=PIPE)
-        # sleep to avoid the 'void' of time before the GUI loads
-        sleep(0.5)
-        if self.root.state() is not 'withdrawn':
-            self.root.withdraw()
-        todiscgui_cmd.wait()
-        # hack to deiconify wizard at same position as the exiting tovid gui
-        for line in todiscgui_cmd.stderr.readlines():
-            L = line.split(b'+') # python 3 compatibility (b'')
-            if b'gui position ' in L and len(L) == 3:
-                result = self.check_int(L[-2:])
-                if result:
-                    x = result[0]-self.master.screen_info[1]
-                    y = result[1]-self.master.screen_info[2]
-                    self.screen_pos = '+%d+%d' %(x, y)
-                    break
-            
-        # if modification time changed, then the script was saved from the gui
-        if os.path.getmtime(script) > mtime:
-            # Read lines from the file and reassemble the command
-            todisc_opts = self.script_to_list(script)
-            # blank file: don't remove as we need it to get mtime in run_gui()
-            open(script, 'w').close()
-        else:
-            todisc_opts  = []
-        # set wizard screen position again, then update
-        self.root.geometry(self.screen_pos)
-        self.root.update_idletasks()
-        return todisc_opts
-
-    def page_controller(self):
-        self.master.next()
-
-    def script_to_list(self, script):
-        """File contents to a list, trimming '-from-gui' and header.
-        """
-        add_line = False
-        command = ''
-        for line in open(script, 'r'):
-            if line.startswith('-'):
-                add_line = True
-            if add_line and not line.startswith('-from-gui'):
-                line = line.strip()
-                command += line.rstrip('\\')
-        return shlex.split(command)
-
-    def write_script(self):
-        """Write out the final script to project filename.
-        """
-        commands = self.master.commands
-        header = self.header
-        cmdout = open(self.master.project, 'w')
-        # mode compatibility for 2.4 to 3.x python
-        os.chmod(self.master.project, int('755', 8))
-        # add the shebang, PATH, and 'todisc \' lines
-        cmdout.writelines(header)
-        # flatten the list
-        all_lines = [line for sublist in commands for line in sublist]
-        # put the program name back into the beginning of the list
-        all_lines.insert(0, 'todisc')
-        words = [_enc_arg(arg) for arg in all_lines]
-        all_lines = words
-        # write every line with a '\' at the end, except the last
-        for line in all_lines[:-1]:
-            cmdout.write(line + ' \\\n')
-        # write the last line
-        cmdout.write(all_lines[-1])
-        cmdout.close()
-
-    def trim_list_header(self, cmds):
-            """Trim header (items before 1st '-' type option) from a list.
-            """
-            # remove shebang, identifier and PATH
-            try:
-                while not cmds[0].startswith('-'):
-                    cmds.pop(0)
-            except IndexError:
-                pass
-            return cmds
-
-    def get_chunk(self, items, start, end):
-        """Extract a chunk [start ... end] from a list, and return the chunk.
-        The original list is modified in place.
-        """
-        # Find the starting index and test for 'end'
-        try:
-            index = items.index(start)
-            items.index(end)
-        # If start or end isn't in list, return empty list
-        except ValueError:
-            return []
-        # Pop items until end is reached
-        chunk = []
-        while items and items[index] != end:
-            chunk.append(items.pop(index))
-        # Pop the last item (==end)
-        chunk.append(items.pop(index))
-        return chunk
-
-    def get_list_args(self, items, option):
-        """Get option arguments from a list (to next item starting with '-').
-        """
-        try:
-            index = items.index(option)
-        # If item isn't in list, return empty list
-        except ValueError:
-            return []
-        # Append items until end is reached
-        chunk = []
-        try:
-            while items and not items[index+1].startswith('-'):
-                chunk.append(items[index+1])
-                index += 1
-        except IndexError:
-            pass
-        return chunk
-
-    def see_me(self, widget):
-        """Bring attention to widget by changing text colour.
-        """
-        # 3000 and 4000 ms because show_status uses up 3000 already
-        self.root.after(3000, lambda: widget.configure(foreground='blue'))
-        widget.update()
-        self.root.after(4000, lambda: widget.configure(foreground='black'))
-
-
-    def refill_listbox(self, listbox, opts):
-        """Repopulate the rerun listbox with option list titles.
-        """
-        if '-titles' in opts:
-            new_titles = self.get_list_args(opts, '-titles')
-        else:
-            new_titles = opts
-        listbox.delete(0, 'end')
-        # insert or reinsert options list into titleset listbox
-        listbox.insert('end', 'General options')
-        listbox.insert('end', 'Root menu')
-        numtitles = len(new_titles)
-        for i in xrange(numtitles):
-            listbox.insert('end', new_titles[i])
-
-    # unused (note self.script_file also unused now)
-    def rename_script(self, path):
+def next():
+    # Page 1
+    # if 1st page (general) then
+    # move forward and unless cancelled, append anything added in current
+    # page to [todisc_cmds], removing todisc_cmds[current] first
+    global todisc_cmds
+    mv_amt = +1
+    if pages.index(current) == 0:
+        pass
+    elif pages.index(current) == 1:
+    # Page 2
         # if todisc_commands.bash exists in current dir, prompt for rename
-        rename_msg = 'The option file we will use:\n' + \
-          self.master.script.get() + '\n' + \
-          'exists in the current directory.\n' + \
-          'It will be renamed to:\n' + \
-          '"%s"' + \
-          '\nPress Ok to rename it.\nPress Cancel to overwrite it'
-        rename_msg = rename_msg % (os.path.basename(self.newname))
-        if askokcancel(message=rename_msg):
-            os.rename(self.script_file, self.newname)
-        else:
-            self.master.show_status(1)
-            return
+        if os.path.exists(script_file):
+            rename_msg = 'The option file we will use:\n' + \
+            'todisc_commands.bash\n' + \
+            'exists in the current directory.\n' + \
+            'It will be renamed to:\n' + \
+            '%s' + \
+            '\nProceed ?'
+            rename_msg = rename_msg % (os.path.basename(newname))
+            if askokcancel(message=rename_msg):
+                os.rename(script_file, newname)
+            else:
+                show_status(1)
+                return
 
-
-class Page1(WizardPage):
-    """Wizard intro page.
-    """
-    def __init__(self, master):
-        WizardPage.__init__(self, master)
-        # draw the page by default unless script file arg passed
-        if not self.master.is_infile:
-            self.draw()
-            index = self.master.pages.index(self)
-            self.master.index.set(index)
-
-    def draw(self):
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-        text = '''INTRODUCTION
-
-        Welcome to the tovid titleset wizard.  We will be making a complete DVD,
-        with multiple levels of menus including a root menu (VMGM menu) and
-        lower level titleset menus.  We will be using 'tovid gui', which uses
-        the 'todisc' script.  Any of these menus can be either static or
-        animated, and use thumbnail menu links or plain text links.  Titleset
-        menus can also have chapter menus.
-
-        Though the sheer number of options can be daunting when the GUI first
-        loads, it is important to remember that there are very few REQUIRED
-        options, and in all cases the required options are on the opening tab.  
-        The required options will be listed for you for each run of the GUI.
-
-        But please have fun exploring the different options using the preview
-        to test.  A great many options of these menus are configurable, 
-        including fonts, shapes and effects for thumbnails, fade-in/fade-out
-        effects, "switched menus", the addition of a "showcased" image/video, 
-        animated or static background image or video, audio background ... 
-        etc.  There are also playback options including the supplying of
-        chapter points, special navigation features like "quicknav", and
-        configurable DVD button links.
-        '''
-        text = trim(text)
-        self.label = PrettyLabel(self.frame, text, self.master.font)
-        self.label.pack(fill='both', expand=1, anchor='nw')
-
-    def page_controller(self):
-        self.master.next()
-
-
-class Page2(WizardPage):
-    """Wizard general options page.
-    """
-    def __init__(self, master):
-        WizardPage.__init__(self, master)
-
-    def draw(self):
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-        text = '''GENERAL OPTIONS
-
-        Please set a name for your 'project' in the box at the bottom of the page,
-        by pressing the "Browse" button, and browsing to the directory you want
-        to save it.  This will be a bash script that can be run standalone, or
-        reloaded into the titleset-wizard for further editing.
-
-        When you press the  "Next >>>"  button at the bottom of the wizard, we
-        will start the GUI and begin with general options applying to all
-        titlesets.  For example you may wish to have all menus share a common
-        font and fontsize of your choosing, for the menu link titles and/or the
-        menu title.
-
-        The only REQUIRED option here is specifying an Output directory at the
-        bottom of the GUI's main tab.  Options you enter will be overridden if
-        you use the same option again later for titlesets.
-
-        In the GUI, after making your selections, press [ Save to wizard ].
-
-        Enter a project name, then press  "Next >>>"
-        '''
-        text = trim(text)
-        self.label = PrettyLabel(self.frame, text, self.master.font)
-        self.label.pack(fill='both', expand=1, anchor='nw')
-        # setting project name
-        self.project_label = tk.Label(self.frame, text='Project name', font=self.master.font,
-                                       justify='left', padx=10, pady=10)
-        self.project_label.pack(fill='both', expand=1, anchor='sw')
-        self.project_frame = tk.Frame(self.frame)
-        self.project_entry = tk.Entry(self.project_frame, width=50)
-        self.project_entry.insert(0, 'Press Browse Button')
-        self.project_entry.bind("<KeyPress>", lambda e: "break")
-        self.browse_button = tk.Button(self.project_frame, text="Browse...",
-                                                        command=self.browse)
-        self.project_frame.pack(fill='both', expand=1, anchor='sw')
-        self.project_entry.pack(side='left')
-        self.browse_button.pack(side='right')
-
-    def page_controller(self):
-        if not self.master.project:
-            # here we need a popup telling user to enter a project name #FIXME
-            return 
-        wizard = self.master
-        index = wizard.index.get()
-        move = True
-        cmds = self.run_gui([], index)
+        # withdraw the wizard and run the GUI, collecting commands
+        get_commands = run_gui()
         # append to list and go to next page unless GUI was cancelled out of
-        if not cmds:
+        if not get_commands:
             status = 1
-            move = False
+            mv_amt = 0
         else:
             status = 0
-            cmds = [L for L in cmds if L]
-            wizard.commands.append(cmds)
-        wizard.show_status(status)
-        self.root.deiconify()
-        if move:
-            wizard.next()
-
-    def browse(self, e=None):
-        title = 'Type a filename'
-        filename = asksaveasfilename(parent=self, title=title, initialfile='my_project.tovid')
-        if filename:
-            self.project_entry.delete(0, 'end')
-            self.project_entry.insert(0, filename)
-            self.master.project = filename
-            open(filename, 'w').close()
-
-class Page3(WizardPage):
-    """Wizard root menu page.
-    """
-    def __init__(self, master):
-        WizardPage.__init__(self, master)
-
-    def draw(self):
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-        text = '''ROOT MENU (VMGM)
-
-        Now we will save options for your root (VMGM) menu.  The only REQUIRED
-        option is the titleset titles.  You need to enter them here.  These
-        names will appear as menu titles for the respective menu in your DVD.
-        Enter the names of your titlesets, one per line, pressing <ENTER> each
-        time.  Do not use quotes unless you want them to appear literally in
-        the title.
-
-        Press  [Next >>>]  when you are finished, and the tovid gui will come
-        up so you can enter any other options you want.  You can not enter
-        video files here, but most other options can be used.  There are now no
-        REQUIRED options however, as you will have already entered your root
-        menu link titles. Hint: try using background audio or image/video, or
-        use a -showcase FILE for an image or video centrally displayed.
-
-        After making your selections, press [ Save to wizard ] in the GUI
-        '''
-        text = trim(text)
-        label1 = PrettyLabel(self.frame, text, self.master.font, height=18)
-        label1.pack(fill='both', expand=True, side='top', anchor='nw')
-        # create the listbox (note that size is in characters)
-        self.titlebox = TitleBox(self.frame, text="Root 'menu link' titles")
-
-    def save_list(self):
-        """Save the current listbox contents.
-        """
-        # get a list of listbox lines
-        temp_list = list(self.titlebox.get(0, 'end'))
-        return [ L for L in temp_list if L]
-
-    def page_controller(self):
-        wizard = self.master
-        run_cmds = list(self.titlebox.get(0, 'end'))
-        run_cmds = [L for L in run_cmds if L]
-        if len(run_cmds) < 2:
-            showerror(message=\
-              'At least two titlesets (titles) must be defined')
+            if len(todisc_cmds) > 0:
+                todisc_cmds.pop(0)
+            cmds = [l for l in get_commands if l]
+            todisc_cmds.append(cmds)
+        tk.deiconify()
+        show_status(status)
+    elif pages.index(current) == 2:
+    # Page 3
+        run_cmds = list(pg3_listbox1.get(0, END))
+        run_cmds = [l for l in run_cmds if l]
+        # withdraw the wizard and run the GUI, collecting commands
+        run_cmds.insert(0,  '-titles')
+        get_commands = run_gui(run_cmds)
+        # append to list and go to next page unless GUI was cancelled out of
+        if not get_commands:
+            status = 1
             return
         else:
-            # withdraw the wizard and run the GUI, collecting commands
-            run_cmds.insert(0,  '-titles')
-            index = wizard.index.get()
-            get_commands = self.run_gui(run_cmds, index)
-            # append to list and go to next page unless GUI was cancelled out of
-            if not get_commands:
-                status = 1
-                self.root.deiconify()
-                return
-            else:
-                status = 0
-                self.trim_list_header(get_commands)
-                cmds = ['-vmgm']
-                cmds.extend(get_commands)
-                cmds.append('-end-vmgm')
-                wizard.commands.append(cmds)
-            wizard.next()
-            self.root.deiconify()
-            wizard.show_status(status)
-
-
-class Page4(WizardPage):
-    """Wizard titleset menu page.
-    """
-    def __init__(self, master):
-        WizardPage.__init__(self, master)
-
-    def draw(self):
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-        text1 = '''TITLESET MENUS
-
-        Okay, now you will enter options for each of your titlesets.  
-        The only REQUIRED option here is to load one or more video
-        files, but of course you should spruce up your menu by
-        exploring some of the other options!  The menu title for each
-        has been changed to the text you used for the menu links in 
-        the root menu - change this to whatever you want.
-
-        Follow the simple instructions that appear in the next and 
-        subsequent pages: 
-
-        you will need to press  [Next >>>]  for each titleset.
-        '''
-        text1 = trim(text1)
-        self.label1 = PrettyLabel(self.frame, text1, self.master.font)
-        self.label1.pack(fill='both', expand=True, side='top', anchor='nw')
-        self.frame2 = tk.Frame(self.frame, borderwidth=2, relief=tk.GROOVE)
-        self.label2 = tk.Label(self.frame2, text='', font=self.master.font,
-                                       justify='left', padx=10, pady=10)
-        self.label2.pack(fill='both', expand=True, side='top', anchor='nw')
-
-    def page_controller(self):
-        wizard = self.master
-        self.root.withdraw()
-        options_list = self.get_list_args(wizard.commands[1], '-titles')
-        numtitles = len(options_list)
-        # set [Next >>>] button to set waitVar, allowing loop to continue
-        wizard.next_button.configure(command=wizard.set_waitvar)
-
+            status = 0
+            if len(todisc_cmds) > 1:
+                todisc_cmds.pop(1)
+            trim_list_header(get_commands)
+            cmds = ['-vmgm']
+            cmds.extend(get_commands)
+            cmds.append('-end-vmgm')
+            todisc_cmds.append(cmds)
+        tk.deiconify()
+        show_status(status) 
+    elif pages.index(current) == 3:
+    # Page 4
+        tk.withdraw()
+        options_list = save_list()
+        numtitles = len(save_list())
+        # set [ Next >>> ] button to set waitVar, allowing loop to continue
+        button1.configure(command=setVar)
         for i in range(numtitles):
             run_cmds = ['-menu-title']
             run_cmds.append(options_list[i])
             if i < numtitles:
-                text2 = 'Now we will work on titleset %s:\n"%s"\n\n' + \
-                  'Press  [Next >>>]  to continue'
-                text2 = text2 % (int(i+1), options_list[i])
-                self.label2.configure(text=text2)
-                self.frame2.pack()
-                self.see_me(self.label2)
+                pg4_txt2 = 'Now we will work on titleset %s:\n"%s"\n\n'
+                pg4_txt2 += 'Press  [ Next >>> ]  to continue'
+                pg4_txt2 = pg4_txt2 % (int(i+1), options_list[i])
+                pg4_label2.configure(text=pg4_txt2)
+                # remove original text on the page
+                pg4_label1.pack_forget()
+                # fake press the next button to show action is needed
+                fake_press(button1)
             # withdraw the wizard and run the GUI, collecting commands
-            self.root.deiconify()
+            tk.deiconify()
             # pressing 'Next' sets the waitVar and continues
-            wizard.wait_variable(wizard.waitVar)
-            if wizard.is_running.get() == 1:
-                get_commands = self.run_gui(run_cmds, '%s' %(i+3))
-            else:
-                quit()
+            tk.wait_variable(waitVar)
+            get_commands = run_gui(run_cmds)
             if get_commands:
                 status = 0
-                get_commands = self.trim_list_header(get_commands)
+                get_commands = trim_list_header(get_commands)
                 # wrap the commands in titleset 'tags', then write out script
                 cmds = ['-titleset']
                 cmds.extend(get_commands)
                 cmds.append('-end-titleset')
-                wizard.commands.append(cmds)
+                todisc_cmds.append(cmds)
             else:
-                status = 0
-                wizard.commands.extend(run_cmds)
-                message='You have cancelled out of a titleset run. ' + \
-                  'The titleset will still appear in the listbox on the ' + \
-                  'last page, you may edit, remove or reorder it there.'
-                showinfo(message=message)
-            wizard.show_status(status)
-        self.write_script()
-        self.root.deiconify()
-        wizard.next()
+                status = 1 
+            show_status(status)
+        tk.deiconify()
+        # set button1 back to next command and set waitVar back to false
+        button1.configure(command=next)
+        waitVar.set(False)
+        write_script()
 
+        ####################  prepare the next pages listbox ##################
 
-class Page5(WizardPage):
-    """Final wizard page.
-       Here you can rerun options that have been saved from the tovid GUI, and
-       add or remove titlesets.  You can also choose to run the final project.
-    """
-    def __init__(self, master):
-        WizardPage.__init__(self, master)
-        self.curindex = 0
-        self.lastindex = 0
-        # set commands and draw by default if script (infile) arg passed
-        # self.master.project.get() would be set to that file
-        if self.master.is_infile:
-            self.set_project_commands()
-            self.draw()
-            index = self.master.pages.index(self)
-            self.master.index.set(index)
-            # draw must be called before load_project
-            self.load_project()
-
-    def draw(self):
-        wizard = self.master
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-        text = '''
-        Edit or reorder your selections using the listbox below.  (Note
-        that menu link titles as shown in listbox are saved as titles
-        in the "Root menu" options.)  If you are happy with your saved
-        options, run the script now in an xterm, or exit and run it later.
-        You can run it with:
-
-        bash %s
-
-        You may edit the file with a text editor but do not 
-        change the headers (first 3 lines of text) or change the 
-        order of the sections:
-
-        1. General opts  2. Root menu (-vmgm)  3. Titleset menus (-titleset)
-
-        You may reload the file using the command:
-
-        tovid titlesets %s
-
-        Edit your selections, or press [Run script now] or [Exit].
-        ''' % (self.master.project, self.master.project)
-
-        text = trim(text)
-        self.heading_label = tk.Label(self.frame,
-                    text='Your script is ready to run!', font=wizard.lrg_font)
-        self.label = tk.Label(self.frame, text=text,
-                      font=wizard.font, justify='left')
-        self.heading_label.pack(fill='both', expand=1, anchor='nw', pady=5)
-        self.label.pack(fill='both', expand=1, anchor='nw')
-
-        frame_text = "Edit items, or add, remove or drag/drop titlesets"
-        frame2 = tk.LabelFrame(self.frame, text=frame_text)
-        button_frame = tk.Frame(frame2)
-        button_frame.pack(side='bottom', fill=tk.X, expand=1, anchor='sw')
-        button2 = tk.Button(button_frame, text='Add titleset',
-                                 command=self.add_titleset)
-        button2.pack(side='left', anchor='w')
-        button1 = tk.Button(button_frame, text='Edit', command=self.rerun_options)
-        button1.pack(side='left', fill='x', expand=1)
-        button3 = tk.Button(button_frame, text='Remove titleset',
-                                 command=self.remove_titleset)
-        button3.pack(side='right', anchor='e')
-        self.listbox = tk.Listbox(frame2, width=50, exportselection=0)
-        self.listbox.pack(side='left', fill='both', expand=1)
-        self.listbox.bind('<Double-Button-1>', self.rerun_options)
-        # create a vertical scrollbar to the right of the listbox
-        yscroll = tk.Scrollbar(frame2, command=self.listbox.yview,
-                                             orient='vertical')
-        yscroll.pack(side='right', fill='y', anchor='ne')
-        self.listbox.configure(yscrollcommand=yscroll.set)
-        frame2.pack(side='left', fill='y', expand=False)
-        # the 2nd index contains the titleset titles (VMGM menu)
-        self.refill_listbox(self.listbox, wizard.commands[1])
-        self.listbox.selection_set('end')
-        # set next button to run gui etc before moving forward
-        wizard.next_button.configure\
-          (command=self.page_controller, text='Run script')
-        # Add bindings for drag/drop
-        self.listbox.bind('<Button-1>', self.set_index)
-        self.listbox.bind('<B1-Motion>', self.drag)
-        self.listbox.bind('<ButtonRelease-1>', self.drop)
-        self.selectbackground = self.listbox.cget('selectbackground')
-        self.selectforeground = self.listbox.cget('selectforeground')
-        self.foreground = self.listbox.cget('foreground')
-
-
-    def drag(self, event):
-        """Event handler when an item in the list is dragged.
-        """
-        # If item is dragged to a new location, swap
-        loc = self.listbox.nearest(event.y)
-        # disable 1st two items which can not be dragged to
-        if loc <=1 and self.curindex >1:
-            self.listbox.itemconfig(1,selectbackground=self.master.background,
-                             selectforeground=self.foreground)
-            self.listbox.itemconfig(0,selectbackground=self.master.background,
-                             selectforeground=self.foreground)
-        if loc > 1 and self.curindex > 1:
-            if loc != self.curindex and self.listbox.size() > 0:
-                self.swap(self.curindex, loc)
-                self.curindex = loc
-
-    def swap(self, index_a, index_b):
-        """Swap the element at ``index_a`` with the one at ``index_b``.
-        Calls ``swap`` callbacks for the swapped items.
-        """
-        wizard = self.master
-        # Use temporary lists
-        temp_commands = deepcopy(wizard.commands)
-        wizard.commands[index_a] = temp_commands[index_b]
-        wizard.commands[index_b] = temp_commands[index_a]
-        # modify sublist (commands[1]) 
-        self.mod_sublist('', index_a,index_b)
-        temp_list = self.listbox.get(0, 'end')
-        temp_list = list(temp_list)
-        try:
-            item_a = temp_list[index_a]
-            item_b = temp_list[index_b]
-            temp_list[index_a] = item_b
-            temp_list[index_b] = item_a
-        except IndexError:
-            # should not happen
-            print('index out of range!')
-        # Set the updated list
-        self.listbox.delete(0, 'end')
-        self.listbox.insert(0, *temp_list)
-
-    def drop(self, event):
-        """Event handler when an item in the list is "dropped".
-        """
-        # Change the mouse cursor back to the default arrow.
-        self.root.config(cursor="")
-        # since we are not in drag mode anymore, 'enable' 1st 2 indexes again
-        self.listbox.itemconfig(1,selectbackground=self.selectbackground,
-                                  selectforeground=self.selectforeground)
-        self.listbox.itemconfig(0,selectbackground=self.selectbackground,
-                                   selectforeground=self.selectforeground)
-        # curindex and lastindex are the same if no drag occured
-        if self.curindex != self.lastindex:
-            # rewrite script
-            self.write_script()
-
-    def set_index(self, Event=None):
-        """Called when item in listbox selected.
-           Set curindex and change cursor to double-arrow.
-           lastindex==curindex if no drag occurs.
-        """
-        self.curindex = self.listbox.nearest(Event.y)
-        self.lastindex = self.curindex
-        # delay 50ms so double-click doesn't look strange
-        self.after(50, lambda:self.root.config(cursor="double_arrow"))
-
-    def page_controller(self):
-        wizard = self.master
-        index = wizard.index.get()
-        self.frame.pack_forget()
-        wizard.index.set(index + 1)
-        wizard.pages[index+1].frame.pack(side='right')
-        wizard.pages[index+1].show_page()
-        wizard.pages[index+1].set_cmd_label()
-
-    # used to repopulate titleset titles after adding new one
-    def get_option(self, items, option):
-        """Get option and args from a list (to next item starting with '-').
-        The list is modified in place.
-        """
-        try:
-            index = items.index(option)
-        # If item isn't in list, return empty list
-        except ValueError:
-            return []
-        # Append items until end is reached
-        chunk = []
-        try:
-            while items and not items[index+1].startswith('-'):
-                chunk.append(items.pop(index+1))
-            opt = items.index(option)
-            chunk.insert(0, items.pop(opt))
-            return chunk
-        except IndexError:
-            pass
-
-    def add_titleset(self, Event=None):
-        wizard = self.master
-        mess = 'Please select an options line first.  ' + \
-          'The new titleset will be inserted after the selected option'
-        try:
-            ind = int(self.listbox.curselection()[0])
-        except IndexError:
-            showerror(message=mess)
-            return
-        if ind < 1:
-            err = 'Your titleset will be inserted AFTER the selected item: ' + \
-              'Titlesets can not be inserted here.'
-            showerror(message=err)
-            return
-        text = 'Please enter a menu link title for your titleset'
-        title = askstring('Titleset title', text)
-        # if nothing entered, return without changes
-        if not title:
-            wizard.show_status(1)
-            return
-        self.mod_sublist(title, ind)
-        new_titleset = ['-titleset', '-menu-title', title, '-end-titleset']
-        # add new titleset with just the 'tags' surrounding the new title
-        wizard.commands.insert(ind+1, new_titleset)
-        self.listbox.insert(ind+1, title)
-        self.set_selection(ind)
-        status = self.rerun_options(index=ind+1)
-        self.set_selection(index='end')
-        if status == 1:
-            # remove new title from listbox
-            self.listbox.delete('end')
-            self.set_selection(index='end')
-            wizard.commands.pop(-1)
-            try:
-                wizard.commands[1].remove(title)
-            except ValueError:
-                print('%s not in Root menu options' %title)
-            return
-        self.write_script()
-
-    def remove_titleset(self, Event=None):
-        try:
-            ind = int(self.listbox.curselection()[0])
-        except IndexError:
-            showerror(message='Please select an options line first')
-            return
-        mess1='You can only remove titlesets'
-        mess2='You must have at least 2 titlesets.  Please add ' + \
-          'a new titleset [ Add titleset ]  before deleting one.'
-        if ind < 2:
-            showerror(message=mess1)
-            return
-        elif self.listbox.size() < 5:
-            showerror(message=mess2)
-            return
-        if not askyesno(message='Remove titleset %s ?' % (ind - 1) ):
-            return
-        # delete the index from the listbox
-        self.listbox.delete(ind)
-        self.listbox.selection_set('end')
-        # delete index and remove the menu title from vmgm options
-        self.master.commands.pop(ind)
-        self.mod_sublist('', ind)
-        self.write_script()
-
-    def mod_sublist(self, item='', *index):
-        """Modify commands sublist.
-           If 2 indexes, just swap items.
-           If one index the default behavior is to delete the index from the
-           sublist and remove it from commands, but if item is passed,
-           add it as a new index instead.
-        """
-        wizard = self.master
-        vmgm_cmds = [w for w in wizard.commands[1]]
-        # get options ( -titles title1 title2 ... ), removing them from original
-        vmgm_titles = self.get_option(vmgm_cmds, '-titles')
-        # remove -end-vmgm, remove title , add -end-vmgm
-        # index-1 instead of ind-2 because '-titles' is in vmgm_titles
-        vmgm_cmds.pop(-1)
-        if len(index) > 1:
-            temp_list = [i for i in vmgm_titles]
-            vmgm_titles[index[0]-1] = temp_list[index[1]-1]
-            vmgm_titles[index[1]-1] = temp_list[index[0]-1]
+        # allow editing the saved lists with the GUI
+        # delete titleset listbox contents else it increases with page movement
+        # insert or reinsert options list into titleset listbox
+        pg5_listbox1.pack(side=TOP, anchor='w', fill=BOTH, expand=1)
+        refill_listbox(pg5_listbox1, options_list)
+        if (numtitles > 10): numtitles = 10
+        options_list = save_list()
+        numtitles = len(options_list)
+        pg5_listbox1.configure(height=numtitles+2)
+        set_last_page()
+    elif pages.index(current) == 4:
+    # Page 5
+        root = Tk()
+        root.option_add("*Dialog.msg.wrapLength", "10i")
+        root.withdraw()
+        if askyesno(message="Run saved script in xterm now?"):
+            run_in_xterm(script_file)
         else:
-            index = index[0]
-            # if item is passed, add it as a title
-            if item:
-                vmgm_titles.insert(index, item) 
-            else:
-                vmgm_titles.pop(index-1)
-        vmgm_cmds.extend(vmgm_titles)
-        vmgm_cmds.append('-end-vmgm')
-        # delete old vmgm options from todisc_cmds and insert new
-        wizard.commands.pop(1)
-        wizard.commands.insert(1, vmgm_cmds)
+            show_status(1)
+        root.destroy()
+    move(mv_amt)
 
-    def rerun_options(self, Event=None, index=None):
-        """Run the gui with the selected options.
-        """
-        # self.master is the WizardPage
-        commands = self.master.commands
-        if not index:
-            try:
-                index = int(self.listbox.curselection()[0])
-            except IndexError:
-                showerror(message='Please select an options line first')
-                return
-        rerun_opts = []
-        os.environ['METAGUI_WIZARD'] = str(index+1)
-        # the GUI doesn't understand the titleset type options
-        remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
-        options = [ i for i in commands[index] if not i in remove ]
-        rerun_opts = self.run_gui(options, '%d' %(index+1))
-        if rerun_opts:
-            status = 0
-            # trim header from todisc_cmds
-            rerun_opts = self.trim_list_header(rerun_opts)
-            # fill the listbox again if vmgm opts changed
-            # add the 'tags' back around the option list if needed
-            if index == 1:
-                self.refill_listbox(self.listbox, rerun_opts)
-                rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
-            elif index >= 2:
-                rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
-            commands[index] = rerun_opts
-            # rewrite the saved script file
-            self.write_script()
-        else:
-            status = 1
+def prev():
+    move(-1)
 
-        self.root.deiconify()
-        self.master.show_status(status)
-        self.set_selection(index)
-        return status
-
-    def set_selection(self, index='end'):
-        self.listbox.selection_clear(0, index)
-        self.listbox.selection_set(index)
-
-    def set_project_commands(self):
-        in_contents = self.script_to_list(argv[1])
-        in_cmds = in_contents[:]
-        _all = [self.get_chunk(in_cmds, '-vmgm', '-end-vmgm')]
-        while '-titleset' in in_cmds:
-            _all.append( self.get_chunk(in_cmds, '-titleset', '-end-titleset') )
-        _all.insert(0, in_cmds)
-        self.master.commands = _all
-
-    def load_project(self):
-        """Load a saved project script for editing with the wizard and GUI.
-        """
-        script = os.path.abspath(self.master.project)
-        #self.heading_label.configure(text='Editing a saved project')
-        error_msg = 'This is not a saved tovid project script.  ' + \
-          'Do you want to try to load it anyway?'
-        if not '# tovid project script\n' in open(argv[1], 'r'):
-            if not askyesno(message=error_msg):
-                quit()
-        numtitles = len(self.master.commands[2:])
-        menu_titles = []
-        L = self.master.commands[1]
-        menu_titles.extend(self.get_list_args(L, '-titles'))
-        self.refill_listbox(self.listbox, menu_titles)
-        self.listbox.selection_set('end')
-        # write out to project filename
-        if os.path.exists(script):
-            infile_prefix = os.path.basename(script)
-            backup = mktemp(prefix=infile_prefix + '.', dir='/tmp')
-            backup_prefix = os.path.basename(backup)
-            mess = '%s has been loaded for editing, ' %infile_prefix + \
-              'and will be used for new edits. A backup ' + \
-              'will be saved to /tmp .\n' + \
-              'Continue ?'
-            if askokcancel\
-              (message=mess):
-                pass
-            else:
-                quit()
-        from shutil import copyfile
-        copyfile(script, backup)
-        self.write_script()
-
-class Page6(WizardPage):
-    def __init__(self, master):
-        WizardPage.__init__(self, master)
-
-    def draw(self):
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-        self.container = None
-        wizard = self.master
-        # next/previous button becomes 'Back<<' again
-        wizard.next_button.pack_forget()
-        wizard.prev_button.pack(side='right', anchor='se')
-
-        text1='Running saved project'
-        self.label = tk.Label(self.frame, text=text1, font=wizard.lrg_font)
-        self.label.pack(side='top', fill='both', expand=1, anchor='nw', pady=5)
-        cmd_labelfont = wizard.get_font(wizard.font, _style='bold')
-        self.cmd_title = tk.Label(self.frame,
-          font=cmd_labelfont, text='\n\n\nThe command that will run:')
-        self.cmd_title.pack(fill='both', expand=1)
-        self.cmd_str = ''
-        index = wizard.index.get()
-        try:
-            self.fixed_font = tkFont.Font(font=('TkFixedFont'))
-            self.fixed_font.configure(size=9)
-            xterm_font = [ '-fa', self.fixed_font.actual()['family']]
-            fsize = ['-fs', str(self.fixed_font.actual()['size'])]
-            self.xterm_cmd = ['xterm'] + fsize + xterm_font
-        # tcl/tk < 8.5: no freetype support or 'Standard fonts' like tkFixedFont
-        except tk._tkinter.TclError:
-            self.fixed_font = tkFont.Font(font='7x14')
-            xterm_font = ['-fn', '7x14']
-            self.xterm_cmd = ['xterm'] + xterm_font
-        self.cmd_label = tk.Label(self.frame, text=self.cmd_str, justify='left',
-        font=self.fixed_font, wraplength=560, fg='white', bg='black')
-        self.cmd_label.pack(fill='both', expand=1)
-        self.termtitle = tk.Label(self.master, text='\nFocus mouse in terminal')
-        self.button_frame = tk.Frame(self.frame, borderwidth=2, relief='groove')
-        self.button_frame.pack(side='bottom', fill='both', expand=1)
-        self.run_button = tk.Button(self.button_frame, text='Run project now',
-                                            command=self.run_in_xterm)
-        self.run_button.pack(side='left', fill='both', expand=1)
-        self.save_button = tk.Button(self.button_frame, text='Save log',
-                                            command=self.save_log)
-        self.save_button.pack(side='left', fill='both', expand=1)
-        # disable the save log button till xterm is run
-        #self.save_button.configure(state='disabled')
-
-    def set_cmd_label(self):
-        cmds = self.master.commands
-        all_lines = [_enc_arg(line) for sublist in cmds for line in sublist]
-        cmd = ''
-        for line in all_lines:
-            cmd += ' ' + line
-        prompt = getoutput('printf "[${USER}@$(hostname -s) ] $ "')
-        # probably not necessary, but ...
-        if 'not found' in prompt:
-            prompt = '[me@mymachine ] $ '
-        self.cmd = '\n%stodisc%s\n' %(prompt, cmd)
-        self.cmd_label.configure(text=self.cmd)
-
-    def previous(self):
-        """Move to the previous wizard page.
-        """
-        self.frame.pack_forget()
-        wizard = self.master
-        index = wizard.index.get()
-        prev = wizard.pages[index-1]
-        wizard.index.set(index-1)
-        # next/previous button becomes 'Next>>' again
-        wizard.prev_button.pack_forget()
-        prev.frame.pack(side='right')
-        wizard.next_button.pack(side='right', anchor='se')
-        # the next button from previous page runs a new function now
-        wizard.next_button.configure\
-        (command=self.repack, text='Run script')
-
-    def repack(self):
-        wizard = self.master
-        cur = wizard.index.get()
-        wizard.pages[cur].hide_page()
-        index = wizard.pages.index(self)
-        wizard.index.set(index)
-        self.frame.pack(side='right', fill='both', expand=1, anchor='nw')
-        self.set_cmd_label()
-        wizard.prev_button.pack(side='right', anchor='se')
-        wizard.next_button.pack_forget()
-
-    def run_in_xterm(self):
-        """Run the final script in an xterm, completing the project.
-        """
-        if not askyesno(message="Run in xterm now?"):
-            self.master.show_status(1)
-            return
-        self.screen_pos = self.get_screen_position()
-        xterm_geo = '80x40' + self.screen_pos
-        cmd = \
-          ['-sb', '-title', 'todisc',
-            '-g', xterm_geo, '-e', 'sh', '-c']
-        self.xterm_cmd.extend(cmd)
-        wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
-        tovid_cmd = 'bash %s' % self.master.project
-        self.xterm_cmd.append(tovid_cmd + wait_cmd)
-        self.root.withdraw()
-        command = Popen(self.xterm_cmd, stderr=PIPE)
-        command.wait()
-        # without the following the position of restored window can jump around
-        self.root.geometry(self.screen_pos)
-        self.root.update_idletasks() # update geometry before it is 'deiconified'
-        self.root.deiconify()
-
-
-    def save_log(self, event=None):
-        logfile = asksaveasfilename(initialfile='todisc_output.log')
-        if logfile:
-            log = open(logfile, 'w')
-            log.writelines(self.log_contents)
-
-# unfinished and unused
-class Messagebox(tk.Frame):
-    def __init__(self, master, use=None, text='', boolean_var=None):
-        tk.Frame.__init__(self, master)
-        self.master = master
-        self.use = use
-        self.var = tk.boolean_var
-        #self.overrideredirect(1)
-        self.top = tk.Toplevel(self.master, use=use)
-        text = text
-        label = tk.Label(self.top, text=text, wraplength=400)
-        label.pack()
-        button1 = tk.Button(self.top, text='Yes', command=self.yes)
-        button2 = tk.Button(self.top, text='No', command=self.no)
-        button1.pack(side='left')
-        button2.pack(side='left')
-
-    def yes(self, event=None):
-        #self.var.set(True)
-        self.quit()
-        return True
-
-    def no(self, event=None):
-        #self.var.set(False)
-        self.quit()
-        return False
-
-class TitleBox(tk.Frame):
-    """A Listbox in a LabelFrame with Entry associated with it.
-       text: the label for the frame
+def get_list(event):
     """
-    def __init__(self, master=None, text=''):
-        tk.Frame.__init__(self, master)
-        self.master = master
-        self.text = text
-        self.draw()
-
-    def draw(self):
-        # create the listbox (note that size is in characters)
-        frame1 = tk.LabelFrame(self.master, text=self.text)
-        frame1.pack(side='left', fill='y', expand=False)
-        # use entry widget to display/edit selection
-        self.enter1 = tk.Entry(frame1, width=50)
-        self.enter1.pack(side='bottom', fill='both', expand=False)
-        self.listbox = tk.Listbox(frame1, width=50, height=12)
-        self.listbox.pack(side='left', fill='y', expand=False, anchor='nw')
-        self.get = self.listbox.get
-
-        # create a vertical scrollbar to the right of the listbox
-        yscroll = tk.Scrollbar(frame1, command=self.listbox.yview,
-                                             orient='vertical')
-        yscroll.pack(side='right', fill='y', anchor='ne')
-        self.listbox.configure(yscrollcommand=yscroll.set)
-        # set focus on entry
-        self.enter1.select_range(0, 'end')
-        self.enter1.focus_set()
-        # pressing the return key will update edited line
-        self.enter1.bind('<Return>', self.set_list)
-        self.listbox.bind('<ButtonRelease-1>', self.get_list)
-
-    def set_list(self, event):
-        """Insert an edited line from the entry widget back into the listbox.
-        """
-        try:
-            index = self.listbox.curselection()[0]
-            # delete old listbox line
-            self.listbox.delete(index)
-        except IndexError:
-            index = 'end'
-        # insert edited item back into self.listbox at index
-        self.listbox.insert(index, self.enter1.get())
-        self.enter1.delete(0, 'end')
-        # don't add more than one empty index
-        next2last = self.listbox.size() -1
-        if not self.listbox.get(next2last) and not self.listbox.get('end'):
-            self.listbox.delete('end')
-        # add a new empty index if we are at end of list
-        if self.listbox.get('end'):
-            self.listbox.insert('end', self.enter1.get())
-        self.listbox.selection_set('end')
-
-    def get_list(self, event):
-        """Read the listbox selection and put the result in an entry widget.
-        """
-        try:
-            # get selected line index and text
-            index = self.listbox.curselection()[0]
-            seltext = self.listbox.get(index)
-            # delete previous text in enter1
-            self.enter1.delete(0, 'end')
-            # now display the selected text
-            self.enter1.insert(0, seltext)
-            self.enter1.focus_set()
-        except IndexError:
-            pass
-
-
-# Execution
-if __name__ == '__main__':
-    args = argv[1:]
-    infile = ''
-    while args:
-        arg = args.pop(0)
-        # check for script to load: if its a file assume it is one (in)
-        if os.path.exists(arg):
-            infile = arg
-    # get tovid prefix so we can find the app image file
-    tovid_prefix = getoutput('tovid -prefix')
-    tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
-    os.environ['PATH'] = tovid_prefix + os.pathsep + os.environ['PATH']
-    img_file = os.path.join(tovid_prefix, 'titleset-wizard.png')
-    root_height = 660
-    # run a 'progress bar' to get info (tuple):
-    # screen height, title bar height, title bar width
-    screen_info = get_screen_info(img_file)
-    # instantiate Tk and Wizard
-    root = tk.Tk()
-    root.withdraw()
-    # shave height if we are dealing with a netbook resolution
-    if screen_info[0] < 660:
-        root_height = 600
-    root.minsize(width=800, height=root_height)
-    app = Wizard(root, 'Tovid\nTitleset Wizard', img_file, infile=infile)
-    app.set_screen_info(screen_info)
-    root.update_idletasks()
-    root.deiconify()
-    # instantiate pages
-    page1 = Page1(app)
-    page2 = Page2(app)
-    page3 = Page3(app)
-    page4 = Page4(app)
-    page5 = Page5(app)
-    page6 = Page6(app)
-    # run it
+    function to read the listbox selection
+    and put the result in an entry widget
+    """
     try:
-        root.mainloop()
-    except KeyboardInterrupt:
-        exit(1)
+        # get selected line index
+        index = pg3_listbox1.curselection()[0]
+        # get the line's text
+        seltext = pg3_listbox1.get(index)
+        # delete previous text in enter1
+        enter1.delete(0, END)
+        # now display the selected text
+        enter1.insert(0, seltext)
+        enter1.focus_set()
+    except IndexError:
+        pass
+
+def set_list(event):
+    """
+    insert an edited line from the entry widget
+    back into the listbox
+    """
+    try:
+        index = pg3_listbox1.curselection()[0]
+        # delete old listbox line
+        pg3_listbox1.delete(index)
+    except IndexError:
+        index = END
+    # insert edited item back into pg3_listbox1 at index
+    pg3_listbox1.insert(index, enter1.get())
+    enter1.delete(0, END)
+    # don't add more than one empty index
+    next2last = pg3_listbox1.size() -1
+    if not pg3_listbox1.get(next2last) and not pg3_listbox1.get(END):
+        pg3_listbox1.delete(END)
+    # add a new empty index if we are at end of list
+    if pg3_listbox1.get(END):
+        pg3_listbox1.insert(END, enter1.get())
+    pg3_listbox1.selection_set(END)
+
+def save_list():
+    """
+    save the current listbox contents
+    """
+    # get a list of listbox lines
+    temp_list = list(pg3_listbox1.get(0, END))
+    return [ l for l in temp_list if l]
+
+def run_gui(args=[]):
+    # TODO change todisc_cmds (is global) to todisc_opts
+    # TODO deiconfiy() in run_gui() using tk.after(100, tk.deiconify()) or so
+    title = 'load saved script'
+    script = 'todisc_commands.bash'
+    cmd = ['tovid', 'gui'] + args
+    todiscgui_cmd = Popen(cmd, stdout=PIPE)
+    # sleep to avoid the 'void' of time before the GUI loads
+    sleep(0.5)
+    pid = todiscgui_cmd.pid
+    # we need the pid later in case of interupt during wait_variable loop
+    write_pid = open(pid_file, 'w')
+    write_pid.write(str(pid))
+    write_pid.close()
+    if tk.state() is not 'withdrawn':
+        tk.withdraw()
+    status = todiscgui_cmd.wait()
+    if status == 200:
+    # if script doesn't exist prompt for load.
+        if os.path.exists(script_file):
+            script = script_file
+        else:
+            err = 'A problem has occured with saving your options.\n'
+            err += 'The saved script file was not found.\n'
+            err += 'Please submit a bug report'
+            showerror(message=err)
+        # Read lines from the file and reassemble the command
+        todisc_cmds = script_to_list(script)
+        os.remove(script)
+    else:
+        todisc_cmds = []
+    return todisc_cmds
+
+def run_in_xterm(script):
+    ''' run the final script in an xterm, completing the project
+    '''
+    cmd = ['xterm', '-fn', '10x20', '-sb', '-title', 'todisc', '-e', 'sh', '-c']
+    wait_cmd = ';echo ;echo "Press Enter to exit terminal"; read input'
+    tovid_cmd = 'bash %s' % script
+    cmd.append(tovid_cmd + wait_cmd)
+    tk.withdraw()
+    command = Popen(cmd, stderr=PIPE)
+    tk.deiconify()
+
+
+def rerun_options(Event=None):
+    ''' run the gui with the selected options
+    '''
+    try:
+        index = int(pg5_listbox1.curselection()[0])
+    except IndexError:
+        showerror('Please select an options line first')
+    rerun_opts = []
+    #mess='Rerun GUI for the "%s" options?' % pg5_listbox1.get(index)
+    #if askyesno(message=mess):
+    # the GUI doesn't understand the titleset type options
+    remove = ['-vmgm', '-end-vmgm', '-titleset', '-end-titleset']
+    options = [ i for i in todisc_cmds[index] if not i in remove ]
+    rerun_opts = run_gui(options)
+    if rerun_opts:
+        status = 0
+        # trim header from todisc_cmds
+        rerun_opts = trim_list_header(rerun_opts)
+        # fill the listbox again if vmgm opts changed
+        # add the 'tags' back around the option list if needed
+        if index == 1:
+            refill_listbox(pg5_listbox1, rerun_opts)
+            rerun_opts = ['-vmgm'] + rerun_opts + ['-end-vmgm']
+        elif index >= 2:
+            rerun_opts = ['-titleset'] + rerun_opts + ['-end-titleset']
+        todisc_cmds[index] = rerun_opts
+        # rewrite the saved script file
+        write_script()
+    else:
+        status = 1
+    tk.deiconify()
+
+    show_status(status)
+
+def refill_listbox(listbox, opts):
+    ''' repopulate the rerun listbox with option list titles
+    '''
+    if '-titles' in opts:
+        new_titles = get_list_args(opts, '-titles')
+    else:
+        new_titles = opts
+    listbox.delete(0, END)
+    # insert or reinsert options list into titleset listbox
+    listbox.insert(END, 'General options')
+    listbox.insert(END, 'Root menu')
+    numtitles = len(new_titles)
+    listbox.configure(height=numtitles+2)
+    for i in xrange(numtitles):
+        listbox.insert(END, new_titles[i])
+
+
+def trim_list_header(cmds):
+        # remove shebang, identifier and PATH
+        try:
+            while not cmds[0].startswith('-'):
+                cmds.pop(0)
+        except IndexError:
+            pass
+        return cmds
+
+def script_to_list(infile):
+    add_line = False
+    command = ''
+    for line in open(infile, 'r'):
+        if line.startswith('-'):
+            add_line = True
+        if add_line and not line.startswith('-from-gui'):
+            line = line.strip()
+            command += line.rstrip('\\')
+    return shlex.split(command)
+
+def write_script():
+    cmdout = open(script_file, 'w')
+    # add the shebang, PATH, and 'todisc \' lines
+    cmdout.writelines(header)
+    # flatten the list
+    all_lines = [line for sublist in todisc_cmds for line in sublist]
+    # put the program name back into the beginning of the list
+    all_lines.insert(0, 'todisc')
+    words = [_enc_arg(arg) for arg in all_lines]
+    all_lines = words
+    #
+    # write every line with a '\' at the end, except the last
+    for line in all_lines[:-1]:
+        cmdout.write(line + ' \\\n')
+    # write the last line
+    cmdout.write(all_lines[-1])
+    cmdout.close()
+
+# get_chunk and get_list_args are
+# for parsing args from a loaded titleset script
+# thanks to Eric Pierce for providing these
+def get_chunk(items, start, end):
+    """Extract a chunk [start ... end] from a list, and return the chunk.
+   The original list is modified in place.
+   """
+    # Find the starting index and test for 'end'
+    try:
+        index = items.index(start)
+        items.index(end)
+    # If start or end isn't in list, return empty list
+    except ValueError:
+        return []
+    # Pop items until end is reached
+    chunk = []
+    while items and items[index] != end:
+        chunk.append(items.pop(index))
+    # Pop the last item (==end)
+    chunk.append(items.pop(index))
+    return chunk
+
+def get_list_args(items, option):
+    try:
+        index = items.index(option)
+    # If item isn't in list, return empty list
+    except ValueError:
+        return []
+    # Pop items until end is reached
+    chunk = []
+    try:
+        while items and not items[index+1].startswith('-'):
+            chunk.append(items[index+1])
+            index += 1
+        return chunk
+    except IndexError:
+        pass
+
+def load_project():
+    ''' Load a saved project script for editing with the wizard and GUI
+    '''
+    global todisc_cmds
+    page5_label1.configure(text='Editing a saved project')
+    error_msg2 = 'This is not a saved tovid project script\n'
+    error_msg2 += 'Do you want to try to load it anyway?'
+    if not '# tovid project script\n' in open(argv[1], 'r'):
+        if not askyesno(message=error_msg2):
+            showinfo(message='Cancelled')
+            quit()
+    in_contents = script_to_list(argv[1])
+    in_cmds = in_contents[:]
+    all = [get_chunk(in_cmds, '-vmgm', '-end-vmgm')]
+    while '-titleset' in in_cmds:
+        all.append( get_chunk(in_cmds, '-titleset', '-end-titleset') )
+    all.insert(0, in_cmds)
+    todisc_cmds = all[:]
+    numtitles = len(todisc_cmds[2:])
+    menu_titles = []
+    for l in todisc_cmds[2:]:
+        menu_titles.extend(get_list_args(l, '-menu-title'))
+    pg5_listbox1.pack(side=LEFT, anchor='w', fill=X, expand=1)
+    refill_listbox(pg5_listbox1, menu_titles)
+    set_last_page()
+    # write out todisc_commands.bash in current dir
+    write_script()
+    move(4)
+    return todisc_cmds
+
+def set_last_page():
+    ''' dynamic configuration for the last page
+    '''
+    # set label for running in xterm
+    page5_label3 = Label(pg5_frame1, text=pg5_txt3, justify=LEFT)
+    page5_label3.pack(side=BOTTOM, anchor='w')
+    # change 'Next' button to 'Run' and reposition buttons
+    button1.pack_forget()
+    button2 = Button(button_frame, text='Exit', command=confirm_exit)
+    button2.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
+    button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
+    button1.configure(text='Run script now')
+
+def setVar():
+    ''' set a BooleanVar() so tk.wait_var can exit
+    '''
+    waitVar.set(True)
+
+def fake_press(widget):
+    """ cause widget to blink
+    """
+    # 3000 and 4000 ms because show_status uses up 3000 already
+    tk.after(3000, lambda: widget.configure(relief=SUNKEN))
+    widget.update()
+    tk.after(4000, lambda: widget.configure(relief=RAISED))
+
+def show_status(status):
+    if status == 0:
+        text='\nOptions saved!\n'
+    else:
+        text='\nCancelled!\n'
+    frame2 = Frame(frame1, borderwidth=1, relief=RAISED)
+    frame2.pack(pady=80)
+    pg2_label2 = Label(frame2, text=text, font=medium_font, fg='blue')
+    pg2_label2.pack(side=TOP)
+    pg2_label3 = Label(frame2, text='ok', borderwidth=2, relief=GROOVE)
+    pg2_label3.pack(side=TOP)
+    #frame2 = Frame(frame1)
+    #frame2.pack(pady=80)
+    #pg2_label2 = Label(frame2, text=text, \
+    #  font=medium_font, fg='blue', borderwidth=2, relief=GROOVE)
+    #pg2_label2.pack(side=BOTTOM, fill=BOTH, expand=1, anchor='w')
+    tk.after(1000, lambda: pg2_label3.configure(relief=SUNKEN))
+    tk.after(2000, lambda: frame2.pack_forget())
+
+def confirm_exit(event=None):
+        """Exit the GUI, with confirmation prompt.
+        """
+        if askyesno(message="Exit?"):
+            # waitVar will cause things to hang, check if set and spring it
+            if waitVar.get() == 1:
+                setVar()
+            # springing the var will cause the GUI to run, we need to kill it
+        if os.path.exists(pid_file):
+            pid = open(pid_file).read().strip()
+            if pid:
+                    try:
+                        os.kill(int(pid), signal.SIGTERM)
+                    except OSError:
+                        pass
+            quit()
+
+class BigLabel (Text):
+    """Looks similar to a Label widget, but with automatic word-wrap.
+    """
+    def __init__(self, master, text, font):
+        """Create a text widget with the given text and font,
+        and the same background color as the master widget.
+        """
+        # Text widget with the same background color as the master
+        Text.__init__(self, master, font=font, wrap='word', width=70,
+                      background=tk.cget('background'), borderwidth=0, padx=10)
+        # Try to intelligently group the text into paragraphs.
+        # Two consecutive newlines start a new paragraph; a single
+        # newline should be treated as a single space. Strip leading
+        # and trailing whitespace from each paragraph.
+        paragraphs = [para.replace('\n', ' ').strip()
+                      for para in text.split('\n\n')]
+        # Rejoin paragraphs into a single block of text
+        self.insert('end', '\n\n'.join(paragraphs))
+        # Make the text widget read-only
+        self.config(state='disabled')
+
+###################### get/set some external variables #######################
+
+# get tovid prefix
+path_cmd = ['tovid', '--prefix']
+tovid_prefix = Popen(path_cmd, stdout=PIPE)
+tovid_prefix = tovid_prefix.communicate()[0].strip()
+
+# get script header
+shebang = '#!/usr/bin/env bash'
+_path = 'PATH=' + tovid_prefix + ':$PATH'
+_cmd = ['tovid', '--version']
+_version = Popen(_cmd, stdout=PIPE).communicate()[0].strip()
+identifier = '# tovid project script\n# tovid version %s' % _version
+header = '%s\n\n%s\n\n%s\n\n' % (shebang, identifier, _path )
+
+# the script we will be using for options
+cur_dir = os.path.abspath('')
+script_file = cur_dir + '/todisc_commands.bash'
+
+
+##############################################################################
+##################### GUI initialization and execution #######################
+##############################################################################
+
+tk = Tk()
+tkframe = Frame(tk)
+tkframe.pack(side=LEFT, fill=Y, anchor='w')
+tk.title('Tovid titleset wizard')
+tk.minsize(width=800, height=660)
+waitVar = BooleanVar()
+waitVar.set(False)
+button_frame = Frame(tk)
+button_frame.pack(expand=1, fill=X, side=BOTTOM, anchor='s')
+button1 = Button(button_frame, text='Next >>>', command=next)
+button1.pack(side=RIGHT, fill=Y, expand=1, anchor='e')
+# get fonts
+inifile = os.path.expanduser('~/.metagui/config')
+style = Style()
+style.load(inifile)
+heading_font = get_font(size=style.font[1]+8, _style='bold')
+lrg_font = get_font(size=style.font[1]+4, _style='bold')
+medium_font = get_font(size=style.font[1]+2)
+bold_font = get_font(_style='bold')
+
+# bindings for exit
+tk.protocol("WM_DELETE_WINDOW", confirm_exit)
+tk.bind('<Control-q>', confirm_exit)
+
+############################ Page 1 of wizard ############################
+pg1_txt1 = '''
+INTRODUCTION
+
+Welcome to the tovid titleset wizard.  We will be making a complete DVD, with
+multiple levels of menus including a root menu (VMGM menu) and lower level
+titleset menus.  We will be using 'tovid gui', which uses the 'todisc' script.
+Any of these menus can be either static or animated, and use thumbnail menu
+links or plain text links.  In addition the titleset menus can have chapter
+selection menus ("submenus") which by default have only thumbnail menu links.
+
+Though the sheer number of options can be daunting when the GUI first loads, it
+is important to remember that there are very few REQUIRED options, and in all
+cases the required options are on the opening tab. Below is a table of
+'required' options for each run of the GUI:
+
+General:  only the "Output name" is required.  Root menu: only the titleset
+titles (menu link text) are required.  Titleset menus: only videos to include
+in the titleset are required.
+
+But if you include only those options your menu might be boring ! Please have
+fun exploring the different options using the preview to test.
+
+A great many options of these menus are configurable, including fonts, shapes
+and effects for thumbnails, fade-in/fade-out effects, "switched menus", the
+addition of a "showcased" image/video, animated or static background image or
+video, audio background ... etc.  There are also playback options including the
+supplying of chapter points, special navigation features like "quicknav", and
+configurable DVD button links.
+'''
+page1 = Frame(tk)
+frame1 = Frame(tkframe)
+img_file = tovid_prefix + '/tovid.gif'
+if os.path.isfile(img_file):
+    img = PhotoImage(file=img_file)
+    pg1_label1 = Label(frame1, text='Tovid', font=heading_font)
+    pg1_label1.pack(side=TOP, pady=40)
+else:
+    print img_file, ' does not exist'
+pg1_label2 = Label(frame1, image=img).pack(side=TOP)
+pg1_label3 = Label(frame1, text='Titleset Wizard', font=lrg_font)
+pg1_label3.pack(side=TOP, pady=40)
+pg1_label4 = Label(frame1, text='Page 1', font=lrg_font)
+pg1_label4.pack(side=BOTTOM, anchor='s')
+frame1.pack(side=LEFT, padx=30, anchor='nw', fill=Y, expand=1)
+page1.pack(fill=BOTH, expand=1)
+
+# Use a BigLabel widget to get automatic word-wrap that adjusts to window size
+pg1_label5 = BigLabel(page1, pg1_txt1, style.font)
+pg1_label5.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
+
+############################## Page 2 of wizard ##############################
+next_txt = '''
+After making your selections, press [ Save to wizard ] in the GUI
+'''
+pg2_txt1 = '''
+GENERAL OPTIONS
+
+When you press the  [ Next >>> ]  button at the bottom of the wizard, we will
+start the GUI and begin with general options applying to all titlesets.  For
+example you may wish to have all menus share a common font and fontsize of your
+choosing, for the menu link titles and/or the menu title.
+
+The only REQUIRED option here is specifying an Output directory at the bottom
+of the GUI's main tab.  Options you enter will be overridden if you use the
+same option again later for titlesets.
+
+After making your selections, press [ Save to wizard ] in the GUI
+
+Press  [ Next >>> ]  to begin ...
+'''
+
+page2 = Frame(tk)
+pg2_label1 = Label(page2, text=pg2_txt1, justify=LEFT, font=style.font)
+pg2_label1.pack(fill=BOTH, expand=1, side=TOP, anchor='w')
+
+############################## Page 3 of wizard ##############################
+pg3_txt1 = '''
+ROOT MENU (VMGM)
+
+Now we will save options for your root (VMGM) menu.  The only option you really
+need is the titleset titles.  Since you can not save titles in the GUI without
+loading videos you need to enter them here.  These titleset names will appear
+as menu titles for the respective menu in your DVD.
+
+Enter the names of your titlesets, one per line, pressing <ENTER> each time.
+Do not use quotes unless you want them to appear literally in the title.
+
+Press  [ Next >>> ]  when you are finished, and the tovid gui will come up so
+you can enter any other options you want.  You can not enter video files here,
+but most other options can be used.  There are no REQUIRED options however, as
+you have already entered your root menu link titles.
+%s
+''' % next_txt
+
+page3 = Frame(tk)
+pg3_label1 = Label(page3, text=pg3_txt1, justify=LEFT, font=style.font)
+pg3_label1.pack(side=TOP, fill=BOTH, expand=1, anchor='w')
+# create the listbox (note that size is in characters)
+pg3_frame1 = LabelFrame(page3, text="Root 'menu link' titles")
+pg3_frame1.pack(side=TOP, fill=Y, expand=1)
+pg3_listbox1 = Listbox(pg3_frame1, width=50, height=12)
+#listbox1.insert(0, '')
+pg3_listbox1.pack(side=LEFT, fill=Y, expand=1, anchor='w')
+
+# create a vertical scrollbar to the right of the listbox
+yscroll = Scrollbar(pg3_frame1, command=pg3_listbox1.yview, orient=VERTICAL)
+yscroll.pack(side=LEFT, fill=Y, anchor='nw')
+pg3_listbox1.configure(yscrollcommand=yscroll.set)
+
+# use entry widget to display/edit selection
+enter1 = Entry(page3, width=50, text='Enter titles here')
+enter1.pack(fill=Y, expand=0)
+# set focus on entry
+enter1.select_range(0, 'end')
+enter1.focus_set()
+# pressing the return key will update edited line
+enter1.bind('<Return>', set_list)
+pg3_listbox1.bind('<ButtonRelease-1>', get_list)
+
+############################ Page 4 of wizard ############################
+
+page4 = Frame(tk)
+pg4_txt1 = '''
+TITLESET MENUS
+
+Okay, now you will enter options for each of your titlesets.  The only REQUIRED
+option here is to load one or more video files, but of course you should spruce
+up your menu by exploring some of the other options!  The menu title for each
+has been changed to the text you used for the menu links in the root menu -
+change this to whatever you want.
+
+Follow the simple instructions that appear in the next and subsequent pages:
+you will need to press  [ Next >>> ]  for each titleset.
+'''
+pg4_frame1 = Frame(page4)
+pg4_frame1.pack(side=TOP, fill=BOTH, expand=1)
+pg4_frame2 = Frame(pg4_frame1, borderwidth=1)
+pg4_frame2.pack(fill=BOTH, expand=1)
+pg4_label1 = Label(pg4_frame2, text=pg4_txt1, justify=LEFT, font=style.font)
+pg4_label1.pack(fill=BOTH, expand=1)
+pg4_txt2 = ''
+pg4_label2 = \
+  Label(pg4_frame1, text=pg4_txt2, justify=LEFT, font=style.font)
+pg4_label2.pack(fill=BOTH, expand=1)
+
+############################ Page 5 of wizard ############################
+
+page5 = Frame(tk)
+pg5_txt2 = '''
+If you wish to go back and change any options with the GUI, you can select
+an item from the options listbox and press [ Rerun Options ].  The titleset
+options are listed by the name you gave for the root menu links.
+'''
+pg5_txt3 = '''
+If you are happy with your saved options, now you can either choose to run
+the script now in an xterm, or exit and run it later in your favorite terminal.
+
+You can run it with:
+bash %s
+
+You may also edit the file with a text editor but do not change the headers
+(first 3 lines of text) or change the order of the sections:
+1. General opts, 2. Root menu 3. Titleset menus
+
+Press [Run script now] or [Exit].
+''' % script_file
+pg5_frame1 = Frame(page5)
+pg5_frame1.pack()
+page5_label1 = Label(pg5_frame1, text='Finished!', font=heading_font)
+page5_label1.pack()
+page5_label2 = Label(pg5_frame1, text=pg5_txt2, justify=LEFT)
+page5_label2.pack(side=TOP, anchor='w')
+# create the listbox
+pg5_frame2 = LabelFrame(pg5_frame1, \
+  text="Choose an item to edit with the GUI and press [ Rerun Options ]")
+pg5_frame2.pack(fill=X, expand=1)
+pg5_listbox1 = Listbox(pg5_frame2)
+pg5_listbox1.bind('<Double-Button-1>', rerun_options)
+# create a vertical scrollbar to the right of the listbox
+yscroll2 = Scrollbar(pg5_frame2, command=pg5_listbox1.yview, orient=VERTICAL)
+yscroll2.pack(side=LEFT, fill=Y)
+pg5_listbox1.configure(yscrollcommand=yscroll.set)
+# button to rerun the GUI to edit selected options
+pg5_button1 = Button(pg5_frame2, text='Rerun Options', command=rerun_options)
+pg5_button1.pack(side=BOTTOM)
+
+######################### Run the darn thing already #########################
+
+pages = [page1, page2, page3, page4, page5]
+current = page1
+if __name__ == '__main__':
+    if len(argv) > 1:
+        if os.path.exists(argv[1]):
+            todisc_cmds = load_project()
+    mainloop()

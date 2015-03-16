@@ -1,14 +1,12 @@
 # odict.py
 
-"""Ordered dictionary class, from a recipe_ in the Python Cookbook.
+"""Ordered dictionary class, from a Python Cookbook recipe:
 
-.. _recipe: http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
+    http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
+
 """
 
-__all__ = [
-    'Odict',
-    'convert_list',
-]
+__all__ = ['Odict']
 
 # Python < 3.x
 try:
@@ -18,8 +16,7 @@ except ImportError:
     from collections import UserDict
 
 class Odict (UserDict):
-    """Ordered dictionary class, compatible with the builtin `dict`.
-    The order in which items are added to the Odict is preserved.
+    """Ordered dictionary class, compatible with the builtin dict.
     """
     def __init__(self, keys=None, values=None):
         """Create an Odict from the given keys and values.
@@ -32,13 +29,13 @@ class Odict (UserDict):
         UserDict.__init__(self, dict(zip(keys, values)))
 
     def __delitem__(self, key):
-        """Delete the value from Odict[``key``].
+        """Delete the value from Odict[key].
         """
         UserDict.__delitem__(self, key)
         self._keys.remove(key)
 
     def __setitem__(self, key, item):
-        """Set Odict[``key``] = ``item``.
+        """Set Odict[key] = item.
         """
         UserDict.__setitem__(self, key, item)
         if key not in self._keys:
@@ -58,7 +55,7 @@ class Odict (UserDict):
         return dict_copy
 
     def items(self):
-        """Return a list of ``(key, value)`` pairs, in order.
+        """Return a list of (key, value) pairs, in order.
         """
         return zip(self._keys, self.values())
 
@@ -73,7 +70,7 @@ class Odict (UserDict):
         return [self.get(key) for key in self._keys]
 
     def popitem(self):
-        """Pop the last ``(key, value)`` pair from the Odict, and return it.
+        """Pop the last (key, value) pair from the Odict, and return it.
         """
         try:
             key = self._keys[-1]
@@ -99,7 +96,7 @@ class Odict (UserDict):
         return result
 
     def update(self, other_dict, **kwargs):
-        """Update the Odict with values from another `dict`.
+        """Update the Odict with values from another dict.
         """
         UserDict.update(self, other_dict, **kwargs)
         for key in other_dict.keys():
@@ -116,19 +113,19 @@ class Odict (UserDict):
 
 
 def convert_list(choices):
-    """Convert a list of choices to an `Odict` (ordered dictionary).
-    ``choices`` may be in one of several formats:
+    """Convert a list of choices to an Odict (ordered dictionary).
+    choices may be in one of several formats:
 
         string
-            ``'one|two|three'``
+            'one|two|three'
         list
-            ``['one', 'two', 'three']``
+            ['one', 'two', 'three']
         dict
-            ``{'a': "Choice A", 'b': "Choice B"}``
+            {'a': "Choice A", 'b': "Choice B"}
         list-of-lists
-            ``[['a', "Choice A"], ['b', "Choice B"], ..]``
+            [['a', "Choice A"], ['b', "Choice B"], ..]
 
-    Note: the `dict` form does not preserve order. Use list-of-lists
+    Note: the dict form does not preserve order. Use list-of-lists
     to maintain the specified order.
     """
     if type(choices) not in [str, list, dict]:
@@ -153,4 +150,3 @@ def convert_list(choices):
     else:
         raise TypeError("choices lists must either be"\
             "['a', 'b', 'c'] or [['a', 'A'], ['b', 'B']] style.")
-

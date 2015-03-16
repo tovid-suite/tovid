@@ -3,16 +3,72 @@
 """A GUI for the todisc command-line program.
 """
 
-try:
-    import Tkinter as tk
-except ImportError:
-    # python 3
-    import tkinter as tk
+import os
 
 # Get supporting classes from libtovid.metagui
 from libtovid.metagui import *
-from libtovid.guis.helpers import *
+from libtovid.util import filetypes
+import os
+import fnmatch
+from libtovid.cli import Command
 
+# Define a few supporting functions
+def to_title(filename):
+    basename = os.path.basename(filename)
+    firstdot = basename.find('.')
+    if firstdot >= 0:
+        return basename[0:firstdot]
+    else:
+        return basename
+
+def strip_all(filename):
+    return ''
+
+def find_masks(dir, pattern):
+    file_list=[]
+    ext = pattern.replace('*', '')
+    for path, dirs, files in os.walk(os.path.abspath(dir)):
+        for filename in fnmatch.filter(files, pattern):
+            file_list+=[ filename.replace(ext, '') ]
+    return file_list
+
+def nodupes(seq):
+    noDupes = []
+    [noDupes.append(i) for i in seq if not noDupes.count(i)]
+    return noDupes
+
+# List of file-type selections for Filename controls
+image_filetypes = [filetypes.image_files]
+image_filetypes.append(filetypes.all_files)
+#image_filetypes.extend(filetypes.match_types('image'))  # confusing
+# video file-types from filetypes needs some additions
+v_filetypes = 'm2v vob ts '
+v_filetypes += filetypes.get_extensions('video').replace('*.', '')
+v_filetypes += ' mp4 mpeg4 mp4v divx mkv ogv ogm ram rm rmvb wmv'
+vid_filetypes = filetypes.new_filetype('Video files', v_filetypes)
+video_filetypes = [vid_filetypes]
+video_filetypes += [filetypes.all_files]
+
+# some selectors can use video or audio
+av_filetypes = [ filetypes.all_files, filetypes.audio_files, vid_filetypes ]
+
+# some selectors can use image or video
+visual_filetypes = [ filetypes.all_files, filetypes.image_files, vid_filetypes ]
+
+# DVD video
+dvdext = 'vob mpg mpeg mpeg2'
+dvd_video_files = [ filetypes.new_filetype('DVD video files', dvdext) ]
+
+# Users can use their own thumb masks.  Add to thumb mask control drop-down
+masks = [ 'none', 'normal', 'oval', 'vignette', 'plectrum', 'arch', 'spiral', \
+'blob', 'star', 'flare' ]
+# $PREFIX/lib/tovid is already added to end of PATH
+os_path = os.environ['PATH'].rsplit(':')
+sys_dir = os_path[-1] + '/masks'
+home_dir = os.path.expanduser("~") + '/.tovid/masks'
+for dir in sys_dir, home_dir:
+    masks.extend(find_masks(dir, '*.png'))
+thumb_masks =  '|'.join(nodupes(masks))
 
 """Since todisc has a large number of options, it helps to store each
 one in a variable, named after the corresponding command-line option.
@@ -25,13 +81,18 @@ The actual GUI layout comes afterwards...
 ### Main todisc options
 ### --------------------------------------------------------------------
 
-# Note: _files_and_titles is defined in helpers.py
-
-_heading = Label(heading_text, 'center', tovid_icon, 48, 48)
-
 _menu_title = Text('Menu title', '-menu-title', 'My video collection',
     'Title text displayed on the main menu. Use \\n for a new line '
      'in a multi-line title.')
+
+_files = List('Video files', '-files', None,
+    'List of video files to include on the disc',
+    Filename('', filetypes=video_filetypes))
+
+_files_and_titles = ListToOne(_files, 'Video titles', '-titles', None,
+    'Titles to display in the main menu, one for each video file on the disc',
+    Text(),
+    filter=to_title)
 
 _group = ListToMany('-files', 'Grouped videos', '-group', None,
     'Video files to group together. Select the video in the list ' \
@@ -44,6 +105,10 @@ _group = ListToMany('-files', 'Grouped videos', '-group', None,
 _ntsc = Flag('NTSC', '-ntsc', True, 'NTSC, US standard')
 
 _pal = Flag('PAL', '-pal', False, 'PAL, European standard')
+
+_out = Filename('Output name', '-out', '',
+    'Name to use for the output directory where the disc will be created.',
+    'save', 'Choose an output name')
 
 
 ### --------------------------------------------------------------------
@@ -79,10 +144,11 @@ _textmenu = FlagOpt("Textmenu", '-textmenu', False,
     Number('Columns', '', 13, '', 0, 13))
 
 _quick_menu = Flag('Quick menu (may need a menu video)',
-    '-quick-menu', False, 'Note: you need a recent ffmpeg with the "movie" '
-    'filter enabled. Ten times faster than normal showcase animation.  A '
-    'showcase or background video is required unless doing switched menus.  '
-    'Menu links are text only.  Not compatible with wave or rotate options.')
+    '-quick-menu', False, 'Note: may not be available in your ffmpeg '
+    'as the needed "vhooks" have been deprecated. Ten times faster than '
+    'normal showcase animation.  A showcase or background video is required '
+    'unless doing switched menus.  Menu links are text only.  Not compatible '
+    'with wave or rotate options.')
 
 _switched_menus = Flag('Switched menus (try with "Quick menu" !)',
     '-switched-menus', False,
@@ -264,6 +330,8 @@ _text_start = Number('Start titles at', '-text-start', 50,
     'This value is applied before the menu is scaled.',
     0, 460, 'pixels')
 
+
+
 ### --------------------------------------------------------------------
 ### Runtime behavior
 ### --------------------------------------------------------------------
@@ -380,9 +448,8 @@ _slide_blur = SpacedText('Slide blur amount', '-slide-blur', '',
 _thumb_shape = Choice('Thumb shape', '-thumb-shape', 'none',
     'Apply a shaped transparency mask to thumbnail videos or images.  These '
     '"feathered" shapes look best against a plain background or used with '
-    '-thumb-mist [COLOR].  To use a "mist" background behind each thumb, '
+    '**-thumb-mist** [COLOR].  To use a "mist" background behind each thumb, '
     'see "Thumb mist" section.  No frame will be used for this option.  '
-    'See "man tovid" (-thumb-shape) for info on how to add your own masks.'
     'Leave at "none" to not use a feathered shape.',
     thumb_masks, 'dropdown')
 
@@ -453,11 +520,8 @@ _tile4x1 = Flag('1 row of 4 thumbs', '-tile4x1', False,
     '(4 videos only).  Not a showcase option.')
 
 _align = Choice('Align', '-align', 'north',
-    'Controls positioning of the thumbnails (if any) and video titles.  '
-    'With some arrangements this will have limited effects however.'
-    'For example only north|south|center can be used with the default montage '
-    'of thumbs arrangement, or with showcase with thumb arrangement. '
-    'It will be most effective with single column showcase and textmenu styles',
+    'Controls positioning of the thumbnails and their titles.  '
+    'With some arrangements this will have limited effects however.',
     'north|south|east|west|center', 'dropdown')
 
 _seek = SpacedText('Thumbnail seek(s)', '-seek', '',
@@ -465,19 +529,16 @@ _seek = SpacedText('Thumbnail seek(s)', '-seek', '',
     'A single value or space separated list, 1 value per video.  '
     'Also used for seeking in switched menus.')
 
-_user_thumbs = List('Image(s)', '-user-thumbs', None,
-    'Images for thumbnails.  This option requires one image for each title.',
-    Filename('', filetypes=image_filetypes))
 
 ### --------------------------------------------------------------------
 ### Fonts and font colors
 ### --------------------------------------------------------------------
 
 # Menu title font
-_menu_font = Font('', '-title-font', 'Helvetica',
+_menu_font = Font('', '-menu-font', 'Helvetica',
     'The font to use for the menu title')
 
-_menu_fontsize = Number('Size', '-title-fontsize', 24,
+_menu_fontsize = Number('Size', '-menu-fontsize', 24,
     'The font size to use for the menu title',
     0, 80, 'pixels', toggles=True)
 
@@ -502,9 +563,6 @@ menu_title_font = HPanel('Menu title font',
 # Video title font
 _titles_font = Font('', '-titles-font', 'Helvetica',
     'The font to use for the video titles')
-# unused FIXME
-_titles_font_deco = SpacedText('Custom font decoration', '', '',
-         'Space-separated list of custom options to imagemagick.'),
 
 _titles_fontsize = Number('Size', '-titles-fontsize', 12,
     'The font size to use for the video titles.  '
@@ -635,7 +693,7 @@ _playall = Flag('"Play all" button', '-playall', False,
     'Create a "Play All" button that jumps to the 1st title and plays '
     'all the videos in succession before returning to the main menu.')
 
-_chapters = Chapters('-files', 'Chapters', '-chapters', None,
+_chapters = ListToOne('-files', 'Chapters', '-chapters', None,
     'Number of chapters or HH:MM:SS string for each video. '
     'If only one value is given, use that for all videos. '
     'For grouped videos, use a "+" separator for joining '
@@ -646,7 +704,7 @@ _chapters = Chapters('-files', 'Chapters', '-chapters', None,
     'When using HH:MM:SS format the 1st chapter MUST be 00:00:00.  '
     'If using -no-menu and passing just integer(s), then the value '
     'represents the chapter INTERVAL not the number of chapters',
-    text='set with mplayer',
+    Text(),
     side='top',
     filter=strip_all)
 
@@ -679,8 +737,7 @@ _videos_are_chapters = Flag('Each video is a chapter',
 ### --------------------------------------------------------------------
 
 # Burning options
-_burn = Flag('Burn project', '-burn', False, 'Burn project on completion')
-_eject = Flag('Eject', '-eject', False, 'Eject DVD when burn complete')
+_burn = Flag('Burn project on completion', '-burn', False)
 
 _speed = Number('Speed', '-speed', 8,
     'Speed for burning',
@@ -743,7 +800,9 @@ _quick_nav = Flag('Quick-nav', '-quick-nav', False,
 """
 
 main =  VPanel('Basic',
-    _heading,_files_and_titles,
+    Label('You can author (and burn) a DVD with a simple menu '
+          'using ONLY this "Basic" pane', 'center'),
+    _files_and_titles,
     VPanel('',
         HPanel('',
             VPanel('Menu options',
@@ -753,11 +812,14 @@ main =  VPanel('Basic',
                     _submenus, _ani_submenus, side='left')
             ),
             FlagGroup('TV System', 'exclusive', _ntsc, _pal),
-            VPanel('Chapters', _chapters),
+            VPanel('Chapters', Number('', '-chapters', 6,
+            'Number of chapters for each video.  '
+            'You can instead set chapters or time codes individually '
+            'for each video by using the "Chapters" tab on '
+            'the "Playback" tab.  Do NOT use both settings.',
+            1, 25, '', 'popup', 1), Label('per video')),
             VPanel('Burning',
-                HPanel('',
                 _burn,
-                _eject),
                 HPanel('',
                     _speed,
                     _device,
@@ -792,11 +854,10 @@ main_menu = Tabs('Main menu',
             ),
             VPanel('Backgrounds',
                 VPanel('Image or video options',
-                    HPanel('', _bgvideo_seek,
-                    _bg_color)),
+                    _bgvideo_seek,
+                    _bg_color),
                 VPanel('Audio options',
                     HPanel('',  _bgaudio_seek, _menu_audio_fade)),
-                HPanel('Menu alignment', _align),
             ),
         ),
     ),
@@ -886,7 +947,7 @@ slideshow_panel = Tabs('Slideshow',
         HPanel('',
             Number('Number of slides shown on menu', '-menu-slide-total', 0,
                 'Use this many slides for making the slideshow menu. '
-                'Leave at 0 for default: use all slides given.',
+                'The default is to use all the slides given.',
                 0, 100),
             _submenu_slide_total,
         ),
@@ -920,16 +981,10 @@ for num in range(2,  13):
 slideshows = Tabs('Slideshows', *tab_list)
 
 
-thumbnails = Tabs("Thumbnails",
-    VPanel('Menu link thumbnails',
-    VPanel('',
+thumbnails = VPanel("Thumbnails",
     HPanel('',
-        VPanel('',
-            HPanel('',
-            VPanel('Aspect ratio', Label('Automatic: force video ratio on "Playback" tab')),
-            VPanel('Seeking', _seek),
-            ),
-            HPanel('',
+        VPanel('Menu link thumbnails',
+            HPanel('Seeking', _seek),
             VPanel("Effects",
                 HPanel('',_opacity, Label('(Also affects showcase thumb)')),
                 HPanel('', _blur, _3dthumbs),
@@ -939,22 +994,11 @@ thumbnails = Tabs("Thumbnails",
                 _thumb_shape,
                 _thumb_framesize,
                 _thumb_frame_color,
-                _thumb_columns,
-            ),
+                HPanel('', _thumb_columns, _align),
                 ),
         ),
-    ),
-    VPanel('User supplied thumbs',
-    VPanel('',
-    Label("Use this only if you want to substitute your own thumbs for default thumbnails.", 'center'),
-    _user_thumbs,
-    ),
-    ),
-    ),
-    ),
         VPanel("Showcase thumbnail",
             HPanel('Seeking', _showcase_seek),
-            HPanel('',
             VPanel('Effects',
                 _wave,
                 HPanel('', _showcase_blur, _3dshowcase),
@@ -966,7 +1010,9 @@ thumbnails = Tabs("Thumbnails",
                 _showcase_frame_color,
                 _showcase_geo),
         ),
-        ),
+    ),
+    HPanel('Aspect ratio', Label('Note: the aspect ratio of menu link '
+        'thumbnails is automatic: (force video ratio on "Playback" tab)')),
 )
 
 from libtovid.guis import tovid
@@ -998,73 +1044,29 @@ playback = Tabs("Playback",
             _outlinewidth,
         ),
     ),
+    VPanel('Chapters', _chapters),
     VPanel('Grouped Videos', _group),
 )
 
 encoding = VPanel('Encoding',
     Label("\nVideo re-encoding options - you may leave these at defaults.", 'center'),
-    Tabs('',
+    Tabs('tovid options',
         tovid.BASIC_OPTS,
         tovid.VIDEO,
         tovid.AUDIO,
         tovid.BEHAVIOR,
     ),
-    Flag('Encode only', '-encode-only', False,
-    'Use this GUI for encoding only.  On the Main tab, load files and '
-    'select an out filename'),
-    SpacedText('Custom makempg ("tovid mpg") options', '', '',
-         'Space-separated list of custom options to pass to makempg.'),
-    
+    SpacedText('Custom tovid options', '', '',
+         'Space-separated list of custom options to pass to tovid.'),
 )
 
 ### --------------------------------------------------------------------
 
-def run(args=None, position='', project=''):
-    from libtovid.guis.helpers import get_loadable_opts, load_script
-    import os
-    # if the first arg is a text file, treat it as a script and try to load
-    # the options from it as a list into args
-    # load_script from helpers overrides load_script from gui.py as the latter
-    # suffers from the load_args bug mentioned in that file.
-    if args:
-        script = args[0]
-        if not script.startswith('-'):
-            try:
-                from commands import getoutput 
-            except ImportError:
-            # python 3
-                from subprocess import getoutput 
-            if os.path.exists(script) \
-              and 'text' in getoutput('file %s' %script):
-                script = args.pop(0)
-                args.extend(load_script(script))
-    # now check if we have unloadable options, this first call does only that
-    # this will return 2 lists, [0] is loadable and [1] is unloadable
-    # probably don't want to do this anyway, as filter_args will just return
-    # the args it is sent if none are unloadable
-    a = get_loadable_opts(args)
-    if a[1]:
-        from libtovid.guis.helpers import filter_args
-        r = tk.Tk()
-        args = filter_args(r, args)
-    # workaround for netbooks (could use xrandr perhaps, but this works fine)
-    gui_width, gui_height = 800, 660
-    root = tk.Tk()
-    root.withdraw()
-    root.update_idletasks()
-    screen_height = root.winfo_screenheight()
-    # insure screen is not 800x600 or somesuch which doesn't work for gui anyway
-    # need float like 1.3333333 that we multiply * 100 and convert back to int
-    screen_width = float(root.winfo_screenwidth())
-    if int(screen_height) < 660 and not int(screen_width / screen_height * 100) == 133:
-        gui_height = 600
-    root.destroy()
-
-    # finally, run it
+def run(args=None):
     app = Application('todisc',
         main, main_menu, submenus, thumbnails, slideshows, playback, behavior, encoding)
-    gui = GUI("tovid gui", gui_width, gui_height, app, icon=tovid_icon, position=position)
-    gui.run(args, script=project)
+    gui = GUI("tovid gui", 800, 660, app)
+    gui.run(args)
 
 if __name__ == '__main__':
 

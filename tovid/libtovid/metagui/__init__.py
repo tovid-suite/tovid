@@ -1,37 +1,20 @@
-"""This module provides a simpler way to create GUIs for command-line programs.
+"""A simplified GUI-writing module.
 
-Overview
---------
-
-Command-line programs typically accept some number of *options*, many of which
-must be followed by some number of *arguments*. The arguments commonly represent
-filenames, numbers, text, fonts or colors, all of which should be displayed in
-a particular way in a GUI interface. This module was designed with many common
-option and argument types in mind.
-
-Each command-line option, and any arguments expected by it, are encapsulated in
-a `~control.Control`. Specialized controls exist for various kinds of options;
-for instance, one of the most common kinds is a `~control.Flag`, which simply
-enables or disables certain behavior. For instance, the ``ls`` program has an
-``-l`` flag for enabling a "long" output format. In metagui, this might be
-declared like::
-
-    Flag('Long listing', '-l')
-
-
+This module provides a simplified approach to creating GUIs for
+command-line programs. It's designed so _anyone_ can easily write their
+own GUI, without having any programming experience.
 
 It assumes your GUI is a direct frontend to one or more command-line programs,
 with each command-line option having an associated GUI control widget. Several
 kinds of widget are provided, for setting Filename, Color, Number or Font, or
 for picking a Choice or Flag.
 
-You probably know a handful of command-line applications that could benefit
-from a GUI, even a cheesy-looking Tkinter one. This module makes it easy to
-create one.
+You probably know of a handful of command-line applications that would be
+much better with a GUI, even a cheesy-looking Tkinter one. This module makes
+it easy to create one.
 
 
-Define controls
----------------
+DEFINE CONTROLS
 
 Say, if you have a program that takes input and output filenames::
 
@@ -42,32 +25,32 @@ then you can create GUI widgets for those options like this::
     Filename('Input filename', '-in')
     Filename('Output prefix', '-out')
 
-These have the general format::
+These have the general format:
 
     Control('Label', '-option', ...)
 
 where:
 
-    ``Control``
-        is a ``Control`` subclass appropriate to whatever is being controlled
-    ``'Label'``
-        is the text that should appear next to the GUI Control
-    ``'-option'``
-        is a command-line option whose value is set by the Control
+    Control
+        is a Control subclass, such as Filename, Choice, or Number,
+        describing what type of value is being controlled;
+    '-option'
+        is a command-line option whose value is set by the Control; and
+    'Label'
+        is the text that should appear next to the GUI Control.
 
 Other parameters include default value, help/tooltip text to show, allowable
 values, and hints about how to draw the GUI control widget; they are specific
-to the flavor of Control being used.
+to the flavor of Control being used.    
 
 For a full list of available Control subclasses and how to use them,
-see the `~libtovid.metagui.control` module.
+see libtovid/metagui/control.py.
 
 
-Creating the GUI
-----------------
+CREATING THE GUI
 
 Controls can be grouped together either vertically or horizontally (using a
-`~libtovid.metagui.panel.VPanel` or `~libtovid.metagui.panel.HPanel`, respectively)::
+VPanel or HPanel, respectively)::
 
     general = VPanel('General',
         Filename('Background audio file', '-bgaudio'),
@@ -76,18 +59,17 @@ Controls can be grouped together either vertically or horizontally (using a
         )
 
 This will create three GUI widgets in a panel labeled 'General': one for typing
-or browsing to a filename, one for enabling or disabling submenus, and another
+or browsing to a filename, one for enabling or disabling submenus, and another 
 for setting menu length to a number between 0 and 120. You can nest panels
 inside one another for grouping; sub-panels have their own label and list of
 Controls or sub-Panels.
 
-Once you have a panel, you can create an `~libtovid.metagui.gui.Application`::
+Once you have a panel, you can create an Application::
 
     app = Application('todisc', [general])
 
-This says your application will run the 'todisc' command-line program, passing
-options set by the 'General' panel. Now, create the
-`~libtovid.metagui.gui.GUI`::
+This says your application will run the 'todisc' command-line program,
+passing options set by the 'General' panel. Now, create the GUI::
 
     gui = GUI('MyGUI', [app])
     gui.run()
@@ -96,8 +78,7 @@ This creates the GUI, draws all the widgets, and will run your command-line
 program at the push of a button.
 
 
-Create a multi-panel GUI
-------------------------
+CREATE A MULTI-PANEL GUI
 
 If your program has a lot of options, one panel may not be enough to hold them
 all without looking cluttered, so you may break them down into multiple Panels,
@@ -121,7 +102,6 @@ then, create the Application and GUI::
 
 If multiple panels are given to Application, a tabbed interface is created,
 with one tab for each panel.
-
 """
 
 # Export everything from support, control, panel, and gui modules

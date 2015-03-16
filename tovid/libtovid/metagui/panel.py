@@ -19,52 +19,24 @@ try:
 except ImportError:
     import tkinter as tk
 
-from base64 import b64encode
-from libtovid import cli
 from libtovid.odict import Odict
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.control import Control, Flag
+from libtovid.metagui.support import \
+    (ComboBox, ensure_type, divide_list)
 from libtovid.metagui.variable import ListVar
-from libtovid.metagui.support import (
-  ComboBox, ensure_type, divide_list, get_photo_image
-  )
 
 
 class Label (Widget):
     """A widget with a text label.
     """
-    def __init__(self,
-                 text='',
-                 justify='left',
-                 image_file='',
-                 image_width=0,
-                 image_height=0):
+    def __init__(self, text='', justify='left'):
         """Create a Label with the given text.
 
             text
                 String to appear in the Label
             justify
                 Text justification: 'left', 'center', or 'right'
-            image_file
-                Full path to image file. May be in any format that
-                'convert' supports.
-            image_width
-                Width in pixels to resize the image to
-            image_height
-                Height in pixels to resize the image to
-
-        Width and height may be used to scale the image in different ways:
-
-            width == 0, height == 0
-                Preserve the original image's size
-            width > 0, height == 0
-                Resize to the given width; height automatically
-                adjusts to maintain aspect ratio
-            width == 0, height > 0
-                Resize to the given height; width automatically
-                adjusts to maintain aspect ratio
-            width > 0, height > 0
-                Resize to exactly the given dimensions
         """
         Widget.__init__(self, text)
         self.text = text
@@ -72,35 +44,19 @@ class Label (Widget):
             raise ValueError("Label justify argument must be 'left', 'center', "
                              "or 'right' (got '%s' instead)." % justify)
         self.justify = justify
-        # Image attributes
-        self.image_file = image_file
-        self.image_width = image_width
-        self.image_height = image_height
+        # In addition to justify, anchor to nw, n, or ne
+        _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
+        self.anchor = _anchors[self.justify]
         # Will be set by draw()
         self.label = None
-        self.image = None
 
 
     def draw(self, master, **kwargs):
         """Draw the Label in the given master.
         """
         Widget.draw(self, master, **kwargs)
-        # If an image filename was provided, get a PhotoImage
-        if self.image_file:
-            photo_image = get_photo_image(self.image_file,
-                self.image_width, self.image_height, self.cget('background'))
-            # Keep a reference to the PhotoImage to prevent garbage collection
-            self.photo = photo_image
-            image_frame = tk.Frame(self, padx=4, pady=4)
-            self.image = tk.Label(image_frame, image=photo_image)
-            self.image.pack()
-            image_frame.pack(side='left', expand=False)
-
-        # Create and pack the label
-        self.label = tk.Label(self, text=self.text, justify=self.justify, padx=8)
-        # Set appropriate anchoring based on justification
-        _anchors = {'left': 'w', 'center': 'center', 'right': 'e'}
-        self.label.pack(expand=True, anchor=_anchors[self.justify])
+        self.label = tk.Label(self, text=self.text, justify=self.justify)
+        self.label.pack(anchor=self.anchor)
 
 
 class Panel (Widget):
@@ -137,7 +93,7 @@ class Panel (Widget):
         # Get a labeled or unlabeled frame (labeled by default)
         if self.name and kwargs.get('labeled', True):
             self.frame = tk.LabelFrame(self, text=self.name,
-                                       padx=4, pady=4)
+                                       padx=8, pady=8)
         else:
             self.frame = tk.Frame(self)
         # Pack the frame
@@ -164,18 +120,12 @@ class Panel (Widget):
     def get_args(self):
         """Return a list of all command-line options from contained widgets.
         """
+        if not self.widgets:
+            return []
         args = []
         for widget in self.widgets:
             args += widget.get_args()
         return args
-
-
-    def set_args(self, args):
-        """Set panel options from the given list of command-line arguments,
-        and remove any successfully parsed options and arguments from ``args``.
-        """
-        for widget in self.widgets:
-            widget.set_args(args)
 
 
     def enable(self, enabled=True):
@@ -188,7 +138,7 @@ class Panel (Widget):
 class HPanel (Panel):
     """A group of widgets or sub-panels, packed horizontally (left-to-right).
 
-    For example::
+    For example:
 
         HPanel("General",
             Filename(...),
@@ -212,7 +162,7 @@ class HPanel (Panel):
 class VPanel (Panel):
     """A group of widgets or sub-panels, packed vertically (top-to-bottom).
 
-    For example::
+    For example:
 
         VPanel("General",
             Filename(...),
@@ -242,9 +192,9 @@ class Dropdowns (Panel):
     corresponding Control is displayed, along with a "remove" button to
     discard the control.
     """
-    def __init__(self, name='', *controls, **kwargs):
-        Panel.__init__(self, name, *controls, **kwargs)
-        ensure_type("Dropdown contents must be Controls", Control, *controls)
+    def __init__(self, name='', *widgets, **kwargs):
+        Panel.__init__(self, name, *widgets, **kwargs)
+        ensure_type("Dropdown contents must be Controls", Control, *widgets)
         # Controls, indexed by label
         self.controls = Odict()
         for control in self.widgets:

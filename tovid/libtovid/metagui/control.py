@@ -1,5 +1,83 @@
-"""This module defines a Control class and several derivatives. A Control is a
+"""Control widget classes.
+
+This module defines a Control class and several derivatives. A Control is a
 special-purpose GUI widget for setting a value such as a number or filename.
+
+Control subclasses:
+
+    Choice
+        Multiple-choice selection, with radiobutton or dropdown style
+    Color
+        RGB color selection, with color picker
+    Filename
+        Filename selection, with filesystem browse button
+    Flag
+        Checkbox for enabling/disabling a flag-type option
+    FlagOpt
+        Flag option, taking an argument when enabled
+    Font
+        Font name chooser
+    Number
+        Numeric entry, with min/max and optional slide bar
+    Text
+        Plain text string
+    SpacedText
+        Plain text, interpreted as a space-separated list of strings
+    List
+        List of values, editable in another Control
+
+
+Option revamp ideas
+
+Need a way to handle positional arguments, where the position in the
+command-line does not necessarily correspond to the draw-order in the GUI.
+
+Currently, an empty '' option is used for positional arguments, which
+prevents them from having a global name. If instead, a convention were
+adopted for option strings, where:
+
+    List('Input files', '<in_files>', ...)
+
+would create a positional argument, where the order of positioning is
+defined somewhere else, like:
+
+    Application('grep', panel1, panel2, ...
+        expected = '[options] <in_files>')
+
+or ffmpeg:
+
+    _infile = Filename('Input file', '<infile>')
+    _outfile = Filename('Output file', '<outfile>')
+    _options = VPanel('Options', ...)
+
+    expected = '[options] <infile> [options] <outfile>'
+
+Would that work?
+
+Or tovid-batch, where -infiles is an option, but must come last:
+
+    expected = '[options] -infiles'
+
+How does '[options]' include everything _but_ -infiles?
+
+Focus on getting most of the tovid scripts metagui-ized, then go from there.
+
+Some options are like begin/end tokens:
+
+    makexml -group <file_list> -endgroup
+
+Some have complex expected followup options:
+
+    makexml -topmenu VIDEO \
+        -menu MENU1.mpg <file_list1> \
+        -menu MENU2.mpg <file_list2>
+
+How deep should metagui get into parsing all this?
+
+Shorthand for a FlagGroup of Flags might be handy:
+
+    format = FlagChoice('Format', '-vcd|-dvd|-svcd')
+
 """
 
 __all__ = [
@@ -28,11 +106,9 @@ except NameError:
     def any(iterable):
         """Return True if bool(x) is True for any x in iterable."""
         for item in iterable:
-            if item:
-                return True
-        return False
-
-             
+            if not item:
+                return False
+        return True
 
 # Python < 3.x
 try:
@@ -46,9 +122,6 @@ except ImportError:
     from tkinter.filedialog import \
         (asksaveasfilename, askopenfilename, askopenfilenames)
     from tkinter.colorchooser import askcolor
-
-# Python 3.x
-from libtovid import basestring
 
 from libtovid.metagui.widget import Widget
 from libtovid.metagui.variable import VAR_TYPES, ListVar
@@ -85,7 +158,7 @@ class Control (Widget):
 
     Control subclasses may have any number of sub-widgets such as labels,
     buttons or entry boxes; one of the sub-widgets should be linked to
-    self.variable like so::
+    self.variable like so:
 
         textbox = tk.Entry(self, textvariable=self.variable)
 
@@ -99,7 +172,7 @@ class Control (Widget):
     @staticmethod
     def by_option(option):
         """Return the Control instance for a given option string,
-        or ``None`` if no Control has that option string.
+        or None if no Control has that option string.
         """
         if option != '' and option in Control.all:
             return Control.all[option]
@@ -118,8 +191,6 @@ class Control (Widget):
                  **kwargs):
         """Create a Control for an option.
 
-        Arguments:
-
             vartype
                 Python type of stored variable
                 (str, bool, int, float, list, dict)
@@ -127,7 +198,7 @@ class Control (Widget):
                 Label shown in the GUI for the Control
             option
                 Command-line option associated with this Control,
-                or empty to create a positional argument
+                or '' to create a positional argument
             default
                 Default value for the Control
             help
@@ -138,7 +209,7 @@ class Control (Widget):
                 Position of label ('left' or 'top'). It's up to the
                 derived Control class to use this appropriately.
             kwargs
-                Keyword arguments of the form ``key1=arg1, key2=arg2``
+                Keyword arguments of the form key1=arg1, key2=arg2
 
         """
         Widget.__init__(self, label, **kwargs)
@@ -172,7 +243,7 @@ class Control (Widget):
         """Draw the control widgets in the given master.
 
         Override this method in derived classes, and call the base
-        class method::
+        class draw() method:
 
             Control.draw(self, master)
 
@@ -226,13 +297,7 @@ class Control (Widget):
         # self.variable isn't defined until draw() is called
         if not self.variable:
             raise NotDrawn("Can't get() from '%s'" % self.name)
-        # In some strange cases (like a Number control with an empty Entry)
-        # the get() method can raise a ValueError. If so, just return the
-        # control's default value.
-        try:
-            return self.variable.get()
-        except ValueError:
-            return self.default
+        return self.variable.get()
 
 
     def set(self, value):
@@ -271,7 +336,7 @@ class Control (Widget):
 
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
-        `draw` must be called before this function.
+        draw() must be called before this function.
         """
         args = []
         value = self.get()
@@ -304,18 +369,6 @@ class Control (Widget):
         else:
             args.append(value)
         return args
-
-
-    def set_args(self, args):
-        """Set control options from the given list of command-line arguments,
-        and remove any successfully parsed options and arguments from ``args``.
-        """
-        # If this control's option is not in args, there's nothing to do
-        if self.option not in args:
-            return
-        # Get the index where the option appears
-        index = args.index(self.option)
-        # TODO
 
 
     def add_callback(self, callback):
@@ -378,18 +431,19 @@ class Choice (Control):
             option
                 Command-line option to set
             default
-                Default choice, or empty to use first choice in list
+                Default choice, or '' to use first choice in list
             help
                 Help text to show in a tooltip
             choices
-                Available choices, in string form: ``one|two|three``, list
-                form ``['one', 'two', 'three']``, or as a list-of-lists
-                ``[['a', "Use A"], ['b', "Use B"], ..]``.  A dictionary is also
-                allowed, as long as you don't care about preserving order.
+                Available choices, in string form: 'one|two|three'
+                or list form: ['one', 'two', 'three'], or as a
+                list-of-lists: [['a', "Use A"], ['b', "Use B"], ..].
+                A dictionary is also allowed, as long as you don't
+                care about preserving choice order.
             style
-                ``radio`` for radiobuttons, ``dropdown`` for a drop-down list
+                'radio' for radiobuttons, 'dropdown' for a drop-down list
             side
-                ``left`` for horizontal, ``top`` for vertical arrangement
+                'left' for horizontal, 'top' for vertical arrangement
 
         """
         self.choices = convert_list(choices)
@@ -427,7 +481,7 @@ class Choice (Control):
 
 
 class Color (Control):
-    """A color chooser that may have '#RRGGBB' or 'ColorName' values.
+    """A color chooser that may have hex '#RRGGBB' or 'ColorName' values.
     """
     def __init__(self,
                  label="Color",
@@ -445,7 +499,6 @@ class Color (Control):
                 Default color (named color or hexadecimal RGB)
             help
                 Help text to show in a tooltip
-
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
         # Defined in draw()
@@ -477,10 +530,7 @@ class Color (Control):
         """Event handler to update the color preview.
         """
         color = self.variable.get().strip()
-        try:
-            self.set(color)
-        except (ValueError):
-            pass
+        self.set(color)
 
 
     def pick_color(self):
@@ -504,8 +554,8 @@ class Color (Control):
 
 
     def hexcolor(self, color):
-        """Return an 8-bit '#RRGGBB' hex string for the given color.
-        If a given color name is unknown, return '#FFFFFF' (white).
+        """Return an 8-bit '#rrggbb' hex string for the given color.
+        If a given color name is unknown, return '#ffffff' (white).
         """
         # If color is already hex, return it
         if self._is_hex_rgb(color):
@@ -539,18 +589,8 @@ class Color (Control):
     # Static methods for supporting functions
     @staticmethod
     def _is_hex_rgb(color):
-        """Return True if color appears to be a hex '#RRGGBB' value.
+        """Return True if color appears to be a hex #RRGGBB value.
         Both three-digit and six-digit hex codes are allowed.
-
-        Examples::
-
-            >>> _is_hex_rgb('#FF0080')
-            True
-            >>> _is_hex_rgb('#F08')
-            True
-            >>> _is_hex_rgb('#FF008')
-            False
-
         """
         if not isinstance(color, basestring):
             return False
@@ -565,12 +605,6 @@ class Color (Control):
     @staticmethod
     def _hex_to_rgb(color):
         """Convert a hexadecimal color string '#RRGGBB' to an RGB tuple.
-
-        Example::
-
-            >>> _hex_to_rgb('#FF0080')
-            (255, 0, 128)
-
         """
         color = color.lstrip('#')
         red, green, blue = (color[0:2], color[2:4], color[4:6])
@@ -580,12 +614,6 @@ class Color (Control):
     @staticmethod
     def _rgb_to_hex(rgb_tuple):
         """Convert an RGB tuple into a hexadecimal color string '#RRGGBB'.
-
-        Example::
-
-            >>> _rgb_to_hex((255, 0, 128))
-            '#FF0080'
-
         """
         red, green, blue = rgb_tuple
         return '#%02x%02x%02x' % (red, green, blue)
@@ -620,7 +648,6 @@ class Filename (Control):
             filetypes
                 Types of files to show in the file browser dialog. May be 'all'
                 for all file types, or a list of ``('label', '*.ext')`` tuples.
-
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
         self.action = action
@@ -676,12 +703,11 @@ class Flag (Control):
             option
                 Command-line flag passed
             default
-                Default value (``True`` or ``False``)
+                Default value (True or False)
             help
                 Help text to show in a tooltip
             enables
                 Option or list of options to enable when the Flag is checked
-
         """
         Control.__init__(self, bool, label, option, default, help, **kwargs)
 
@@ -733,7 +759,7 @@ class Flag (Control):
 
     def get_args(self):
         """Return a list of arguments for passing this command-line option.
-        `draw` must be called before this function.
+        draw() must be called before this function.
         """
         args = []
         # If flag is true, and option is nonempty, append to args
@@ -819,10 +845,9 @@ class Font (Control):
             option
                 Command-line option to set
             default
-                Default font name
+                Default font
             help
                 Help text to show in a tooltip
-
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
         # Defined by draw()
@@ -875,10 +900,10 @@ class Number (Control):
             min, max
                 Range of allowable numbers (inclusive)
             units
-                Units of measurement (ex. 'kbits/sec'), used as a label
+                Units of measurement (ex. "kbits/sec"), used as a label
             style
-                'spin' for a spinbox,
-                'scale' for a slider,
+                'spin' for a spinbox
+                'scale' for a slider
                 'popup' for a slider in a popup window
             step
                 For 'scale' style, the amount to increment or
@@ -965,7 +990,7 @@ class Text (Control):
                 Help text to show in a tooltip
             width
                 Width in characters of the text field, or
-                ``None`` to maximize width in available space
+                None to maximize width in available space
         """
         Control.__init__(self, str, label, option, default, help, **kwargs)
         self.width = width
@@ -1008,8 +1033,7 @@ class Text (Control):
     def next_item(self, event):
         """Select the next item in the parent listbox.
         """
-        if self.parent_list is not None:
-            self.parent_list.listbox.next_item(event)
+        self.parent_list.listbox.next_item(event)
 
 
 class SpacedText (Text):
@@ -1051,7 +1075,7 @@ class SpacedText (Text):
 class List (Control):
     """A list of values, editable with a given Control.
 
-    Examples::
+    Examples:
 
         List('Filenames', '-files', control=Filename())
         List('Colors', '-colors', control=Color())
