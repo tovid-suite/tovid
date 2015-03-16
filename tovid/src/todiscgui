@@ -4,20 +4,10 @@
 import sys
 from libtovid.guis import todisc
 
-command = []
-position = ''
-project = ''
 if __name__ == '__main__':
-    args = sys.argv[1:]
-    while args:
-        arg = args.pop(0)
-        # if passing --position pop next arg as well
-        if arg in ['--position', '-position']:
-            position = args.pop(0)
-        elif arg in ['--project', '-project']:
-            project = args.pop(0)
-        else:
-            # if --position or --project not passed, all args append to command
-            command.append(arg)
-    todisc.run(command, position=position, project=project)
+    if len(sys.argv) > 1:
+        script_filename = sys.argv[1]
+    else:
+        script_filename = ''
+    todisc.run(script_filename)
 

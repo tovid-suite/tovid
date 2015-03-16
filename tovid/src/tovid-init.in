@@ -8,7 +8,7 @@
 #
 # Project homepage: http://tovid.wikia.com
 #
-# Copyright (C) 2005-2014
+# Copyright (C) 2005-2010
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -53,7 +53,7 @@ SEPARATOR="========================================================="
 TOVID_HOME="$HOME/.tovid"
 TOVID_HOME_PAGE="http://tovid.wikia.com"
 TOVID_FORUMS="http://groups.google.com/group/tovid-users"
-TOVID_ISSUES="http://code.google.com/p/tovid/issues/list"
+
 
 # ******************************************************************************
 # ******************************************************************************
@@ -180,8 +180,9 @@ function format_time()
 # ******************************************************************************
 # Take a string containing a time (like "02:15:25.3") and
 # format it as an integer number of seconds. Fractional seconds
-# are truncated. Result is echoed to stdout, so to use the output you can
-# call the function like this: var=$(unformat_time $TIME_STRING)
+# are truncated. Result is echoed to stdout, so to use the output
+# as a "return value", call the function like this:
+#     RETURN_VALUE=$(unformat_time $TIME_STRING)
 # ******************************************************************************
 function unformat_time()
 {
@@ -194,11 +195,7 @@ function unformat_time()
     else
         TOT_SECONDS=$1
     fi
-    if [[ -n $2 && $2 = "int" ]]; then
-        echo ${TOT_SECONDS%%.*}
-    else
-        echo $TOT_SECONDS
-    fi
+    echo $TOT_SECONDS
 }
 
 # *****************************************************************************
@@ -281,17 +278,15 @@ function file_output_progress()
     # Wait for input file to appear
     # After a 30-second timeout, exit gracefully
     CUR_TIME=30
-    while test $CUR_TIME -gt 0; do 
-        sleep 3
+    while test $CUR_TIME -gt 0; do
         # If file exists, wait a few more seconds, then break out
         if test -e "$FOP_OUTFILE"; then
-            $QUIET || printf "Processing started. Please wait...                                               "
-            sleep 1
-            CUR_TIME=1
+            printf "Processing started. Please wait...                                               "
+            sleep 3s
             break
         fi
         printf "Waiting $CUR_TIME seconds for output file \"$FOP_BASENAME_NAME\" to appear...\r"
-        sleep 1
+        sleep 1s
         CUR_TIME=$(expr $CUR_TIME - 1)
     done
 
@@ -324,12 +319,12 @@ function file_output_progress()
 
         # Doze a bit to let the file size increase
         # (SLEEP_TIME defaults to 1s if unset)
-        sleep ${SLEEP_TIME-"1"}
+        sleep ${SLEEP_TIME-"1s"}
 
         FOP_LAST_SIZE=$FOP_CUR_SIZE
         FOP_CUR_SIZE=$(du -b "$FOP_OUTFILE" | awk '{print $1}')
     done
-    $QUIET && printf "\n" || printf "\n\n"
+    printf "\n\n"
 }
 
 # ******************************************************************************
@@ -417,8 +412,8 @@ function countdown()
     count=$(seq 1 $LAST)
     for _CNTR in $(sort -nr <<< "$count")
     do
-        echo -n -e " in $_CNTR seconds...or press <ENTER>\r";
-        read  -t 1 && break;
+        echo -n -e " in $_CNTR seconds...\r";
+        sleep 1s;
     done
 }
 
@@ -437,23 +432,11 @@ test_version()
     IFS=$OIFS
     for i in ${!test_version[@]}; do
         [[ -z ${version[i]} ]] && version[i]=0
-       (( ${version[i]} > ${test_version[i]} )) && return 0
        (( ${version[i]} < ${test_version[i]} )) && return 1
     done
     return 0
 }
-# *****************************************************************************
-# takes 1 arg:  [name to prefix each line of output]
-# uses stdbuf (coreutils) if present so stdin is line buffered
-send_to_log()
-{
-    [[ $1 ]] && prog_name="[$1]: " || prog_name="[${0##*/}]: "
-    $std_buf tr "\015" "\n" < /dev/stdin | \
-    while read line; do
-        printf "%s %s\n" "$prog_name" "$line"
-    done
-    printf "\n"
-}
+
 
 # ******************************************************************************
 #
@@ -472,8 +455,7 @@ send_to_log()
 KERNEL=$(uname)
 if test "$KERNEL" = "Linux"; then
     # Linux should have /proc/cpuinfo
-    CPU_MODEL=$(awk -F ":" '/model name/ {print $2}' \
-    /proc/cpuinfo | head -n 1 | sed 's/^  *//g')
+    CPU_MODEL=$(awk -F ":" '/model name/ {print $2}' /proc/cpuinfo | head -n 1)
     CPU_SPEED=$(awk 'BEGIN { IGNORECASE = 1 } /MHz/ { print $4 }' /proc/cpuinfo | head -n 1)
     # Test for multiple CPUs. If they are available, try to use them.
     if test $(grep "^processor" /proc/cpuinfo | wc -l) -ge "2"; then
@@ -530,6 +512,56 @@ if ! test -d "$TOVID_HOME"; then
     mkdir "$TOVID_HOME"
 fi
 
+# Config file configuration and creation
+CONFIG_FILE=$TOVID_HOME/makempg.config
+
+if ! test -f $CONFIG_FILE; then
+    if test -f $TOVID_HOME/tovid.config; then
+        echo -e "${SEPARATOR}"
+        echo "INFO: renaming $TOVID_HOME/tovid.config to $CONFIG_FILE"
+        mv "$TOVID_HOME/tovid.config" "$CONFIG_FILE"
+        sleep 5
+    else
+        CONFIG_CONTENTS=`cat << EOF
+tovid
+# Sample makempg ("tovid mpg") configuration file
+# Each line may have one or more makempg options
+# This file is read EVERY time makempg runs
+# DO NOT COMMENT IN LINE
+
+# See 'man tovid' for a complete list of options
+
+# Disc type
+#-dvd
+#-vcd
+#-svcd
+
+# TV system standard
+#-pal
+#-ntsc
+#-ntscfilm
+
+# Other suggestions
+
+# Overwrite output files
+#-overwrite
+
+# No prompting
+#-noask
+
+# Use ffmpeg for all encoding
+#-ffmpeg
+
+# Set a default quality
+#-quality 8
+
+# Normalize audio
+#-normalize
+EOF`
+        printf "$CONFIG_CONTENTS\n" > "$CONFIG_FILE"
+    fi
+fi
+
 # Working directory configuration
 USER_PREFS=$TOVID_HOME/preferences
 
@@ -546,29 +578,14 @@ else
 # tovid preferences
 # Configures working directory for all scripts and
 # output directory for the makempg script
-# also used for setting ffmpeg/avconv program
 #WORKING_DIR=/tmp
 #OUTPUT_DIR=/video/outfiles
-#TOVID_FFMPEG=ffmpeg
 EOF`
     printf "$PREFS_CONTENTS\n" > "$USER_PREFS"
 fi
 # if preferences vars are set in the environment, use those (takes precedence).
 [[ $TOVID_WORKING_DIR ]] && WORKING_DIR="$TOVID_WORKING_DIR"
 [[ $TOVID_OUTPUT_DIR ]] && OUTPUT_DIR="$TOVID_WORKING_DIR"
-[[ $TOVID_FFMPEG_CMD ]] && TOVID_FFMPEG="$TOVID_FFMPEG_CMD"
-# FFmpeg and FFprobe are vars used for ffmpeg by scripts needing ffmpeg/avconv
-# if avconv is installed, use that unless env var set
-hash avconv 2>/dev/null && TOVID_FFMPEG=${TOVID_FFMPEG:-avconv}
-hash avprobe 2>/dev/null && TOVID_FFPROBE=${TOVID_FFPROBE:=avprobe}
-# finally, default to ffmpeg if non of the above override it
-FFmpeg=${TOVID_FFMPEG:=ffmpeg}
-[[ $FFmpeg =~ ffmpeg ]] && TOVID_FFPROBE=ffprobe
-[[ $FFmpeg =~ avconv ]] && TOVID_FFPROBE=avprobe
-FFprobe=${TOVID_FFPROBE:=ffprobe}
-
-# stdbuf (coreutils>=7.5) is useful to todisc and makempg, use it if present
-hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
 
 # ******************************************************************************
 # Check for run-time dependencies
@@ -593,7 +610,7 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
     # *************************************************************************
     # Required Dependencies
     # *************************************************************************
-    core="grep sed md5sum mplayer mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv"
+    core="grep sed md5sum mplayer mencoder mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv ffmpeg"
 
     # *************************************************************************
     # Optional Dependencies
@@ -628,13 +645,9 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
 
     # -------------------------------------------------------------------------
     # todisc dependencies
-    todisc_deps="$magick mogrify spumux dvdauthor sox"
+    todisc_deps="$magick mogrify spumux dvdauthor transcode sox"
 
     # Quit and complain if ANY core dependency is missing.
     assert_dep "$core" "You are missing CORE tovid dependencies!"
-    # ffmpeg is also a part of core deps, but is taken care of here
-    ffmpeg_alts="Use either ffmpeg (ffmpeg.org) or avconv (libav.org)."
-    ffmpeg_pref="Set choice in ${USER_PREFS}. As in: TOVID_FFMPEG=ffmpeg"
-    assert_dep $FFmpeg "You are missing $FFmpeg ! $ffmpeg_alts ${ffmpeg_pref}."
 
 # End tovid-init

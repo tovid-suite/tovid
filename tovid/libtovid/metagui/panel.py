@@ -10,6 +10,7 @@ __all__ = [
     'Drawer',
     'Tabs',
     'FlagGroup',
+    'RelatedList',
 ]
 
 # Python < 3.x
@@ -19,52 +20,24 @@ try:
 except ImportError:
     import tkinter as tk
 
-from base64 import b64encode
-from libtovid import cli
 from libtovid.odict import Odict
 from libtovid.metagui.widget import Widget
-from libtovid.metagui.control import Control, Flag
+from libtovid.metagui.control import Control, Flag, List
+from libtovid.metagui.support import \
+    (ComboBox, ScrollList, ensure_type, divide_list)
 from libtovid.metagui.variable import ListVar
-from libtovid.metagui.support import (
-  ComboBox, ensure_type, divide_list, get_photo_image
-  )
 
 
 class Label (Widget):
     """A widget with a text label.
     """
-    def __init__(self,
-                 text='',
-                 justify='left',
-                 image_file='',
-                 image_width=0,
-                 image_height=0):
+    def __init__(self, text='', justify='left'):
         """Create a Label with the given text.
 
             text
                 String to appear in the Label
             justify
                 Text justification: 'left', 'center', or 'right'
-            image_file
-                Full path to image file. May be in any format that
-                'convert' supports.
-            image_width
-                Width in pixels to resize the image to
-            image_height
-                Height in pixels to resize the image to
-
-        Width and height may be used to scale the image in different ways:
-
-            width == 0, height == 0
-                Preserve the original image's size
-            width > 0, height == 0
-                Resize to the given width; height automatically
-                adjusts to maintain aspect ratio
-            width == 0, height > 0
-                Resize to the given height; width automatically
-                adjusts to maintain aspect ratio
-            width > 0, height > 0
-                Resize to exactly the given dimensions
         """
         Widget.__init__(self, text)
         self.text = text
@@ -72,35 +45,19 @@ class Label (Widget):
             raise ValueError("Label justify argument must be 'left', 'center', "
                              "or 'right' (got '%s' instead)." % justify)
         self.justify = justify
-        # Image attributes
-        self.image_file = image_file
-        self.image_width = image_width
-        self.image_height = image_height
+        # In addition to justify, anchor to nw, n, or ne
+        _anchors = {'left': 'nw', 'center': 'n', 'right': 'ne'}
+        self.anchor = _anchors[self.justify]
         # Will be set by draw()
         self.label = None
-        self.image = None
 
 
     def draw(self, master, **kwargs):
         """Draw the Label in the given master.
         """
         Widget.draw(self, master, **kwargs)
-        # If an image filename was provided, get a PhotoImage
-        if self.image_file:
-            photo_image = get_photo_image(self.image_file,
-                self.image_width, self.image_height, self.cget('background'))
-            # Keep a reference to the PhotoImage to prevent garbage collection
-            self.photo = photo_image
-            image_frame = tk.Frame(self, padx=4, pady=4)
-            self.image = tk.Label(image_frame, image=photo_image)
-            self.image.pack()
-            image_frame.pack(side='left', expand=False)
-
-        # Create and pack the label
-        self.label = tk.Label(self, text=self.text, justify=self.justify, padx=8)
-        # Set appropriate anchoring based on justification
-        _anchors = {'left': 'w', 'center': 'center', 'right': 'e'}
-        self.label.pack(expand=True, anchor=_anchors[self.justify])
+        self.label = tk.Label(self, text=self.text, justify=self.justify)
+        self.label.pack(anchor=self.anchor)
 
 
 class Panel (Widget):
@@ -123,21 +80,20 @@ class Panel (Widget):
         self.frame = None
 
 
-    def draw(self, master, **kwargs):
+    def draw(self, master, labeled=True, **kwargs):
         """Draw the Panel, but not any contained widgets.
 
             labeled
-                True (default) to use a LabelFrame with the panel's name,
-                False to draw the panel without a label.
+                True to use a LabelFrame with the panel's name
 
         Panel subclasses must pack the contained widgets, or
         call ``draw_widgets`` to pack them.
         """
         Widget.draw(self, master, **kwargs)
-        # Get a labeled or unlabeled frame (labeled by default)
-        if self.name and kwargs.get('labeled', True):
+        # Get a labeled or unlabeled frame
+        if self.name and labeled:
             self.frame = tk.LabelFrame(self, text=self.name,
-                                       padx=4, pady=4)
+                                       padx=8, pady=8)
         else:
             self.frame = tk.Frame(self)
         # Pack the frame
@@ -164,18 +120,12 @@ class Panel (Widget):
     def get_args(self):
         """Return a list of all command-line options from contained widgets.
         """
+        if not self.widgets:
+            return []
         args = []
         for widget in self.widgets:
             args += widget.get_args()
         return args
-
-
-    def set_args(self, args):
-        """Set panel options from the given list of command-line arguments,
-        and remove any successfully parsed options and arguments from ``args``.
-        """
-        for widget in self.widgets:
-            widget.set_args(args)
 
 
     def enable(self, enabled=True):
@@ -188,7 +138,7 @@ class Panel (Widget):
 class HPanel (Panel):
     """A group of widgets or sub-panels, packed horizontally (left-to-right).
 
-    For example::
+    For example:
 
         HPanel("General",
             Filename(...),
@@ -212,7 +162,7 @@ class HPanel (Panel):
 class VPanel (Panel):
     """A group of widgets or sub-panels, packed vertically (top-to-bottom).
 
-    For example::
+    For example:
 
         VPanel("General",
             Filename(...),
@@ -230,8 +180,7 @@ class VPanel (Panel):
         """Draw the VPanel and its contained widgets in the given master.
         """
         Panel.draw(self, master, **kwargs)
-        # Avoid unnecessary vertical expansion
-        self.draw_widgets(side='top', expand=False)
+        self.draw_widgets(side='top')
 
 
 class Dropdowns (Panel):
@@ -242,9 +191,9 @@ class Dropdowns (Panel):
     corresponding Control is displayed, along with a "remove" button to
     discard the control.
     """
-    def __init__(self, name='', *controls, **kwargs):
-        Panel.__init__(self, name, *controls, **kwargs)
-        ensure_type("Dropdown contents must be Controls", Control, *controls)
+    def __init__(self, name='', *widgets, **kwargs):
+        Panel.__init__(self, name, *widgets, **kwargs)
+        ensure_type("Dropdown contents must be Controls", Control, *widgets)
         # Controls, indexed by label
         self.controls = Odict()
         for control in self.widgets:
@@ -356,7 +305,10 @@ class Tabs (Panel):
         Panel.__init__(self, name, *widgets, **kwargs)
         # Index of selected tab
         self.index = 0
-        self.side = kwargs.get('side', 'top')
+        if 'side' in kwargs:
+            self.side = kwargs['side']
+        else:
+            self.side = 'top'
         # Set by draw()
         self.buttons = None
         self.selected = None
@@ -468,11 +420,17 @@ class FlagGroup (Panel):
         self.flags = flags
         self.kind = kind
         # Keyword arguments
-        self.side = kwargs.get('side', 'top')
-        if self.side not in ['top', 'left']:
-            raise ValueError("FlagGroup 'side' must be 'top' or 'left'.")
-        self.columns = kwargs.get('columns', 1)
-        self.rows = kwargs.get('rows', 1)
+        self.side = 'top'
+        if 'side' in kwargs:
+            self.side = kwargs['side']
+            if self.side not in ['top', 'left']:
+                raise ValueError("FlagGroup 'side' must be 'top' or 'left'.")
+        self.columns = 1
+        if 'columns' in kwargs:
+            self.columns = kwargs['columns']
+        self.rows = 1
+        if 'rows' in kwargs:
+            self.rows = kwargs['rows']
 
 
     def draw(self, master, **kwargs):
@@ -493,25 +451,23 @@ class FlagGroup (Panel):
             # Draw all Flags in the row/column
             for flag in flags:
                 flag.draw(subframe)
-                flag.add_callback(self.modified)
+                flag.check.bind('<Button-1>', self.select)
                 flag.pack(anchor='nw', side=self.side, fill='x', expand=True)
             # Pack the frame for the current row/column
             subframe.pack(anchor='nw', side=strip_side)
 
 
-    def modified(self, flag):
-        """Called when a flag is modified.
+    def select(self, event):
+        """Event handler called when a Flag is selected.
         """
-        # For normal flags, do nothing
+        # For normal flags, nothing to do
         if self.kind != 'exclusive':
             return
-        # If the flag is unchecked, do nothing
-        if not flag.get():
-            return
-        # Otherwise, uncheck all other flags
-        for _flag in self.flags:
-            if _flag != flag:
-                _flag.set(False)
+        # For exclusive flags, clear all but the clicked Flag
+        for flag in self.flags:
+            if flag.check != event.widget:
+                flag.set(False)
+            flag.enabler()
 
 
     def get_args(self):
@@ -524,5 +480,263 @@ class FlagGroup (Panel):
                 args.extend(flag.get_args())
         return args
 
+
+class RelatedList (Panel):
+    """A Panel showing two Lists, where one is related to the other.
+
+    Relates a parent list to a child Control, with a parent:child
+    relationship of 1:1 (each parent item has one child item)
+    or 1:* (each parent item has a list of child items).
+
+    One to one:
+
+        - Each item in parent list maps to one item in the child list
+        - Parent copy and child list scroll in unison
+        - If item in child is selected, parent item is selected also
+        - Drag/drop is allowed in parent list only
+
+    One to many:
+
+        - Each item in parent list maps to a list of items in the child list
+        - Parent copy and child list do NOT scroll in unison
+        - If item in child is selected, parent is unaffected
+        - Drag/drop is allowed in the child Control
+
+    Assumptions:
+
+        - If item in parent is selected, child item/list is selected also
+        - It item is added to parent, new child item/list is added also
+        - If item in parent is deleted, child item/list is deleted also
+        - Child option string is only passed once
+
+    """
+
+    def __init__(self,
+                 name,
+                 parent,
+                 correspondence,
+                 child_list,
+                 filter=lambda x: x,
+                 side='left',
+                 **kwargs):
+        """Create a ``1:1`` or ``1:*`` correspondence between two lists.
+
+            name
+                Name of the RelatedList, displayed as a label
+            parent
+                Parent List (a Control instance), or the option string
+                of the parent List control declared elsewhere
+            correspondence
+                Either ``1:1`` (one-to-one) or ``1:*`` (one-to-many)
+            child_list
+                List control for the child
+            filter
+                A function that translates parent values into child values
+            side
+                Pack the parent to the 'left' of child or on 'top' of child
+
+        Keyword arguments:
+
+            index
+                True to pass an additional argument between the sub-list's
+                option and arguments with the 1-based index of the sub-list.
+            repeat
+                True to pass the sub-list's option for every sub-list; False
+                to pass the sub-list's option only once.
+
+        Examples::
+
+            RelatedList('-files', '1:1',
+                List('Video titles', '-titles', Text()))
+            RelatedList('-files', '1:*',
+                List('Grouped videos', '-group', Filename()))
+        """
+        # Check for correct values / types
+        if type(parent) != str and not isinstance(parent, Control):
+            raise TypeError("Parent must be a Control or an option string.")
+        if correspondence not in ['1:1', '1:*']:
+            raise ValueError("Correspondence must be '1:1' or '1:*'.")
+        if not isinstance(child_list, List):
+            raise TypeError("RelatedList child must be a List instance.")
+        if not hasattr(filter, '__call__'):
+            raise TypeError("Translation filter must be a function.")
+        if side not in ['left', 'top']:
+            raise ValueError("RelatedList 'side' must be 'left' or 'top'")
+
+        Panel.__init__(self, name, **kwargs)
+        self.parent = parent
+        self.correspondence = correspondence
+        self.child = child_list
+        self.filter = filter
+        self.side = side
+        self.mapped = []
+        # Set by draw()
+        self.selected = None
+        self.parent_is_copy = False
+        self.listbox = None
+        # Handle keyword args
+        self.index = kwargs.get('index', False)
+        self.repeat = kwargs.get('repeat', True)
+
+
+    def draw(self, master, **kwargs):
+        """Draw the parent copy and related list Control,
+        side by side in the given master.
+        """
+        Panel.draw(self, master, **kwargs)
+
+        # Lookup the parent Control by option
+        if type(self.parent) == str:
+            self.parent_is_copy = True
+            parent_control = Control.by_option(self.parent)
+            if not parent_control:
+                raise ValueError("RelatedList parent '%s' does not exist" % \
+                                 self.parent)
+            else:
+                self.parent = parent_control
+        # Or use the parent Control itself
+        else:
+            self.parent_is_copy = False
+
+        ensure_type("RelatedList parent must be a List", List, self.parent)
+
+        # Draw the read-only copy of parent's values
+        if self.parent_is_copy:
+            self.selected = tk.StringVar()
+            frame = tk.LabelFrame(self.frame,
+                                  text="%s (copy)" % self.parent.label)
+            self.listbox = ScrollList(frame, self.parent.variable,
+                                      self.selected)
+            self.listbox.pack(expand=True, fill='both')
+            frame.pack(side=self.side, anchor='nw', expand=True, fill='both')
+        # Or draw the parent Control itself
+        else:
+            self.parent.draw(self.frame)
+            self.parent.pack(side=self.side, anchor='nw',
+                             expand=True, fill='both')
+            self.listbox = self.parent.listbox
+
+        # Draw the child control
+        # 1:1, add/remove in child is NOT allowed, and lists are linked
+        if self.correspondence == '1:1':
+            self.child.edit_only = True
+            self.child.draw(self.frame)
+            self.listbox.link(self.child.listbox)
+        # 1:many, add/remove in child is allowed
+        else:
+            self.child.draw(self.frame)
+        # Pack the child control
+        self.child.pack(side=self.side, anchor='nw', expand=True, fill='both')
+
+        # Add callbacks to handle changes in parent
+        self.add_callbacks()
+
+
+    def add_callbacks(self):
+        """Add callback functions for add/remove in the parent Control.
+        """
+        if self.correspondence == '1:1':
+            def insert(index, value):
+                """When a new item is inserted in the parent list,
+                insert a corresponding (filtered) item into the child list.
+                """
+                self.child.variable.insert(index, self.filter(value))
+                self.child.control.enable()
+
+            def remove(index, value):
+                """When an item is removed from the parent list,
+                remove the corresponding item from the child list.
+                """
+                try:
+                    self.child.variable.pop(index)
+                except IndexError:
+                    pass
+                # Disable child editor control if child list is empty
+                if self.child.listbox.items.count() == 0:
+                    self.child.control.disable()
+
+            def swap(index_a, index_b):
+                """When two items are swapped in the parent list,
+                swap the corresponding items in the child list.
+                """
+                self.child.listbox.swap(index_a, index_b)
+
+            def select(index, value):
+                """When an item is selected in the parent list,
+                select the corresponding item in the child list.
+                """
+                pass # already handled by listboxes being linked
+
+        else: # '1:*'
+            def insert(index, value):
+                """When a new item is inserted in the parent list,
+                insert a new child list (initially empty) for that item.
+                """
+                self.mapped.insert(index, ListVar())
+
+            def remove(index, value):
+                """When an item is removed from the parent list,
+                remove the corresponding child list.
+                """
+                try:
+                    self.mapped.pop(index)
+                except IndexError:
+                    pass
+
+            def swap(index_a, index_b):
+                """When two items are swapped in the parent list,
+                swap the two corresponding child lists.
+                """
+                a_var = self.mapped[index_a]
+                self.mapped[index_a] = self.mapped[index_b]
+                self.mapped[index_b] = a_var
+
+            def select(index, value):
+                """When an item is selected in the parent list,
+                display the corresponding child list for editing.
+                """
+                self.child.set_variable(self.mapped[index])
+
+        self.listbox.callback('select', select)
+        self.parent.listbox.callback('insert', insert)
+        self.parent.listbox.callback('remove', remove)
+        self.parent.listbox.callback('swap', swap)
+
+
+    def get_args(self):
+        """Return a list of arguments for the contained list(s).
+        """
+        args = []
+        # Add parent args, if parent was defined here
+        if not self.parent_is_copy:
+            args.extend(self.parent.get_args())
+        # Add child args, for one or many children
+        if self.correspondence == '1:*':
+            # FIXME: Most of this is a total hack to support 'index' and
+            # 'repeat' keywords
+            print("Adding arguments for 1:* sub-list: '%s'" %
+                  self.child.option)
+            # If child list(s) are nonempty, and we're not repeating the
+            # child option, add it once now
+            child_vals = [l.get() for l in self.mapped]
+            if any(child_vals) and not self.repeat:
+                args.append(self.child.option)
+            # Append arguments for each child list
+            for index, list_var in enumerate(self.mapped):
+                child_args = self.child.get_args(list_var)
+                if child_args:
+                    child_option = child_args.pop(0)
+                    if self.repeat:
+                        args.append(child_option)
+                    if self.index:
+                        args.append(index+1)
+                    args.extend(child_args)
+        else: # '1:1'
+            args.extend(self.child.get_args())
+        # Return args only if some list items are non-empty
+        if any(args):
+            return args
+        else:
+            return []
 
 

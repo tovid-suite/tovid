@@ -1,7 +1,7 @@
 """Contains Tkinter Variable subclasses for List and Dict variables.
 
 This module exists to supplement the built-in Tkinter Variable types,
-which do not provide `list` and `dict` equivalents.
+which do not provide ``list`` and ``dict`` equivalents.
 """
 
 __all__ = [
@@ -114,9 +114,7 @@ class DictVar (tk.Variable):
     def __getitem__(self, key):
         """Get a dict value using keyword syntax: ``dictvar[key]``.
         """
-        current = self.get()
-        print("DictVar: %s" % current)
-        return current[key]
+        return self.get()[key]
 
 
     def __setitem__(self, key, value):
@@ -127,18 +125,8 @@ class DictVar (tk.Variable):
         self.set(current)
 
 
-    def pop(self, key):
-        """Pop the item at the given key, and return it.
-        """
-        current = self.get()
-        value = current.pop(key)
-        self.set(current)
-        return value
-
-
     def get(self):
-        """Return the entire dictionary of keys/values as an
-        `~libtovid.odict.Odict`.
+        """Return the entire dictionary of keys/values as an Odict.
         """
         # Convert from tuple
         tup = tk.Variable.get(self)
@@ -150,8 +138,8 @@ class DictVar (tk.Variable):
 
 
     def set(self, new_dict):
-        """Set the entire dictionary of keys/values. If ``new_dict`` is empty, or
-        is not a `dict` or `~libtovid.odict.Odict`, an empty `dict` is used.
+        """Set the entire dictionary of keys/values. If new_dict is empty, or
+        is not a ``dict`` or ``Odict``, an empty ``dict`` is used.
         """
         if not isinstance(new_dict, dict) and not isinstance(new_dict, Odict):
             new_dict = {}

@@ -1,9 +1,9 @@
 """This module provides an interface for running command-line applications.
 Two primary classes are provided:
 
-    `Command`
+    Command
         For constructing and executing command-line commands
-    `Pipe`
+    Pipe
         For piping commands together
 
 Commands are constructed by specifying a program to run, and each separate
@@ -27,40 +27,11 @@ Commands may be connected together with pipes::
     >>> pipe.run()                                # doctest: +SKIP
     Hello nurse
 
-The above can be easily accomplished using Python standard library functions
-like ``os.Popen`` or ``commands.getoutput``. This module was designed to
-simplify the task of executing long-running commands or command-line pipes in
-the background, and getting their output later. This behavior is controlled by
-the arguments to the `~Command.run` method.
-
-Normally, `~Command.run` prints all output on standard output. If instead you
-need to capture the output, pass ``capture=True``, then retrieve it later with
-`~Command.get_output`::
+Command output may be captured and retrieved later with get_output()::
 
     >>> echo.run(capture=True)                    # doctest: +SKIP
     >>> echo.get_output()
     'Hello world\\n'
-
-If the command you're running will take a long time to run, and you don't want
-your program to be blocked while it's running, pass ``background=True``. If the
-command may produce a lot of output during execution, you'll probably want to
-capture it instead of printing it::
-
-    >>> find = Command('find', '/')               # doctest: +SKIP
-    >>> find.run(capture=True, background=True)
-
-In this way, your application can keep doing other things while the long-running
-command is executing; you can check whether it's done like so::
-
-    >>> find.done()
-    False
-    >>> find.done()
-    False
-    >>> find.done()
-    True
-
-Then, as before, use `~Command.get_output` to get the output, if you need it. If
-you need to get the standard error output, use `~Command.get_errors`.
 
 """
 # Note: Some of the run() tests above will fail doctest.testmod(), since output
@@ -68,26 +39,19 @@ you need to get the standard error output, use `~Command.get_errors`.
 # workaround is to use the "doctest: +SKIP" directive (new in python 2.5).
 # For other directives see http://www.python.org/doc/lib/doctest-options.html
 
-# TODO: Make the 'capture/get_output' mechanisms able to handle large amounts
-# of output, perhaps by logging to a temporary file and/or returning an iterator
-# for lines of output, instead of a flat string.
-
 __all__ = [
     'Command',
     'Pipe',
 ]
 
 import subprocess
-import signal
-import os
+from os import environ
+
 # Small workaround for Python 3.x
-from libtovid import unicode, basestring
-
-
-class ProgramNotFound (ValueError):
-    """Raised when the program given to a command is not available.
-    """
-    pass
+try:
+    _temp = unicode
+except NameError:
+    unicode = str
 
 class Command:
     """A command-line statement, consisting of a program and its arguments,
@@ -122,37 +86,28 @@ class Command:
         contents is necessary.
         """
         for arg in args:
-            self.args.append(unicode(arg))
+            self.args.append(str(arg))
 
 
-    def run(self, capture=False, background=False, silent=False):
+    def run(self, capture=False, background=False):
         """Run the command and capture or display output.
 
             capture
-                ``False`` to show command output/errors on stdout,
-                ``True`` to capture output/errors for retrieval
-                by `get_output` and `get_errors`
+                False to show command output/errors on stdout,
+                True to capture output/errors for retrieval
+                by get_output() and get_error()
             background
-                ``False`` to wait for command to finish running,
-                ``True`` to run process in the background
-            silent
-                ``False`` to print each command as it runs,
-                ``True`` to run silently
+                False to wait for command to finish running,
+                True to run process in the background
 
         By default, this function displays all command output, and waits
         for the program to finish running, which is usually what you'd want.
         Capture output if you don't want it printed immediately (and call
-        `get_output` later to retrieve it).
+        get_output() later to retrieve it).
 
         This function does not allow special stream redirection. For that,
-        use `run_redir`.
+        use run_redir().
         """
-        if not silent:
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            print("Running command:")
-            print(unicode(self))
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-
         if capture:
             self.run_redir(None, subprocess.PIPE, stderr=subprocess.PIPE)
         else:
@@ -165,42 +120,43 @@ class Command:
         """Execute the command using the given stream redirections.
 
             stdin
-                Filename or `file` object to read input from
+                Filename or File object to read input from
             stdout
-                Filename or `file` object to write output to
+                Filename or File object to write output to
             stderr
-                Filename or `file` object to write errors to
+                Filename or File object to write errors to
 
-        Use ``None`` for regular system stdin/stdout/stderr (default behavior).
-        That is, if ``stdout=None``, the command's standard output is printed.
+        Use None for regular system stdin/stdout/stderr (default behavior).
+        That is, if stdout=None, the command's standard output is printed.
 
-        This function is used internally by `run`; if you need to do
-        stream redirection (ex. ``spumux < menu.mpg > menu_subs.mpg``), use
-        this function instead of `run`, and call `wait` afterwards
-        if needed.
+        This function is used internally by run(); if you need to do stream
+        redirection (ex. ``spumux < menu.mpg > menu_subs.mpg``), use this
+        function instead of run(), and call wait() afterwards if needed.
         """
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print("Running command:")
+        print(self)
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
         self.output = ''
         # Open files if string filenames were provided
-        if isinstance(stdin, basestring):
+        if type(stdin) in (str, unicode):
             stdin = open(stdin, 'r')
-        if isinstance(stdout, basestring):
+        if type(stdout) in (str, unicode):
             stdout = open(stdout, 'w')
-        if isinstance(stderr, basestring):
+        if type(stderr) in (str, unicode):
             stderr = open(stderr, 'w')
         # Run the subprocess
-        try:
-            self.proc = subprocess.Popen([self.program] + self.args,
-                              stdin=stdin, stdout=stdout, stderr=stderr)
-        except OSError:
-            raise ProgramNotFound("Program '%s' not found." % self.program)
+        self.proc = subprocess.Popen([self.program] + self.args,
+                          stdin=stdin, stdout=stdout, stderr=stderr)
 
 
     def wait(self):
         """Wait for the command to finish running, and return the result
-        (`self.proc.returncode`).
+        (``self.proc.returncode`` attribute).
 
-        If a :exc:`KeyboardInterrupt` occurs (user pressed Ctrl-C), the
-        subprocess is killed (and :exc:`KeyboardInterrupt` re-raised).
+        If a ``KeyboardInterrupt`` occurs (user pressed Ctrl-C), the
+        subprocess is killed (and ``KeyboardInterrupt`` re-raised).
         """
         if not isinstance(self.proc, subprocess.Popen):
             print("**** Can't wait(): Command is not running")
@@ -216,14 +172,14 @@ class Command:
     def kill(self):
         """Abort!
         """
-        os.kill(self.proc.pid, signal.SIGTERM)
-        #self.proc.kill()
+        #os.kill(self.proc.pid, signal.SIGTERM)
+        self.proc.kill()
 
 
 
     def done(self):
-        """Return ``True`` if the command is finished running; ``False``
-        otherwise. Only useful if the command is run in the background.
+        """Return True if the command is finished running; False otherwise.
+        Only useful if the command is run in the background.
         """
         return self.proc.poll() != None
 
@@ -239,7 +195,7 @@ class Command:
         return self.output
 
 
-    def get_errors(self):
+    def get_error(self):
         """Wait for the command to finish running, and return a string
         containing the command's standard error output. Returns an empty
         string if the command has not been run yet.
@@ -247,6 +203,7 @@ class Command:
         if self.error == '' and isinstance(self.proc, subprocess.Popen):
             self.error = self.proc.communicate()[1]
         return self.error
+    get_errors = get_error
 
 
     def __str__(self):
@@ -263,7 +220,7 @@ class Command:
         """Return a bash script for running the given command.
         """
         script = '#!/usr/bin/env bash' + '\n\n'
-        script_path = os.environ['PATH'].rsplit(':')
+        script_path = environ['PATH'].rsplit(':')
         script += 'PATH=' + script_path[0] + ':$PATH'  + '\n\n'
         # Write arguments, one per line with backslash-continuation
         words = [_enc_arg(arg) for arg in [self.program] + self.args]
@@ -272,7 +229,7 @@ class Command:
 
 
 class Pipe:
-    """Several `Command` objects, each having its output piped into the next.
+    """A series of Commands, each having its output piped into the next.
     """
     def __init__(self, *commands):
         """Create a new Pipe containing all the given Commands."""
@@ -294,8 +251,8 @@ class Pipe:
         redirection for piping.
 
             capture
-                ``False`` to show pipeline output on stdout,
-                ``True`` to capture output for retrieval by `get_output`
+                False to show pipeline output on stdout,
+                True to capture output for retrieval by get_output()
 
         """
         self.output = ''
@@ -327,7 +284,7 @@ class Pipe:
     def __str__(self):
         """Return a string representation of the Pipe.
         """
-        commands = [unicode(cmd) for cmd in self.commands]
+        commands = [str(cmd) for cmd in self.commands]
         return ' | '.join(commands)
 
 
@@ -345,7 +302,7 @@ def _enc_arg(arg):
     This is used internally by Command; you'd only need this if you're running
     shell programs without using the Command class.
     """
-    arg = unicode(arg)
+    arg = str(arg)
     # At the first sign of any special character in the argument,
     # single-quote the whole thing and return it (escaping ' itself)
     for char in ' #"\'\\&|<>()[]!?*':
