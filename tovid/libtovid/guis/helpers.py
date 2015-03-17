@@ -3,12 +3,14 @@ import shlex
 import re
 import os
 import fnmatch
+import json
 from libtovid.metagui import *
 from libtovid.metagui.control import _SubList
 from libtovid.util import filetypes
 from subprocess import Popen, PIPE
 from tempfile import mkdtemp, mkstemp
 from sys import stdout
+from datetime import timedelta
 
 try:
     from commands import getstatusoutput, getoutput
@@ -26,8 +28,8 @@ __all__ = [ 'VideoGui', 'SetChapters', 'Chapters', 'strip_all', 'to_title',
 
 
 class VideoGui(tk.Frame):
-    """A basic GUI to play video files.  It runs mplayer in slave mode
-    so that commands can be sent to it via fifo.
+    """A basic GUI to play video files.  It runs mplayer in slave mode,
+    or mpv using --input-unix-socket, so that commands can be sent via fifo.
 
     Without subclassing it only contains a 'play/pause button
     and an 'exit' button.
@@ -38,7 +40,7 @@ class VideoGui(tk.Frame):
            master
                widget that will conain this GUI
            args
-               additional arguments to mplayer command, inserted
+               additional arguments to mplayer/mpv command, inserted
                at the end of the command just before the 'FILE' argument.
            title
                the wm title given to the master widget.
@@ -49,7 +51,7 @@ class VideoGui(tk.Frame):
 
         self.args = args
         self.show_osd = False
-        if '-osdlevel 3' in args:
+        if '-osdlevel 3' or '--osd-level=3' in args:
             self.show_osd = True
         self.master = master
         if title:
@@ -65,19 +67,29 @@ class VideoGui(tk.Frame):
         self.is_running.set(False)
         self.pauseplay = tk.StringVar()
         self.pauseplay.set('Play')
-        # temporary directory for fifo and other mplayer files
+        # temporary directory for fifo and other mplayer/mpv files
         self.make_tmps()
+        self.cmd = ''
+        self.player = self.get_player()
+        print self.player
         self.draw()
+    
+    def get_player(self):
+        bin = getoutput('which mplayer')
+        if bin:
+            return 'mplayer'
+        else:
+            return 'mpv'
 
     def make_tmps(self):
-        """Make temporary directory containing fifo for mplayer commmands,
-        editlist, and log
+        """Make temporary directory containing mplayer's editlist, a fifo
+        for mplayer commmands or mpv's json IPC, and a log file.
         """
         self.tempdir = mkdtemp(prefix='tovid-')
-        self.cmd_pipe = os.path.join(self.tempdir, 'slave.fifo')
+        self.cmd_pipe = os.path.join(self.tempdir, 'mp.fifo')
         self.editlist = os.path.join(self.tempdir, 'editlist')
         os.mkfifo(self.cmd_pipe)
-        self.log = os.path.join(self.tempdir, 'mplayer.log')
+        self.log = os.path.join(self.tempdir, 'mp.log')
         
     def draw(self):
         """Draw the GUI in self.master and get X11 identifier for container"""
@@ -103,7 +115,7 @@ class VideoGui(tk.Frame):
         self.load_button = tk.Button(self.control_frame,
             command=self.load, text='load video')
         self.load_button.pack(side='left')
-        exit_button = tk.Button(self.control_frame, command=self.exit_mplayer, text='exit')
+        exit_button = tk.Button(self.control_frame, command=self.exit_player, text='exit')
         self.pause_button = tk.Button(self.control_frame, command=self.pause,
                           width=12, textvariable=self.pauseplay)
         self.pause_button.pack(side='left')
@@ -114,10 +126,12 @@ class VideoGui(tk.Frame):
 
     def identify(self, video):
         """Get information about video from mplayer -identify.
-        Called by set_container()
+        or mpv_identify.sh . Called by set_container()
         """
-        
-        cmd = 'mplayer -vo null -ao null -frames 5 -channels 6 -identify'
+        if self.player == 'mplayer':
+            cmd = 'mplayer -vo null -ao null -frames 5 -channels 6 -identify'
+        else:
+            cmd = 'mpv_identify.sh'
         cmd = shlex.split(cmd) + [video]
         output = Popen(cmd, stdout=PIPE, stderr=PIPE)
         return output.communicate()[0]
@@ -141,7 +155,14 @@ class VideoGui(tk.Frame):
            Called by run().
         """
         media_info = self.identify(video)
-        asr = re.findall('ID_VIDEO_ASPECT=.*', str(media_info))
+        # python3 will return bytes
+        if isinstance(media_info, bytes):
+            media_info = media_info.decode("utf-8")
+
+        if self.player == 'mplayer':
+            asr = re.findall('ID_VIDEO_ASPECT=.*', str(media_info))
+        else: # mpv
+            asr = re.findall('video_aspect=.*', str(media_info))
         # get last occurence as the first is 0.0 with mplayer
         if asr:
             asr = sorted(asr, reverse=True)[0].split('=')[1]
@@ -158,7 +179,7 @@ class VideoGui(tk.Frame):
         self.container.configure(width=self.v_width, height=v_height)
 
     def run(self, video):
-        """Play video in this GUI using mplayer."""
+        """Play video in this GUI using mplayer or mpv."""
         if video == None:
             self.toggle_controls('disabled', self.mp_ctrls)
             return
@@ -177,15 +198,22 @@ class VideoGui(tk.Frame):
             self.make_tmps()
         # set the container size, then run the video
         self.set_container(video)
-        command =  'mplayer -wid %s -nomouseinput -slave \
-          -input nodefault-bindings:conf=/dev/null:file=%s \
-          -edlout %s %s' \
-          %(self.xid, self.cmd_pipe, self.editlist, self.args)
-        self.command = shlex.split(command) + [video]
+
+        if self.player == 'mplayer':
+            print self.xid, self.cmd_pipe, self.args #DEBUG
+            self.cmd =  'mplayer -wid %s -nomouseinput -slave \
+            -input nodefault-bindings:conf=/dev/null:file=%s \
+            -edlout %s %s' \
+            %(self.xid, self.cmd_pipe, self.editlist, self.args)
+        elif self.player == 'mpv':
+            print self.xid, self.cmd_pipe, self.args #DEBUG
+            self.cmd = 'mpv -wid %s --idle=yes --input-unix-socket=%s %s' %(self.xid, self.cmd_pipe, self.args)
+        # the video needs to be last, because later we parse self.cmd[-1]
+        self.cmd = shlex.split(self.cmd) + [video]
 
     def toggle_controls(self, state, widgets):
         """
-        Enable/disable mplayer control widgets
+        Enable/disable mplayer/mpv control widgets
         state is either 'normal' or 'disabled', widgets is an instance list
         """
         for widget in widgets:
@@ -197,44 +225,83 @@ class VideoGui(tk.Frame):
     def poll(self):
         """
         Check mplayer log output for 'End of file' and restart the video.
-        This is necessary because otherwise Tkinter has no way of knowing
-        mplayer is still running.  In this way mplayer must be sent a 'quit'
+        For Mpv this EOF is checked via json IPC. This is necessary
+        because otherwise Tkinter has no way of knowing the video player
+        is still running.  In this way a 'quit' command is sent
         explicity before exit. Use 'on_eof()' to run custom command when
         'End of file' is found.
         """
         if not self.is_running.get():
             return
-        f = open(self.log, 'r')
-        # seek to 50 bytes from end of file
-        try:
-            f.seek(-50, 2)
-            if '(End of file)' in f.read():
-                self.on_eof()
-                # check for is_running again as on_oef() might set it to false
-                if self.is_running.get():
-                    cmd = Popen(self.command, stderr=open(os.devnull, 'w'), \
-                      stdout=open(self.log, "w"))
-                    if self.show_osd:
-                        self.send('osd 3')
-                    self.pause()
-        # if file does not contain 50 bytes, do nothing
-        except IOError:
-            pass
-        self.master.after(100, self.poll)
+        # for mpv: "\'{ "command": ["get_property", "idle"] }\'"
+        if self.player == 'mplayer':
+            try:
+                f = open(self.log, 'r')
+            except IOError:
+                pass
+            # seek to 50 bytes from end of file
+            try:
+                f.seek(-50, 2)
+                if '(End of file)' in f.read():
+                    self.on_eof()
+                    # check is_running again as on_oef() might set it to false
+                    if self.is_running.get():
+                        cmd = Popen(self.cmd, stderr=open(os.devnull, 'w'), \
+                          stdout=open(self.log, "w"))
+                        if self.show_osd:
+                            self.send('osd 3')
+                        self.pause()
+            # if file does not contain 50 bytes, do nothing
+            except IOError:
+                pass
+        else: # mpv
+            op = self.send('{ "command": ["get_property", "idle"] }')
+            try:
+                op = json.loads(op[0])
+                if 'data' in op.keys() and op['data']:
+                    self.on_eof()
+            except (ValueError, SyntaxError, TypeError, KeyError):
+                pass
+            #if op: 
+            #    self.on_eof()
+        self.master.after(100000, self.poll)
 
 
     def on_eof(self):
         """
-        Run when 'End of file' discovered in mplayer output by poll().
-        Override to run custom commands.
+        Run when 'End of file' found in mplayer output by poll(),
+        or by IPC from Mpv. Override to run custom commands.
         Note: change is_running() variable to false to prevent looping of video.
         """
         pass
 
     def send(self, text):
-        """Send command to mplayer's slave fifo"""
+
+        """
+        Send command to mplayer's slave fifo or mpv's socket
+        For mpv it will return a dict of values, for mplayer, nothing
+        """
         if self.is_running.get():
-            getstatusoutput('echo "%s"  > %s' %(text, self.cmd_pipe))
+            if self.player == 'mplayer':
+                getstatusoutput('echo "%s"  > %s' %(text, self.cmd_pipe))
+            else:
+                cmd = "echo \'%s\' | socat - %s" % (text, self.cmd_pipe)
+                print 'cmd is:', cmd # DEBUG
+                r = Popen([cmd], stderr=PIPE, stdout=PIPE, shell=True)
+                ret = r.communicate()
+                #ret = getoutput('echo "%s" | socat - \'%s\'' %(text, self.cmd_pipe))
+                print 'ret is:', ret # DEBUG
+                if ret:
+                    try:
+                        out = json.loads(ret[0])
+                    except (SyntaxError, TypeError, ValueError):
+                        out = {}
+                    except:
+                        print "Unexpected error:", sys.exc_info()[0]
+                        raise
+                    print 'returned: ', out
+                    return out
+            
 
     def pause(self):
         """Send pause to mplayer via slave and set button var to opposite value"""
@@ -245,41 +312,66 @@ class VideoGui(tk.Frame):
                 self.pauseplay.set('Play')
             else:
                 self.pauseplay.set('Pause')
-            self.send('pause')
+            if self.player == 'mplayer':
+                self.send('pause')
+            else:
+                if self.pauseplay.get() == 'Pause':
+                    print self.pauseplay.get()
+                    self.send('{ "command": ["set_property", "pause", false] }')
+                else:
+                    print self.pauseplay.get()
+                    self.send('{ "command": ["set_property", "pause", true] }')
         else:
             # start the video for the 1st time
-            cmd = Popen(self.command, stderr=open(os.devnull, 'w'), stdout=open(self.log, "w"))
+            cmd = Popen(self.cmd, stderr=open(os.devnull, 'w'), stdout=open(self.log, "w"))
+            #cmd = Popen(self.cmd, stderr=open(os.devnull, 'w'), stdout=PIPE)
             self.is_running.set(True)
             self.poll()
             # show osd time and remaining time
             if self.show_osd:
-                self.send('osd 3')
+                if self.player == 'mplayer':
+                    self.send('osd 3')
+                else:
+                    self.send('{ "command": ["set_property", "osd-level", "3"] }')
+                    
             self.pauseplay.set('Pause')
 
-    def exit_mplayer(self): # called by [done] button
+    def exit_player(self): # called by [done] button
         """
-        Close mplayer if it is running, then exit, running callback if it exists
+        Close video player if running, then exit, running callback if it exists
         """
         # unpause so mplayer doesn't hang
         if self.is_running.get():
-            if self.pauseplay.get() == 'Play':
-                self.send('mute 1')
-                self.send('pause')
-            self.send('quit')
+            if self.player == 'mplayer':
+                if self.pauseplay.get() == 'Play':
+                    self.send('mute 1')
+                    self.send('pause')
+                self.send('quit')
+            else:
+                res = self.send('{ "command": ["get_property", "pause"] }')
+                if 'data' in res and res['data']:
+                    self.send('{ "command": ["set_property", "volume", 0] }')
+                    self.send('{ "command": ["set_property", "pause", false]}')
+                self.send('{ "command": ["quit"]}')
             self.is_running.set(False)
         time.sleep(0.3)
         self.confirm_exit()
 
     def confirm_msg(self):
-        mess = "osd_show_text 'please exit mplayer first' 4000 3"
-        if not self.show_osd:
-            self.send('osd 3\n%s' %mess)
-            self.after(2500, lambda:self.send('osd 0'))
-        else:
-            self.send(mess)
+        if self.player == 'mplayer':
+            mess = "osd_show_text 'please exit mplayer first' 4000 3"
+            if not self.show_osd:
+                self.send('osd 3\n%s' %mess)
+                self.after(2500, lambda:self.send('osd 0'))
+            else:
+                self.send(mess)
+        else: # mpv
+            mess = 'please exit Mpv first'
+            self.send('{ "command": ["set_property", "osd-level", "3"] }')
+            self.send('{"command": ["show_text", "%s", 2000, 3]}' % mess)
 
     def confirm_exit(self, event=None):
-        """On exit, make sure that mplayer is not running before quit"""
+        """On exit, make sure that player is not running before quit"""
         if self.is_running.get():
             self.confirm_msg()
         else:
@@ -300,13 +392,13 @@ class VideoGui(tk.Frame):
 
 
 class SetChapters(VideoGui):
-    """Elements for a GUI to set video chapter points using Mplayer"""
+    """Elements for a GUI to set video chapter points using Mplayer or Mpv"""
     def __init__(self, master, args='', title='', callback=None):
         """
         master
             Pack into this widget
         args
-            Additional args to pass to mplayer
+            Additional args to pass to video player
         title
             Window manager titlebar title (master must be root window for this)
         callback
@@ -326,7 +418,7 @@ class SetChapters(VideoGui):
         button_frame.pack(side='bottom', fill='x', expand=1)
         self.control_frame = tk.Frame(button_frame, borderwidth=1, relief='groove')
         self.control_frame.pack()
-        exit_button = tk.Button(self.control_frame, command=self.exit_mplayer, text='done !')
+        exit_button = tk.Button(self.control_frame, command=self.exit_player, text='done !')
         mark_button = tk.Button(self.control_frame, command=self.set_chapter,text='set chapter')
         pause_button = tk.Button(self.control_frame, command=self.pause,
                           width=12, textvariable=self.pauseplay)
@@ -357,76 +449,115 @@ class SetChapters(VideoGui):
 #        """Seek in video according to value set by slider"""
 #        self.send('seek %s 3\n' %self.seek_scale.get())
 #        self.after(500, lambda:self.seek_scale.set(0))
-
     def forward(self):
         """Seek forward 10 seconds and make sure button var is set to 'Pause'"""
-        self.send('seek 10')
+        if self.player == 'mplayer':
+            self.send('seek 10')
+        else: # mpv
+            self.send('{ "command": ["seek", 10, "relative", "default-precise"] }' )
         self.pauseplay.set('Pause')
 
     def fastforward(self):
         """Seek forward 5 minutes and make sure button var is set to 'Pause'"""
-        self.send('seek 300')
+        if self.player == 'mplayer':
+            self.send('seek 300')
+        else: # mpv
+            self.send('{ "command": ["seek", 300, "relative", "default-precise"] }' )
         self.pauseplay.set('Pause')
 
     def back(self):
         """Seek backward 10 seconds and make sure button var is set to 'Pause'"""
-        self.send('seek -10')
+        if self.player == 'mplayer':
+            self.send('seek -10')
+        else: # mpv
+            self.send('{ "command": ["seek", -10, "relative", "default-precise"] }' )
         self.pauseplay.set('Pause')
 
     def fast_back(self):
-        """Seek backward 10 seconds and make sure button var is set to 'Pause'"""
-        self.send('seek -300')
+        """Seek backward 5 minutes and make sure button var is set to 'Pause'"""
+        if self.player == 'mplayer':
+            self.send('seek -300')
+        else: # mpv
+            self.send('{ "command": ["seek", -300, "relative", "default-precise"] }' )
         self.pauseplay.set('Pause')
 
     def framestep(self):
         """Step frame by frame forward and set button var to 'Play'"""
-        self.send('pausing frame_step')
+        if self.player == 'mplayer':
+            self.send('pausing frame_step')
+        else: # mpv
+            self.send('{ "command": ["frame_step"] }' )
         self.pauseplay.set('Play')
 
     def set_chapter(self):
-        """Send chapter mark (via slave) twice so mplayer writes the data.
-           we only take the 1st mark on each line
+        """For mplayer send chapter mark (via slave) twice so mplayer
+            writes the data. We only take the 1st mark on each line.
+            For mpv, save chapter point to StringVar() properly formatted.
         """
-        for i in range(2):
-            self.send('edl_mark')
-        mess = "osd_show_text 'chapter point saved' 2000 3"
-        if not self.show_osd:
-            self.send('osd 3%s' %mess)
-            self.after(2500, lambda:self.send('osd 0'))
+        if self.player == 'mplayer':
+            for i in range(2):
+                self.send('edl_mark')
+            mess = "osd_show_text 'chapter point saved' 2000 3"
+            if not self.show_osd:
+                self.send('osd 3%s' %mess)
+                self.after(2500, lambda:self.send('osd 0'))
+            else:
+                self.send(mess)
         else:
-            self.send(mess)
+            v = self.send('{ "command": ["get_property", "time-pos"] }')
+            if 'data' in v.keys():
+                v = str(timedelta(seconds=v['data'])).split('.')
+                # truncate timedelta's microseconds to 4 digits
+                v = '.'.join([v[0], v[1][:4]])
+                #timedelta doesn't pad first field
+                v = '0' + v if v[1] == ':' else v
+                # chapter_var starts with 00:00:00 always
+                # join chapter points with a comma in dvdauthor format
+                if not self.chapter_var.get():
+                    self.chapter_var.set('00:00:00')
+                # append to self.chapter_var
+                self.chapter_var.set(self.chapter_var.get() + ',' + v)
+                self.send('{"command": ["show_text", "chapter point saved", 2000, 3]}')
 
 
     def get_chapters(self):
-        """Read mplayer's editlist to get chapter points and return
-        HH:MM:SS.xxx format string, comma separated
+        """For mplayer read editlist to get chapter points and return
+        HH:MM:SS.xxx format string, comma separated.
+        For mpv, nothing to do but return value.
+        
         """
-        # need a sleep to make sure mplayer gives up its data
-        if not os.path.exists(self.editlist):
-            return
-        time.sleep(0.5)
-        f = open(self.editlist)
-        c = f.readlines()
-        f.close()
-        # if chapter_var has value, editlist has been reset.  Append value.
-        # only 1st value on each line is taken (the 2nd makes mplayer write out)
-        s = [ i.split()[0]  for i  in self.chapter_var.get().splitlines() if i]
-        c.extend(s)
-        times = [ float(shlex.split(i)[0]) for i in c ]
-        chapters = ['00:00:00']
-        for t in sorted(times):
-            fraction = '.' + str(t).split('.')[1]
-            chapters.append(time.strftime('%H:%M:%S', time.gmtime(t)) + fraction)
-        if c:
-            return '%s' %','.join(chapters)
+        if self.player == 'mplayer':
+            # FIXME
+            # need a sleep to make sure mplayer gives up its data
+            if not os.path.exists(self.editlist):
+                return
+            time.sleep(0.5)
+            f = open(self.editlist)
+            c = f.readlines()
+            f.close()
+            # if chapter_var has value, editlist has been reset.  Append value.
+            # only 1st value on each line is taken (the 2nd makes mplayer write out)
+            s = [ i.split()[0]  for i  in self.chapter_var.get().splitlines() if i]
+            c.extend(s)
+            times = [ float(shlex.split(i)[0]) for i in c ]
+            chapters = ['00:00:00']
+            for t in sorted(times):
+                fraction = '.' + str(t).split('.')[1]
+                chapters.append(time.strftime('%H:%M:%S', time.gmtime(t)) + fraction)
+            if c:
+                return '%s' %','.join(chapters)
+        else: #mpv
+            return self.chapter_var.get()
     
     def on_eof(self):
         """
-        Run when 'End of file' discovered in mplayer output by poll().
+        Run when 'End of file' discovered in mplayer output by poll(),
+        or for mpv when poll() returns True for idle property.
         """
-        f = open(self.editlist)
-        self.chapter_var.set(f.read())
-        f.close()
+        if self.player == 'mplayer':
+            f = open(self.editlist)
+            self.chapter_var.set(f.read())
+            f.close()
 
 class SetChaptersGui(SetChapters):
     """A standalone GUI to set video chapter points using SetChapters class"""
@@ -435,7 +566,7 @@ class SetChaptersGui(SetChapters):
         master
             Pack into this widget
         args
-            Additional args to pass to mplayer
+            Additional args to pass to mplayer/mpv
         title
             Window manager titlebar title (master must be root window for this)
         callback
@@ -466,7 +597,7 @@ class SetChaptersGui(SetChapters):
         self.exit_button = tk.Button(self.text_frame,
             command=self.exit, text='Exit')
         self.exit_button.pack(side='left')
-        # keep a list of mplayer controls so we can disable/enable them later
+        # keep a list of player controls so we can disable/enable them later
         self.mp_ctrls = self.control_frame.winfo_children()
 
     def load(self, event=None):
@@ -489,8 +620,8 @@ class SetChaptersGui(SetChapters):
     def print_chapters(self):
         """
         Run get_chapters(), output result to stdout, entry box, and write
-        to tempory file.  Disable mplayer controls.
-        This functions as the callback on mplayer exit.
+        to tempory file.  Disable player controls.
+        This functions as the callback on mplayer/mpv exit.
         """
         if self.get_chapters():
             try:
@@ -507,7 +638,7 @@ class SetChaptersGui(SetChapters):
             string2 = '\nDo you wish to save it ?'
             #string2 += '  Choose "Yes" to save it.'
             # get basename of video, remove extension, add a '_'
-            vid = os.path.basename(self.command[-1]) + '_'
+            vid = os.path.basename(self.cmd[-1]) + '_'
             tmpfile = mkstemp(prefix=vid)
             if askyesno(title="Save chapter string",
               message= '%s%s%s' %(string1, tmpfile[1], string2)):
@@ -518,7 +649,7 @@ class SetChaptersGui(SetChapters):
                     f.write(output)
                     f.close()
             else:
-                    os.remove(tmpfile[1])
+                os.remove(tmpfile[1])
 
     def quit(self):
         """Override quit() from base class, as standalone uses exit()"""
@@ -528,7 +659,7 @@ class SetChaptersGui(SetChapters):
             self.chapter_var.set('')
 
     def exit(self, event=None):
-        """Exit the GUI after confirming that mplayer is not running."""
+        """Exit the GUI after confirming that mplayer/mpv is not running."""
         if self.is_running.get():
             self.confirm_msg()
         else:
@@ -538,7 +669,7 @@ class SetChaptersGui(SetChapters):
 # class for control that allow setting chapter points
 class Chapters(ListToOne):
     """A popup version of the ListToOne Control, that also
-    allows setting chapter points with a mplayer GUI
+    allows setting chapter points with a mplayer/mpv GUI
     (SetChapters).  This Control is specific to the tovid GUI.
     """
     def __init__(self,
@@ -554,7 +685,7 @@ class Chapters(ListToOne):
                  **kwargs):
         """initialize Chapters
         text
-           The text for the button that calls mplayer
+           The text for the button that calls mplayer/mpv
         For other options see help(control.ListToOne) 
         """
         ListToOne.__init__(self, parent, label, option, default, help,
@@ -565,29 +696,30 @@ class Chapters(ListToOne):
         self.top_height = 540
 
     def draw(self, master):
-        """Initialize Toplevel popup, video/chapters lists, and mplayer GUI.
+        """Initialize Toplevel popup, video/chapters lists, and mplayer/mpv GUI.
         Only pack the video/chapter lists (_SubList).  Withdraw until called.
         """
         chapters_button = tk.Button(master, text='edit', command=self.popup)
         chapters_button.pack()
-        # popup to hold lists and mplayer
+        # popup to hold lists and mplayer/mpv
         self.top = tk.Toplevel(master)
         self.top.withdraw()
         self.top.minsize(540, 540)
         self.top.title('Chapters')
+        self.player = self.get_player()
         # text and label for instructions
         txt = 'Auto chapters:\n' + \
         '   1. Enter single value (integer) for all videos on 1st line.\n' + \
         '   2. Or, use a different auto chapter value for each video.\n' + \
-        'HH:MM:SS format:\n' + \
+        'HH:MM:Ss format:\n' + \
         '   1. Enter timecode for each video, eg. 00:00:00,00:05:00 ...\n' + \
-        '   2. Or use the "set with mplayer" button to use a GUI.'
+        '   2. Or use the "set with %s" button to use a GUI.' % self.player
         self.top.label = tk.Label(self.top, text=txt, justify=tk.LEFT)
         self.top.label.pack(side=tk.TOP)
         self.top_button = tk.Button(self.top, text='Okay', command=self.top.withdraw)
-        # frames to hold the _Sublist and mplayer
+        # frames to hold the _Sublist and mplayer/mpv
         self.sublist_frame = tk.Frame(self.top)
-        self.mplayer_frame = tk.Frame(self.top)
+        self.player_frame = tk.Frame(self.top)
         # bindings for initial toplevel window
         self.top.protocol("WM_DELETE_WINDOW", self.top.withdraw)
         self.top.bind('<Escape>', self.withdraw_popup)
@@ -596,9 +728,9 @@ class Chapters(ListToOne):
         _SubList.draw(self, self.sublist_frame, allow_add_remove=False)
         self.top_button.pack(side='bottom')
 
-        # a button to allow setting chapters in mplayer GUI
+        # a button to allow setting chapters in mplayer/mpv GUI
         button = tk.Button(self.control, text=self.text,
-        command=self.run_mplayer, state='disabled')
+        command=self.run_player, state='disabled')
         button.pack(side='left')
         # 1:1, parent listbox is linked to this one
         self.parent_listbox.link(self.listbox)
@@ -607,10 +739,17 @@ class Chapters(ListToOne):
 
     def get_geo(self, widget):
         """Get geometry of a widget.
-        Returns List (integers): width, height, Xpos, Ypos
+        Returns list (integers): width, height, Xpos, Ypos
         """
         geo = widget.winfo_geometry()
         return  [ int(x) for x in geo.replace('x', '+').split('+') ]
+
+    def get_player(self):
+        bin = getoutput('which mplayer')
+        if bin:
+            return 'mplayer'
+        else:
+            return 'mpv'
 
     def center_popup(self, master, width, height):
         """Get centered screen location of popup, relative to master.
@@ -623,7 +762,7 @@ class Chapters(ListToOne):
         return '%dx%d+%d+%d' %(width, height, rootx + xoffset, rooty + yoffset)
         
     def popup(self):
-            """Popup the list of chapters, with button to run mplayer GUI"""
+            """Popup the list of chapters, with button to run mplayer/mpv GUI"""
             videolist = self.parent_listbox
             self.top.transient(self.parent._root())
             w = self.top_width
@@ -633,34 +772,36 @@ class Chapters(ListToOne):
             if videolist.items.count() and not videolist.selected.get():
                 self.parent_listbox.select_index(0)
     
-    def run_mplayer(self, event=None):
-        """Run the mplayer GUI to set chapters"""
+    def run_player(self, event=None):
+        """Run the mplayer/mpv GUI to set chapters"""
         selected = self.parent_listbox.selected.get()
         if selected:
-            # initialize mplayer GUI
-            self.mpl = SetChapters(self.mplayer_frame, '-osdlevel 3', '', self.on_exit)
+            # initialize player GUI
+            # for mpv use --osd-level=3
+            osdlevel = '-osdlevel 3' if self.get_player() == 'mplayer' else '--osd-level=3'
+            self.mpl = SetChapters(self.player_frame, osdlevel, '', self.on_exit)
             self.mpl.pack()
             # unpack label
             self.sublist_frame.pack_forget()
             self.top.label.pack_forget()
             self.top_button.pack_forget()
-            self.mplayer_frame.pack()
+            self.player_frame.pack()
             self.mpl.run(selected)
-            # disable close button while mplayer running, both top and _root()
+            # disable close button if mplayer/mpv running, both top and _root()
             self.top.protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
             self.master._root().protocol("WM_DELETE_WINDOW", self.mpl.confirm_exit)
-            # disable usage of _root() window while mplayer running
+            # disable usage of _root() window while mplayer/mpv running
             self.top.grab_set()
             self.top.bind('<Escape>', self.mpl.confirm_exit)
 
     def on_exit(self):
-        """Callback run when mplayer GUI exits. This sets the chapters list
-        to the timecodes set by the mplayer gui, repacks the label and the
+        """Callback run when the player GUI exits. This sets the chapters list
+        to the timecodes set by the player gui, repacks the label and the
         list frame, sets/resets bindings, and releases the grab_set().
         """
         if self.mpl.get_chapters():
             self.control.variable.set(self.mpl.get_chapters())
-        self.mplayer_frame.pack_forget()
+        self.player_frame.pack_forget()
         # repack label
         self.top.label.pack(side=tk.TOP)
         self.sublist_frame.pack(expand=1, fill=tk.BOTH)
@@ -757,7 +898,7 @@ def filter_args(master=None, args=None):
     a = get_loadable_opts(args)
     args = a[0]
     if a[1]:
-        #import Tkinter as tk
+        #import tkinter as tk
         from textwrap import dedent
         heading = '''
         The tovid GUI did not load some of your options.
@@ -797,6 +938,7 @@ class CopyableInfo(tk.Frame):
         text_frame = tk.Frame(self)
         text_frame.pack(side='top')
         style = Style()
+        print 'style is:', Style()
         inifile = os.path.expanduser('~/.metagui/config')
         if os.path.exists(inifile):
             style.load(inifile)
