@@ -700,8 +700,8 @@ ff_ver=$($FFmpeg -version 2>&1 | awk '{ gsub(",", ""); if(NR == 1) print $3 }')
 } 
  
 # check if file is a video. Usage: is_video FILE
-is_video() 
-{ 
+is_video()
+{
     local result=$($FFmpeg -i "$1" 2>&1);
     # ffmpeg calls an image a video stream, so eliminate that
     grep -E -qi 'image2|_pipe' <<< "$result" && return 1;
@@ -2589,6 +2589,9 @@ while test $# -gt 0; do
             ENCODE_ONLY=:
             NOMENU=:
             ;;
+        "-without-transcode" )
+            use_transcode=false
+            ;;
         "-out" )
             shift
             OUT_DIRECTORY="$1"
@@ -4197,7 +4200,7 @@ if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] \
         yecho "The following files differ from the $ASPECT_RATIO aspect ratio
         we are using, even if they are to be re-encoded by makempg here."
         echo
-        printf "\"%s\"\n" ${warn_files[@]}
+        printf "\"%s\"\n" "${warn_files[@]}"
         echo
         yecho "You can not mix different aspect ratios in the same menu. 
         They need to be put in a separate titleset. You may want to quit 
@@ -4407,8 +4410,8 @@ if $QUICK_MENU; then
         QUICKMENU_IS_BACKGROUND=:
     fi
 fi
-if $QUICK_MENU && ! $QUICKMENU_IS_SHOWCASE && ! $QUICKMENU_IS_BACKGROUND; then
-    if ! $SWITCHED; then
+if $QUICK_MENU && ! $QUICKMENU_IS_SHOWCASE && ! ${QUICKMENU_IS_BACKGROUND}; then
+    if ! ${SWITCHED}; then
         yecho
         if { $DO_TITLESETS || $TITLESET_MODE ; }; then
             yech=yecho
@@ -4451,13 +4454,30 @@ if [[ $SC_FRAMESTYLE = "glass" ]] && [[ -z $SHOWCASE_IMG && -z $SHOWCASE_VIDEO ]
     yecho
     SC_FRAMESTYLE="none"
 fi
-if [[ $SC_FRAMESTYLE = "glass" ]] && $QUICK_MENU; then
-    yecho
-    yecho "You can not use 'glass' frame style with -quick-menu, \
-    disabling this option"
-    yecho
-    SC_FRAMESTYLE="none"
-fi
+if [[ $SC_FRAMESTYLE = "glass" ]]; then
+    if $QUICK_MENU; then
+        yecho
+        yecho "You can not use 'glass' frame style with -quick-menu, \
+        disabling this option"
+        yecho
+        SC_FRAMESTYLE="none"
+    elif [[ $TOVID_MPLAYER == "mplayer" ]]; then
+        if grep -qi mplayer2 <<< "$(mplayer -h)"; then
+            player=mplayer2
+        fi
+    elif [[ $TOVID_MPLAYER == "mpv" ]];then
+        player="mpv"
+    fi
+    if [[ $player ]]; then
+            url="www.mplayerhq.hu"
+            
+            info_message "You need 'mplayer' ($url) to use -framestyle-glass \
+            It is not supported for ${player}.
+            Disabling this option"
+            $WARN && continue_in 10
+            SC_FRAMESTYLE="none"
+    fi
+fi    
 # allow user to only specify one audio file for all submenus
 if [ ${#SM_AUDIO[@]} -eq 1 ]; then
     if ((sshows>1)); then
