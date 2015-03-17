@@ -6,6 +6,7 @@ echo -e "'tovid-init' not found.  Was tovid improperly installed?"
 echo -e "Or are you trying to run the script directly?"
 echo -e "Please run idvid as:\ntovid id OPTIONS"
 exit 1 ; }
+
 # idvid
 # Part of the tovid suite
 # =======================
@@ -72,6 +73,7 @@ EOF`
 TERSE=false
 VERBOSE=false
 FAST=:
+[[ -w $WORKING_DIR ]] || WORKING_DIR=/tmp
 TMP_DIR=$(tempdir "$WORKING_DIR/idvid")
 SCRATCH_FILE="$TMP_DIR/idvid.scratch"
 TABLE="$TMP_DIR/table"
@@ -137,20 +139,20 @@ function get_info ()
             echo "Identifying video with mplayer..."
             echo $SEPARATOR
             mplayer -nomsgcolor -vo null -ao null -frames 30 -channels 6 -identify \
-                -noconsolecontrols "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
+                -endpos 1 -noconsolecontrols "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
         else
             mplayer -nomsgcolor -vo null -ao null -frames 30 -channels 6 -identify \
-                -noconsolecontrols "$INFILE" > "$SCRATCH_FILE" 2>&1
+                -endpos 1 -noconsolecontrols "$INFILE" > "$SCRATCH_FILE" 2>&1
         fi
     elif $USE_MPV; then
         if $VERBOSE; then
             echo $SEPARATOR
             echo "Identifying video with mpv..."
             echo $SEPARATOR
-            mpv --quiet -v  -frames 30 -vo null -ao null "$INFILE" 2>&1| \
-             sed  '/#define/d;/global/d' 2>&1 |tee -a "$SCRATCH_FILE"
+            mpv --quiet --no-msg-color -v  -frames 30 -vo null -ao null "$INFILE" 2>&1| \
+             sed  '/#define/d;/global/d' |tee -a "$SCRATCH_FILE"
         else
-            mpv --quiet -v  -frames 30 -vo null -ao null "$INFILE" 2>&1| \
+            mpv --quiet --no-msg-color -v  -frames 30 -vo null -ao null "$INFILE" 2>&1| \
              sed  '/#define/d;/global/d' > "$SCRATCH_FILE" 2>&1
         fi
     fi
@@ -162,9 +164,9 @@ function get_info ()
             echo "Identifying video with ${FFmpeg##*/}..."
             echo $SEPARATOR
             # ffmpeg puts its output on standard error
-            $FFmpeg -i "$INFILE" 2>&1 | tee -a "$SCRATCH_FILE"
+            $FFmpeg -i "$INFILE" 2>&1 | sed -r "s:\x1B\[[0-9;]*[mK]::g" | tee -a "${SCRATCH_FILE}"
         else
-            $FFmpeg -i "$INFILE" >> "$SCRATCH_FILE" 2>&1
+            $FFmpeg -i "$INFILE" 2>&1 | sed -r "s:\x1B\[[0-9;]*[mK]::g" >> "$SCRATCH_FILE"
         fi
         #
         if ! grep -q Video:.*kb/s "$SCRATCH_FILE" \
@@ -177,7 +179,7 @@ function get_info ()
     # source it so we have vars beginning with lower case id_ like id_video_fps
     if $USE_MPV; then
         if hash mpv_identify.sh 2>/dev/null; then
-            /usr/local/lib/tovid/mpv_identify.sh "$INFILE" | \
+            mpv_identify.sh "$INFILE" | \
             awk -F= '{print "ID_"toupper($1)"="$2}' >> "$SCRATCH_FILE" 2>&1
             #awk -F= -v OFS== '$1=toupper($1)' >> "$SCRATCH_FILE"
             # prepend with ID_
@@ -363,7 +365,7 @@ function get_info ()
 
         for ((i=0; i<${#A_TRACKS[@]}; i++)); do
             CUR_CHAN=$(grep "Stream #${A_TRACKS[i]}" <<< "$AUDIO_INFO")
-            A_SAMPRATES[i]=$(sed -r 's/.* ([0-9]+) Hz.*/\1/' <<< "$CUR_CHAN")
+            A_SAMPRATES[i]=$(sed -r 's/.* ([0-9]+) Hz.*/\1/;q' <<< "$CUR_CHAN")
             if ! test_is_number ${A_SAMPRATES[i]}; then
                 # probe_audio_info should have same indexes as A_TRACKS
                 aud_samplerate=$(awk -F= '/^sample_rate=/ {print $2}' <<< "${probe_audio_info[i]}")
@@ -373,7 +375,7 @@ function get_info ()
                     A_SAMPRATES[i]=0
                 fi
             fi
-            A_BITRATES[i]=$(sed -r 's/.* ([0-9]+) kb\/s.*/\1/' <<< "$CUR_CHAN")
+            A_BITRATES[i]=$(sed -r 's/.* ([0-9]+) kb\/s.*/\1/;q' <<< "$CUR_CHAN")
             # test for a number, add 3 zeros (bits), else set  A_BITRATE to 0
             if test_is_number ${A_BITRATES[i]} && (( ${A_BITRATES[i]} )); then
                 A_BITRATES[i]=${A_BITRATES[i]}000
@@ -386,7 +388,8 @@ function get_info ()
                     A_BITRATES[i]=0
                 fi
             fi
-            A_CODECS[i]=$(sed -nr 's/.*Audio: (\w+).*/\1/p' <<< "$CUR_CHAN")
+            set +x
+            A_CODECS[i]=$(sed -nr 's/.*Audio: (\w+).*/\1/p;q' <<< "$CUR_CHAN")
             if $USE_HEX_TRACKS; then
                 MP_TRACKNUM=$((16#${HEX_TRACKS[i]}))
             else
@@ -400,8 +403,8 @@ function get_info ()
             if (( ${A_BITRATES[i]} == 0 )) || (( ${A_SAMPRATES[i]} == 0 )); then
                 if $USE_MPLAYER; then
                     MP_CHAN_INFO=$(mplayer -nomsgcolor -vo null -ao null -frames 30 \
-                    -channels 6 -identify -aid ${MP_AIDS[i]} -noconsolecontrols \
-                    "$INFILE" 2>&1)
+                    -endpos 1 -channels 6 -identify -aid ${MP_AIDS[i]} \
+                    -noconsolecontrols "$INFILE" 2>&1)
                 else #mpv
                     MP_CHAN_INFO=$(mpv --quiet -v -frames 30 -vo null -ao null \
                       --audio-channels 6 --aid ${MP_AIDS[i]}  "$INFILE" 2>&1 | \
@@ -462,7 +465,8 @@ function get_info ()
                 wavs[i]="$TMP_DIR/$i.wav"
             done
             for r in ${!tracks[@]}; do
-                test_tracks[r]="$($FFmpeg -i "$INFILE" -ss 2 -t 1 ${map_cmd[r]} -y ${wavs[r]} 2>&1)"
+                test_tracks[r]="$($FFmpeg -i "$INFILE" -ss 2 -t 1 \
+                  ${map_cmd[r]} -y ${wavs[r]} 2>&1 | sed -r "s:\x1B\[[0-9;]*[mK]::g")"
                 if grep -q Unsupported <<< "${test_tracks[r]}"; then
                     tracks[r]="Unsupported"
                 fi
