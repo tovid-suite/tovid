@@ -280,7 +280,7 @@ function file_output_progress()
 
     # Wait for input file to appear
     # After a 30-second timeout, exit gracefully
-    CUR_TIME=30
+    CUR_TIME=5
     while test $CUR_TIME -gt 0; do 
         sleep 3
         # If file exists, wait a few more seconds, then break out
@@ -557,16 +557,40 @@ fi
 [[ $TOVID_WORKING_DIR ]] && WORKING_DIR="$TOVID_WORKING_DIR"
 [[ $TOVID_OUTPUT_DIR ]] && OUTPUT_DIR="$TOVID_WORKING_DIR"
 [[ $TOVID_FFMPEG_CMD ]] && TOVID_FFMPEG="$TOVID_FFMPEG_CMD"
+[[ $TOVID_FFPROBE_CMD ]] && TOVID_FFPROBE="$TOVID_FFPROBE_CMD"
 # FFmpeg and FFprobe are vars used for ffmpeg by scripts needing ffmpeg/avconv
-# if avconv is installed, use that unless env var set
-hash avconv 2>/dev/null && TOVID_FFMPEG=${TOVID_FFMPEG:-avconv}
-hash avprobe 2>/dev/null && TOVID_FFPROBE=${TOVID_FFPROBE:=avprobe}
-# finally, default to ffmpeg if non of the above override it
-FFmpeg=${TOVID_FFMPEG:=ffmpeg}
-[[ $FFmpeg =~ ffmpeg ]] && TOVID_FFPROBE=ffprobe
-[[ $FFmpeg =~ avconv ]] && TOVID_FFPROBE=avprobe
-FFprobe=${TOVID_FFPROBE:=ffprobe}
+# if ffmpeg is installed, use that unless env var set
+if hash ffmpeg 2>/dev/null; then
+    : ${TOVID_FFMPEG:=ffmpeg}
+elif hash avconv 2>/dev/null; then
+    : ${TOVID_FFMPEG:=avconv}
+fi
+if hash mplayer 2>/dev/null; then
+    : ${TOVID_MPLAYER:=mplayer}
+elif hash mpv 2>/dev/null; then
+    : ${TOVID_MPLAYER:=mpv}
+fi
+FFmpeg=${TOVID_FFMPEG:-ffmpeg}
+[[ ${FFmpeg##*/} =~ ffmpeg ]] && : ${TOVID_FFPROBE:=ffprobe}
+[[ ${FFmpeg##*/} =~ avconv ]] && : ${TOVID_FFPROBE:=avprobe}
+FFprobe=${TOVID_FFPROBE:-ffprobe}
 
+# check that FFmpeg and FFprobe are same version
+# first check they both exist in PATH
+# if this doesn't run its okay, as assert_dep will still print an error message
+if hash $FFmpeg 2>/dev/null && hash $FFprobe 2>/dev/null; then
+    ffm_version=$($FFmpeg -version 2>&1 | awk '/version/ {print $3; exit}')
+    ffp_version=$($FFprobe -version 2>&1 | awk '/version/ {print $3; exit}')
+    if [[ $ffm_version != $ffp_version ]]; then
+        :
+        #echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+        #echo "Your $FFmpeg and $FFprobe versions seem to be different"
+        #echo "You should be using the same version for each."
+        #echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+        #echo "Continuing anyway "
+        #countdown
+    fi
+fi
 # stdbuf (coreutils>=7.5) is useful to todisc and makempg, use it if present
 hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
 
@@ -593,7 +617,7 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
     # *************************************************************************
     # Required Dependencies
     # *************************************************************************
-    core="grep sed md5sum mplayer mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv"
+    core="grep sed md5sum mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv"
 
     # *************************************************************************
     # Optional Dependencies
@@ -633,8 +657,10 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
     # Quit and complain if ANY core dependency is missing.
     assert_dep "$core" "You are missing CORE tovid dependencies!"
     # ffmpeg is also a part of core deps, but is taken care of here
-    ffmpeg_alts="Use either ffmpeg (ffmpeg.org) or avconv (libav.org)."
-    ffmpeg_pref="Set choice in ${USER_PREFS}. As in: TOVID_FFMPEG=ffmpeg"
+    ffmpeg_alts="Use ffmpeg and ffprobe (ffmpeg.org), OR avconv and avprobe (libav.org)."
+    ffmpeg_pref="You can also set choice in ${USER_PREFS}. As in: TOVID_FFMPEG_CMD=ffmpeg and TOVID_FFPROBE_CMD=ffprobe"
+    mplayer_alts="Use either mplayer or mpv"
     assert_dep $FFmpeg "You are missing $FFmpeg ! $ffmpeg_alts ${ffmpeg_pref}."
+    assert_dep $FFprobe "You are missing $FFprobe ! $ffmpeg_alts ${ffmpeg_pref}."
 
 # End tovid-init
