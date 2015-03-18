@@ -701,7 +701,7 @@ function cleanup()
             read input
             echo
             # Handle 'yes' or '"yes"'
-            if [[ ! -z "$input" && "$input" = "yes" || "$input" = \"yes\" ]]; then
+            if [[ ! -z "$input" && "$input" = "yes" || "$input" = "\"yes\"" ]]; then
                 yecho "Keeping temporary files in $TMP_DIR"
             else
                 yecho "Removing temporary files..."
@@ -729,7 +729,7 @@ function write_stats()
         du -shc "$OUT_PREFIX".mpg "$OUT_PREFIX".[0-9].mpg 2>/dev/null
     fi
 
-    # Create stats directory if it doesn't already exist.
+    # Create stats directory if it does not already exist.
     if test ! -d $STAT_DIR; then
         mkdir $STAT_DIR
     fi
