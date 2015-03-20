@@ -44,7 +44,7 @@ def svn_version():
 # Current SVN version number
 #_tovid_version = svn_version()
 # Official release number
-_tovid_version = '0.35'
+_tovid_version = '0.35.0'
 
 
 import os
@@ -196,7 +196,10 @@ setup(
     license = 'GPL',
     maintainer = 'grepper',
     maintainer_email = 'grepper@gmail.com',
-    summary = 'A suite of tools for making video DVDs',
+    description = 'A suite of tools for making video DVDs',
+    platforms = 'Linux',
+    download_url = 'https://github.com/tovid-suite/tovid/',
+    long_description = 'A suite of tools for making video DVDs',
 
     cmdclass = {
         'install': InstallCommand,
