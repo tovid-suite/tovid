@@ -194,8 +194,9 @@ setup(
     version = _tovid_version, # Defined at the top of this file
     url = 'http://tovid.wikia.com/',
     license = 'GPL',
-    maintainer = 'Eric Pierce',
-    maintainer_email = 'wapcaplet88@gmail.com',
+    maintainer = 'grepper',
+    maintainer_email = 'grepper@gmail.com',
+    summary = 'A suite of tools for making video DVDs',
 
     cmdclass = {
         'install': InstallCommand,

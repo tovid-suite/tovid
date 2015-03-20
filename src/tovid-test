@@ -165,7 +165,7 @@ test_tovid()
         OUTFILE="$DEFAULT_OUTFILE"
         rm -f "$OUTFILE"
     fi
-    CMD="tovid $@ -overwrite -out $OUTFILE"
+    CMD="tovid mpg $@ -overwrite -out $OUTFILE"
     $TEST_FFMPEG && CMD="$CMD -ffmpeg"
     yecho $CMD
     if $DEBUG; then
