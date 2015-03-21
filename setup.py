@@ -17,8 +17,6 @@ At this time, there is no 'uninstall' mechanism...
 
 # Current version number of tovid, as a string.
 # Examples:
-# Current SVN version number
-#_tovid_version = svn_version()
 # Official release number
 _tovid_version = '0.35.0+'
 _last_release = '0.35.0'
