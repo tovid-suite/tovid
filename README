@@ -4,10 +4,10 @@ tovid (http://tovid.wikia.com/)
 Video disc authoring software
 =====================================================
 
-tovid is a suite of tools for creating video DVDs, VCDs,
-and SVCDs. It can convert your video files to the correct
-format, generate navigational menus, and create and burn
-the disc image.
+tovid is a suite of tools for creating video DVDs.
+It can convert your video files to the correct format,
+generate navigational menus, and create and burn the
+disc image.
 
 Quick install:
 
