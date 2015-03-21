@@ -15,36 +15,13 @@ At this time, there is no 'uninstall' mechanism...
 """
 
 
-def svn_version():
-    """Return the current SVN revision number, as reported by 'svn info',
-    as a string like 'svn-r1234'. If svn is not installed, or if something goes
-    wrong, return 'svn-unknown'
-    """
-    try:
-        from commands import getoutput
-    except ImportError:
-        # python 3
-        from subprocess import getoutput
-
-    rev_line = getoutput('svn info 2>/dev/null | grep ^Revision')
-    # If rev_line is found, get the revision number
-    if rev_line:
-        return 'svn-r' + rev_line.split(':')[1].strip()
-    # If rev_line is empty, try using bzr instead
-    else:
-        rev_line = getoutput('bzr log -l 1 2>/dev/null | grep "^svn revno"')
-        # "svn revno: NNNN (on /trunk)"
-        if rev_line:
-            return 'svn-r' + rev_line.split(':')[1].strip().split(' ')[0]
-    # If all else fails...
-    return 'svn-unknown'
-
 # Current version number of tovid, as a string.
 # Examples:
 # Current SVN version number
-_tovid_version = svn_version()
+#_tovid_version = svn_version()
 # Official release number
-#_tovid_version = '0.35'
+_tovid_version = '0.35.0+'
+_last_release = '0.35.0'
 
 
 import os
