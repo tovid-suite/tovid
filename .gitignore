@@ -3,4 +3,5 @@ build/
 MANIFEST
 src/tovid-init
 docs/man/tovid.1
-
+*.log
+log
