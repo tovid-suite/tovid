@@ -1,0 +1,78 @@
+This page provides download links and instructions for installing tovid.
+
+* [[#Use the source|Use the source]]
+* [[#Git|Install from Git]]
+== Use the source ==
+
+For platform-independent installation, you can use the source '''.tar.gz'''. First install all [[tovid dependencies]], to prevent potential problems.
+
+Next, download {{LatestTarball}}. This tarball contains everything you need to run tovid and the GUI. Save this somewhere on your computer (for now, we'll assume it's saved in '''~/Downloads/''').
+
+To extract the tarball, open a terminal window (such as XTerm, RXVT, or Konsole) and type the following commands, substituting for '''~/Downloads''' the path where you saved the .tar.gz:
+
+ $ cd ~/Downloads
+ $ tar -xzvf {{LatestRelease}}.tar.gz
+ $ cd {{LatestRelease}}
+ $ ./setup.py build
+
+Then:
+
+ $ sudo ./setup.py install
+ or
+ $ su -c './setup.py install'
+
+depending on your distribution (Ubuntuers should use <code>sudo</code>). You will be prompted for the root password to install tovid system-wide. If you decide you don't want tovid installed anymore, run:
+
+ $ sudo ./setup.py uninstall
+ or
+ $ su -c './setup.py uninstall'
+
+from the original installation directory ('''~/Downloads/{{LatestRelease}}''') as root.
+
+
+== Git ==
+
+If you want to get the latest code directly from the development repository, you will need to install [http://git-scm.com/ git] and [http://txt2tags.sourceforge.net txt2tags] first. Assuming you want to put the tovid installer in '''~/Downloads''':
+
+ $ cd ~/Downloads
+ $ <nowiki>git clone https://github.com/tovid-suite/tovid.git</nowiki>
+ $ cd tovid
+ $ ./setup.py build
+ $ ./setup.py build_docs
+ $ ./setup.py build_tovid_init
+
+then, as before:
+
+ $ sudo ./setup.py install
+ or
+ $ su -c './setup.py install'
+
+You should now have the latest version installed (bugs and all!) You can keep in sync with updates by doing:
+
+ $ cd ~/Downloads/tovid
+ $ git pull
+
+followed by a re-install (<code>sudo ./setup.py install</code>). See the [http://git-scm.com/docs/gittutorial Official Git Tutorial] for more about dealing with git.
+
+Check out the [[Development plans]] and [[Talk:Development plans|talk page]].
+
+
+== Platform-specific instructions ==
+
+Until the distribution-specific packages catch up to the latest release, it is recommended that you use [[#Git|git]] or the [[#Use the source | source tarball]] instead of an outdated package from your distribution.
+
+* [[Installing tovid/Ubuntu | Ubuntu]]
+* [[Installing_tovid/Gentoo | Gentoo]]
+* [[Installing tovid/Mandriva | Mandriva]]
+* [[Installing tovid/Slackware | Slackware]]
+* [[Installing_tovid/Freespire | Freespire]]
+* [[Installing_tovid/Cygwin | Cygwin]]
+
+Other available package formats (no instructions yet):
+
+* [http://packman.links2linux.de/ SuSE RPM repository]
+* [http://www.bennewitz.com/rpms/ Fedora Core yum enabled repository]
+
+If you have created a tovid package, please [[become a packager]] and add links/instructions above.
+[[Category:Documentation]]
+[[Category:HOWTO]]
