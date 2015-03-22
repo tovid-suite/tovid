@@ -390,7 +390,7 @@ class Application (Widget):
         # Hack: This is broken (commented section), presumably because of
         # load_args limitations. This hack fixes it for libtovid, but does not
         # belong in metagui.  So refactor this when load_args is fixed.
-        # see http://code.google.com/p/tovid/issues/detail?id=121
+        # see https://github.com/tovid-suite/tovid/issues/121
         filename = askopenfilename(parent=self,
             title="Select a shell script or text file to load",
             filetypes=[('Shell scripts', '*.sh *.bash'),
@@ -437,7 +437,7 @@ class Application (Widget):
 
     def load_script(self, filename):
         # this is now disabled and its functionality passed to guis.helpers.py
-        # see http://code.google.com/p/tovid/issues/detail?id=121
+        # see https://github.com/tovid-suite/tovid/issues/121
         pass
         #"""Load current Control settings from a text file.
         #"""

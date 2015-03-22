@@ -53,7 +53,7 @@ SEPARATOR="========================================================="
 TOVID_HOME="$HOME/.tovid"
 TOVID_HOME_PAGE="http://tovid.wikia.com"
 TOVID_FORUMS="http://groups.google.com/group/tovid-users"
-TOVID_ISSUES="http://code.google.com/p/tovid/issues/list"
+TOVID_ISSUES="https://github.com/tovid-suite/tovid/issues"
 
 # ******************************************************************************
 # ******************************************************************************
