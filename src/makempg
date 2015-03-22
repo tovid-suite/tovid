@@ -875,7 +875,7 @@ function goodbye()
         echo "See the manual ('man tovid') for more information and options."
         echo
         echo "Please report bugs to:"
-        echo "   http://code.google.com/p/tovid/issues/list"
+        echo "   https://github.com/tovid-suite/tovid/issues"
         yecho "Thanks for using tovid!"
         yecho
     fi

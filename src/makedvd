@@ -80,7 +80,7 @@ runtime_error ()
     echo "$@"
     echo "See if anything in the above output helps you diagnose the"
     echo "problem, and please file a bug report at:"
-    echo "   http://code.google.com/p/tovid/issues"
+    echo "   https://github.com/tovid-suite/tovid/issues/121"
     echo "(_not_ the dvdauthor list) containing the above output."
     echo "Sorry for the inconvenience!"
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
