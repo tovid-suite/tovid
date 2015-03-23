@@ -15,6 +15,18 @@ Quick install:
     or
     $ sudo ./setup.py install
 
+If you are using Git and the master branch you will need to do:
+
+    $ ./setup.py build
+    $ su -c './setup.py install'
+    or
+    $ sudo ./setup.py install
+
+For Git master branch you need txt2tags:
+http://txt2tags.sourceforge.net/ 
+
+
+
 Then run:
 
     $ tovid
