@@ -13,13 +13,37 @@ or:
 
 At this time, there is no 'uninstall' mechanism...
 """
+def git_version():
+    """Return the current release number, followed by the current commit sha1,
+    as reported by 'git rev-parse HEAD', as a string like 'tovid-0.35.0-f2d20b8'.
+    If git is not installed or this is not a git directory, or if something goes
+    wrong, return 'tovid-0.35.0+git-unknown'
+    """
+    import os
+    try:
+        from commands import getoutput
+    except ImportError:
+        # python 3
+        from subprocess import getoutput
+    # if (we are in a git dir and git is installed) #FIXME
+    if os.path.isdir('.git') and getoutput('which git'):
+        rev_line = getoutput('git rev-parse --short HEAD 2>/dev/null')
+        # If rev_line is found, get the revision number
+        # make sure it is a git hash (hex)
+        try:
+            int(rev_line, 16)
+            return '%s-%s' % (_last_release, rev_line)
+        except ValueError:
+            return '%s-git-unknown' % _last_release 
+    else:
+        return '%s-git-unknown' % _last_release 
 
 
 # Current version number of tovid, as a string.
 # Examples:
 # Official release number
-_tovid_version = '0.35.0-f2d20b8'
 _last_release = '0.35.0'
+_tovid_version = git_version()
 
 
 import os
