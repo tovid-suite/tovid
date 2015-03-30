@@ -18,7 +18,7 @@ At this time, there is no 'uninstall' mechanism...
 # Current version number of tovid, as a string.
 # Examples:
 # Official release number
-_tovid_version = '0.35.0-4850c42'
+_tovid_version = '0.35.0-f2d20b8'
 _last_release = '0.35.0'
 
 
