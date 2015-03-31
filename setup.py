@@ -27,12 +27,14 @@ def git_version():
         from subprocess import getoutput
     # if (we are in a git dir and git is installed) #FIXME
     if os.path.isdir('.git') and getoutput('which git'):
-        rev_line = getoutput('git rev-parse --short HEAD 2>/dev/null')
-        # If rev_line is found, get the revision number
-        # make sure it is a git hash (hex)
+        #rev_line = getoutput('git rev-parse --short HEAD 2>/dev/null')
+        rev_line = getoutput('git describe --match %s 2>/dev/null' %
+                             _last_release).replace('-g', '-')
+        _hash = rev_line.split('-')[2]
+        # make sure the revision (_hash) is a git hash (hex)
         try:
-            int(rev_line, 16)
-            return '%s-%s' % (_last_release, rev_line)
+            int(_hash, 16)
+            return  rev_line
         except ValueError:
             return '%s-git-unknown' % _last_release 
     else:
