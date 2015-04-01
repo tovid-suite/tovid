@@ -292,9 +292,8 @@ class VideoGui(tk.Frame):
                     except (SyntaxError, TypeError, ValueError):
                         out = {}
                     except:
-                        print "Unexpected error:", sys.exc_info()[0]
+                        print("Unexpected error:", sys.exc_info()[0])
                         raise
-                    print 'returned: ', out
                     return out
             
 
