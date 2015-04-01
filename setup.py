@@ -233,6 +233,7 @@ setup(
             'src/todisc',
             'src/todisc-fade-routine',
             'src/makempg',
+            'src/mpv_identify.sh',
             'src/tovid-init',
 
             # Python scripts
