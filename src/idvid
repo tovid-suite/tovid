@@ -209,6 +209,7 @@ function get_info ()
     done
     # if index 0 is unset flatten array
     [[ ${probe_info[0]+unset} ]] || probe_info=( "${probe_info[@]}" )
+    $VERBOSE && echo "${probe_info[@]}"
         
     # Identify video using tcprobe
     if test -n "$TCPROBE"; then
