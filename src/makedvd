@@ -142,7 +142,7 @@ function probe_media ()
     else
         DISC_CAPACITY=0
     fi
-    DISC_CAPACITY=$(echo "$DISC_CAPACITY / 1024 / 1024" | bc)
+    DISC_CAPACITY=$(echo "$DISC_CAPACITY / 1024 / 1024" | ${bC} )
 
     # Define usable DVDs
     HAVE_DVD_RW=$(verify "$DISC_TYPE" set "DVD-RW DVD+RW")
@@ -308,12 +308,13 @@ if $DO_AUTHOR; then
     DISC_SUM=0
     while test $i -le $NUM_VOBS; do
       VOB=$(echo "$VOB_LIST" | awk -F ':' '{ print $'$i' }')
-      VOB_SIZE=$(du -D -B M "$VOB" | awk -F ' ' '{print $1}' | tr -d M)
+      VOB_SIZE=$(du -H -m "$VOB" | awk '{print $1}')
       DISC_SUM=$(expr $VOB_SIZE \+ $DISC_SUM)
       i=$(expr $i \+ 1)
     done
     OUTDIR=$(readlink -f "$OUT_DIR")
-    AVAIL_SPACE=$(df -B M -P "${OUTDIR%/*}" | awk 'NR != 1 {print $4;}' | tr -d M)
+    AVAIL_SPACE=$(df -P "$OUT_DIR" | awk 'NR==1 {sub("-blocks", "", $2); blocksize=$2} \
+      NR!=1 {print int($4/1024*blocksize/1024)}')
 
     if test $DISC_SUM -gt $AVAIL_SPACE; then
        echo $SEPARATOR

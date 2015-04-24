@@ -551,11 +551,11 @@ function get_info ()
     if $USE_NAVLOG; then
         if egrep -qi 'mpeg$|mpg$|vob$' <<< "${INFILE##*.}"; then
             ID_VIDEO_FRAMES=$(awk 'END{print NR}' "$NAV_LOG" )
-            V_DUR=$(bc <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
+            V_DUR=$( ${bC} <<< "$ID_VIDEO_FRAMES / $ID_VIDEO_FPS")
             V_DURATION=${V_DUR%%.*} # final value is integer ( seconds )
         else
             V_DURATION=$(awk '($2==1) { field = $NF }; END{ print field/1000 }' "$NAV_LOG")
-            ID_VIDEO_FRAMES=$(bc <<< "$V_DURATION * $ID_VIDEO_FPS")
+            ID_VIDEO_FRAMES=$( ${bC} <<< "$V_DURATION * $ID_VIDEO_FPS")
             ID_VIDEO_FRAMES=${ID_VIDEO_FRAMES%%.*}
             # final value is in seconds
             V_DURATION=${V_DURATION%%.*} # integer
@@ -627,7 +627,7 @@ function get_info ()
             # infer bitrate from file size and duration
             v_size=$(( $(du -m "$INFILE" | awk '{ print $1 }') * 8192 ))
             if (( ${V_DURATION%.*} )); then
-                ID_VIDEO_BITRATE=$(bc -l <<< "$v_size / $V_DURATION")
+                ID_VIDEO_BITRATE=$( ${bC} -l <<< "$v_size / $V_DURATION")
                 ID_VIDEO_BITRATE=$(( v_size / V_DURATION ))000
                 #echo -e "Probed video bitrate not available, infering from file size and duration\n"
             fi
@@ -641,7 +641,7 @@ function get_info ()
     if test_is_number $vid_frames && ((vid_frames)); then
         (( $ID_VIDEO_FRAMES == 0 )) && ID_VIDEO_FRAMES=$vid_frames
     elif  (( ${V_DURATION%.*} )) &&  (( ${ID_VIDEO_FPS/./} )); then
-        VIDEO_FRAMES=$(bc -l <<< "$V_DURATION * $ID_VIDEO_FPS")
+        VIDEO_FRAMES=$( ${bC} -l <<< "$V_DURATION * $ID_VIDEO_FPS")
         if (( $ID_VIDEO_FRAMES == 0 )); then
             ID_VIDEO_FRAMES=${VIDEO_FRAMES%.*}
             #echo -e "Probed frame count not available, infering from duration and framerate\n"
@@ -725,7 +725,7 @@ function idvid_main ()
         echo "V_ASPECT_WIDTH=$V_ASPECT_WIDTH"
         echo "ID_VIDEO_FRAMES=$ID_VIDEO_FRAMES"
     elif $TABULAR; then
-        FILE_SIZE=$(du -Dh "$INFILE" | awk '{print $1}')
+        FILE_SIZE=$(du -Hh "$INFILE" | awk '{print $1}')
         echo "$INFILE||$FILE_SIZE||${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT}||$ID_VIDEO_FPS||$ID_VIDEO_BITRATE||$ID_AUDIO_BITRATE" >> "$TABLE"
     else
         echo $SEPARATOR
