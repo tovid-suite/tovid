@@ -458,22 +458,22 @@ send_to_log()
 }
 
 # BSD's readlink behaves differently than GNU's. Use python instead
+# This is just a replacement for readlink -f which is used in our scripts,
+# though it could be adapted for other options easily enough.
 if [[ $(uname -s) =~ BSD ]]; then
-    readlink()
-  {
-  local args out
-  args=()
-  for arg in "$@"; do
-    # discard all options but the last (non-option) argument
-    case "$arg" in
-      -[a-zA-Z0-9] ) ;;
-      * )  args+=($arg)
-    esac
-  done
-
-  out=${args[*]}
-  python -c "import os.path; print os.path.realpath('"$out"')"
-  }
+    readlink () 
+    { 
+        local args out parent_dir;
+        args=();
+        for arg in "$@"; do
+            case "$arg" in 
+                -[a-zA-Z0-9]) ;;
+                *) args+=($arg) ;;
+            esac;
+        done;
+        out="\"${args[*]}\"";
+        python -c "import os.path; print os.path.realpath($out)"
+    }
 fi
 
 # ******************************************************************************
