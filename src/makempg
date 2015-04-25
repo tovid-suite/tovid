@@ -336,7 +336,7 @@ function check_disk_space()
     # based on original file size
     $SLICE && VIDEO_DURATION=$CLIP_LENGTH || VIDEO_DURATION=$V_DURATION
     if test "$VIDEO_DURATION" = "0"; then
-        CUR_SIZE=$(du -Dck "$IN_FILE" | awk 'END{print $1}')
+        CUR_SIZE=$(du -Hck "$IN_FILE" | awk 'END{print $1}')
         NEED_SPACE=$(expr $CUR_SIZE \* 2)
     # Estimate space based as kbps * duration
     else
@@ -757,13 +757,13 @@ EOF`
     test -n "$AVG_BITRATE" && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
     test -n "$PEAK_BITRATE" && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
     KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION \+ 1)
-    ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / $V_DURATION" | bc)
+    ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / $V_DURATION" | ${bC} )
     if $USE_FFMPEG; then
         BACKEND="$FFmpeg"
     else
         BACKEND="mpeg2enc"
     fi
-
+    [[ $CPU_SPEED ]] && MHZ=MHz || MHZ=
     # Final statistics string (pretty-printed)
     FINAL_STATS_PRETTY=`cat << EOF
     ----------------------------------------
@@ -775,7 +775,7 @@ EOF`
     Target bitrate:  $VID_BITRATE kbits/sec
     Average bitrate: $AVG_BITRATE kbits/sec
     Peak bitrate:    $PEAK_BITRATE kbits/sec
-    Took $HHMMSS to encode on $CPU_MODEL $CPU_SPEED mhz
+    Took $HHMMSS to encode on $CPU_MODEL $CPU_SPEED $MHZ
     -----------------------------------------
 EOF`
 
@@ -1116,13 +1116,13 @@ if $SLICE; then
     ((${CLIP_SEEK%.*} > 0)) && [[ -z $ASYNC ]] && ASYNC1="-async 1"
     if [[ "$CLIP_ENDTIME" ]]; then
         [[ "$CLIP_ENDTIME" = *:* ]] && CLIP_ENDTIME=$(unformat_time $CLIP_ENDTIME)
-        CLIP_LENGTH=$(echo "$CLIP_ENDTIME - $CLIP_SEEK" | bc)
+        CLIP_LENGTH=$(echo "$CLIP_ENDTIME - $CLIP_SEEK" | ${bC} )
         [[ ${CLIP_LENGTH%.*} -eq 0 ]] && CLIP_LENGTH=1
         FF_LENGTH="-t $CLIP_LENGTH"
     fi
     CLIP_SEEK="-ss $CLIP_SEEK"
 fi
-#    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_ENDTIME" | bc)
+#    FRAMES=$(echo "scale = 2; $ID_VIDEO_FPS * $CLIP_ENDTIME" | ${bC} )
 #    MP_FRAMES="-frames ${FRAMES%.*}"
 
 
@@ -1257,7 +1257,7 @@ if $DO_FIT; then
     # When the audio is already compliant and the bitrate is known we
     # can calculate a more accurate size.
     if $AUDIO_OK && test "$ID_AUDIO_BITRATE" != "0"; then
-        AUD_BITRATE=$(echo "scale = 0; $ID_AUDIO_BITRATE / 1000" | bc)
+        AUD_BITRATE=$(echo "scale = 0; $ID_AUDIO_BITRATE / 1000" | ${bC} )
     fi
     AUDIO_SIZE=$(bc_math "$AUD_BITRATE * $LENGTH / (8 *1024)")
     VIDEO_SIZE=$(bc_math "$AUD_VID_SIZE - $AUDIO_SIZE")
@@ -2190,8 +2190,8 @@ fi
 # ******************************************************************************
 
 if ! $FAKE; then
-    AUDIO_SIZE=$(du -c -b "$AUDIO_STREAM" | awk 'END{print $1}')
-    VIDEO_SIZE=$(du -c -b "$VIDEO_STREAM" | awk 'END{print $1}')
+    AUDIO_SIZE=$(ls -lnR "$AUDIO_STREAM" | awk 'END{print $5}')
+    VIDEO_SIZE=$(ls -lnR "$VIDEO_STREAM" | awk 'END{print $5}')
     # Total size of streams so far (in MBytes)
     STREAM_SIZE=$(expr \( $AUDIO_SIZE \+ $VIDEO_SIZE \) \/ 1000000)
     # If it exceeds disc size, add '%d' field to allow mplex to split output

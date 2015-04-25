@@ -211,14 +211,14 @@ get_thumb_opacity ()
 
 init_gamma_array ()
 {
-bc -l <<BC_EOF
+${bC} -l <<BC_EOF
 pi=4*a(1);
 
 start_frame=0
 
 # Get values from standard in
 # Format:
-# echo "29.97\n 300\n 10\n .1\n 5\n .05\n .1\n" | bc -l
+# echo "29.97\n 300\n 10\n .1\n 5\n .05\n .1\n" | ${bC} -l
 frame_rate=$FRAME_RATE;
 end_frame=$ANIMENU_ENDFRAME;
 average=$1;
