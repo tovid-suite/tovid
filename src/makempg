@@ -1133,7 +1133,7 @@ if test "$IN_FILE_TYPE" = "file"; then
     yecho "Probing video for information. This may take several minutes..."
 
     # Get an MD5sum of the input file for statistics
-    IN_FILE_MD5=$(md5sum "$IN_FILE" | awk '{print $1}')
+    IN_FILE_MD5=$($md5sum "$IN_FILE" | awk '{print $1}')
 
     # Assume nothing is compliant unless idvid says so
     # (these will be overridden by idvid for compliant A/V)

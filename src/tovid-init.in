@@ -509,7 +509,16 @@ elif [[ $KERNEL =~ BSD ]]; then
 fi
 
 # use gnubc on bsd systems (found in /usr/local)
-[[ $KERNEL =~ 'BSD' ]] && bC=/usr/local/bin/bc || bC=$(which bc)
+# bsd uses md5, which needs -r to print hash in 1st column
+if [[ $KERNEL =~ 'BSD' ]]; then
+    bC=/usr/local/bin/bc
+    md5=md5
+    md5sum="md5 -r"
+else
+    bC=$(which bc)
+    md5=md5sum
+    md5sum=md5sum
+fi
 
 # ******************************************************************************
 # Find multiple version kludge
@@ -618,7 +627,7 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
     # *************************************************************************
     # Required Dependencies
     # *************************************************************************
-    core="grep sed md5sum mplayer mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv"
+    core="grep sed $md5 mplayer mplex mpeg2enc yuvfps yuvdenoise ppmtoy4m mp2enc jpeg2yuv"
 
     # *************************************************************************
     # Optional Dependencies
