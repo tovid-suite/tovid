@@ -71,7 +71,6 @@ class VideoGui(tk.Frame):
         self.make_tmps()
         self.cmd = ''
         self.player = self.get_player()
-        print self.player
         self.draw()
     
     def get_player(self):
@@ -200,13 +199,11 @@ class VideoGui(tk.Frame):
         self.set_container(video)
 
         if self.player == 'mplayer':
-            print self.xid, self.cmd_pipe, self.args #DEBUG
             self.cmd =  'mplayer -wid %s -nomouseinput -slave \
             -input nodefault-bindings:conf=/dev/null:file=%s \
             -edlout %s %s' \
             %(self.xid, self.cmd_pipe, self.editlist, self.args)
         elif self.player == 'mpv':
-            print self.xid, self.cmd_pipe, self.args #DEBUG
             self.cmd = 'mpv -wid %s --idle=yes --input-unix-socket=%s %s' %(self.xid, self.cmd_pipe, self.args)
         # the video needs to be last, because later we parse self.cmd[-1]
         self.cmd = shlex.split(self.cmd) + [video]
@@ -286,20 +283,17 @@ class VideoGui(tk.Frame):
                 getstatusoutput('echo "%s"  > %s' %(text, self.cmd_pipe))
             else:
                 cmd = "echo \'%s\' | socat - %s" % (text, self.cmd_pipe)
-                print 'cmd is:', cmd # DEBUG
                 r = Popen([cmd], stderr=PIPE, stdout=PIPE, shell=True)
                 ret = r.communicate()
                 #ret = getoutput('echo "%s" | socat - \'%s\'' %(text, self.cmd_pipe))
-                print 'ret is:', ret # DEBUG
                 if ret:
                     try:
                         out = json.loads(ret[0])
                     except (SyntaxError, TypeError, ValueError):
                         out = {}
                     except:
-                        print "Unexpected error:", sys.exc_info()[0]
+                        print("Unexpected error:", sys.exc_info()[0])
                         raise
-                    print 'returned: ', out
                     return out
             
 
@@ -316,10 +310,8 @@ class VideoGui(tk.Frame):
                 self.send('pause')
             else:
                 if self.pauseplay.get() == 'Pause':
-                    print self.pauseplay.get()
                     self.send('{ "command": ["set_property", "pause", false] }')
                 else:
-                    print self.pauseplay.get()
                     self.send('{ "command": ["set_property", "pause", true] }')
         else:
             # start the video for the 1st time
@@ -938,7 +930,6 @@ class CopyableInfo(tk.Frame):
         text_frame = tk.Frame(self)
         text_frame.pack(side='top')
         style = Style()
-        print 'style is:', Style()
         inifile = os.path.expanduser('~/.metagui/config')
         if os.path.exists(inifile):
             style.load(inifile)
