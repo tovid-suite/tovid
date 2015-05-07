@@ -66,12 +66,14 @@ Common options:
     -kvcd | -kvcdx3 | -kdvd | -bdvd     Encode to non-standard MPEG-2 format
     -pal | -ntsc | -ntscfilm            Set TV standard
 
+$(default_encoder_change)
+
 Example:
 
     tovid -in foo.avi -out foo_encoded
         Convert 'foo.avi' with default options (NTSC DVD), putting the
-        encoded video in 'foo_encoded.mpg'.
-
+        encoded video in 'foo_encoded.mpg'. Tovid will use ffmpeg.
+        
 See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
@@ -100,7 +102,7 @@ DVD_VID_MIN_RATE=900
 DVD_VID_MAX_RATE=9000
 
 # Don't use ffmpeg
-USE_FFMPEG=false
+USE_FFMPEG=:
 
 # Running from gui
 FROM_GUI=false
@@ -231,6 +233,7 @@ FFMPEG_WITH_MPLAYER=false
 FF_M2V=false # are we splitting up video and audio processing?
 DO_ENCODING=:
 SUBS_ONLY=false
+WARN=true
 
 # Make note of when encoding starts, to determine total time later.
 SCRIPT_START_TIME=$(date +%s)
@@ -296,6 +299,7 @@ function runtime_error()
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     exit 1
 }
+
 # ******************************************************************************
 # Execute the given command-line string, with appropriate stream redirection
 # Args: $@ == text string containing complete command-line
@@ -389,11 +393,11 @@ function get_args()
             "-svcd" )     TGT_RES="SVCD" ;;
             "-dvd" )      TGT_RES="DVD" ;;
             "-half-dvd" ) TGT_RES="Half-DVD" ;;
-            "-kvcd" )     TGT_RES="KVCD" ;;
-            "-kvcdx3" )   TGT_RES="KVCDx3" ;;
-            "-kvcdx3a" )  TGT_RES="KVCDx3a" ;;
-            "-kdvd" )     TGT_RES="KDVD" ;;
-            "-bdvd" )     TGT_RES="BDVD" ;;
+            "-kvcd" )     TGT_RES="KVCD"; USE_FFMPEG=false ;;
+            "-kvcdx3" )   TGT_RES="KVCDx3"; USE_FFMPEG=false ;;
+            "-kvcdx3a" )  TGT_RES="KVCDx3a"; USE_FFMPEG=false ;;
+            "-kdvd" )     TGT_RES="KDVD"; USE_FFMPEG=false ;;
+            "-bdvd" )     TGT_RES="BDVD"; USE_FFMPEG=false ;;
             # Use 704x480 for DVD resolutions?
             "-704" )      WIDTH_704=: ;;
 
@@ -606,7 +610,13 @@ function get_args()
                 DOWNMIX=:
                 ;;
             "-ffmpeg" | "-avconv" )
-                USE_FFMPEG=:
+                usage_error "No such option: ${1}. FFmpeg is now the default."
+                ;;
+            "-mpeg2enc" )
+                USE_FFMPEG=false
+                ;;
+            "-nowarn" )
+                WARN=false
                 ;;
             "-nofifo" )
                 USE_FIFO=false
@@ -1077,7 +1087,6 @@ if test -e "$OUT_FILENAME"; then
 fi
 
 
-
 # ******************************************************************************
 #
 # Resolution setup
@@ -1166,6 +1175,11 @@ fi
 
 # Default quality 6 (or 7 for ffmpeg), if not set by user
 : ${VID_QUALITY:=6}
+
+# warn about recent defaults change
+default_encoder_change
+$WARN && echo "Add '-nowarn' to skip pause" && sleep 8
+
 
 # ******************************************************************************
 #
@@ -1393,8 +1407,6 @@ if $DO_FIT; then
     if test "$VID_BITRATE" -gt $VID_MAX_RATE; then
         VID_BITRATE=$VID_MAX_RATE
     fi
-    echo VID_BITRATE is $VID_BITRATE
-    exit 0 # DEBUG
 fi
 # Set resolution and frame rate according to format and TV system
 case "$TGT_RES" in
