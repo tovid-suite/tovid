@@ -360,7 +360,7 @@ Here is a list of possible options you can pass:
     **-abitrate**, **-priority**, **-deinterlace**, **-progressive**,
     **-interlaced**, **-interlaced_bf**, **-type**, **-fit**, **-discsize**,
     **-parallel**, **-mkvsub**, **-autosubs**, **-subtitles**, **-update**,
-    **-mplayeropts**, **-audiotrack**, **-downmix**, **-ffmpeg**, **-nofifo**,
+    **-mplayeropts**, **-audiotrack**, **-downmix**, **-mpeg2enc**, **-nofifo**,
     **-from-gui**, **-slice**, **-quiet**,
     **-fake**, **-keepfiles**
 
@@ -1191,6 +1191,9 @@ By default, you will (hopefully) end up with an NTSC DVD-compliant
 MPEG-2 video file; if you burn this file to a DVD-R, it should be
 playable on most DVD players.
 
+Note: as of tovid-0.36 ffmpeg is the default encoder and the '-ffmpeg'
+option is removed. Use '-mpeg2enc' to use the old default encoder.
+
 For example:
 
 : ``tovid mpg -in foo.avi -out foo_encoded``
@@ -1210,14 +1213,12 @@ For example:
     Do not actually encode; only print the commands (mplayer, mpeg2enc etc.)
     that would be executed. Useful in debugging; have tovid give you the
     commands, and run them manually.
-: **-ffmpeg**
-    Use ffmpeg for video encoding, instead of mplayer/mpeg2enc. Try this if
+: **-mpeg2enc**
+    Use mplayer/mpeg2enc for video encoding, instead of ffmpeg. Try this if
     you have any problems with the default encoding method. Using this option,
-    encoding will be considerably faster. It can do almost everything that 
-    mpeg2enc does such as -filters and -subtitles by using a pipe from mplayer
-    though using these options will make encoding somewhat slower. The 
-    exceptions are some special options like -kvcd* -bdvd where you will still
-    need to use the default mpeg2enc option.
+    encoding will be considerably slower.
+    For some special options like -kvcd* -bdvd mpeg2enc will still be used
+    even if you do not specify '-mpeg2enc'.
 
 
 ===Television standards===
@@ -1246,7 +1247,7 @@ Standard formats, should be playable in most DVD players:
     (352x240 NTSC, 352x288 PAL) VideoCD-compatible output
 
 
-Non-standard formats, playable in some DVD players:
+Non-standard formats, playable in some DVD players (using mpeg2enc to encode):
 
 : **-kvcd**
     (352x240 NTSC, 352x288 PAL) KVCD-enhanced long-playing video CD
@@ -1352,8 +1353,7 @@ for a widescreen monitor or TV.
     hard-codes the subtitles into the video, and you cannot turn them off while
     viewing the video. By default, no subtitles are loaded. If your video is
     already compliant with the chosen output format, it will be re-encoded to
-    include the subtitles. This works with both -ffmpeg and the default,
-    mpeg2enc.
+    include subtitles. This works with both ffmpeg and mpeg2enc. (-mpeg2enc)
 
 : **-dvd-subtitles**, **-dvdsubs** | //FILE//
     Get subtitles from //FILE(S)// and add them **as a subtitle stream** into the
@@ -1388,7 +1388,7 @@ for a widescreen monitor or TV.
     very high quality, use 'none'. If your input video is grainy, use 'denoise';
     if it looks washed out or faded, use 'contrast'. You can use multiple
     filters separated by commas. To apply all filters, use 'all'. This works
-    with both mpeg2enc and -ffmpeg.
+    with both ffmpeg (default encoder) and -mpeg2enc.
 
 : **-fps** //RATIO//
     Force input video to be interpreted as //RATIO// frames per second.  May be
@@ -1472,23 +1472,22 @@ for a widescreen monitor or TV.
     desired target DVD/CD-R size to //NUM// mebibytes (MiB, 2^20). By default,
     splitting occurs at 700 for CD, 4300 for DVD. Use higher values at your
     own risk. Use 650 or lower if you plan to burn to smaller-capacity CDs.
-    Doesn't work with the **-ffmpeg** option.
 
 : **-fit** //NUM//
     Fit the output file into //NUM// MiB. Rather than using default (or
     specified) video bitrates, tovid will calculate the correct video bitrate
     that will limit the final output size to //NUM// MiB. This is different
     than **-discsize**, which cuts the final file into //NUM// MiB pieces.
-    **-fit** makes sure that the file never exceeds //NUM// MiB. This works
-    with **-ffmpeg**, but not with **-vcd** since VCDs have a standardized
-    constant bitrate.
+    **-fit** makes sure that the file never exceeds //NUM// MiB. This doesn not
+    work with **-vcd** since VCDs have a standardized constant bitrate.
 
 : **-parallel**
     Perform ripping, encoding, and multiplexing processes in parallel using
     named pipes. Maximizes CPU utilization and minimizes disk usage. Note that
     this option simply does more tasks simultaneously, in order to make better
     use of available CPU cycles; it's unrelated to multi-CPU processing (which
-    is done automatically anyway). Has no effect when **-ffmpeg** is used.
+    is done automatically anyway). This option has no effect unless you specify
+    the **-mpeg2enc** option.
 
 : **-update** //SECS//
     Print status updates at intervals of //SECS// seconds. This affects how
@@ -1522,8 +1521,7 @@ for a widescreen monitor or TV.
     pipes, and not real files.
 
 : **-slice** //START//-//END//
-    Encode a segment from //START// to //END// (in seconds). Only works with
-    -ffmpeg.
+    Encode a segment from //START// to //END// (in seconds).
 
 : **-from-gui**
     Put makempg into a fully non-interactive state, suitable for calling from
