@@ -334,6 +334,18 @@ function file_output_progress()
     $QUIET && printf "\n" || printf "\n\n"
 }
 
+# hack - here so makempg will source it early in the script
+# remove this here and in makempg in tovid-0.37
+function default_encoder_change()
+{
+echo "
+Note: the default encoder has been changed to ffmpeg. Though mpeg2enc
+is reputed to be more complient to the DVD spec, it is very slow.
+To get the old behavior use the -mpeg2enc option.
+"
+}
+
+
 # ******************************************************************************
 # Check to see if a dependency group exists, quit if missing
 # Input args:
