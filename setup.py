@@ -44,7 +44,7 @@ def svn_version():
 # Current SVN version number
 #_tovid_version = svn_version()
 # Official release number
-_tovid_version = '0.35.1'
+_tovid_version = '0.35.2'
 
 
 import os
