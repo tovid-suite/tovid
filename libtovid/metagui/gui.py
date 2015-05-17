@@ -95,7 +95,9 @@ class Executor (Widget):
         """
         text = self.stdin_text.get()
         # Write the entered text to the command's stdin pipe
-        self.command.proc.stdin.write(text + '\n')
+        #self.command.proc.stdin.write(text + '\n')
+        # python 3 compatibility
+        self.command.proc.stdin.write(bytearray(text + "\n", "ascii"))
         self.command.proc.stdin.flush()
         # Show what was typed in the log window
         self.write(text)
