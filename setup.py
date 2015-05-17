@@ -148,11 +148,18 @@ class BuildDocs (Command):
     def run(self):
         """Build the tovid manual page.
         """
+        # For python 3 txt2tags needs an unofficial script
+        import sys
+        if (sys.version_info > (3, 0)):
+            txt2tags = 'docs/scripts/txt2tags'
+        else:
+            txt2tags = 'txt2tags'
+
         # Build only if target does not exist, or if source is newer than target
         mod = os.path.getmtime
         if not os.path.exists(self.target) or (mod(self.source) > mod(self.target)):
             print("Rebuilding tovid manual page")
-            command = 'txt2tags -t man -i "%s" -o "%s"' % (self.source, self.target)
+            command = '%s -t man -i "%s" -o "%s"' % (txt2tags, self.source, self.target)
             os.system(command)
         else:
             print("Manual page already built, not building again")
