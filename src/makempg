@@ -101,8 +101,9 @@ HALFDVD_VID_MAX_RATE=6000
 DVD_VID_MIN_RATE=900
 DVD_VID_MAX_RATE=9000
 
-# Don't use ffmpeg
+# Use ffmpeg by default
 USE_FFMPEG=:
+DO_FFMPEG_SUBS=:
 
 # Running from gui
 FROM_GUI=false
@@ -211,7 +212,7 @@ ID_VIDEO_FPS="0.000"
 V_DURATION="0"
 ID_AUDIO_BITRATE="0"
 # mplayer executable to use
-MPLAYER="mplayer"
+MPLAYER=${TOVID_MPLAYER:=mplayer}
 USE_MPV=false
 # No custom mplayer opts
 MPLAYER_OPTS=""
@@ -548,6 +549,7 @@ function get_args()
                     SUBS_FILE=$(readlink -f "$1")
                     SUBTITLES="-sub \"$SUBS_FILE\""
                     MPV_SUBS="-sub-file \"$SUBS_FILE\""
+                    FFM_SUBS="subtitles=\"$SUBS_FILE\""
                     DO_SUBS=:
                 else
                     yecho "Cannot find subtitle file $1."
@@ -593,6 +595,14 @@ function get_args()
                 shift
                 MPV_OPTS="$1"
                 ;;
+            "-ffmpegopts" | "-avconvopts" )
+                shift
+                FFM_OPTS="$1"
+                ;;
+            "-ffmpeg-add-filter" | "-avconv-add-filter" )
+                shift
+                VF_ADD_FILTER="$1"
+                ;;
             "-audiotrack" )
                 shift
                 # Hackish list-parsing
@@ -610,7 +620,7 @@ function get_args()
                 DOWNMIX=:
                 ;;
             "-ffmpeg" | "-avconv" )
-                usage_error "No such option: ${1}. FFmpeg is now the default."
+                usage_error "No such option: ${1}. FFmpeg/avconv is now the default."
                 ;;
             "-mpeg2enc" )
                 USE_FFMPEG=false
@@ -856,8 +866,9 @@ function spumux_subtitles()
     in_mpg_tmp="$in_mpg"
     for x in ${!DVD_SUBS[@]}; do
         yecho
-        yecho "Running  spumux -m dvd -s $x "$TMP_DIR/spumux${x}.xml" <  "$in_mpg_tmp"  > "$TMP_DIR/out${x}.mpg""
-        VIDEO_FORMAT="ntsc" spumux -m dvd -s $x "$TMP_DIR/spumux${x}.xml" <  "$in_mpg_tmp"  > "$TMP_DIR/out${x}.mpg" 2>> "$LOG_FILE"
+        yecho "Running  spumux -m dvd -s $x "$TMP_DIR/spumux${x}.xml" \
+                            <  "$in_mpg_tmp"  > "$TMP_DIR/out${x}.mpg""
+        VIDEO_FORMAT=$(tr A-Z a-z <<< $BASETVSYS) spumux -m dvd -s $x "$TMP_DIR/spumux${x}.xml" <  "$in_mpg_tmp"  > "$TMP_DIR/out${x}.mpg" 2>> "$LOG_FILE"
         $KEEP_FILES ||{ [[ -e "$TMP_DIR/out$((x-1)).mpg" ]] && rm -fv "$TMP_DIR/out$((x-1)).mpg"; }
         in_mpg_tmp="$TMP_DIR/out${x}.mpg"
     done
@@ -943,7 +954,7 @@ fi
 if $DO_DVD_SUBS && $SUBS_ONLY; then
     # test for dvd compatibility as no encoding done
     if ! idvid -isformat ${TVSYS,,}-dvd "$IN_FILE"; then
-        yecho "The file you have supplied does not appear to be DVD complient."
+        yecho "The file you have supplied does not appear to be DVD compliant."
         yecho "Since you used -dvdsubs-only there will be no re-encoding done."
         yecho "It would be better to quit now and use -dvdsubs option, so "
         yecho "your file will be re-encoded."
@@ -977,7 +988,7 @@ if [[ $TGT_RES = *VCD* && $TGT_RES != "DVD-VCD" ]]; then
     fi
 fi
 
-if { ((USE_FILTERS)) || $DO_SUBS; } && $USE_FFMPEG; then
+if {  $DO_SUBS && ! $DO_FFMPEG_SUBS; } && $USE_FFMPEG; then
     FFMPEG_WITH_MPLAYER=:
 fi
 
@@ -1178,8 +1189,26 @@ fi
 
 # warn about recent defaults change
 default_encoder_change
-$WARN && echo "Add '-nowarn' to skip pause" && sleep 8
-
+if $WARN; then
+    echo "Add '-nowarn' to skip pause. Resuming "
+    countdown 15
+fi
+if [[ ${FFmpeg##*/} == "avconv" && $MPLAYER == "mpv" ]]  && \
+                        { $DO_CONTRAST || $DO_DEBLOCK; }; then
+    yecho "
+    Some makempg filters are not available currently when using avconv or mpv.
+    You may wish to download a static (stand-alone) ffmpeg from:
+    http://ffmpeg.org/download.html#build-linux which will contain a full-
+    featured ffmpeg with all the filters and also subtitle options.
+    Link at time of writing: http://johnvansickle.com/ffmpeg/
+    "
+    $DO_CONTRAST && yecho "Disabling contrast filter"
+    $DO_DEBLOCK && yecho "Disabling deblock filter, try denoise if not using it"
+    if $WARN; then
+        echo "Add '-nowarn' to skip pause. Resuming "
+         countdown 15
+    fi
+fi
 
 # ******************************************************************************
 #
@@ -1663,12 +1692,47 @@ NONVIDEO_BITRATE=$(expr \( 101 \* $AUD_BITRATE \+ $VID_BITRATE \) \/ 100)
 
 # Put available mplayer -vf filters into temp file
 #mplayer -vf help > "$SCRATCH_FILE" 2>&1
-mplayer -nomsgcolor -vf help | cat -v - | sed 's/^[ \t]*//' > "$SCRATCH_FILE" 2>&1
+if $USE_MPV && ! $USE_FFMPEG; then
+    # No check for -vf=lavfi=help because libpostproc presence is hit and miss
+    mpv --no-msg-color --vf=help | sed 's/^[ \t]*//' > "$SCRATCH_FILE" 2>&1
 
-# Find out if mplayer's 'pp' option is available.
-if grep -q "^ *pp " "$SCRATCH_FILE"; then
+elif ! $USE_FFMPEG; then
+    # mplayer
+    mplayer -nomsgcolor -vf help | cat -v - | \
+     sed 's/^[\t]*//' > "$SCRATCH_FILE" 2>&1
+elif $USE_FFMPEG; then
+    $FFmpeg -filters 2>/dev/null > $SCRATCH_FILE
+fi
+
+if $DO_SUBS && $USE_FFMPEG; then
+    if grep -qw subtitles "$SCRATCH_FILE"; then
+        # default to using ffmpeg if a format it can handle
+        if $FFmpeg -i "$IN_FILE" -t 20 -vf subtitles="$SUBS_FILE" \
+                    -f null /dev/null  >> ${LOG_FILE}.tmp 2>&1; then
+            DO_FFMPEG_SUBS=: 
+        else
+            sep=$(printf '%.s*' {1..72})
+            DO_FFMPEG_SUBS=false
+            echo -e "${sep}\nTesting sub file $SUBS_FILE with $FFmpeg\n${sep}" \
+              | send_to_log >> $LOG_FILE
+            cat "${LOG_FILE}.tmp" | send_to_log ${FFmpeg##*/} >> "$LOG_FILE"
+            rm -f "${LOG_FILE}.tmp"
+            echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            echo \
+              "There is a problem with the subtitles file, see $LOG_FILE"
+            echo "Ctrl-c to exit now, or we will continue without subtitles"
+            countdown 20
+        fi
+    else
+        yecho "'subtitles filter not found, will pipe $MPLAYER output instead"
+        DO_FFMPEG_SUBS=false
+    fi
+        
+fi
+# Find out if mplayer's/ffmpeg's 'pp' option is available. (disabled for mpv)
+if grep -qw "pp"  "$SCRATCH_FILE"; then
     PP_AVAIL=:
-elif grep -q "^ *spp " "$SCRATCH_FILE"; then
+elif grep -qw "spp" "$SCRATCH_FILE"; then
     SPP_AVAIL=:
 else
     PP_AVAIL=false
@@ -1689,12 +1753,21 @@ if $DEINTERLACE; then
     # NOT ENABLED: pp=md possibly unstable
     # if $PP_AVAIL; then
         #VID_FILTER="-vf pp=md"
+    if grep -qw "yadif" "$SCRATCH_FILE"; then
+        VID_FILTER="$VID_FILTER,yadif"
+        VF_FILTERS+=",yadif"
     # See if adaptive kernel deinterlacer is available
-    if grep -q "^ *kerndeint " "$SCRATCH_FILE"; then
+    elif grep -qw "kerndeint" "$SCRATCH_FILE"; then
         VID_FILTER="$VID_FILTER,kerndeint"
+        VF_FILTERS+=",kerndeint"
     # Finally, try lavcdeint
-    elif grep -q "^ *lavcdeint " "$SCRATCH_FILE"; then
+    elif grep -qw "lavcdeint" "$SCRATCH_FILE"; then
         VID_FILTER="$VID_FILTER,lavcdeint"
+        VF_FILTERS+=",lavcdeint"
+    # -deinterlace is not a filter, add to command line
+    elif grep -- -deinterlace <<< ${FF_HELP}; then
+        #FF_ADD_ARGS="$FF_ADD_ARGS -deinterlace"
+        :
     # Nothing available - print a warning
     else
         yecho "I can't find any deinterlacing options to use. No deinterlacing"
@@ -1702,8 +1775,8 @@ if $DEINTERLACE; then
         yecho "Encoding will resume in 5 seconds..."
         sleep 5
     fi
-    # Deinterlacing for ffmpeg
-    FF_ILACE="-deinterlace"
+    # Deinterlacing for ffmpeg (edit: use yadif filter instead)
+    #FF_ILACE="-deinterlace"
 fi
 
 # Default quantization
@@ -1730,11 +1803,13 @@ fi
 
 if $DO_DENOISE; then
     # If high-quality 3D denoising is available, use it
-    if grep -q "^ *hqdn3d " "$SCRATCH_FILE"; then
+    if grep -qw "hqdn3d" "$SCRATCH_FILE"; then
         VID_FILTER="$VID_FILTER,hqdn3d"
+        VF_FILTERS+=",hqdn3d"
     # Otherwise, use normal 3D denoising
-    elif grep -q "^ *denoise3d " "$SCRATCH_FILE"; then
+    elif grep -qw "denoise3d" "$SCRATCH_FILE"; then
         VID_FILTER="$VID_FILTER,denoise3d"
+        VF_FILTERS+=",denoise3d"
     # If all else fails, use yuvdenoise (if available)
     elif type -p yuvdenoise; then
         YUVDENOISE="yuvdenoise |"
@@ -1744,7 +1819,8 @@ if $DO_DENOISE; then
 fi
 if $DO_CONTRAST; then
     if $PP_AVAIL; then
-        VID_FILTER="$VID_FILTER,pp=[al:f]"
+        VID_FILTER="$VID_FILTER,pp=al:f"
+        VF_FILTERS+=",pp=al|f"
     else
         yecho "Unable to find a suitable contrast-enhancement filter. Skipping."
     fi
@@ -1752,10 +1828,14 @@ fi
 if $DO_DEBLOCK; then
     if $PP_AVAIL; then
         VID_FILTER="$VID_FILTER,pp=hb/vb"
+        VF_FILTERS+=",pp=hb/vb"
     elif $SPP_AVAIL; then
         VID_FILTER="$VID_FILTER,spp"
+        VF_FILTERS+=",spp"
     else
         yecho "Unable to find a suitable deblocking filter. Skipping."
+        ! $DO_DENOISE && \
+         yecho "You may wish to try the denoise filter which may help."
     fi
 fi
 
@@ -1809,12 +1889,11 @@ else
 fi
 
 # ffmpeg's -vf aspect is more dependable than -aspect, if ffmpeg is new enough
-FF_FILTERS=$($FFmpeg -filters 2>&1)
 # newer ffmpeg's use setdar= and setsar=
-if grep -qw setdar <<< "$FF_FILTERS"; then
+if grep -qw setdar "$SCRATCH_FILE"; then
     FF_ASPECT="setdar="
 # somewhat older rev's used aspect=
-elif grep -qw ^aspect <<< "$FF_FILTERS"; then
+elif grep -qw ^aspect "$SCRATCH_FILE"; then
     FF_ASPECT="aspect="
 else
     FF_ASPECT='-aspect '
@@ -1836,7 +1915,7 @@ grep -qw -- -newaudio <<< "$FF_HELP" && NEWAUDIO_OPT=true
 errors=$( $FFmpeg -i "$IN_FILE" -t 1  \
 -vf scale=w=720:h=352,pad=width=720:height=480:x=0:y=64,setdar=16/9 \
 -f null  -y /dev/null 2>&1)
-if grep -qE "Error.*\(width\|height\|setdar\|w=\|h=\)" <<< "$errors"; then
+if grep -qE "Error.*(width|height|setdar|w=|h=)" <<< "$errors"; then
     ff_legacy=1
 fi
 
@@ -1944,14 +2023,17 @@ if ($INTERLACED || $INTERLACED_BF) && test "$TGT_RES" != "VCD"; then
     # Apply deinterleave/reinterleave filters, if needed
     if test -n "$VID_FILTER"; then
         VID_FILTER="il=d:d,$VID_FILTER,il=i:i"
+        VF_FILTERS="il=d:d,$VF_FILTERS,il=i:i"
     fi
 
     if $INTERLACED_BF; then
         YUV4MPEG_ILACE=":interlaced_bf"
-        FF_ILACE="-top 0 -flags +alt+ildct+ilme"
+        FF_ILACE="-top 0 -flags +ildct+ilme"
+        FF_ADD_ARGS="$FF_ADD_ARGS -alternate_scan 1"
     else
         YUV4MPEG_ILACE=":interlaced"
-        FF_ILACE="-top 1 -flags +alt+ildct+ilme"
+        FF_ILACE="-top 1 -flags +ildct+ilme"
+        FF_ADD_ARGS="$FF_ADD_ARGS -alternate_scan 1"
     fi
     # Add the ilpack video filter
     #VF_POST="$VF_POST -vf-add ilpack"
@@ -2111,7 +2193,7 @@ if $USE_FFMPEG; then
 
     # try to get -quality 9 between quality 8 and 10
     if ((VID_QUALITY == 9)); then
-        FF_ADD_ARGS="-trellis 1"
+        FF_ADD_ARGS="$FF_ADD_ARGS -trellis 1"
         ! grep -q trellis <<< "$FF_HELP" && usage_error \
         "Your $FFmpeg is too old to have the '-trellis' switch.  Use a -quality setting other than '9'."
     fi
@@ -2135,16 +2217,18 @@ if $USE_FFMPEG; then
 
     # use single variable for current, or legacy ffmpeg: VF_FILTERS and OLD_OPTS
     if [[ $VF ]]; then # libavfilter is being used, FF_ASPECT always passed
-        VF_FILTERS="${FF_SIZE},${FF_PAD},${FF_ASPECT},fps=$FF_FPS"
-        # we don't scale and pad 2x, as it's done by mplayer/mpv in below case
-        $FFMPEG_WITH_MPLAYER && VF_FILTERS="fps=$FF_FPS"
-        VF_FILTERS="$VF ${VF_FILTERS#,}" # add -vf*, axe possible leading comma
+        VF_FILTERS="${VF_FILTERS},${VF_ADD_FILTER},${FF_SIZE},${FF_PAD},${FF_ASPECT},fps=$FF_FPS"
+        # add subtitles if present, to to the end of the filter chain
+        $DO_FFMPEG_SUBS && VF_FILTERS+=",$FFM_SUBS"
+        # remove possible leading comma
+        VF_FILTERS="${VF_FILTERS#,}"
+        # Remove extraneous commas from filter command
+        if test -n "$VF_FILTERS"; then
+            VF_FILTERS="$(sed 's/,,/,/g;s/,$//' <<< "$VF_FILTERS")"
+        fi
+        VF_FILTERS="$VF \"${VF_FILTERS}\"" # add -vf*, axe possible leading comma
     else # legacy ffmpeg
         OLD_OPTS="$FF_PAD $FF_ASPECT"
-    fi
-    # Remove extraneous commas from filter command
-    if test -n "$VF_FILTERS"; then
-        VF_FILTERS=$(sed 's/,,/,/g;s/,$//' <<< "$VF_FILTERS")
     fi
 
     # Target TV system
@@ -2171,7 +2255,7 @@ if $USE_FFMPEG; then
     fi
 fi
 
-# if just adding DVD subs to a complient MPEG (no encoding), spumux and exit
+# if just adding DVD subs to a compliant MPEG (no encoding), spumux and exit
 if $DO_DVD_SUBS && $SUBS_ONLY; then
     spumux_subtitles "$IN_FILE"
     cleanup
@@ -2186,9 +2270,9 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO \
         yecho "Using $FFmpeg to encode audio and video."
 
         FF_BITRATE="$VB ${VID_BITRATE}k $AB ${AUD_BITRATE}k ${AUDIO_CHAN[chan1-1]} "
-        FF_ENC_CMD="$PRIORITY $FFmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH $ASYNC $ASYNC1 \
-            $FF_TARGET $FF_QUANT $FF_ADD_ARGS $FF_ILACE \
-            $VF_FILTERS $OLD_OPTS $FF_BITRATE $FF_CHANNEL_MAP"
+        FF_ENC_CMD="$PRIORITY $FFmpeg -i \"$IN_FILE\" $FF_THREAD $CLIP_SEEK \
+         $FF_LENGTH $ASYNC $ASYNC1 $FF_TARGET $FF_QUANT $FFM_OPTS $FF_ADD_ARGS \
+        $FF_ILACE $VF_FILTERS $OLD_OPTS $FF_BITRATE $FF_CHANNEL_MAP"
         $OVERWRITE && FF_ENC_CMD="$FF_ENC_CMD -y "
         FF_ENC_CMD="$FF_ENC_CMD \"$OUT_FILENAME\" ${NEW_AUDIO[@]}"
         yecho "Encoding video and audio with the following command:"
@@ -2362,13 +2446,18 @@ else
     if $USE_FIFO; then
         mkfifo "$YUV_STREAM" || runtime_error "Cannot create fifo $YUV_STREAM"
     fi
+    # if using ffmpeg, it does all filters except subtitles, so unset some vars
+    if $FFMPEG_WITH_MPLAYER; then
+        unset VID_FILTER 
+    fi
+
     if $USE_MPV; then
         VID_PLAY_CMD="$PRIORITY $MPLAYER --no-msg-color --no-input-terminal --untimed --oautofps -no-audio -oneverdrop "$MPV_SUBS" -o \"$YUV_STREAM\" $VID_FILTER $MPV_OPTS $MPV_CLIP_SEEK $MPV_LENGTH \"$IN_FILE\""
     else
         VID_PLAY_CMD="$PRIORITY $MPLAYER -nomsgcolor $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS $CLIP_SEEK $MP_LENGTH \"$IN_FILE\""
     fi
     if $USE_FFMPEG ; then
-        VID_ENC_CMD="$PRIORITY $FFmpeg -debug 1 $YUV4PIPE -i \"$INFILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_CODEC $FF_M2VOPTS $FF_TARGET $FF_QUANT $FF_ADD_ARGS $FF_ILACE $VF_FILTERS $OLD_OPTS $FF_BITRATE -y \"$VIDEO_STREAM\""
+        VID_ENC_CMD="$PRIORITY $FFmpeg -debug 1 $YUV4PIPE -i \"$INFILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_CODEC $FF_M2VOPTS $FF_TARGET $FFM_OPTS $FF_QUANT $FF_ADD_ARGS $FF_ILACE $VF_FILTERS $OLD_OPTS $FF_BITRATE -y \"$VIDEO_STREAM\""
 #-f mpeg2video -maxrate 8000k -bufsize 224KiB
     else
         VID_ENC_CMD="cat \"$YUV_STREAM\" | $YUVDENOISE $ADJUST_FPS $PRIORITY mpeg2enc --sequence-length $DISC_SIZE --nonvideo-bitrate $NONVIDEO_BITRATE $MTHREAD $ASPECT_FMT $MPEG2_FMT $VID_FPS $VERBOSE $VID_NORM $MPEG2_QUALITY -o \"$VIDEO_STREAM\""

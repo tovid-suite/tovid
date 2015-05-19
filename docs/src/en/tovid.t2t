@@ -359,10 +359,10 @@ Here is a list of possible options you can pass:
     **-vbitrate**, **-quality**, **-safe**, **-crop**, **-filters**,
     **-abitrate**, **-priority**, **-deinterlace**, **-progressive**,
     **-interlaced**, **-interlaced_bf**, **-type**, **-fit**, **-discsize**,
-    **-parallel**, **-mkvsub**, **-autosubs**, **-subtitles**, **-update**,
-    **-mplayeropts**, **-audiotrack**, **-downmix**, **-mpeg2enc**, **-nofifo**,
-    **-from-gui**, **-slice**, **-quiet**,
-    **-fake**, **-keepfiles**
+    **-parallel**, **-mkvsub**, **-autosubs**, **-subtitles**, **-dvdsubs**,
+    **-ffmpeg-opts**, --ffmpeg-add-filter**, **-mplayeropts**, **-audiotrack**,
+    **-downmix**, **-mpeg2enc**, **-nofifo**, **-slice**, **-quiet**,
+    **-fake**, **-keepfiles**, **-update**
 
 ==General Options==
 
@@ -1354,6 +1354,8 @@ for a widescreen monitor or TV.
     viewing the video. By default, no subtitles are loaded. If your video is
     already compliant with the chosen output format, it will be re-encoded to
     include subtitles. This works with both ffmpeg and mpeg2enc. (-mpeg2enc)
+    For ffmpeg/avconv if you have a mkv with subtitles you can use the mkv
+    both as the file for the -in option and the -subtitles option.
 
 : **-dvd-subtitles**, **-dvdsubs** | //FILE//
     Get subtitles from //FILE(S)// and add them **as a subtitle stream** into the
@@ -1497,11 +1499,36 @@ for a widescreen monitor or TV.
 : **-mpv**
     Use mpv instead of mplayer. This option is experimental.
 
+: **-ffmpegopts** //OPTIONS//
+    Append //OPTIONS// to the ffmpeg command run during video encoding.  Use
+    this if you want to add specific options documented in the ffmpeg
+    manual page). Be sure to quote options with spaces. Overriding some
+    options will cause encoding to fail, so use this with caution!
+    Example:
+
+```
+    -ffmpegopts "-debug 1"
+```
+
+: **-ffmpeg-add-filter** | **-avconv-add-filter** //OPTIONS//
+    Append //OPTIONS// to the ffmpeg/avconv filter chain. Use
+    this if you want to add a filter (documented in the ffmpeg
+    manual page). Do not prepend "-vf" to your filter.
+    This option is experimental.
+    Example:
+
+```
+    -ffmpeg-add-filter drawtext="fontsize=24:fontfile=FreeSerif.ttf:\
+      text='Shameless ad for tovid\: www.tovid.wikia.com':x=(w-text_w)/2:y=50"
+```
+    (All on one line without the backslash after .ttf:)
+
 : **-mplayeropts** //OPTIONS//
-    Append //OPTIONS// to the mplayer command run during video encoding.  Use
-    this if you want to add specific video filters (documented in the mplayer
-    manual page). Overriding some options will cause encoding to fail, so use
-    this with caution!
+    Append //OPTIONS// to the mplayer command run during video encoding.
+    MPlayer/mpv is only used if you are also using mpeg2enc rather than
+    ffmpeg (-mpeg2enc). Use this if you want to add specific video filters
+    (documented in the mplayer manual page). Overriding some options will
+    cause encoding to fail, so use this with caution!
 
 : **-mpvopts** //OPTIONS//
     Append //OPTIONS// to the mpv command run during video encoding.  Use
