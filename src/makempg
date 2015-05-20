@@ -988,10 +988,6 @@ if [[ $TGT_RES = *VCD* && $TGT_RES != "DVD-VCD" ]]; then
     fi
 fi
 
-if {  $DO_SUBS && ! $DO_FFMPEG_SUBS; } && $USE_FFMPEG; then
-    FFMPEG_WITH_MPLAYER=:
-fi
-
 # see if ffmpeg is new enough to support -b:v etc
 # remove this when 0.9x ffmpeg is the oldest tovid will support
 # note ffmpeg is used for audio so this must run even when using mpeg2enc
@@ -1729,6 +1725,11 @@ if $DO_SUBS && $USE_FFMPEG; then
     fi
         
 fi
+
+if {  $DO_SUBS && ! $DO_FFMPEG_SUBS; } && $USE_FFMPEG; then
+    FFMPEG_WITH_MPLAYER=:
+fi
+
 # Find out if mplayer's/ffmpeg's 'pp' option is available. (disabled for mpv)
 if grep -qw "pp"  "$SCRATCH_FILE"; then
     PP_AVAIL=:
@@ -1743,6 +1744,7 @@ fi
 if test -n "$CROP"; then
     VID_FILTER="$VID_FILTER,crop=$CROP"
 fi
+
 
 # Set up deinterlacing, if requested.
 # Use the best deinterlacer available, and
