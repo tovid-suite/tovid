@@ -2222,11 +2222,11 @@ if $USE_FFMPEG; then
         VF_FILTERS="${VF_FILTERS},${VF_ADD_FILTER},${FF_SIZE},${FF_PAD},${FF_ASPECT},fps=$FF_FPS"
         # add subtitles if present, to to the end of the filter chain
         $DO_FFMPEG_SUBS && VF_FILTERS+=",$FFM_SUBS"
-        # remove possible leading comma
-        VF_FILTERS="${VF_FILTERS#,}"
         # Remove extraneous commas from filter command
         if test -n "$VF_FILTERS"; then
             VF_FILTERS="$(sed 's/,,/,/g;s/,$//' <<< "$VF_FILTERS")"
+            # remove possible leading comma
+            VF_FILTERS="${VF_FILTERS#,}"
         fi
         VF_FILTERS="$VF \"${VF_FILTERS}\"" # add -vf*, axe possible leading comma
     else # legacy ffmpeg
