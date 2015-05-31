@@ -1660,14 +1660,14 @@ mk_return_button()
         clr1="$colr1"
     fi
 
-    mk_rtn_cmd=(convert -size 100x80 xc:none \
+    mk_rtn_cmd=(convert +antialias -size 100x80 xc:none \
     -strokewidth 1 -stroke "$colr2" -fill "$clr1" \
     -draw 'rectangle 0,0 70,62' \
     -fill "$colr2" -stroke none \
     -draw "polyline 40,10 40,50 10,30 40,10" \
     -draw "polyline 60,10 60,50 30,30 60,10" \
     -fill "$colr2" -draw "rectangle 6,10 10,50" \
-    -resize 30% -trim +repage +antialias "$outbutton")
+    -resize 30% -trim +repage "$outbutton")
     print2log "Running ${mk_rtn_cmd[@]}"
     "${mk_rtn_cmd[@]}"
     mogrify -channel A -threshold 50% "$outbutton"
@@ -1699,6 +1699,7 @@ mk_play_button()
     play_btn_dim=$(get_image_dim "$outbutton")
     play_btn_width=$(awk -Fx '{print $1}' <<< $play_btn_dim )
     play_btn_height=$(awk -Fx '{print $2}' <<< $play_btn_dim )
+    mogrify -channel A -threshold 50% "$outbutton"
 }
 
 check_menufile()
