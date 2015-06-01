@@ -331,6 +331,7 @@ usage_error()
 # Usage: continue_in [SECONDS]
 continue_in()
 {
+    local count LAST
     yecho ""
     (($1)) && LAST=$1 || LAST=5
     for ((i=LAST; i>=0; i--)); do
@@ -1354,7 +1355,7 @@ titleset_mode()
     MENUTITLES=( "${menutitles[@]}" )
     # some vars for vmgm menu, depending on presence of -static or -quick-nav
     # how many titlesets do we have ?
-    for i in "$@"; do [[ $i == -end-titleset ]] && ((count++)); done
+    for i in "$@"; do [[ $i == -end-titleset ]] && ((tscount++)); done
     VMGM_PAUSE=$PAUSE_TIME
     grep -q  -- -static  <<< "${VMGM_OPTS[@]}" && VMGM_PAUSE="inf"
     for i in ${!VMGM_OPTS[@]}; do
@@ -1423,7 +1424,7 @@ $(if $VMGM_PLAYALL; then # VMGM playall needs a playall button entry
 fi)
 $(if $QUICK_NAV; then
     echo -e "        <button name=\"ActionLeft\">"
-    echo -e "        g5=${ALLTITLES[count-1]}; g3=$count; button=1024;"
+    echo -e "        g5=${ALLTITLES[tscount-1]}; g3=$tscount; button=1024;"
     echo -e "        jump vmgm menu entry title;</button>"
     echo -e "        <button name=\"ActionRight\">"
     echo -e "        g5=1; g3=1; button=1024;"
@@ -1486,7 +1487,7 @@ EOF
     done
     unset vmgmtitles
     get_menu_titles "${VMGM_OPTS[@]}"
-    if [[ -n ${VMGM_OPTS[@]} ]] && ((${#vmgmtitles[@]} != count)); then
+    if [[ -n ${VMGM_OPTS[@]} ]] && ((${#vmgmtitles[@]} != tscount)); then
         usage_error "Number of titleset titles must equal the number
          of titlesets. ( -vmgm ... -titles 'Title 1' 'Title 2' -end-vmgm )"
     fi
@@ -1500,14 +1501,14 @@ EOF
         yecho "One title for each titleset you are making."
         yecho "Any other appropriate todisc options for the vmgm menu \
         can be specified as well."
-        if  [[ ${#MENUTITLES[@]} -eq $count ]]; then
+        if  [[ ${#MENUTITLES[@]} -eq $tscount ]]; then
             yecho "Since -menu-title was supplied for each titleset: \
             these titleset titles will be used:"
             for t in "${MENUTITLES[@]}"; do echo "\"$t\""; done
             VMGM_OPTS=(-titles "${MENUTITLES[@]}")
         else
             VMGM_OPTS[0]="-titles"
-            for ((menu=1; menu<=count; menu++)); do
+            for ((menu=1; menu<=tscount; menu++)); do
                 VMGM_OPTS[menu]="Titleset $menu"
             done
         fi
@@ -1518,7 +1519,7 @@ EOF
     else
         unset vmgmtitles
         get_menu_titles "${VMGM_OPTS[@]}"
-        if ((${#vmgmtitles[@]} != 0)) && ((${#vmgmtitles[@]} != count)); then
+        if ((${#vmgmtitles[@]} != 0)) && ((${#vmgmtitles[@]} != tscount)); then
             usage_error "Number of titleset titles must equal the number
             of titlesets."
         fi
@@ -1547,7 +1548,7 @@ EOF
                     shift
                 done
                 titleset_cmd=( todisc -titleset-mode -basedir "$WORK_DIR" \
-                -title_count "$num_titles" -tset_num ${count}-${tset} \
+                -title_count "$num_titles" -tset_num ${tscount}-${tset} \
                 "${GEN_OPTS[@]}" $NO_CONFIRM_BACKUP "${TITLESET_OPTS[@]}" \
                 $vmgm_playall )
                 yecho
