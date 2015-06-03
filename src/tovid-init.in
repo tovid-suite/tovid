@@ -703,7 +703,7 @@ hash stdbuf 2>/dev/null && std_buf="stdbuf -oL" || std_buf=""
     # Quit and complain if ANY core dependency is missing.
     assert_dep "$core" "You are missing CORE tovid dependencies!"
     # ffmpeg is also a part of core deps, but is taken care of here
-    ffmpeg_alts="Use ffmpeg and ffprobe (ffmpeg.org), OR avconv and avprobe (libav.org)."
+    ffmpeg_alts="Use ffmpeg and ffprobe from ffmpeg.org (recommended), OR avconv and avprobe from libav.org."
     ffmpeg_pref="You can also set choice in ${USER_PREFS}. As in: TOVID_FFMPEG_CMD=ffmpeg and TOVID_FFPROBE_CMD=ffprobe"
     mplayer_alts="Use either mplayer or mpv"
     assert_dep $FFmpeg "You are missing $FFmpeg ! $ffmpeg_alts ${ffmpeg_pref}."
