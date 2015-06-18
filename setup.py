@@ -44,9 +44,8 @@ def git_version():
 # Current version number of tovid, as a string.
 # Examples:
 # Official release number
-_tovid_version = '0.35.0-dfc6f25'
 _last_release = '0.35.0'
-_tovid_version = '0.35.0-dfc6f25'
+_tovid_version = git_version()
 
 
 import os
