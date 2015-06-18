@@ -8201,7 +8201,6 @@ if $SWITCHED; then
     right="right=\"ActionDown\"" && left="left=\"ActionUp\""
     updown="down=\"ActionDown\" up=\"ActionUp\""
 fi
-for ratio in 43 169; do
 (
     cat <<EOF
 $( { $SHOWCASE || $SINGLE_SLIDESHOW ; } && closebracket='>'
@@ -8353,8 +8352,7 @@ fi)
   </stream>
 </subpictures>
 EOF
-) |sed '/^ *$/d'  > "${SPUMUX_XML/.xml}${ratio}.xml"
-done
+) |sed '/^ *$/d'  > "$SPUMUX_XML"
 
 if $SUB_MENU; then
     JUMP=menu
