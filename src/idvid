@@ -132,6 +132,168 @@ function get_info ()
         echo "Analyzing file: '$INFILE'..."
     fi
 
+    # Defaults. These should be overridden by
+    # vars from ffprobe, ffmpeg, mplayer and tcprob.
+    ID_VIDEO_ID=""
+    ID_AUDIO_ID=""
+    ID_VIDEO_WIDTH="0"
+    ID_VIDEO_HEIGHT="0"
+    ID_VIDEO_FPS="0"
+    ID_VIDEO_FORMAT=""
+    ID_VIDEO_FRAMES="0"
+    ID_AUDIO_CODEC=""
+    ID_AUDIO_FORMAT=""
+    ID_VIDEO_BITRATE="0"
+    ID_AUDIO_BITRATE="0"
+    ID_AUDIO_RATE="0"
+    ID_AUDIO_NCH="0"
+    ID_AUDIO_TRACKS=""
+    ID_VIDEO_TRACK=""
+    V_ASPECT_RATIO="1:1"
+    V_DURATION=""
+    ID_LENGTH="0"
+
+    # arrays
+    A_SAMPRATES=()
+    A_BITRATES=()
+    A_CODECS=()
+    A_HEX_TRACKS=()
+    A_TRACKS=()
+    MP_AIDS=()
+    wavs=()
+    probe_audio_info=()
+    probe_vidio_info=()
+    # identify video using ffprobe/avprobe first
+ 
+    # ffprobe and avprobe show slightly different formatting, but this should do
+    # adds a new line after [/STREAM] (ffprobe). avprobe already has it.
+    if test -n $FFprobe; then
+        i=0
+        while IFS= read -r  line; do
+            [[ $line ]] || { ((++i)); continue; }
+            probe_info[i]+=$line$'\n'
+        done < <($FFprobe   -show_streams "$INFILE" 2>/dev/null | \
+         sed '/\[\/STREAM\]/{G;s/$//;};/DISPOSITION/d')
+    fi
+    # avprobe begins with a # comment\n so delete that index and flatten array
+    for i in ${!probe_info[@]}; do
+        grep -q '^#' <<<  ${probe_info[i]} && unset probe_info[i]
+    done
+    # if index 0 is unset flatten array
+    [[ ${probe_info[0]+unset} ]] || probe_info=( "${probe_info[@]}" )
+    $VERBOSE && echo "${probe_info[@]}"
+
+    for p in ${!probe_info[@]}; do
+        if grep -q codec_type=audio <<< "${probe_info[p]}"; then
+            probe_audio_info+=( "${probe_info[p]}" )
+            echo "${probe_audio_info[@]}" > /tmp/probe_audio #FIXME DEBUG
+        fi
+    done
+    for p in ${!probe_info[@]}; do
+        if grep -q codec_type=video <<< "${probe_info[p]}"; then
+            probe_video_info+=( "${probe_info[p]}" )
+            echo "${probe_video_info[@]}" > /tmp/probe_video #FIXME DEBUG
+            break # we only want the first video channel
+        fi
+    done
+
+    while IFS='=' read var val; do
+        if [[ $val != "N/A" ]] && [[ "$val" != 0 ]] && [[ $val ]]; then
+            case $var in
+                "width" )
+                    ID_VIDEO_WIDTH=${val//\"}
+                    ;;
+                "height" )
+                    ID_VIDEO_HEIGHT=${val//\"}
+                    ;;
+                "duration" )
+                    V_DURATION=$(printfC '%.*f\n' 3 ${val//\"})
+                    ;;
+                "avg_frame_rate" )
+                    ID_VIDEO_FPS=${val//\"}
+                    ;;
+                "codec_name" )
+                    ID_VIDEO_FORMAT=${val//\"}
+                    ;;
+                "nb_frames" )
+                    ID_VIDEO_FRAMES=${val//\"}
+                    ;;
+                "bit_rate" )
+                    val=${val%.*}
+                    ID_VIDEO_BITRATE=${val//\"}
+                    ;;
+                "display_aspect_ratio" )
+                    val=${val%.*}
+                    ID_VIDEO_ASPECT=${val//\"}
+                    ;;
+                "index" )
+                    # use hextracks and/or mplayer for this
+                    #ID_VIDEO_TRACK=${val//\"}
+                    ;;
+            esac
+        fi
+    done <<< "${probe_video_info[@]}"
+    unset var val
+    
+    while IFS='=' read var val; do
+        if [[ $val != "N/A" ]] && [[ $val ]]; then
+            case $var in
+                "codec_name" )
+                    ID_AUDIO_CODEC=${val//\"}
+                    ID_AUDIO_FORMAT=${val//\"}
+                    ;;
+                "bit_rate" )
+                    val=${val%.*}
+                    ID_AUDIO_BITRATE=${val//\"}
+                    ;;
+                "channels" )
+                    ID_AUDIO_NCH=${val//\"}
+                    ;;
+                "sample_rate" )
+                    ID_AUDIO_RATE=$(printfC "%.0f\n" ${val//\"})
+                    ;;
+                "index" )
+                    # use hextracks and/or mplayer for this
+                    #ID_AUDIO_TRACKS=${val//\"}
+                    ;;
+                "index" )
+                    # use hextracks and/or mplayer for this
+                    #ID_VIDEO_TRACK=${val//\"}
+                    ;;
+            esac
+        fi
+    done <<< "${probe_video_info[@]}"
+    unset var val
+    
+    while IFS='=' read var val; do
+        if [[ $val != "N/A" ]] && [[ $val ]]; then
+            case $var in
+                "codec_name" )
+                    ID_AUDIO_CODEC=${val//\"}
+                    ID_AUDIO_FORMAT=${val//\"}
+                    ;;
+                "bit_rate" )
+                    val=${val%.*}
+                    ID_AUDIO_BITRATE=${val//\"}
+                    ;;
+                "channels" )
+                    ID_AUDIO_NCH=${val//\"}
+                    ;;
+                "sample_rate" )
+                    ID_AUDIO_RATE=$(printfC "%.0f\n" ${val//\"})
+                    ;;
+                "index" )
+                    # use hextracks and/or mplayer for this
+                    #ID_AUDIO_TRACKS=${val//\"}
+                    ;;
+            esac
+        fi
+    done <<< "${probe_audio_info[@]}"
+    # translate ffprobe vars into ID_* vars to sync with legacy mplayer ID's
+    #  sed  '/=/!d;s/\s.*$//' /tmp/probe_audio # print 1st column of lines w =
+    #ID_AUDIO_IDS
+    #V_ASPECT_WIDTH
+
     # Identify video using mplayer
     if $USE_MPLAYER; then
         if $VERBOSE; then
@@ -168,7 +330,7 @@ function get_info ()
         else
             $FFmpeg -i "$INFILE" 2>&1 | sed -r "s:\x1B\[[0-9;]*[mK]::g" >> "$SCRATCH_FILE"
         fi
-        #
+ 
         if ! grep -q Video:.*kb/s "$SCRATCH_FILE" \
             && { grep -A 1 Video: "$SCRATCH_FILE" | grep -q kb/s; }; then
             # avconv has split it into 2 lines in recent versions, so join them
@@ -181,6 +343,12 @@ function get_info ()
         if hash mpv_identify.sh 2>/dev/null; then
             mpv_identify.sh "$INFILE" | \
             awk -F= '{print "ID_"toupper($1)"="$2}' >> "$SCRATCH_FILE" 2>&1
+            cp "$SCRATCH_FILE" /tmp/scratch.mpv
+            acodec_mpv=$(sed -nr  '/AUDIO_CODEC/ s/.* \[.*:(.*)\].*$/\1/p' \
+              "$SCRATCH_FILE")
+            sed -i "s/ID_AUDIO_CODEC.*/ID_AUDIO_CODEC=$acodec_mpv/" "$SCRATCH_FILE"
+            # not sure why this is needed
+            #ID_VIDEO_FPS=$(printf "%.3f" $ID_VIDEO_FPS)
             #awk -F= -v OFS== '$1=toupper($1)' >> "$SCRATCH_FILE"
             # prepend with ID_
             #sed -i 's/^/ID_/' "$SCRATCH_FILE"
@@ -192,24 +360,6 @@ function get_info ()
         fi
     fi
     
-    # avconv messed with formatting, so we need to move to ffprobe/avprobe
-    # ffprobe and avprobe show slightly different formatting, but this should do
-    # adds a new line after [/STREAM] (ffmpeg). avconv already has it.
-    if test -n $FFprobe; then
-        i=0
-        while IFS= read -r  line; do
-            [[ $line ]] || { ((++i)); continue; }
-            probe_info[i]+=$line$'\n'
-        done < <($FFprobe   -show_streams "$INFILE" 2>/dev/null | \
-         sed '/\[\/STREAM\]/{G;s/$//;};/DISPOSITION/d')
-    fi
-    # avprobe begins with a # comment\n so delete that index and flatten array
-    for i in ${!probe_info[@]}; do
-        grep -q '^#' <<<  ${probe_info[i]} && unset probe_info[i]
-    done
-    # if index 0 is unset flatten array
-    [[ ${probe_info[0]+unset} ]] || probe_info=( "${probe_info[@]}" )
-    $VERBOSE && echo "${probe_info[@]}"
         
     # Identify video using tcprobe
     if test -n "$TCPROBE"; then
@@ -240,35 +390,6 @@ function get_info ()
     #sed  '/Metadata/,/Duration/{//!d}' "$SCRATCH_FILE" > "${SCRATCH_FILE}2"
     #mv "${SCRATCH_FILE}2" "$SCRATCH_FILE"
 
-    # Defaults. Many of these values may be overridden by
-    # vars from mplayer's output to be sourced later.
-    ID_VIDEO_ID=""
-    ID_AUDIO_ID=""
-    ID_VIDEO_WIDTH="0"
-    ID_VIDEO_HEIGHT="0"
-    ID_VIDEO_FPS="0"
-    ID_VIDEO_FORMAT="Unknown"
-    ID_AUDIO_CODEC="Unknown"
-    ID_AUDIO_FORMAT="Unknown"
-    ID_VIDEO_BITRATE="0"
-    ID_AUDIO_BITRATE="0"
-    ID_AUDIO_RATE="0"
-    ID_AUDIO_NCH="0"
-    ID_AUDIO_TRACKS=""
-    ID_VIDEO_TRACK=""
-    V_ASPECT_RATIO="1:1"
-    V_DURATION=""
-    ID_LENGTH="0"
-
-    # arrays
-    A_SAMPRATES=()
-    A_BITRATES=()
-    A_CODECS=()
-    A_HEX_TRACKS=()
-    A_TRACKS=()
-    MP_AIDS=()
-    wavs=()
-    probe_audio_info=()
 
     # send formated mplayer's output to a vars file to be sourced to set relevant variables.
     # (ID_V(ideo), ID_A(udio), and ID_L(ength))
@@ -279,22 +400,17 @@ function get_info ()
         sed -i 's/ID_WIDTH/ID_VIDEO_WIDTH/g' "$SCRATCH_FILE"
         sed -i 's/ID_FPS/ID_VIDEO_FPS/g' "$SCRATCH_FILE"
     fi
-    grep "^ID_[VADL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/$/"/;s/=/="/' > "$SCRATCH_FILE".vars
-    # source the file to set the variables
-    . "$SCRATCH_FILE".vars
-    cp "$SCRATCH_FILE".vars /tmp/
-    # (If you've got a problem with eval, give me an alternative that
-    # works as well and is as readable :-) ... but no less safe :(
-    # DONE :)
+    grep "^ID_[VADL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/$/"/;s/=/="/' > "${SCRATCH_FILE}".vars
+    cp "${SCRATCH_FILE}".vars /tmp/scratch.vars #FIXME DEBUG
+    # fill in any missing variables with mplayer/mpv output
+    declare -A test_array
+    while IFS='=' read var val; do
+        if [[ ! ${!var} || ${!var} == "N/A" ]] && [[ $val ]]; then
+            declare "${var}=${val}"
+        fi
+        test_array[$var]=$val
+    done < "${SCRATCH_FILE}".vars
 
-    # a few modifications to get it looking more like mplayer's output
-    # use less processed SCRATCH_FILE as we need to parse more than 2 fields
-    #ID_AUDIO_CODEC=$(awk -F '[][]' '/ID_AUDIO_CODEC/ {gsub("lavc:", ""); print $2}' "$SCRATCH_FILE")
-    
-    if $USE_MPV; then 
-        ID_AUDIO_CODEC=$(sed -nr  '/AUDIO_CODEC/ s/.* \[.*:(.*)\].*$/\1/p' "$SCRATCH_FILE")
-        ID_VIDEO_FPS=$(printf "%.3f" $ID_VIDEO_FPS)
-    fi
 
     # get array of mplayer audio ids, used if no hextracks from ffmpeg
     if $USE_MPLAYER; then
@@ -306,16 +422,18 @@ function get_info ()
 
     # try tcprobe to determine length (# of frames)
     # assuming it is installed, otherwise this should 'fail' silently
-    ID_VIDEO_FRAMES=$(awk '/length:/ {print $2}' "$SCRATCH_FILE")
-    ((ID_VIDEO_FRAMES)) || ID_VIDEO_FRAMES="0"
+    [[ -z $ID_VIDEO_FRAMES ]] && \
+      tc_length=$(awk '/length:/ {print $2}' "$SCRATCH_FILE")
+    [[ -n $tc_length ]] && ID_VIDEO_FRAMES=$tc_length 
 
     FF_V_BITRATE=$(sed -n 's/.*Stream.*Video:.*\(\ [0-9][0-9][0-9]*\) kb\/s.*/\1/p' "$SCRATCH_FILE" |uniq)
     FF_V_BITRATE=${FF_V_BITRATE// /} # trim spaces
     # make sure we have a value from ffmpeg (a number and non zero)
     if test_is_number "$FF_V_BITRATE" && (( FF_V_BITRATE )); then
         # kilobits to bits
-        ID_VIDEO_BITRATE=${FF_V_BITRATE}000
-    elif [[ -z $ID_VIDEO_BITRATE || $ID_VIDEO_BITRATE = 0 ]]; then
+        [[ ! $ID_VIDEO_BITRATE || $ID_VIDEO_BITRATE == 0 ]] && \
+          ID_VIDEO_BITRATE=${FF_V_BITRATE}000
+    elif [[ -z $ID_VIDEO_BITRATE || $ID_VIDEO_BITRATE == 0 ]]; then
         mplayer_stats_br=$(sed '/VIDEO:/!d;s/.*(//; s/).*=\ /:/;s/[kK][bB].*//g' "$SCRATCH_FILE")
         # make an integer
         mplayer_stats_br=${mplayer_stats_br%.*}
@@ -343,11 +461,6 @@ function get_info ()
     #ID_VIDEO_TRACKS=( $(awk '/Stream.*Video/ { gsub("#|: ", " ") ; print $2}' <<< "$VIDEO_INFO") )
     test_is_number "${ID_VIDEO_TRACKS[0]/:/}" && ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
     # Find out what audio channels are available
-    for p in ${!probe_info[@]}; do
-        if grep -q codec_type=audio <<< "${probe_info[p]}"; then
-            probe_audio_info+=( "${probe_info[p]}" )
-        fi
-    done
     if [[ $ID_AUDIO_ID || $ID_MPV_AUDIO_IDS ]]; then
         # grep for Steam.*Audio instead of just "Audio:" fixes some wmv issues
         AUDIO_INFO=$(grep "Stream.*Audio:" "$SCRATCH_FILE")
@@ -489,8 +602,8 @@ function get_info ()
         PLAY_WIDTH=$(awk -F '[x ]' 'BEGIN {wid = 0}; {if ($1 > wid) wid = $1}; END {print wid}'<<< "$MPLAYER_RES")
         PLAY_HEIGHT=$(awk -F '[x ]' 'BEGIN {hgt = 0}; {if ($2 > hgt) hgt = $2}; END {print hgt}' <<< "$MPLAYER_RES")
     else # mpv
-        PLAY_WIDTH=$ID_DWIDTH
-        PLAY_HEIGHT=$ID_DHEIGHT
+        PLAY_WIDTH=${ID_DWIDTH//\"}
+        PLAY_HEIGHT=${ID_DHEIGHT//\"}
     fi
     # fix nulls and division by 0 errors as well (( xxx ))
     if ! (( PLAY_WIDTH )) || ! (( PLAY_HEIGHT )); then
@@ -586,7 +699,7 @@ function get_info ()
     fi
 
     # try ffmpeg's estimate of duration first, then tcprobe's, then mplayers
-    if ! (( ${V_DURATION//:} )); then
+    if ! test_is_number ${V_DURATION//:} || [[ $V_DURATION == 0 ]]; then
         # below from go|dfish on #sed, quits after 1st match (we have 2 matches)
         V_DURATION=$(sed -n '/.*Duration: /{ s///; s/\..*//; p; q; }' "$SCRATCH_FILE")
         if egrep -q  '([0-9]+:[0-9][0-9]:[0-9][0-9])' <<< "$V_DURATION"; then
@@ -617,10 +730,10 @@ function get_info ()
     # to get video bitrate if we don't have it yet, from the total bitate
     # or from the file size.
     # make sure of numerical values for audio and video bitrate, then subtract
-    if ! test_is_number $ID_VIDEO_BITRATE || ! (( ID_VIDEO_BITRATE )); then
+    if ! test_is_number $ID_VIDEO_BITRATE || [[ $ID_VIDEO_BITRATE == 0 ]]; then
         TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /Duration:.*bitrate:/ {print $6*1000;exit}' "$SCRATCH_FILE")
         if test_is_number $TOTAL_AV_BITRATE && (( TOTAL_AV_BITRATE )); then
-            (( ID_AUDIO_BITRATE )) && test_is_number $ID_AUDIO_BITRATE && \
+            [[ $ID_AUDIO_BITRATE != 0 ]] && test_is_number $ID_AUDIO_BITRATE && \
             ID_VIDEO_BITRATE=$(( TOTAL_AV_BITRATE - ID_AUDIO_BITRATE ))
             #echo -e "Probed video bitrate not available, infering from total bitrate and audio bitrate\n"
         else
@@ -683,14 +796,15 @@ function idvid_main ()
     # Set some frequently-used variables
     # Frames per second
     case "$ID_VIDEO_FPS" in
-        "29.970" | "29.97" )
+        "29.970" | "29.97" | "30000/1001" )
             ID_VIDEO_FPS="29.970"
             NTSC_FPS="29.970"
             ;;
-        "23.976" )
+        "23.976" | "24000/1001" )
             NTSC_FILM_FPS="23.976"
+            ID_VIDEO_FPS="23.976"
             ;;
-        "25.000" | "25.00" | "25.0" | "25" )
+        "25.000" | "25.00" | "25.0" | "25" | "25/1" )
             ID_VIDEO_FPS="25.000"
             PAL_FPS="25.000"
             ;;
@@ -734,7 +848,7 @@ function idvid_main ()
         echo "             Height: $ID_VIDEO_HEIGHT pixels"
         echo "       Aspect ratio: $V_ASPECT_RATIO"
         echo "             Frames: $ID_VIDEO_FRAMES"
-        echo "           Duration: $(format_time $V_DURATION) hours/mins/secs"
+        echo "           Duration: $(format_time ${V_DURATION%.*}) hours/mins/secs"
         echo "          Framerate: $ID_VIDEO_FPS frames per second"
         echo "       Video format: $ID_VIDEO_FORMAT"
         echo "      Video bitrate: $ID_VIDEO_BITRATE bits per second"
@@ -795,7 +909,7 @@ function idvid_main ()
     fi
 
     # Check for missing audio stream (0 channels, 0 Hz)
-    if ! [[ $ID_AUDIO_ID || $ID_MPV_AUDIO_IDS ]]; then
+    if ! [[ $ID_AUDIO_IDS ]]; then
         A_NONE="No audio stream present"
     fi
 
