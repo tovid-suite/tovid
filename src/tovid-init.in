@@ -435,10 +435,17 @@ function countdown()
     done
 }
 
+# use system printf instead of built-in, and C locale for numeric translation
+printfC()
+{
+    LC_ALL=C $(which printf) "$@"
+}
+
+
 # ******************************************************************************
 # takes 2 args: (1) version (2) the version testing against
 # return true if version is >= to the test version (same or newer)
-# ******************************************************************************
+
 test_version()
 {
     OIFS=$IFS
