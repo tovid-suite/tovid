@@ -152,6 +152,7 @@ function get_info ()
     V_ASPECT_RATIO="1:1"
     V_DURATION=""
     ID_LENGTH="0"
+    TOTAL_AV_BITRATE="0"
 
     # arrays
     A_SAMPRATES=()
@@ -186,13 +187,11 @@ function get_info ()
     for p in ${!probe_info[@]}; do
         if grep -q codec_type=audio <<< "${probe_info[p]}"; then
             probe_audio_info+=( "${probe_info[p]}" )
-            echo "${probe_audio_info[@]}" > /tmp/probe_audio #FIXME DEBUG
         fi
     done
     for p in ${!probe_info[@]}; do
         if grep -q codec_type=video <<< "${probe_info[p]}"; then
             probe_video_info+=( "${probe_info[p]}" )
-            echo "${probe_video_info[@]}" > /tmp/probe_video #FIXME DEBUG
             break # we only want the first video channel
         fi
     done
@@ -234,7 +233,7 @@ function get_info ()
         fi
     done <<< "${probe_video_info[@]}"
     unset var val
-    
+
     while IFS='=' read var val; do
         if [[ $val != "N/A" ]] && [[ $val ]]; then
             case $var in
@@ -264,7 +263,7 @@ function get_info ()
         fi
     done <<< "${probe_video_info[@]}"
     unset var val
-    
+
     while IFS='=' read var val; do
         if [[ $val != "N/A" ]] && [[ $val ]]; then
             case $var in
@@ -318,7 +317,7 @@ function get_info ()
              sed  '/#define/d;/global/d' > "$SCRATCH_FILE" 2>&1
         fi
     fi
-        
+
     # Identify video using ffmpeg
     if [[ $FFmpeg ]]; then
         if $VERBOSE; then
@@ -330,7 +329,7 @@ function get_info ()
         else
             $FFmpeg -i "$INFILE" 2>&1 | sed -r "s:\x1B\[[0-9;]*[mK]::g" >> "$SCRATCH_FILE"
         fi
- 
+
         if ! grep -q Video:.*kb/s "$SCRATCH_FILE" \
             && { grep -A 1 Video: "$SCRATCH_FILE" | grep -q kb/s; }; then
             # avconv has split it into 2 lines in recent versions, so join them
@@ -343,7 +342,6 @@ function get_info ()
         if hash mpv_identify.sh 2>/dev/null; then
             mpv_identify.sh "$INFILE" | \
             awk -F= '{print "ID_"toupper($1)"="$2}' >> "$SCRATCH_FILE" 2>&1
-            cp "$SCRATCH_FILE" /tmp/scratch.mpv
             acodec_mpv=$(sed -nr  '/AUDIO_CODEC/ s/.* \[.*:(.*)\].*$/\1/p' \
               "$SCRATCH_FILE")
             sed -i "s/ID_AUDIO_CODEC.*/ID_AUDIO_CODEC=$acodec_mpv/" "$SCRATCH_FILE"
@@ -359,8 +357,8 @@ function get_info ()
             echo '!!!!!!!!!!!!!!!!!!!'
         fi
     fi
-    
-        
+
+
     # Identify video using tcprobe
     if test -n "$TCPROBE"; then
         if $VERBOSE ; then
@@ -401,7 +399,6 @@ function get_info ()
         sed -i 's/ID_FPS/ID_VIDEO_FPS/g' "$SCRATCH_FILE"
     fi
     grep "^ID_[VADL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/$/"/;s/=/="/' > "${SCRATCH_FILE}".vars
-    cp "${SCRATCH_FILE}".vars /tmp/scratch.vars #FIXME DEBUG
     # fill in any missing variables with mplayer/mpv output
     declare -A test_array
     while IFS='=' read var val; do
@@ -416,8 +413,8 @@ function get_info ()
     if $USE_MPLAYER; then
         while read; do MP_AIDS+=(${REPLY##*=}); done < <(grep ID_AUDIO_ID "$SCRATCH_FILE")
     else
-        ID_MPV_AUDIO_IDS=$(sed -nr  '/.*Audio/ s/.* --aid=([0-9]*).*$/\1/p' "$SCRATCH_FILE")
-        MP_AIDS=( $ID_MPV_AUDIO_IDS)
+        MPV_AUDIO_IDS=$(sed -nr  '/.*Audio/ s/.* --aid=([0-9]*).*$/\1/p' "$SCRATCH_FILE")
+        MP_AIDS=( $MPV_AUDIO_IDS)
     fi
 
     # try tcprobe to determine length (# of frames)
@@ -461,7 +458,7 @@ function get_info ()
     #ID_VIDEO_TRACKS=( $(awk '/Stream.*Video/ { gsub("#|: ", " ") ; print $2}' <<< "$VIDEO_INFO") )
     test_is_number "${ID_VIDEO_TRACKS[0]/:/}" && ID_VIDEO_TRACK="${ID_VIDEO_TRACKS[0]}"
     # Find out what audio channels are available
-    if [[ $ID_AUDIO_ID || $ID_MPV_AUDIO_IDS ]]; then
+    if [[ $ID_AUDIO_ID || $MPV_AUDIO_IDS ]]; then
         # grep for Steam.*Audio instead of just "Audio:" fixes some wmv issues
         AUDIO_INFO=$(grep "Stream.*Audio:" "$SCRATCH_FILE")
         # ID_AUDIO_ID needs "TRACKS" var to remain in columns
@@ -511,7 +508,7 @@ function get_info ()
                 MP_TRACKNUM=${MP_AIDS[i]}
             fi
             ID_AUDIO_IDS="$ID_AUDIO_IDS ${MP_TRACKNUM//$'\n'/ }"
-            ID_MPLAYER_AUDIO_IDS+=( ${MP_AIDS[i]} )
+            MPLAYER_AUDIO_IDS+=( ${MP_AIDS[i]} )
 
             # last ditch efforts to get audio {bit,sample}rate if 0
             if (( ${A_BITRATES[i]} == 0 )) || (( ${A_SAMPRATES[i]} == 0 )); then
@@ -547,7 +544,7 @@ function get_info ()
         ID_AUDIO_IDS=${ID_AUDIO_IDS// /,}
         ID_AUDIO_IDS=${ID_AUDIO_IDS#,}
         # read output of grep into AUDIO_NCH array to get Audio: lines
-        if [[ $ID_AUDIO_ID || $ID_MPV_AUDIO_IDS ]]; then
+        if [[ $ID_AUDIO_ID || $MPV_AUDIO_IDS ]]; then
             O=$IFS IFS=$'\n' AUDIO_NCH=($(grep -w Audio: "$SCRATCH_FILE")) IFS=$O
             if ! grep -q Audio:.*Hz "$SCRATCH_FILE" "$SCRATCH_FILE" \
                 && { grep -q -A 1 Audio: "$SCRATCH_FILE" | grep -q Hz; }; then
@@ -733,8 +730,14 @@ function get_info ()
     if ! test_is_number $ID_VIDEO_BITRATE || [[ $ID_VIDEO_BITRATE == 0 ]]; then
         TOTAL_AV_BITRATE=$(awk -F: '{gsub("kb/s", "")};  /Duration:.*bitrate:/ {print $6*1000;exit}' "$SCRATCH_FILE")
         if test_is_number $TOTAL_AV_BITRATE && (( TOTAL_AV_BITRATE )); then
-            [[ $ID_AUDIO_BITRATE != 0 ]] && test_is_number $ID_AUDIO_BITRATE && \
-            ID_VIDEO_BITRATE=$(( TOTAL_AV_BITRATE - ID_AUDIO_BITRATE ))
+            if [[ $ID_AUDIO_BITRATE != 0 ]] && test_is_number $ID_AUDIO_BITRATE; then
+                ID_VIDEO_BITRATE=$(( TOTAL_AV_BITRATE - ID_AUDIO_BITRATE ))
+                TOTAL_AV_BITRATE=0 # reset so we do not print it
+            else
+                TOTAL_AV_BITRATE=$TOTAL_AV_BITRATE
+                ID_VIDEO_BITRATE=0
+                ID_AUDIO_BITRATE=0  # we will just use TOTAL_AV_BITRATE
+            fi
             #echo -e "Probed video bitrate not available, infering from total bitrate and audio bitrate\n"
         else
             # infer bitrate from file size and duration
@@ -816,12 +819,17 @@ function idvid_main ()
     # Print out identifying information, either in terse form
     # or in human-readable form
     elif $TERSE; then
+        if ((TOTAL_AV_BITRATE)); then
+            echo -e "# Only total bitrate available, so printing that.\n"
+        fi
         echo "ID_VIDEO_WIDTH=$ID_VIDEO_WIDTH"
         echo "ID_VIDEO_HEIGHT=$ID_VIDEO_HEIGHT"
         echo "V_DURATION=$V_DURATION"
         echo "ID_VIDEO_FPS=$ID_VIDEO_FPS"
         echo "ID_VIDEO_FORMAT=$ID_VIDEO_FORMAT"
         echo "ID_AUDIO_CODEC=$ID_AUDIO_CODEC"
+        ((TOTAL_AV_BITRATE)) && \
+        echo "TOTAL_AV_BITRATE=$TOTAL_AV_BITRATE"
         echo "ID_VIDEO_BITRATE=$ID_VIDEO_BITRATE"
         echo "ID_AUDIO_BITRATE=$ID_AUDIO_BITRATE"
         echo "ID_AUDIO_NCH=$ID_AUDIO_NCH"
@@ -829,11 +837,11 @@ function idvid_main ()
         echo "ID_VIDEO_TRACK=$ID_VIDEO_TRACK"
         echo "ID_AUDIO_IDS=$ID_AUDIO_IDS"
         if $USE_MPV; then
-            ID_MPV_AUDIO_IDS=${ID_MPV_AUDIO_IDS//$'\n'/ }
-            echo "ID_MPV_AUDIO_IDS=${ID_MPV_AUDIO_IDS// /,}"
+            MPV_AUDIO_IDS=${MPV_AUDIO_IDS//$'\n'/ }
+            echo "MPV_AUDIO_IDS=${MPV_AUDIO_IDS// /,}"
         else
             [[ $ID_AUDIO_IDS != $( join_ , ${MP_AIDS[@]}) ]] && \
-              echo "ID_MPLAYER_AUDIO_IDS=$(join_ , ${MP_AIDS[@]})"
+              echo "MPLAYER_AUDIO_IDS=$(join_ , ${MP_AIDS[@]})"
         fi
         echo "ID_AUDIO_RATE=$ID_AUDIO_RATE"
         echo "V_ASPECT_WIDTH=$V_ASPECT_WIDTH"
@@ -843,6 +851,8 @@ function idvid_main ()
         echo "$INFILE||$FILE_SIZE||${ID_VIDEO_WIDTH}x${ID_VIDEO_HEIGHT}||$ID_VIDEO_FPS||$ID_VIDEO_BITRATE||$ID_AUDIO_BITRATE" >> "$TABLE"
     else
         echo $SEPARATOR
+            ((TOTAL_AV_BITRATE)) && \
+        echo -e "# Only total bitrate available, so printing that.\n"
         echo "               File: $INFILE"
         echo "              Width: $ID_VIDEO_WIDTH pixels"
         echo "             Height: $ID_VIDEO_HEIGHT pixels"
@@ -851,6 +861,9 @@ function idvid_main ()
         echo "           Duration: $(format_time ${V_DURATION%.*}) hours/mins/secs"
         echo "          Framerate: $ID_VIDEO_FPS frames per second"
         echo "       Video format: $ID_VIDEO_FORMAT"
+        if ((TOTAL_AV_BITRATE)); then
+            echo "      Total bitrate: $TOTAL_AV_BITRATE bits per second"
+        fi
         echo "      Video bitrate: $ID_VIDEO_BITRATE bits per second"
         # Multiple audio track info
         for t in ${!tracks[@]}; do
@@ -1195,9 +1208,6 @@ elif hash mpv 2>/dev/null; then
 else
     assert_dep mplayer "You need either mplayer or mpv installed to run 'tovid id'"
 fi
-MPLAYER=$(type -p mplayer)
-MPV=$(type -p mpv)
-FFMPEG=$(type -p $FFmpeg)
 TCPROBE=$(type -p tcprobe)
 
 
