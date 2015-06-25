@@ -208,7 +208,7 @@ function get_info ()
                 "duration" )
                     V_DURATION=$(printfC '%.*f\n' 3 ${val//\"})
                     ;;
-                "avg_frame_rate" )
+                "r_frame_rate" )
                     ID_VIDEO_FPS=${val//\"}
                     ;;
                 "codec_name" )
@@ -224,36 +224,6 @@ function get_info ()
                 "display_aspect_ratio" )
                     val=${val%.*}
                     ID_VIDEO_ASPECT=${val//\"}
-                    ;;
-                "index" )
-                    # use hextracks and/or mplayer for this
-                    #ID_VIDEO_TRACK=${val//\"}
-                    ;;
-            esac
-        fi
-    done <<< "${probe_video_info[@]}"
-    unset var val
-
-    while IFS='=' read var val; do
-        if [[ $val != "N/A" ]] && [[ $val ]]; then
-            case $var in
-                "codec_name" )
-                    ID_AUDIO_CODEC=${val//\"}
-                    ID_AUDIO_FORMAT=${val//\"}
-                    ;;
-                "bit_rate" )
-                    val=${val%.*}
-                    ID_AUDIO_BITRATE=${val//\"}
-                    ;;
-                "channels" )
-                    ID_AUDIO_NCH=${val//\"}
-                    ;;
-                "sample_rate" )
-                    ID_AUDIO_RATE=$(printfC "%.0f\n" ${val//\"})
-                    ;;
-                "index" )
-                    # use hextracks and/or mplayer for this
-                    #ID_AUDIO_TRACKS=${val//\"}
                     ;;
                 "index" )
                     # use hextracks and/or mplayer for this
@@ -340,8 +310,13 @@ function get_info ()
     # source it so we have vars beginning with lower case id_ like id_video_fps
     if $USE_MPV; then
         if hash mpv_identify.sh 2>/dev/null; then
-            mpv_identify.sh "$INFILE" | \
-            awk -F= '{print "ID_"toupper($1)"="$2}' >> "$SCRATCH_FILE" 2>&1
+            if $VERBOSE; then
+                mpv_identify.sh "$INFILE" | \
+                awk -F= '{print "ID_"toupper($1)"="$2}' |tee -a "$SCRATCH_FILE" 2>&1
+            else
+                mpv_identify.sh "$INFILE" | \
+                awk -F= '{print "ID_"toupper($1)"="$2}' >> "$SCRATCH_FILE" 2>&1
+            fi
             acodec_mpv=$(sed -nr  '/AUDIO_CODEC/ s/.* \[.*:(.*)\].*$/\1/p' \
               "$SCRATCH_FILE")
             sed -i "s/ID_AUDIO_CODEC.*/ID_AUDIO_CODEC=$acodec_mpv/" "$SCRATCH_FILE"
