@@ -1621,8 +1621,8 @@ For example:
     Report everything mplayer, ffmpeg, and transcode can determine about
     homevideo.avi.
 
-: ``tovid id -isformat dvd homevideo.mpg``
-    Check to see if homevideo.mpg is compliant with the DVD standard.
+: ``tovid id -isformat ntsc-dvd homevideo.mpg``
+    Check to see if homevideo.mpg is compliant with the NTSC DVD standard.
 
 
 

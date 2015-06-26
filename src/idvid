@@ -6,7 +6,6 @@ echo -e "'tovid-init' not found.  Was tovid improperly installed?"
 echo -e "Or are you trying to run the script directly?"
 echo -e "Please run idvid as:\ntovid id OPTIONS"
 exit 1 ; }
-
 # idvid
 # Part of the tovid suite
 # =======================
@@ -209,7 +208,8 @@ function get_info ()
                     V_DURATION=$(printfC '%.*f\n' 3 ${val//\"})
                     ;;
                 "r_frame_rate" )
-                    ID_VIDEO_FPS=${val//\"}
+                    # I like mplayers better, ie. 10 fps instead of 2997/299
+                    #ID_VIDEO_FPS=${val//\"}
                     ;;
                 "codec_name" )
                     ID_VIDEO_FORMAT=${val//\"}
@@ -373,16 +373,20 @@ function get_info ()
         sed -i 's/ID_WIDTH/ID_VIDEO_WIDTH/g' "$SCRATCH_FILE"
         sed -i 's/ID_FPS/ID_VIDEO_FPS/g' "$SCRATCH_FILE"
     fi
-    grep "^ID_[VADL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/$/"/;s/=/="/' > "${SCRATCH_FILE}".vars
+    grep "^ID_[VADL]" < "$SCRATCH_FILE"   | grep -v "[()\[]" | sed 's/\"//g' > "${SCRATCH_FILE}".vars
     # fill in any missing variables with mplayer/mpv output
     declare -A test_array
     while IFS='=' read var val; do
-        if [[ ! ${!var} || ${!var} == "N/A" ]] && [[ $val ]]; then
-            declare "${var}=${val}"
+        # if var is not defined, OR it equals N/A, AND if there is a new value
+        if [[ ! ${!var} || ${!var} == "N/A" || "${!var}" == 0 ]] && [[ $val ]]; then
+            # simple test for a float. Truncate to precision of 3 decimal places
+            if test_is_number $val && ! [[ "$val" -eq "$val" ]] 2>/dev/null; then
+                val=$(printfC '%.3f\n' $val)
+            fi
+            declare -g "${var}=${val}"
+            test_array[$var]=$val
         fi
-        test_array[$var]=$val
     done < "${SCRATCH_FILE}".vars
-
 
     # get array of mplayer audio ids, used if no hextracks from ffmpeg
     if $USE_MPLAYER; then
