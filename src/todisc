@@ -167,8 +167,9 @@ ALIGN_OVERRIDE=false
 MULTILINE_TITLE=false
 SAFE_AREA=50 # undocumented: you can set this from CLI with -showcase-safe-area
 SAFE_OFFSET=0 # we only add this offset if center title align, to keep onscreen
-ASPECT_RATIO=4:3
+VIDEOS_ASPECT_RATIO=4:3
 AR=1.333
+MENU_AR=4:3
 ASPECT_ARG=all
 WIDE_SCREEN=false
 WIDESCREEN="nopanscan"
@@ -282,7 +283,7 @@ FROM_GUI=false # needed to disable tput (colour output) in GUI
 TOVID_PREFIX=$(tovid -prefix)
 use_transcode=:
 yuv_correct="yuvcorrect -T NO_HEADER"
-
+wscreen_menu=false  # 16:9 menu. Currently menu is 4:3 by default
 ##############################################################################
 #                                 Functions                                  #
 ##############################################################################
@@ -1390,7 +1391,7 @@ titleset_mode()
 <dvdauthor dest="$OUT_DIR" jumppad="0">
   <vmgm>
     <menus>
-      <video format="$TV_STANDARD" aspect="4:3"/>
+      <video format="$TV_STANDARD" aspect="${MENU_AR}"/>
       <pgc entry="title">
         <pre>
 $(echo -e "$VMGM_PRE")
@@ -1789,7 +1790,7 @@ quick_menu()
         local overlay="$WORK_DIR/quick_menu_bg.png"
         local PADDING="$VF scale=${qw}:${qh},pad=$VF_SCALE:${VF_PADX}:${VF_PADY}"
         overlay_filter="movie=$overlay [wm];[in][wm] overlay=0:0 [wm2]"
-        ffmpeg_filter=($VF "$overlay_filter; [wm2] setdar=4:3 [out]")
+        ffmpeg_filter=($VF "$overlay_filter; [wm2] setdar=${MENU_AR} [out]")
     fi
     # no padding needed for background video, just resizing
     $QUICKMENU_IS_BACKGROUND && PADDING=""
@@ -1944,7 +1945,7 @@ verify_infiles()
                 IMG_WIDTH=${IMG_STATS[1]}
                 IMG_HEIGHT=${IMG_STATS[2]}
                 IMG_AR=$(bc_math "$IMG_WIDTH / $IMG_HEIGHT")
-                if [[ $ASPECT_RATIO = "4:3" ]]; then
+                if [[ $VIDEOS_ASPECT_RATIO = "4:3" ]]; then
                     NEWSIZE=640x480
                 else
                     NEWSIZE=640x360
@@ -2632,10 +2633,10 @@ while test $# -gt 0; do
             shift
             ASPECT_ARG=$1
             if [[ ${#ASPECT_ARG[@]} -gt 0 ]]; then
-            ASPECT_RATIO=$ASPECT_ARG
-            [[ $ASPECT_RATIO = "16:9" ]] && AR=177 || AR=133
+            VIDEOS_ASPECT_RATIO=$ASPECT_ARG
+            [[ $VIDEOS_ASPECT_RATIO = "16:9" ]] && AR=177 || AR=133
             # below used by dvdauthor, not ffmpeg
-            V_ASPECT="aspect=\"$ASPECT_RATIO\""
+            V_ASPECT="aspect=\"$VIDEOS_ASPECT_RATIO\""
             fi
             ;;
         "-widescreen" )
@@ -3486,6 +3487,10 @@ while test $# -gt 0; do
         "-from-gui" )
             FROM_GUI=:
             ;;
+        "-widescreen-menu" )
+        wscreen_menu=:
+        MENU_AR=16:9
+            ;;
         "-config" | "-ntscfilm" | "-dvd-vcd" | "-half-dvd" | "-kvcd" | \
         "-kvcdx3" | "-kvcdx3a" | "-kdvd" | "-bdvd" | "-704" | "-normalize" | \
         "-amplitude" | "-overwrite" | "-panavision" | "-force" | "-fps" | \
@@ -3828,10 +3833,10 @@ ff_filters=$($FFmpeg -filters 2>/dev/null | awk 'f;/Filters:/{f=1}')
   runtime_error "Your ${FFmpeg##*/} is too old ! No filter support."
 # newer ffmpeg's use setdar= and setsar=
 if grep -qw setdar <<< "$ff_filters"; then
-    ASPECT="setdar=4:3"  # for menu.  Always 4:3 aspect
+    ASPECT="setdar=${MENU_AR}"  # for menu. 16:9 (-widescreen-menu) or 4:3
 # somewhat older rev's used aspect=
 elif grep -qw ^aspect <<< "$ff_filters"; then
-    ASPECT="aspect=4:3"
+    ASPECT="aspect=${MENU_AR}"
 fi
 # check for -loop or -loop_input (-loop from 0.9 onwards)
 if grep -q -- '^-loop ' <<< "$ffmpeg_help"; then
@@ -4193,7 +4198,7 @@ if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] \
     lb=$(grep 133 <<< "$(printf '%s\n' ${ar_stats[@]})" |wc -l)
     ((ws > lb)) && ar=177 || ar=133
     # set the global var for aspect ratio
-    { [[ $ar = 177 ]] && ASPECT_RATIO=16:9; } || ASPECT_RATIO=4:3
+    { [[ $ar = 177 ]] && VIDEOS_ASPECT_RATIO=16:9; } || VIDEOS_ASPECT_RATIO=4:3
     
     # warn about files that have a differing aspect ratio
     for i in ${!ar_stats[@]}; do
@@ -4204,8 +4209,8 @@ if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] \
     if [[ -n ${warn_files[@]} ]]; then
         yecho
         printred "*** CRITICAL WARNING ***"
-        yecho "The following files differ from the $ASPECT_RATIO aspect ratio
-        we are using, even if they are to be re-encoded by makempg here."
+        yecho "These files differ from the $VIDEOS_ASPECT_RATIO aspect ratio
+        we are using, even if they are to be re-encoded by makempg here:"
         echo
         printf "\"%s\"\n" "${warn_files[@]}"
         echo
@@ -4218,7 +4223,8 @@ if ((inc_files && MENU_NUM == 1)) && [[ ! "$V_ASPECT" ]] \
         read input
     fi
     print2log ""
-    print2log "Videos in this titleset will be done using aspect of $ASPECT_RATIO."
+    print2log \
+     "Videos in this titleset will use an aspect ratio of $VIDEOS_ASPECT_RATIO."
 fi
 
 ################################################
@@ -5194,6 +5200,10 @@ NTSC_1333_DVD=(420x280 288x192 192x128 192x128 186x124 186x124 132x88 132x88 \
 84x56 84x56 84x56 60x40 60x40 60x40 60x40 60x40 60x40 \
 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40
 60x40 60x40 60x40 60x40)
+# *_1777_DVD_WS is for 16:9 videos displayed in proper res on a 16:9 menu
+# it uses the same array as 4:3 aspect because they are both 1.50:1 image AR
+# They will both be resized the same as the menu itself,ie: 1.50:1=>16:9 || 4:3
+NTSC_1777_DVD_WS=( "${NTSC_1333_DVD[@]}" )
 # *_1777_DVD is for 16:9 videos displayed in proper res on a 4:3 menu
 NTSC_1777_DVD=(420x210 288x144 240x120 240x120 186x98 186x98 180x90 180x90 \
 180x90 132x66 132x66 132x66 132x66 132x66 132x66 132x66 100x50 100x50 \
@@ -5207,6 +5217,7 @@ PAL_1777_DVD=(420x252 280x168 240x144 240x144 190x114 190x114 190x114 190x114 \
 190x114 130x78 130x78 130x78 130x78 130x78 130x78 130x78 100x60 100x60
 100x60 100x60 100x60 100x60 100x60 100x60 100x60 90x54 90x54 90x54 90x54 90x54
 80x48 80x48 80x48 80x48 80x48 80x48)
+PAL_1777_DVD_WS=( "${PAL_1333_DVD[@]}" )
 # 15 per row
 TILE_1333=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 \
@@ -5297,11 +5308,15 @@ FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB"
 SS_FFMOPTS="-b 8000k -maxrate 9000k -bufsize 224KiB"
 SHOWCASE_SIZE=384x256
 if [ $TV_STANDARD = "ntsc" ]; then
-    if [[ $ASPECT_RATIO = "4:3" ]]; then
+    if [[ $VIDEOS_ASPECT_RATIO = "4:3" ]]; then
         GEO_ARRAY=("${NTSC_1333_DVD[@]}")
         TILE_ARRAY=("${TILE_1333[@]}")
     else
-        GEO_ARRAY=("${NTSC_1777_DVD[@]}")
+        if $wscreen_menu; then # 16:9 menu
+            GEO_ARRAY=("${NTSC_1777_DVD_WS[@]}")
+        else # 4:3 menu
+            GEO_ARRAY=("${NTSC_1777_DVD[@]}")
+        fi
         TILE_ARRAY=("${TILE_1777[@]}")
     fi
     VIDSIZE="720x480"
@@ -5311,8 +5326,10 @@ if [ $TV_STANDARD = "ntsc" ]; then
         SHOWCASE_SIZE=384x256
         SM_SHOWCASE_SIZE=288x192
     elif [[ $SC_AR = 177 ]]; then
-        SHOWCASE_SIZE=384x192
-        SM_SHOWCASE_SIZE=288x144
+        #SHOWCASE_SIZE=384x192
+        SHOWCASE_SIZE=384x256
+        #SM_SHOWCASE_SIZE=288x144
+        SM_SHOWCASE_SIZE=288x192
     fi
 elif [ $TV_STANDARD = "pal" ]; then
     VIDSIZE="720x576"
@@ -5326,7 +5343,7 @@ elif [ $TV_STANDARD = "pal" ]; then
         SHOWCASE_SIZE=384x230
         SM_SHOWCASE_SIZE=290x174
     fi
-    if [[ $ASPECT_RATIO = "4:3" ]]; then
+    if [[ $VIDEOS_ASPECT_RATIO = "4:3" ]]; then
         GEO_ARRAY=("${PAL_1333_DVD[@]}") #TODO make sizes array for pal
     else
         GEO_ARRAY=("${PAL_1777_DVD[@]}")
@@ -5463,10 +5480,10 @@ $THREExONE && $SHOWCASE && THREExONE=false && tile_warning
 if $THREExONE || $FOURxONE; then
     if $THREExONE && [ $V_TOTAL -eq 3 ]; then
         TILE_ARRAY[2]=3x1
-        [[ $ASPECT_RATIO = "16:9" ]] && THUMB_SIZE=${GEO_ARRAY[4]}
+        [[ $VIDEOS_ASPECT_RATIO = "16:9" ]] && THUMB_SIZE=${GEO_ARRAY[4]}
     elif $FOURxONE && [[ $V_TOTAL -eq 4 ]]; then
         TILE_ARRAY[3]=4x1
-        if  [[ $ASPECT_RATIO = "16:9" ]]; then
+        if  [[ $VIDEOS_ASPECT_RATIO = "16:9" ]]; then
             THUMB_SIZE=${GEO_ARRAY[9]}
         else
             THUMB_SIZE=${GEO_ARRAY[6]}
@@ -5598,7 +5615,7 @@ if $SINGLE_SLIDESHOW && ! $DO_CAROUSEL && ! $MK_CAROUSEL_MODE; then
     done
     echo
 
-    # FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB -aspect 4:3"
+    # FFMPEG_OPTS="-b 7000k  -maxrate 8000k -bufsize 224KiB -aspect $MENU_AR"
    #MENU_N=$(bc_math "$FRAME_RATE * ${MENU_LEN[MENU_NUM-1]}" int)
     #ffmpeg -f image2 -loop_input -t $MENU_LEN -i "$WORK_DIR/image_stack.png" \
     #-an -r $ff_frame_rate -s $VIDSIZE $FFMPEG_OPTS \
@@ -8398,7 +8415,7 @@ $(if $AUTHOR; then
     echo     "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     echo     "<dvdauthor dest=\"$OUT_DIR\" jumppad=\"0\">"
     echo -e  "  <vmgm>\n    <menus>"
-    echo     "      <video format=\"${TV_STANDARD}\" aspect=\"4:3\"/>"
+    echo     "      <video format=\"${TV_STANDARD}\" aspect=\"${MENU_AR}\"/>"
     echo     "      <pgc entry=\"title\" pause=\"0\">"
     echo     "        $INTRO"
     echo     "        <vob file=\"$WORK_DIR/dummy.mpg\"/>"
@@ -8414,7 +8431,7 @@ $(if $AUTHOR; then
 fi)
   <titleset>
     <menus>
-      <video format="${TV_STANDARD}" aspect="4:3"/>
+      <video format="${TV_STANDARD}" aspect="${MENU_AR}"/>
 $(for ((menu_num=1; menu_num<=NUM_MENUS; menu_num++)); do
     echo -e "      <pgc>"
     for ((i=1; i<=$V_TOTAL; i++)); do
