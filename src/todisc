@@ -5200,15 +5200,24 @@ NTSC_1333_DVD=(420x280 288x192 192x128 192x128 186x124 186x124 132x88 132x88 \
 84x56 84x56 84x56 60x40 60x40 60x40 60x40 60x40 60x40 \
 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40 60x40
 60x40 60x40 60x40 60x40)
+# 1333 WS calculation: H=W*0.8887
+NTSC_1333_DVD_WS=(420x373 288x256 170x151 170x151 161x143 161x143 134x119 134x119 \
+107x95 107x95 107x95 107x95 90x80 90x80 90x80 80x71 80x71 80x71 \
+80x71 80x71 63x56 63x56 63x56 63x56 63x56 63x56 63x56 \
+63x56 63x56 63x56 62x55 62x55 62x55 62x55 62x55 45x40)
+# done ^
 # *_1777_DVD_WS is for 16:9 videos displayed in proper res on a 16:9 menu
 # it uses the same array as 4:3 aspect because they are both 1.50:1 image AR
 # They will both be resized the same as the menu itself,ie: 1.50:1=>16:9 || 4:3
 NTSC_1777_DVD_WS=( "${NTSC_1333_DVD[@]}" )
-# *_1777_DVD is for 16:9 videos displayed in proper res on a 4:3 menu
 NTSC_1777_DVD=(420x210 288x144 240x120 240x120 186x98 186x98 180x90 180x90 \
 180x90 132x66 132x66 132x66 132x66 132x66 132x66 132x66 100x50 100x50 \
 100x50 100x50 100x50 100x50 100x50 100x50 100x50 88x44 88x44 \
 88x44 88x44 88x44 80x40 80x40 80x40 80x40 80x40 80x40)
+PAL_1333_DVD_WS=(420x448 272x290 182x194 182x194 182x194 182x194 134x143 134x143 \
+134x143 134x143 134x143 134x143 92x98 92x98 92x98 92x98 92x98 92x98 \
+92x98 92x98 62x66 62x66 62x66 62x66 62x66 62x66 62x66 62x66 \
+62x66 62x66 62x66 56x60 56x60 56x60 56x60 56x60 56x60)
 PAL_1333_DVD=(420x336 280x224 190x152 190x152 190x152 190x152 130x104 130x104 \
 130x104 130x104 130x104 130x104 100x80 100x80 100x80 100x80 100x80 100x80 \
 100x80 100x80 90x72 90x72 90x72 90x72 90x72 90x72 90x72 \
@@ -5221,6 +5230,13 @@ PAL_1777_DVD_WS=( "${PAL_1333_DVD[@]}" )
 # 15 per row
 TILE_1333=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 6x5 6x5 6x5 6x5 6x5 \
+6x6 6x6 6x6 6x6 6x6 6x6)
+TILE_1333_NTSC_WS=(1x1 2x1 2x2 2x2 3x2 3x2 4x2 4x2 4x3 4x3 4x3 4x3 5x3 5x3 5x3 \
+5x4 5x4 5x4 5x4 5x4 6x5 6x5 6x5 6x5 6x5 6x5 6x5 6x5 6x5 6x5 \
+7x5 7x5 7x5 7x5 7x5 6x6)
+# done ^
+TILE_1333_PAL_WS=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
+4x4 5x4 5x4 5x4 5x4 6x4 6x4 6x4 6x4 6x5 6x5 6x5 6x5 6x5 6x5 \
 6x6 6x6 6x6 6x6 6x6 6x6)
 TILE_1777=(1x1 2x1 2x2 2x2 3x2 3x2 3x3 3x3 3x3 4x3 4x3 4x3 4x4 4x4 4x4 \
 4x4 5x4 5x4 5x4 5x4 5x5 5x5 5x5 5x5 5x5 5x6 5x6 5x6 5x6 5x6 \
@@ -5309,8 +5325,13 @@ SS_FFMOPTS="-b 8000k -maxrate 9000k -bufsize 224KiB"
 SHOWCASE_SIZE=384x256
 if [ $TV_STANDARD = "ntsc" ]; then
     if [[ $VIDEOS_ASPECT_RATIO = "4:3" ]]; then
-        GEO_ARRAY=("${NTSC_1333_DVD[@]}")
-        TILE_ARRAY=("${TILE_1333[@]}")
+        if $wscreen_menu; then # 16:9 menu
+            GEO_ARRAY=("${NTSC_1333_DVD_WS[@]}")
+            TILE_ARRAY=("${TILE_1333_NTSC_WS[@]}")
+        else
+            GEO_ARRAY=("${NTSC_1333_DVD[@]}")
+            TILE_ARRAY=("${TILE_1333[@]}")
+        fi
     else
         if $wscreen_menu; then # 16:9 menu
             GEO_ARRAY=("${NTSC_1777_DVD_WS[@]}")
@@ -5323,30 +5344,57 @@ if [ $TV_STANDARD = "ntsc" ]; then
     FRAME_RATE=29.970
     ff_frame_rate="30000/1001"
     if [[ $SC_AR = 133 ]]; then
-        SHOWCASE_SIZE=384x256
-        SM_SHOWCASE_SIZE=288x192
+        if $wscreen_menu; then # 16:9 menu
+            SHOWCASE_SIZE=386x343 # 4:3 on 16:9
+            SM_SHOWCASE_SIZE=287x255
+        else
+            SHOWCASE_SIZE=384x256 # 4:3 on 16:9
+            SM_SHOWCASE_SIZE=288x192
+        fi 
     elif [[ $SC_AR = 177 ]]; then
-        #SHOWCASE_SIZE=384x192
-        SHOWCASE_SIZE=384x256
-        #SM_SHOWCASE_SIZE=288x144
-        SM_SHOWCASE_SIZE=288x192
+        if $wscreen_menu; then # 16:9 menu
+            SHOWCASE_SIZE=384x256
+            SM_SHOWCASE_SIZE=288x192
+        else
+            SHOWCASE_SIZE=384x192
+            SM_SHOWCASE_SIZE=288x144
+        fi
     fi
 elif [ $TV_STANDARD = "pal" ]; then
     VIDSIZE="720x576"
-    TILE_ARRAY=("${TILE_1333[@]}")
     FRAME_RATE=25
     ff_frame_rate="25/1"
     if [[ $SC_AR = 133 ]]; then
-        SHOWCASE_SIZE=380x304
-        SM_SHOWCASE_SIZE=290x232
+        if $wscreen_menu; then # 16:9 menu
+            TILE_ARRAY=("${TILE_1333_PAL_WS[@]}")
+            SHOWCASE_SIZE=390x312
+            SM_SHOWCASE_SIZE=290x232
+        else # 4:3 menu
+            TILE_ARRAY=("${TILE_1333[@]}")
+            SHOWCASE_SIZE=384x256
+            SM_SHOWCASE_SIZE=288x192
+        fi
     elif [[ $SC_AR = 177 ]]; then
-        SHOWCASE_SIZE=384x230
-        SM_SHOWCASE_SIZE=290x174
+        if $wscreen_menu; then # 16:9 menu
+            SHOWCASE_SIZE=378x403
+            SM_SHOWCASE_SIZE=286x305
+        else
+            SHOWCASE_SIZE=384x230
+            SM_SHOWCASE_SIZE=290x174
+        fi
     fi
     if [[ $VIDEOS_ASPECT_RATIO = "4:3" ]]; then
-        GEO_ARRAY=("${PAL_1333_DVD[@]}") #TODO make sizes array for pal
+        if $wscreen_menu; then # 16:9 menu
+            GEO_ARRAY=("${PAL_1333_DVD_WS[@]}")
+        else
+            GEO_ARRAY=("${PAL_1333_DVD[@]}")
+        fi
     else
-        GEO_ARRAY=("${PAL_1777_DVD[@]}")
+        if $wscreen_menu; then # 16:9 menu
+            GEO_ARRAY=("${PAL_1777_DVD_WS[@]}")
+        else
+            GEO_ARRAY=("${PAL_1777_DVD[@]}")
+        fi
     fi
 fi
 # set a variable for vfilter scaling based on above sizes VFSCALE
