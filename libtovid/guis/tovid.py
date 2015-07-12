@@ -1,6 +1,6 @@
 # tovid.py
 
-"""A GUI for the ``tovid`` script.
+"""A GUI for the ``makempg`` script.
 """
 
 # Get supporting classes from libtovid.metagui
@@ -81,7 +81,7 @@ _discsize = Number('Disc size', '-discsize', 0,
 _mplayeropts = Text('mplayer options', '-mplayeropts', '', 'TODO: Tooltip')
 _filters = Choice('mplayer filters', '-filters', 'none', 'TODO: Tooltip',
     'none|denoise|deblock|contrast|all', side='top')
-_ffmpeg = Flag('Encode using ffmpeg', '-ffmpeg', False)
+_mpeg2enc = Flag('Encode using mpeg2enc', '-mpeg2enc', False)
 _parallel = Flag('Parallel video/audio encoding', '-parallel', False,
     "(mpeg2enc only) Rip, encode, and multiplex in parallel.")
 
@@ -112,14 +112,22 @@ _autosubs = Flag('Auto-subtitles', '-autosubs', False,
 _mkvsub = Text('mkvsub', '-mkvsub', '',
     'EXPERIMENTAL. Attempt to encode an integrated subtitle stream '
     '(such as may be found in Matroska .mkv files) in the given '
-    'language code (eng, jpn, etc.) May work for other formats.')
-_subtitles = Filename('subtitles', '-subtitles', '',
+    'language code (eng, jpn, etc.) May work for other formats. '
+    'These subtitles are hard-coded into the video, like -hardsubs.')
+_hardsubs = Filename('Hard subtitles', '-hardsubs', '',
     'Get subtitles from FILE and encode them into the video. '
     'WARNING: This hard-codes the subtitles into the video, and you '
     'cannot turn them off while viewing the video. By default, no subtitles '
     'are loaded. If your video is already compliant with the chosen output '
     'format, it will be re-encoded to include the subtitles.',
     'load', 'Select a subtitle file')
+_softsubs = List('DVD subtitles', '-softsubs', None,
+    'Get  subtitles  from FILE(S) and add them as a subtitle stream into '
+    'the video.  This allows selectable subtitles on your DVD. You can use '
+    'more than one file for multiple languages. Be sure to use the '
+    '-subtitle-lang option  in "tovid disc" so the name of the language will '
+    'show up on the DVD instead of "UNKNOWN" or similar.',
+    Filename('', filetypes='all'))
 
 # Audio options
 _normalize = Flag('Normalize', '-normalize', False,
@@ -207,7 +215,7 @@ MAIN = VPanel('Main',
 
 VIDEO = HPanel('Video',
     VPanel('Encoder options',
-        FlagGroup('', 'exclusive', _ffmpeg, _parallel),
+        FlagGroup('', 'exclusive', _mpeg2enc, _parallel),
         _filters,
         _mplayeropts,
         _force,
@@ -225,7 +233,8 @@ AUDIO = VPanel('Audio & Subtitles',
     _async,
     _autosubs,
     _mkvsub,
-    _subtitles,
+    _hardsubs,
+    _softsubs,
 )
 
 BEHAVIOR = VPanel('Behavior',
