@@ -148,6 +148,7 @@ animated menus, static thumbnail menus, text-only menus, or author with no menu.
 In addition, it can do slideshows, using images as input, and even combine
 slideshows with videos.  It supports sub-menus for chapter breaks,
 configurable menu style, animated backgrounds and transparency effects.
+The menu itself can be either 4:3 (default) or 16:9 (experimental) aspect ratio.
 From simple (no menu) to complex (switched menus and titlesets), you should
 be able to do what you want with 'tovid disc'.
 
@@ -359,7 +360,7 @@ Here is a list of possible options you can pass:
     **-vbitrate**, **-quality**, **-safe**, **-crop**, **-filters**,
     **-abitrate**, **-priority**, **-deinterlace**, **-progressive**,
     **-interlaced**, **-interlaced_bf**, **-type**, **-fit**, **-discsize**,
-    **-parallel**, **-mkvsub**, **-autosubs**, **-subtitles**, **-dvdsubs**,
+    **-parallel**, **-mkvsub**, **-autosubs**, **-softsubs**, **-hardsubs**,
     **-ffmpeg-opts**, --ffmpeg-add-filter**, **-mplayeropts**, **-audiotrack**,
     **-downmix**, **-mpeg2enc**, **-nofifo**, **-slice**, **-quiet**,
     **-fake**, **-keepfiles**, **-update**
@@ -397,6 +398,10 @@ Here is a list of possible options you can pass:
     720x480 output, compatible with NTSC standard (default)
 : **-pal**
     720x576 output, compatible with PAL standard
+: **-widescreen-menu**
+    Use a 16:9 aspect ratio for the menu. The default is 4:3.
+    Note: this is independant of the aspect ratio of the included videos:
+    for example you can use a 4:3 aspect ratio for the menu with 16:9 videos.
 : **-submenus**
     Create a sub-menu with chapters for each video (default: no sub-menus)
 : **-ani-submenus**
@@ -1343,12 +1348,13 @@ for a widescreen monitor or TV.
 : **-mkvsub** //LANG// (EXPERIMENTAL)
     Attempt to encode an integrated subtitle stream (such as may be found in
     Matroska .mkv files) in the given language code (eng, jpn, etc.) May work
-    for other formats.
+    for other formats.  This option 'hard-codes' the subtitles.
 
 : **-autosubs**
     Automatically include subtitle files with the same name as the input video.
+    Note: this will produce hard-coded subtitles.
 
-: **-subtitles** //FILE//
+: **-hardsubs** //FILE//
     Get subtitles from //FILE// and encode them into the video.  WARNING: This
     hard-codes the subtitles into the video, and you cannot turn them off while
     viewing the video. By default, no subtitles are loaded. If your video is
@@ -1357,18 +1363,15 @@ for a widescreen monitor or TV.
     For ffmpeg/avconv if you have a mkv with subtitles you can use the mkv
     both as the file for the -in option and the -subtitles option.
 
-: **-dvd-subtitles**, **-dvdsubs** | //FILE//
+: **-softsubs** //FILE//
     Get subtitles from //FILE(S)// and add them **as a subtitle stream** into the
     video.  This allows selectable subtitles on your DVD. You can use more than
     one file for multiple languages. Be sure to use the -subtitle-lang option
     in 'tovid disc' so the name of the language will show up on the DVD instead
-    of 'UNKNOWN' or similar
+    of 'UNKNOWN' or similar. Only text based subtitles like *.srt and *.ass
+    are supported.
 
-: **-dvdsubs-only**
-    Use this if you have an already complient MPEG and wish to add a subtitle
-    stream without re-encoding, using **-dvdsubs** ,
-
-: **-dvdsubs-fontsize** //NUM// [18]
+: **-softsubs-size** //NUM// [18]
     The pointsize in pixels for DVD selectable subtitles. To affect this for
     hard-coded subtitles ( **-subtitles** ) you will need to pass options to
     the player via **-mplayeropts** or **-mpvopts**.
