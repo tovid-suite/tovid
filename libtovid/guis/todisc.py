@@ -191,6 +191,8 @@ _menu_length = Number('Menu length', '-menu-length', 20,
     'the length of background audio for a static menu',
     0, 120, 'secs')
 
+_widescreen_menu = Flag('Widescreen menu (16:9)', '-widescreen-menu', False,
+    'Use a 16:9 aspect ratio for menu(s). ')
 
 # Static/animated main menu
 _static = Flag('Static menu', '-static', False,
@@ -768,7 +770,7 @@ main =  VPanel('Basic',
             HPanel('Video or image background', _background),
             HPanel('Audio background', _bgaudio),
         ),
-        HPanel('', _menu_title, _menu_length),
+        HPanel('', _menu_title, _menu_length, _widescreen_menu),
         _out,
     ),
 )
