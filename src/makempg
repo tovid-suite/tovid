@@ -73,7 +73,7 @@ Example:
     tovid -in foo.avi -out foo_encoded
         Convert 'foo.avi' with default options (NTSC DVD), putting the
         encoded video in 'foo_encoded.mpg'. Tovid will use ffmpeg.
-        
+
 See the tovid manual page ('man tovid') for additional documentation.
 
 EOF`
@@ -103,7 +103,7 @@ DVD_VID_MAX_RATE=9000
 
 # Use ffmpeg by default
 USE_FFMPEG=:
-DO_FFMPEG_SUBS=:
+DO_FFMPEG_HARDSUBS=:
 
 # Running from gui
 FROM_GUI=false
@@ -193,12 +193,12 @@ NONVIDEO_BITRATE=""
 # Default progress-meter update interval
 SLEEP_TIME="5s"
 # Don't use subtitles unless user requests it
-DO_SUBS=false
-DO_DVD_SUBS=false
-DVD_SUBSIZE=18.0
-DVD_SUBS=()
-SUBTITLES="-noautosub"
-MPV_SUBS="-no-sub-auto"
+DO_HARDSUBS=false
+DO_SOFTSUBS=false
+SOFTSUB_SIZE=18.0
+SOFTSUBS=()
+HARDSUBS="-noautosub"
+MPV_HARDSUBS="-no-sub-auto"
 # Input file and type
 IN_FILE=""
 IN_FILE_TYPE="file"
@@ -349,7 +349,7 @@ function check_disk_space()
 
     # If video length is unknown, guess needed space
     # based on original file size
-    $SLICE && VIDEO_DURATION=$CLIP_LENGTH || VIDEO_DURATION=$V_DURATION
+    $SLICE && VIDEO_DURATION=$CLIP_LENGTH || VIDEO_DURATION=${V_DURATION%.*}
     if test "$VIDEO_DURATION" = "0"; then
         CUR_SIZE=$(du -Hck "$IN_FILE" | awk 'END{print $1}')
         NEED_SPACE=$(expr $CUR_SIZE \* 2)
@@ -531,39 +531,39 @@ function get_args()
                 ;;
             "-mkvsub" )
                 shift
-                SUBTITLES="-slang $1"
-                DO_SUBS=:
+                HARDSUBS="-slang $1"
+                DO_HARDSUBS=:
                 # Use gmplayer
-                MPLAYER="gmplayer -nogui"
+                #MPLAYER="gmplayer -nogui"
                 # Force re-encoding of compliant video,
                 # so subtitles can be added
                 FORCE_ENCODING=:
                 ;;
             "-autosubs" )
-                SUBTITLES=""
-                MPV_SUBS=""
+                HARDSUBS=""
+                MPV_HARDSUBS=""
                 ;;
-            "-subtitles" )
+            "-hardsubs" )
                 shift
                 if test -e "$1"; then
-                    SUBS_FILE=$(readlink -f "$1")
-                    SUBTITLES="-sub \"$SUBS_FILE\""
-                    MPV_SUBS="-sub-file \"$SUBS_FILE\""
-                    FFM_SUBS="subtitles=\"$SUBS_FILE\""
-                    DO_SUBS=:
+                    HARDSUBS_FILE=$(readlink -f "$1")
+                    HARDSUBS="-sub \"$HARDSUBS_FILE\""
+                    MPV_HARDSUBS="-sub-file \"$HARDSUBS_FILE\""
+                    FFM_SUBS="subtitles=\"$HARDSUBS_FILE\""
+                    DO_HARDSUBS=:
                 else
                     yecho "Cannot find subtitle file $1."
                 fi
                 FORCE_ENCODING=:
                 ;;
-            "-dvdsubs"|"-dvd-subtitles" )
+           "-softsubs" )
                 shift
                 # Hackish list-parsing
                 while test $# -gt 0 && test ${1:0:1} != "-"; do
                     if test -e "$1"; then
-                        DVD_SUBS=( "${DVD_SUBS[@]}"  "$(readlink -f "$1")" )
-                        DO_DVD_SUBS=:
-                        #FORCE_ENCODING=:
+                        SOFTSUBS=( "${SOFTSUBS[@]}"  "$(readlink -f "$1")" )
+                        DO_SOFTSUBS=:
+                        #FORCE_ENCODING=: # do not force, we can just mux also
                     else
                         yecho "Cannot find subtitle file $1."
                     fi
@@ -574,13 +574,9 @@ function get_args()
                     DO_SHIFT=false
                 fi
                 ;;
-            "-dvdsubs-fontsize" )
+            "-softsubs-size" )
                 shift
-                DVD_SUBSIZE="$1"
-                ;;
-            "-dvdsubs-only" )
-                DO_ENCODING=false
-                SUBS_ONLY=:
+                SOFTSUB_SIZE="$1"
                 ;;
             "-update" )
                 # Set status update interval
@@ -635,7 +631,7 @@ function get_args()
             "-from-gui" )
                 FROM_GUI=:
                 ;;
-            # don't prompt for file deletion
+            # do not prompt for file deletion
             "-noask" )
                 NOASK=:
                 ;;
@@ -822,8 +818,8 @@ EOF`
     # Convert to kbits/sec
     test -n "$AVG_BITRATE" && AVG_BITRATE=$(expr $AVG_BITRATE \/ 1000)
     test -n "$PEAK_BITRATE" && PEAK_BITRATE=$(expr $PEAK_BITRATE \/ 1000)
-    KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ $V_DURATION \+ 1)
-    ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / $V_DURATION" | ${bC} )
+    KB_PER_MIN=$(expr $FINAL_SIZE \* 60 \/ ${V_DURATION%.*} \+ 1)
+    ENC_TIME_RATIO=$(echo "scale = 2; $SCRIPT_TOT_TIME / ${V_DURATION%.*}" | ${bC} )
     if $USE_FFMPEG; then
         BACKEND="$FFmpeg"
     else
@@ -861,21 +857,22 @@ function spumux_subtitles()
 {
     yecho "Running spumux to add selectable DVD subtitles"
     yecho "This may take a while if you have multple subtitle streams"
-    
+
     in_mpg="$1"
     in_mpg_tmp="$in_mpg"
-    for x in ${!DVD_SUBS[@]}; do
+    for x in ${!SOFTSUBS[@]}; do
         yecho
         yecho "Running  spumux -m dvd -s $x "$TMP_DIR/spumux${x}.xml" \
-                            <  "$in_mpg_tmp"  > "$TMP_DIR/out${x}.mpg""
-        VIDEO_FORMAT=$(tr A-Z a-z <<< $BASETVSYS) spumux -m dvd -s $x "$TMP_DIR/spumux${x}.xml" <  "$in_mpg_tmp"  > "$TMP_DIR/out${x}.mpg" 2>> "$LOG_FILE"
-        $KEEP_FILES ||{ [[ -e "$TMP_DIR/out$((x-1)).mpg" ]] && rm -fv "$TMP_DIR/out$((x-1)).mpg"; }
-        in_mpg_tmp="$TMP_DIR/out${x}.mpg"
+                            <  "$in_mpg_tmp"  > "$TMP_DIR/subs${x}.mpg""
+        VIDEO_FORMAT=$(tr A-Z a-z <<< $BASETVSYS) spumux -m dvd -s $x "$TMP_DIR/spumux${x}.xml" <  "$in_mpg_tmp"  > "$TMP_DIR/subs${x}.mpg" 2>> "$LOG_FILE"
+        $KEEP_FILES ||{ [[ -e "$TMP_DIR/subs$((x-1)).mpg" ]] && rm -fv "$TMP_DIR/subs$((x-1)).mpg"; }
+        in_mpg_tmp="$TMP_DIR/subs${x}.mpg"
     done
-    if $DO_ENCODING && $KEEPFILES; then
+    if $DO_ENCODING && [[ -e $OUT_FILENAME ]]; then
         mv -v "$OUT_FILENAME" "$TMP_DIR/${OUT_FILENAME##*/}.nosubs.mpg"
     fi
-    mv "$TMP_DIR/out${x}.mpg" "$OUT_FILENAME"
+    # OUT_FILENAME should not exist, this is already tested
+    [[ ! -e $OUT_FILENAME ]] && mv -v "$TMP_DIR/subs${x}.mpg" "$OUT_FILENAME"
 }
 
 # ******************************************************************************
@@ -950,32 +947,6 @@ fi
 #
 # ******************************************************************************
 
-# print warning message about saving the original output file if -dvdsubs used.
-if $DO_DVD_SUBS && $SUBS_ONLY; then
-    # test for dvd compatibility as no encoding done
-    if ! idvid -isformat ${TVSYS,,}-dvd "$IN_FILE"; then
-        yecho "The file you have supplied does not appear to be DVD compliant."
-        yecho "Since you used -dvdsubs-only there will be no re-encoding done."
-        yecho "It would be better to quit now and use -dvdsubs option, so "
-        yecho "your file will be re-encoded."
-        yecho "If you continue anyway, it will probably fail."
-        yecho "Exit now?  [press y or n]"
-        read input
-        if [[ $input = y ]]; then
-            exit 1
-        fi
-    fi
-fi
-if $DO_ENCODING && $DO_DVD_SUBS; then
-    yecho
-    yecho '**********'
-    yecho "Your finished encoded video will be subtitled directly. To "
-    yecho "save a copy of it use -keepfiles . "
-    echo  "CTRL-c to stop or"
-    echo  "continuing"
-    countdown 12
-    echo
-fi
 # hack alert: ffmpeg is broken for encoding from audio
 if [[ $TGT_RES = *VCD* && $TGT_RES != "DVD-VCD" ]]; then
     if ! $USE_FFMPEG || $DO_NORM; then
@@ -1012,7 +983,7 @@ if test -z "$IN_FILE"; then
 fi
 
 # Determine whether input is a normal file or a URI of some sort
-# (if input name contains "://", it's assumed to be a URI)
+# if input name contains "://", it is assumed to be a URI
 if expr "$IN_FILE" : ".*:\/\/" >/dev/null; then
     IN_FILE_TYPE="uri"
 else
@@ -1038,7 +1009,7 @@ fi
 if ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *,* || "$IN_FILE" = *,* ]]; then
     exit_with_error "Comma illegal in -out and -in NAME (mpeg2enc limitation)"
 fi
-# check that outfile or infile don't use $$ or $[0-9] because of mpeg2 'bug'
+# check that outfile or infile do not use $$ or $[0-9] because of mpeg2 'bug'
 if ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *\$\$* || "$IN_FILE" = *\$\$* ]]; then
     exit_with_error '"$$" illegal in -out and -in NAME (mpeg2enc limitation)'
 elif ! $USE_FFMPEG && [[ "$OUT_PREFIX" = *\$[0-9]* || "$IN_FILE" = *\$[0-9]* ]]; then
@@ -1283,7 +1254,7 @@ if test "$IN_FILE_TYPE" = "file"; then
         runtime_error "Could not identify source video: $IN_FILE"
     fi
 
-    # Check for available space and prompt if it's not enough
+    # Check for available space and prompt if it is not enough
     # not needed if using ffmpeg to encode video and audio "at once"
     if $PARALLEL; then
         :
@@ -1326,7 +1297,7 @@ if test "$IN_FILE_TYPE" = "file"; then
 
     yecho "Analysis of file $IN_FILE:"
     yecho "  $ID_VIDEO_WIDTH x $ID_VIDEO_HEIGHT pixels, $ID_VIDEO_FPS fps"
-    yecho "  Duration (best guess): $(format_time $V_DURATION) (HH:MM:SS)"
+    yecho "  Duration (best guess): $(format_time ${V_DURATION%.*}) (HH:MM:SS)"
     yecho "  $ID_VIDEO_FORMAT video with $ID_AUDIO_CODEC audio"
 
 
@@ -1342,8 +1313,9 @@ if test "$IN_FILE_TYPE" = "file"; then
     # ffmpeg is broken, so we can't just dump compliant mp2 audio
     $AUDIO_OK && ! $VIDEO_OK && [[ $ID_AUDIO_CODEC = "mp2" ]] && AUDIO_OK=false
 
-    # If both audio and video are OK, stop now - there's no need to convert.
-    if ! $FORCE_ENCODING && $AUDIO_OK && $VIDEO_OK && ! $SUBS_ONLY; then
+    # If both audio and video are OK, stop now if options allow it -
+    # (e.g. not soft subbing) there is no need to convert.
+    if ! $FORCE_ENCODING && $AUDIO_OK && $VIDEO_OK && ! $DO_SOFTSUBS; then
         # Create a symbolic link in place of the output file
         $OVERWRITE && rm -f "$OUT_FILENAME"
         ln -s "$IN_FILE" "$OUT_FILENAME"
@@ -1358,6 +1330,9 @@ if test "$IN_FILE_TYPE" = "file"; then
         yecho "Done!"
         cleanup
         exit 0
+    elif ! $FORCE_ENCODING && $AUDIO_OK && $VIDEO_OK && $DO_SOFTSUBS; then
+        SUBS_ONLY=: # if softsubs, mux without re-encoding
+        DO_ENCODING=false
     fi
     if ! $FORCE_ENCODING && $VIDEO_OK; then
         yecho
@@ -1380,7 +1355,7 @@ fi
 # the user's given file size
 if $DO_FIT; then
     # Calculate bitrate required to fit video into FIT_SIZE MiB
-    LENGTH=$V_DURATION
+    LENGTH=${V_DURATION%.*}
     MPEG_OVERHEAD=$(bc_math "$FIT_SIZE / 100")
     AUD_VID_SIZE=$(bc_math "$FIT_SIZE - $MPEG_OVERHEAD")
     # When the audio is already compliant and the bitrate is known we
@@ -1669,7 +1644,6 @@ if $USE_MPV; then
             FORCE_FPSRATIO=$TGT_FPSRATIO
         fi
     fi
-            
 else # mplayer
     FF_INPUT_FR=""
 fi
@@ -1700,17 +1674,19 @@ elif $USE_FFMPEG; then
     $FFmpeg -filters 2>/dev/null > $SCRATCH_FILE
 fi
 
-if $DO_SUBS && $USE_FFMPEG; then
+if $DO_HARDSUBS && $USE_FFMPEG; then
     if grep -qw subtitles "$SCRATCH_FILE"; then
         # default to using ffmpeg if a format it can handle
-        if $FFmpeg -i "$IN_FILE" -t 20 -vf subtitles="$SUBS_FILE" \
+        if $FFmpeg -i "$IN_FILE" -t 20 -vf subtitles="$HARDSUBS_FILE" \
                     -f null /dev/null  >> ${LOG_FILE}.tmp 2>&1; then
-            DO_FFMPEG_SUBS=: 
+            DO_FFMPEG_HARDSUBS=:
         else
             sep=$(printf '%.s*' {1..72})
-            DO_FFMPEG_SUBS=false
-            echo -e "${sep}\nTesting sub file $SUBS_FILE with $FFmpeg\n${sep}" \
-              | send_to_log >> $LOG_FILE
+            DO_FFMPEG_HARDSUBS=false
+            echo "$sep"
+            echo "Testing sub file $HARDSUBS_FILE with $FFmpeg" | \
+              send_to_log >> $LOG_FILE
+            echo "$sep"
             cat "${LOG_FILE}.tmp" | send_to_log ${FFmpeg##*/} >> "$LOG_FILE"
             rm -f "${LOG_FILE}.tmp"
             echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
@@ -1721,12 +1697,11 @@ if $DO_SUBS && $USE_FFMPEG; then
         fi
     else
         yecho "'subtitles filter not found, will pipe $MPLAYER output instead"
-        DO_FFMPEG_SUBS=false
+        DO_FFMPEG_HARDSUBS=false
     fi
-        
 fi
 
-if {  $DO_SUBS && ! $DO_FFMPEG_SUBS; } && $USE_FFMPEG; then
+if {  $DO_HARDSUBS && ! $DO_FFMPEG_HARDSUBS; } && $USE_FFMPEG; then
     FFMPEG_WITH_MPLAYER=:
 fi
 
@@ -1908,7 +1883,7 @@ if grep -qw -- -vf <<< "$FF_HELP"; then
 elif grep -qw -- -vfilters <<< "$FF_HELP"; then
     VF="-vfilters"
 else
-    runtime_error "Your $FFmpeg is too old to support video filters"   
+    runtime_error "Your $FFmpeg is too old to support video filters"
 fi
 # newaudio was removed in ffmpeg 0.9 as it was redundant because of -map opt
 grep -qw -- -newaudio <<< "$FF_HELP" && NEWAUDIO_OPT=true
@@ -2139,7 +2114,7 @@ else # set up mapping for ffmpeg, for each track we are going to encode
     done
 
     FF_CHANNEL_MAP="$VIDEO_MAP $AUDIO_MAP"
-    # we don't need the 1st track for -newaudio
+    # we do not need the 1st track for -newaudio
     $NEWAUDIO_OPT && unset NEW_AUDIO[0]
     ((${#AUDIO_TRACK[@]} > 1)) && OUTPUT_FILES="each file" && s=s
 fi
@@ -2148,9 +2123,9 @@ fi
 # If subtitle file has been provided and soft subs selected, set up spumux xml
 # ******************************************************************************
 
-if $DO_DVD_SUBS; then
-    for s in ${!DVD_SUBS[@]}; do
-        charset=$(file -b --mime-encoding "${DVD_SUBS[s]}")
+if $DO_SOFTSUBS; then
+    for s in ${!SOFTSUBS[@]}; do
+        charset=$(file -b --mime-encoding "${SOFTSUBS[s]}")
         # find a default hopefully ttf font
         if hash fc-list 2>/dev/null; then
             spumux_font=\"$(fc-match Verdana | awk -F'"' '{print $2}')\"
@@ -2161,9 +2136,9 @@ if $DO_DVD_SUBS; then
 cat  <<EOF
 <subpictures format="$TVSYS">
    <stream>
-      <textsub filename="${DVD_SUBS[s]}" characterset="$charset" outline-color="rgba(0,0,0,200)"
-        outline-thickness="2" fill-color="rgba(255,255,255,255)" shadow-offset="0, 0" 
-        shadow-color="rgba(0,0,0,200)" fontsize="$DVD_SUBSIZE"
+      <textsub filename="${SOFTSUBS[s]}" characterset="$charset" outline-color="rgba(0,0,0,200)"
+        outline-thickness="2" fill-color="rgba(255,255,255,255)" shadow-offset="0, 0"
+        shadow-color="rgba(0,0,0,200)" fontsize="$SOFTSUB_SIZE"
         $spumux_font horizontal-alignment="center"
         vertical-alignment="bottom" left-margin="60" right-margin="60"
         top-margin="20" bottom-margin="20" subtitle-fps="$TGT_FPS"
@@ -2221,7 +2196,7 @@ if $USE_FFMPEG; then
     if [[ $VF ]]; then # libavfilter is being used, FF_ASPECT always passed
         VF_FILTERS="${VF_FILTERS},${VF_ADD_FILTER},${FF_SIZE},${FF_PAD},${FF_ASPECT},fps=$FF_FPS"
         # add subtitles if present, to to the end of the filter chain
-        $DO_FFMPEG_SUBS && VF_FILTERS+=",$FFM_SUBS"
+        $DO_FFMPEG_HARDSUBS && VF_FILTERS+=",$FFM_SUBS"
         # Remove extraneous commas from filter command
         if test -n "$VF_FILTERS"; then
             VF_FILTERS="$(sed 's/,,/,/g;s/,$//' <<< "$VF_FILTERS")"
@@ -2250,15 +2225,15 @@ if $USE_FFMPEG; then
             FF_TARGET="$FF_TARGET-dvd"
             ;;
     esac
-    
-    if $FF_M2V; then # if spitting audio and video we don't need these
-        FF_TARGET="" # we don't use -target (ntsc-dvd etc) with m2v creation
+
+    if $FF_M2V; then # if spitting audio and video we do not need these
+        FF_TARGET="" # we do not use -target (ntsc-dvd etc) with m2v creation
         FF_BITRATE="" # FF_BITRATE is already used in FF_M2VOPTS
     fi
 fi
 
 # if just adding DVD subs to a compliant MPEG (no encoding), spumux and exit
-if $DO_DVD_SUBS && $SUBS_ONLY; then
+if $DO_SOFTSUBS && $SUBS_ONLY; then
     spumux_subtitles "$IN_FILE"
     cleanup
     goodbye
@@ -2289,7 +2264,7 @@ if $USE_FFMPEG && ! $DO_NORM && [[ -z "$AUDIO_SYNC" ]] && ! $GENERATE_AUDIO \
             wait
         fi
     fi
-    if $DO_DVD_SUBS; then
+    if $DO_SOFTSUBS; then
         spumux_subtitles "$OUT_FILENAME"
     fi
     yecho
@@ -2450,13 +2425,13 @@ else
     fi
     # if using ffmpeg, it does all filters except subtitles, so unset some vars
     if $FFMPEG_WITH_MPLAYER; then
-        unset VID_FILTER 
+        unset VID_FILTER
     fi
 
     if $USE_MPV; then
-        VID_PLAY_CMD="$PRIORITY $MPLAYER --no-msg-color --no-input-terminal --untimed --oautofps -no-audio -oneverdrop "$MPV_SUBS" -o \"$YUV_STREAM\" $VID_FILTER $MPV_OPTS $MPV_CLIP_SEEK $MPV_LENGTH \"$IN_FILE\""
+        VID_PLAY_CMD="$PRIORITY $MPLAYER --no-msg-color --no-input-terminal --untimed --oautofps -no-audio -oneverdrop "$MPV_HARDSUBS" -o \"$YUV_STREAM\" $VID_FILTER $MPV_OPTS $MPV_CLIP_SEEK $MPV_LENGTH \"$IN_FILE\""
     else
-        VID_PLAY_CMD="$PRIORITY $MPLAYER -nomsgcolor $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $SUBTITLES -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS $CLIP_SEEK $MP_LENGTH \"$IN_FILE\""
+        VID_PLAY_CMD="$PRIORITY $MPLAYER -nomsgcolor $NOCONSOLE_CONTROLS -benchmark -nosound -noframedrop $HARDSUBS -vo yuv4mpeg:file=\"$YUV_STREAM\"${YUV4MPEG_ILACE} $VID_FILTER $MPLAYER_OPTS $CLIP_SEEK $MP_LENGTH \"$IN_FILE\""
     fi
     if $USE_FFMPEG ; then
         VID_ENC_CMD="$PRIORITY $FFmpeg -debug 1 $YUV4PIPE -i \"$INFILE\" $FF_THREAD $CLIP_SEEK $FF_LENGTH -an $FF_CODEC $FF_M2VOPTS $FF_TARGET $FFM_OPTS $FF_QUANT $FF_ADD_ARGS $FF_ILACE $VF_FILTERS $OLD_OPTS $FF_BITRATE -y \"$VIDEO_STREAM\""
@@ -2546,7 +2521,7 @@ else
     runtime_error "There was a problem multiplexing the audio and video together."
 fi
 
-if $DO_DVD_SUBS; then
+if $DO_SOFTSUBS; then
     spumux_subtitles "$OUT_FILENAME"
 fi
 
