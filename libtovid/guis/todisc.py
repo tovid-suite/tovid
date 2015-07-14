@@ -971,7 +971,7 @@ thumbnails = Tabs("Thumbnails",
         ),
 )
 
-from libtovid.guis import tovid
+from libtovid.guis import makempg
 
 behavior = VPanel("Behavior",
     VPanel('',
@@ -1006,16 +1006,17 @@ playback = Tabs("Playback",
 encoding = VPanel('Encoding',
     Label("\nVideo re-encoding options - you may leave these at defaults.", 'center'),
     Tabs('',
-        tovid.BASIC_OPTS,
-        tovid.VIDEO,
-        tovid.AUDIO,
-        tovid.BEHAVIOR,
+        makempg.BASIC_OPTS,
+        makempg.VIDEO,
+        makempg.AUDIO,
+        makempg.SUBS,
+        makempg.BEHAVIOR,
     ),
+    SpacedText('Custom makempg ("tovid mpg") options', '', '',
+         'Space-separated list of custom options to pass to makempg.'),
     Flag('Encode only', '-encode-only', False,
     'Use this GUI for encoding only.  On the Main tab, load files and '
     'select an out filename'),
-    SpacedText('Custom makempg ("tovid mpg") options', '', '',
-         'Space-separated list of custom options to pass to makempg.'),
     
 )
 
