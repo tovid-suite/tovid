@@ -81,7 +81,8 @@ _discsize = Number('Disc size', '-discsize', 0,
 _mplayeropts = Text('mplayer options', '-mplayeropts', '', 'TODO: Tooltip')
 _filters = Choice('mplayer filters', '-filters', 'none', 'TODO: Tooltip',
     'none|denoise|deblock|contrast|all', side='top')
-_mpeg2enc = Flag('Encode using mpeg2enc', '-mpeg2enc', False)
+_mpeg2enc = Flag('Encode using mpeg2enc', '-mpeg2enc', False,
+    'Use mpeg2enc instead of ffmpeg for encoding (slow).')
 _parallel = Flag('Parallel video/audio encoding', '-parallel', False,
     "(mpeg2enc only) Rip, encode, and multiplex in parallel.")
 
@@ -259,8 +260,8 @@ BEHAVIOR = VPanel('Behavior',
 ### --------------------------------------------------------------------
 
 def run():
-    app = Application('tovid', MAIN, VIDEO, AUDIO, SUBS, BEHAVIOR)
-    gui = GUI("tovid metagui", 640, 720, app)
+    app = Application('makempg', MAIN, VIDEO, AUDIO, SUBS, BEHAVIOR)
+    gui = GUI("makempg metagui", 640, 720, app)
     gui.run()
 
 if __name__ == '__main__':
