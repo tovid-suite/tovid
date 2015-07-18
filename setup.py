@@ -25,26 +25,26 @@ def git_version():
     except ImportError:
         # python 3
         from subprocess import getoutput
-    # if (we are in a git dir and git is installed) #FIXME
+    # if we are in a git dir and git is installed
     if os.path.isdir('.git') and getoutput('which git'):
         #rev_line = getoutput('git rev-parse --short HEAD 2>/dev/null')
         rev_line = getoutput('git describe --match %s 2>/dev/null' %
-                             _last_release).replace('-g', '-')
-        _hash = rev_line.split('-')[2]
+                             _last_major_release)
+        # take last index and remove the -g ('git') so we can test _hash as hex
+        _hash = rev_line.split('-')[-1][1:]
         # make sure the revision (_hash) is a git hash (hex)
         try:
             int(_hash, 16)
             return  rev_line
         except ValueError:
-            return '%s-git-unknown' % _last_release 
+            return '%s-git-unknown' % _last_major_release 
     else:
-        return '%s-git-unknown' % _last_release 
+        return '%s-git-unknown' % _last_major_release 
 
 
 # Current version number of tovid, as a string.
-# Examples:
 # Official release number
-_last_release = '0.35.0'
+_last_major_release = '0.35.0'
 _tovid_version = git_version()
 
 
