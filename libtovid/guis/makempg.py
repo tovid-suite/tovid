@@ -101,8 +101,10 @@ _safe = Number('Safe area', '-safe', 90,
     'Safe area as a percentage of screen size',
     50, 100, 'scale')
 _crop = Text('Crop', '-crop', '', 'TODO: Tooltip')
-_slice = Number('Slice', '-slice', 0, 'TODO: Tooltip', 0, 220000)
-_fps = Text('FPS', '-fps', '', 'TODO: Tooltip')
+_slice = Number('Slice', '-slice', 0,
+    'Only encode a segment from START to END (in seconds).', 0, 220000)
+_fps = Text('FPS', '-fps', '',
+    'Force  input  video  to be interpreted as RATIO frames per second.')
 _type = Choice('Video type', '-type', 'live', 'TODO: Tooltip',
     'live|animation|bw', side='top')
 
@@ -188,7 +190,9 @@ _fake = Flag('Fake encoding', '-fake')
 _force = Flag('Force encoding', '-force')
 
 # Prompting
-_noask = Flag('No prompts',  '-noask', False, 'TODO: Tooltip')
+_noask = Flag('No prompts',  '-noask', False,
+    'Do not ask questions when  choices  need  to  be  made. '
+    'Assume  reasonable answers.')
 _from_gui = Flag('From GUI', '-from-gui', True)
 
 ### ---------------------------------------------------------------------------
