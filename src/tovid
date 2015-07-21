@@ -69,7 +69,7 @@ class Frontend:
         # Set attributes
         self.path = os.path.abspath(args.pop(0))
         self.prefix = self.get_prefix(self.path)
-        self.script_dir = os.path.join(self.prefix, 'lib', 'tovid')
+        self.script_dir = os.path.join(self.prefix, 'share', 'tovid')
         self.version = self.get_version()
         # Handle any special options
         self.parse_options(args)

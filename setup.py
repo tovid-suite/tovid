@@ -78,7 +78,7 @@ class InstallCommand (install):
         prefix = self.install_data
         print("Installing tovid to %s" % prefix)
         # Move temporary install log to $prefix/lib/tovid
-        install_log = os.path.join(prefix, 'lib', 'tovid', '.install.log')
+        install_log = os.path.join(prefix, 'share', 'tovid', '.install.log')
         print("Moving install.log to '%s'" % install_log)
         shutil.move(self.record, install_log)
 
@@ -116,7 +116,7 @@ class UninstallCommand (Command):
                   "You may need to uninstall manually")
             return
         print("Uninstalling tovid from %s" % prefix)
-        install_log = os.path.join(prefix, 'lib', 'tovid', '.install.log')
+        install_log = os.path.join(prefix, 'share', 'tovid', '.install.log')
         # If install log doesn't exist, there's nothing to do
         if not os.path.exists(install_log):
             print("Missing installation log: '%s'" % install_log)
@@ -235,7 +235,7 @@ setup(
 
     # Extra files installed relative to /$PREFIX/
     data_files = [
-        ('lib/tovid', [
+        ('share/tovid', [
             # Bash scripts
             'src/idvid',
             'src/makedvd',
