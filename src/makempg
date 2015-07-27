@@ -1157,8 +1157,8 @@ fi
 # warn about recent defaults change
 default_encoder_change
 if $WARN; then
-    echo "Add '-nowarn' to skip pause. Resuming "
-    countdown 15
+    echo "Resuming "
+    countdown 5
 fi
 if [[ ${FFmpeg##*/} == "avconv" && $MPLAYER == "mpv" ]]  && \
                         { $DO_CONTRAST || $DO_DEBLOCK; }; then
