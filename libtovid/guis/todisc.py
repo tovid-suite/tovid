@@ -267,6 +267,46 @@ _text_start = Number('Start titles at', '-text-start', 50,
     0, 460, 'pixels')
 
 ### --------------------------------------------------------------------
+### Subtitles
+### --------------------------------------------------------------------
+
+_autosubs = Flag('Auto subtitles', '-autosubs', False,
+    'Automatically include text based subtitle files with the same '
+    'name as the input video. This option hard-codes the subtitles into '
+    'the video.')
+_mkvsub = Text('mkvsub', '-mkvsub', '',
+    'EXPERIMENTAL. Attempt to encode an integrated subtitle stream '
+    '(such as may be found in Matroska .mkv files) in the GIVEN '
+    'LANGUAGE CODE (eng, jpn, etc.) May work for other formats. '
+    'These subtitles are hard-coded into the video, like -hardsubs.')
+_hardsubs = Filename('', '-hardsubs', '',
+    'Use text based subtitle FILE and encode into the video. '
+    'WARNING: This hard-codes the subtitles into the video, and you '
+    'cannot turn them off while viewing the video. By default, no subtitles '
+    'are loaded. If your video is already compliant with the chosen output '
+    'format, it will be re-encoded to include the subtitles.',
+    'load', 'Select a text based subtitle file')
+
+_softsubs = ListToMany('-files', 'Soft subtitles', '-softsubs', None,
+    'Video files to group together. Select the video in the list ' \
+    'on the left, and add files to group with it by using the file ' \
+    'selector on the right',
+    Filename('', filetypes=video_filetypes),
+    index=True,
+    repeat=True)
+
+#_softsubs = List('', '-softsubs', None,
+#    'Use text based subtitle FILE(S) and add as subtitle stream(s) into '
+#    'the video.  This allows selectable subtitles on your DVD. You can use '
+#    'more than one file for multiple languages. Be sure to use the '
+#    '-subtitle-lang option  in "tovid disc" so the name of the language will '
+#    'show up on the DVD instead of "UNKNOWN" or similar.',
+#    Filename('', filetypes=[('Text based subtitle files', '*.srt *.ass *.ssa' ),('All files', '*.*')]))
+_softsubs_size = Number('Soft subtitles fontsize', '-softsubs-size', 0,
+    'The size of the DVD subtitles in points, leave at 0 for default',
+    0, 72, units='point')
+
+### --------------------------------------------------------------------
 ### Runtime behavior
 ### --------------------------------------------------------------------
 
@@ -1009,7 +1049,13 @@ encoding = VPanel('Encoding',
         makempg.BASIC_OPTS,
         makempg.VIDEO,
         makempg.AUDIO,
-        makempg.SUBS,
+        Tabs('Subtitles',
+        VPanel('Hard Subtitles (hard-coded)',
+        _hardsubs,
+        HPanel('', _mkvsub, _autosubs)),
+        VPanel('Soft Subtitles (selectable)',
+        _softsubs,
+        _softsubs_size)),
         makempg.BEHAVIOR,
     ),
     SpacedText('Custom makempg ("tovid mpg") options', '', '',
