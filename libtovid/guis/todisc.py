@@ -286,22 +286,17 @@ _hardsubs = Filename('', '-hardsubs', '',
     'are loaded. If your video is already compliant with the chosen output '
     'format, it will be re-encoded to include the subtitles.',
     'load', 'Select a text based subtitle file')
-
-_softsubs = ListToMany('-files', 'Soft subtitles', '-softsubs', None,
-    'Video files to group together. Select the video in the list ' \
-    'on the left, and add files to group with it by using the file ' \
-    'selector on the right',
-    Filename('', filetypes=video_filetypes),
+# Tooltips do not work with ListToMany, so use Filename for the tooltips.
+_softsubs_help = ('Use text based subtitle FILE(S) and add as subtitle '
+    'stream(s) into the video.  This allows selectable subtitles on your DVD. '
+    'You can use more than one file for multiple languages. Be sure to use the '
+    '-subtitle-lang option in "tovid disc" so the name of the language will '
+    'show up on the DVD instead of "UNKNOWN" or similar.')
+_softsubs = ListToMany('-files', 'Soft subtitles', '-softsubs', None, '',
+    Filename('', help=_softsubs_help, filetypes=\
+    [('Text based subtitle files', '*.srt *.ass *.ssa' ),('All files', '*.*')]),
     index=True,
     repeat=True)
-
-#_softsubs = List('', '-softsubs', None,
-#    'Use text based subtitle FILE(S) and add as subtitle stream(s) into '
-#    'the video.  This allows selectable subtitles on your DVD. You can use '
-#    'more than one file for multiple languages. Be sure to use the '
-#    '-subtitle-lang option  in "tovid disc" so the name of the language will '
-#    'show up on the DVD instead of "UNKNOWN" or similar.',
-#    Filename('', filetypes=[('Text based subtitle files', '*.srt *.ass *.ssa' ),('All files', '*.*')]))
 _softsubs_size = Number('Soft subtitles fontsize', '-softsubs-size', 0,
     'The size of the DVD subtitles in points, leave at 0 for default',
     0, 72, units='point')
@@ -1049,7 +1044,7 @@ encoding = VPanel('Encoding',
         makempg.BASIC_OPTS,
         makempg.VIDEO,
         makempg.AUDIO,
-        Tabs('Subtitles',
+        VPanel('Subtitles',
         VPanel('Hard Subtitles (hard-coded)',
         _hardsubs,
         HPanel('', _mkvsub, _autosubs)),
