@@ -1671,7 +1671,7 @@ elif ! $USE_FFMPEG; then
     mplayer -nomsgcolor -vf help | cat -v - | \
      sed 's/^[\t]*//' > "$SCRATCH_FILE" 2>&1
 elif $USE_FFMPEG; then
-    $FFmpeg -filters 2>/dev/null > $SCRATCH_FILE
+    $FFmpeg -filters 2>/dev/null > "$SCRATCH_FILE"
 fi
 
 if $DO_HARDSUBS && $USE_FFMPEG; then
