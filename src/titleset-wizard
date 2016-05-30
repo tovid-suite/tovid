@@ -282,7 +282,7 @@ class WizardPage(tk.Frame):
         self.root = self._root()
         # get tovid prefix
         tovid_prefix = getoutput('tovid -prefix')
-        self.tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
+        self.tovid_prefix = os.path.join(tovid_prefix, 'share', 'tovid')
         os.environ['PATH'] = self.tovid_prefix + os.pathsep + os.environ['PATH']
         # get script header
         shebang = '#!/usr/bin/env bash'
@@ -1356,7 +1356,7 @@ if __name__ == '__main__':
             infile = arg
     # get tovid prefix so we can find the app image file
     tovid_prefix = getoutput('tovid -prefix')
-    tovid_prefix = os.path.join(tovid_prefix, 'lib', 'tovid')
+    tovid_prefix = os.path.join(tovid_prefix, 'share', 'tovid')
     os.environ['PATH'] = tovid_prefix + os.pathsep + os.environ['PATH']
     img_file = os.path.join(tovid_prefix, 'titleset-wizard.png')
     root_height = 660
